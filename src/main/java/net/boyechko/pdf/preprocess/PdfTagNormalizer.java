@@ -95,27 +95,36 @@ public class PdfTagNormalizer {
         String role = elem.getRole().getValue();
         String comment = "";
 
-        // Check if this is an H1 that should be demoted
+        // Change top-level <Sect> to <Document>
+        if ("Sect".equals(role) && level == 0) {
+            elem.setRole(new PdfName("Document"));
+            comment = "changed to Document";
+        }
+
+        // Change rogue TextBox tags to <Div>
+        if ("TextBox".equals(role)) {
+            elem.setRole(new PdfName("Div"));
+            comment = "changed to Div";
+        }
+
+        // Demote <H1> tags
         if ("H1".equals(role)) {
             elem.setRole(new PdfName("H2"));
             comment = "demoted to H2";
         }
 
-        // Check if this is a P element in a list structure that should become Lbl
+        // Change P elememnt in <LI><P>...</P><LBody>...</LBody></LI> to Lbl
         if ("P".equals(role) && shouldConvertPToLbl(elem)) {
             elem.setRole(new PdfName("Lbl"));
             comment = "changed to Lbl";
         }
 
-        // Print the element with any comment
         if (comment.isEmpty()) {
             System.out.println(indent + "- " + role);
         } else {
-            // Use String.format to justify to column 40 (adjust as needed)
             System.out.printf("%s- %-30s ; %s%n", indent, role, comment);
         }
 
-        // Process children recursively
         for (Object kid : elem.getKids()) {
             if (kid instanceof PdfStructElem) {
                 processElementWithDisplay((PdfStructElem) kid, level + 1);
