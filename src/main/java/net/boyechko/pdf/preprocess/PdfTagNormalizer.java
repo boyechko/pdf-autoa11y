@@ -50,33 +50,6 @@ public class PdfTagNormalizer {
         }
     }
 
-    private boolean hasDesiredListStructure(PdfStructElem listElem) {
-        for (Object kid : listElem.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem listItem = (PdfStructElem) kid;
-                if ("LI".equals(listItem.getRole().getValue())) {
-                    Object[] liKids = listItem.getKids().toArray();
-                    
-                    if (liKids.length != 2) {
-                        return false;
-                    }
-                    
-                    if (liKids[0] instanceof PdfStructElem && 
-                        liKids[1] instanceof PdfStructElem) {
-                        PdfStructElem firstChild = (PdfStructElem) liKids[0];
-                        PdfStructElem secondChild = (PdfStructElem) liKids[1];
-                        
-                        if ("P".equals(firstChild.getRole().getValue()) &&
-                            "LBody".equals(secondChild.getRole().getValue())) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     public void processAndDisplayChanges() {
         if (root != null) {
             System.out.println("Processing PDF structure and displaying changes:");
@@ -132,33 +105,25 @@ public class PdfTagNormalizer {
         }
     }
 
-    private boolean shouldConvertPToLbl(PdfStructElem pElem) {
-        // Check if this P element is the first child of an LI element
-        // and the LI has the desired structure (P followed by LBody)
-        PdfStructElem parent = (PdfStructElem) pElem.getParent();
-        if (parent != null && "LI".equals(parent.getRole().getValue())) {
-            Object[] liKids = parent.getKids().toArray();
-            if (liKids.length == 2 && liKids[0] instanceof PdfStructElem) {
-                PdfStructElem firstChild = (PdfStructElem) liKids[0];
-                
-                // Check if this P element is the first child by comparing roles and content
-                if ("P".equals(firstChild.getRole().getValue())) {
-                    // Check if the second child is LBody
-                    if (liKids[1] instanceof PdfStructElem) {
-                        PdfStructElem secondChild = (PdfStructElem) liKids[1];
-                        if ("LBody".equals(secondChild.getRole().getValue())) {
-                            // Also verify that the LI's parent is an L with desired structure
-                            PdfStructElem listParent = (PdfStructElem) parent.getParent();
-                            if (listParent != null && "L".equals(listParent.getRole().getValue()) && 
-                                hasDesiredListStructure(listParent)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
+    private boolean shouldConvertPToLbl(PdfStructElem elem) {
+        PdfStructElem parent = (PdfStructElem) elem.getParent();
+
+        if (!"LI".equals(parent.getRole().getValue())) {
+            return false;
         }
+
+        // Check if LI has exactly 2 children: P and LBody
+        Object[] liKids = parent.getKids().toArray();
+        if (liKids.length != 2) {
         return false;
+        }
+
+        PdfStructElem firstChild = (PdfStructElem) liKids[0];
+        PdfStructElem secondChild = (PdfStructElem) liKids[1];
+
+        // Check if this P element is the first child and second is LBody
+        return "P".equals(firstChild.getRole().getValue()) &&
+            "LBody".equals(secondChild.getRole().getValue());
     }
 
 }
