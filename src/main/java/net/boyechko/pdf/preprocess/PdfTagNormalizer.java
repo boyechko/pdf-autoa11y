@@ -29,16 +29,6 @@ public class PdfTagNormalizer {
         }
     }
 
-    // Simplify normalizeListStructures since document handling is moved to main
-    public void normalizeListStructures() {
-        if (root != null) {
-            System.out.println("Normalizing list structures in document...");
-            processListStructures(root);
-        } else {
-            System.out.println("No tag structure found in the document.");
-        }
-    }
-
     private void displayTagStructure(PdfStructTreeRoot root, int level) {
         for (Object kid : root.getKids()) {
             if (kid instanceof PdfStructElem) {
@@ -95,14 +85,19 @@ public class PdfTagNormalizer {
         return false;
     }
 
-    private void processListStructures(PdfStructTreeRoot root) {
-        for (Object kid : root.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                processListStructures((PdfStructElem) kid);
+    public void normalizeListStructures() {
+        if (root != null) {
+            System.out.println("Normalizing list structures in document...");
+            for (Object kid : root.getKids()) {
+                if (kid instanceof PdfStructElem) {
+                    processListStructures((PdfStructElem) kid);
+                }
             }
+        } else {
+            System.out.println("No tag structure found in the document.");
         }
     }
-
+    
     private void processListStructures(PdfStructElem elem) {
         String role = elem.getRole().getValue();
 
