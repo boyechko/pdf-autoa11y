@@ -1,7 +1,6 @@
 package net.boyechko.pdf.preprocess;
 
 import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.*;
@@ -58,13 +57,6 @@ public class PdfTagNormalizer {
             } else {
                 System.out.println(indent + "- " + role);
             }
-        } else if ("P".equals(role)) {
-            String content = getTagContent(elem);
-            if (content != null && content.trim().isEmpty()) {
-                System.out.println(indent + "- " + role + " ⚠️ [Empty paragraph]");
-            } else {
-                System.out.println(indent + "- " + role);
-            }
         } else {
             System.out.println(indent + "- " + role);
         }
@@ -73,38 +65,6 @@ public class PdfTagNormalizer {
             if (kid instanceof PdfStructElem) {
                 displayTagStructure((PdfStructElem) kid, level + 1);
             }
-        }
-    }
-
-    private String getTagContent(PdfStructElem elem) {
-        try {
-            PdfDictionary dict = elem.getPdfObject();
-            if (dict == null) return null;
-
-            // Get the page reference first
-            PdfNumber pageRef = dict.getAsNumber(PdfName.Pg);
-            int pageNum = (pageRef != null) ? pageRef.intValue() : 1; // default to first page if not specified
-            PdfPage page = pdfDoc.getPage(pageNum);
-
-            // Try to get content using the MCID approach
-            if (dict.containsKey(PdfName.K)) {
-                PdfObject k = dict.get(PdfName.K);
-                if (k instanceof PdfNumber) {
-                    // Extract text from the specific page
-                    return PdfTextExtractor.getTextFromPage(page);
-                }
-            }
-
-            // If no MCID found, try getting direct text content
-            if (dict.containsKey(PdfName.T)) {
-                return dict.getAsString(PdfName.T).toString();
-            }
-
-            return null;
-        } catch (Exception e) {
-            System.err.println("Error extracting content from " + elem.getRole().getValue() + 
-                             ": " + e.getMessage());
-            return null;
         }
     }
 
