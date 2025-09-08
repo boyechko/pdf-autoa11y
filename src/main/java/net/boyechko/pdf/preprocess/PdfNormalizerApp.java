@@ -16,6 +16,8 @@ public class PdfNormalizerApp {
         try (PdfDocument pdf = new PdfDocument(new PdfReader(src), new PdfWriter(dest))) {
             PdfTagNormalizer processor = new PdfTagNormalizer(pdf);
             processor.normalizeListStructures();
+            processor.demoteH1Tags();
+
             System.out.println("\nVerifying modified structure:");
             processor.analyzePdf();
         }

@@ -130,4 +130,33 @@ public class PdfTagNormalizer {
             }
         }
     }
+
+    public void demoteH1Tags() {
+        if (root != null) {
+            System.out.println("Demoting H1 tags to H2 in document...");
+            for (Object kid : root.getKids()) {
+                if (kid instanceof PdfStructElem) {
+                    processAndDemoteH1((PdfStructElem) kid);
+                }
+            }
+        } else {
+            System.out.println("No tag structure found in the document.");
+        }
+    }
+
+    private void processAndDemoteH1(PdfStructElem elem) {
+        // Check the role of the current element
+        if ("H1".equals(elem.getRole().getValue())) {
+            elem.setRole(new PdfName("H2"));
+            System.out.println("Demoted H1 to H2.");
+        }
+
+        // Recursively process the children
+        for (Object kid : elem.getKids()) {
+            if (kid instanceof PdfStructElem) {
+                processAndDemoteH1((PdfStructElem) kid);
+            }
+        }
+    }
+
 }
