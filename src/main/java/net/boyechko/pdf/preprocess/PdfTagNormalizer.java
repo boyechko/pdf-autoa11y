@@ -65,8 +65,8 @@ public class PdfTagNormalizer {
 
     private void processElementWithDisplay(PdfStructElem elem, int level) {
         String indent = "  ".repeat(level);
-        String role = elem.getRole().getValue();
         String comment = "";
+        String role = elem.getRole().getValue();
 
         // Change top-level <Sect> to <Document>
         if ("Sect".equals(role) && level == 0) {
@@ -92,10 +92,17 @@ public class PdfTagNormalizer {
             comment = "changed to Lbl";
         }
 
+        // Print the element with any comment
+        String tagOutput = indent + "- " + role;
         if (comment.isEmpty()) {
-            System.out.println(indent + "- " + role);
+            System.out.println(tagOutput);
         } else {
-            System.out.printf("%s- %-30s ; %s%n", indent, role, comment);
+            // Pad to column 40, or use minimum spacing if already longer
+            int targetColumn = 40;
+            int currentLength = tagOutput.length();
+            String padding = currentLength < targetColumn ? 
+                " ".repeat(targetColumn - currentLength) : "  ";
+            System.out.println(tagOutput + padding + "; " + comment);
         }
 
         for (Object kid : elem.getKids()) {
