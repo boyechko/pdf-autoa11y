@@ -15,7 +15,7 @@ public class PdfNormalizerApp {
         String file = args[0];
         String password = args.length > 1 ? args[1] : null;
         String src = "inputs/" + file;
-        String dest = "outputs/" + file;
+        String dest = "outputs/" + "normalized_" + file;
         Files.createDirectories(Paths.get(dest).getParent());
 
         // First, try to open and check if password-protected
