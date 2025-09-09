@@ -127,9 +127,12 @@ public class PdfTagNormalizer {
      */
     private String normalizeLI(PdfStructElem liElem) {
         Object[] liKids = liElem.getKids().toArray();
+        String warning = "";
         
         if (liKids.length == 0) {
-            return "empty LI";
+            warning = "empty LI";
+            escalateWarning(liElem, warning);
+            return warning;
         }
 
         // Filter to only structure elements
@@ -142,22 +145,26 @@ public class PdfTagNormalizer {
         }
 
         if (structCount == 0) {
-            return "LI contains no structure elements";
+            warning = "LI contains no structure elements";
+            escalateWarning(liElem, warning);
+            return warning;
         }
 
         if (structCount == 1) {
             PdfStructElem child = structKids[0];
             String childRole = child.getRole().getValue();
             if ("P".equals(childRole)) {
-                child.setRole(new PdfName("Lbl"));
-                return "converted P to Lbl, missing LBody";
+                child.setRole(new PdfName("LBody"));
+                warning = "converted P to LBody, missing Lbl";
             } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
-                return "unexpected single child: " + childRole;
+                warning = "unexpected single child: " + childRole;
             } else if ("Lbl".equals(childRole)) {
-                return "missing LBody";
+                warning = "missing LBody";
             } else {
-                return "missing Lbl";
+                warning = "missing Lbl";
             }
+            escalateWarning(liElem, warning);
+            return warning;
         }
 
         if (structCount == 2) {
@@ -185,15 +192,25 @@ public class PdfTagNormalizer {
             }
 
             // Other problematic cases
-            return "unexpected children: " + firstRole + "+" + secondRole;
+            warning = "unexpected children: " + firstRole + "+" + secondRole;
+            escalateWarning(liElem, warning);
+            return warning;
         }
 
         if (structCount > 2) {
-            return "too many children (" + structCount + ")";
+            warning = "too many children (" + structCount + ")";
+            escalateWarning(liElem, warning);
+            return warning;
         }
 
         return "";
     }
 
-    // Remove the old shouldConvertPToLbl method since it's no longer needed
+    private String escalateWarning(PdfStructElem elem, String text) {
+        elem.put(PdfName.T, new PdfString(text));
+        if (elem.getParent() instanceof PdfStructElem) {
+            escalateWarning((PdfStructElem) elem.getParent(), text);
+        }
+        return text;
+    }
 }
