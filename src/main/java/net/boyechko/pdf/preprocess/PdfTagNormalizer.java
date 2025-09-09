@@ -8,10 +8,14 @@ import java.io.*;
 public class PdfTagNormalizer {
     private PdfStructElem docTitle;
     private final PdfStructTreeRoot root;
+    private int changeCount;
+    private int warningCount;
 
     public PdfTagNormalizer(PdfDocument doc) {
         this.root = doc.getStructTreeRoot();
         this.docTitle = null;
+        this.changeCount = 0;
+        this.warningCount = 0;
     }
 
     public PdfTagNormalizer(String src) throws IOException {
@@ -51,11 +55,17 @@ public class PdfTagNormalizer {
     public void processAndDisplayChanges() {
         if (root != null) {
             System.out.println("Processing PDF structure and displaying changes:");
+            changeCount = 0;
+            
             for (Object kid : root.getKids()) {
                 if (kid instanceof PdfStructElem) {
                     processElementWithDisplay((PdfStructElem) kid, 0);
                 }
             }
+            
+            // Print simple summary
+            System.out.println("\nTotal changes made: " + changeCount);
+            System.out.println("Total warnings raised: " + warningCount);
         } else {
             System.out.println("No tag structure found in the document.");
         }
@@ -70,22 +80,25 @@ public class PdfTagNormalizer {
         if ("Sect".equals(role) && level == 0) {
             elem.setRole(PdfName.Document);
             comment = "changed to Document";
+            changeCount++;
         }
 
         // Change rogue TextBox tags to <Div>
         if ("TextBox".equals(role)) {
             elem.setRole(PdfName.Div);
             comment = "changed to Div";
+            changeCount++;
         }
 
         // Demote <H1> tags after the first
         if ("H1".equals(role) && this.docTitle == null) {
             // First H1 becomes Document Title
             this.docTitle = elem;
-            comment = "first H1, could be document title";
+            comment = "first H1, treating as document title";
         } else if ("H1".equals(role)) {
             elem.setRole(PdfName.H2);
             comment = "demoted to H2";
+            changeCount++;
         }
 
         // Normalize list items
@@ -108,7 +121,8 @@ public class PdfTagNormalizer {
             int currentLength = tagOutput.length();
             String padding = currentLength < targetColumn ? 
                 " ".repeat(targetColumn - currentLength) : "  ";
-            System.out.println(tagOutput + padding + "; " + comment);
+            System.out.println(tagOutput + padding + "; " + comment +
+                               " [" + changeCount + ", " + warningCount + "]");
         }
 
         for (Object kid : elem.getKids()) {
@@ -131,6 +145,7 @@ public class PdfTagNormalizer {
         
         if (liKids.length == 0) {
             warning = "empty LI";
+            warningCount++;
             escalateWarning(liElem, warning);
             return warning;
         }
@@ -146,6 +161,7 @@ public class PdfTagNormalizer {
 
         if (structCount == 0) {
             warning = "LI contains no structure elements";
+            warningCount++;
             escalateWarning(liElem, warning);
             return warning;
         }
@@ -155,6 +171,7 @@ public class PdfTagNormalizer {
             String childRole = child.getRole().getValue();
             if ("P".equals(childRole)) {
                 child.setRole(PdfName.LBody);
+                changeCount++;
                 warning = "converted P to LBody, missing Lbl";
             } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
                 warning = "unexpected single child: " + childRole;
@@ -163,6 +180,7 @@ public class PdfTagNormalizer {
             } else {
                 warning = "missing Lbl";
             }
+            warningCount++;
             escalateWarning(liElem, warning);
             return warning;
         }
@@ -181,6 +199,7 @@ public class PdfTagNormalizer {
             // Case: P + LBody -> convert P to Lbl
             if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
                 first.setRole(PdfName.Lbl);
+                changeCount++;
                 return "converted P to Lbl";
             }
 
@@ -188,17 +207,20 @@ public class PdfTagNormalizer {
             if ("P".equals(firstRole) && "P".equals(secondRole)) {
                 first.setRole(PdfName.Lbl);
                 second.setRole(PdfName.LBody);
+                changeCount += 2;
                 return "converted P+P to Lbl+LBody";
             }
 
             // Other problematic cases
             warning = "unexpected children: " + firstRole + "+" + secondRole;
+            warningCount++;
             escalateWarning(liElem, warning);
             return warning;
         }
 
         if (structCount > 2) {
             warning = "too many children (" + structCount + ")";
+            warningCount++;
             escalateWarning(liElem, warning);
             return warning;
         }
