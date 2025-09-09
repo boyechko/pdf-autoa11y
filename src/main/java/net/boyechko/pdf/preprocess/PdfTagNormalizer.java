@@ -6,16 +6,14 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.*;
 
 public class PdfTagNormalizer {
-    private final PdfDocument pdfDoc;
+    private PdfStructElem docTitle;
     private final PdfStructTreeRoot root;
 
-    // Add a constructor that takes a PdfDocument
     public PdfTagNormalizer(PdfDocument doc) {
-        this.pdfDoc = doc;
         this.root = doc.getStructTreeRoot();
+        this.docTitle = null;
     }
 
-    // Keep existing constructor for read-only operations
     public PdfTagNormalizer(String src) throws IOException {
         this(new PdfDocument(new PdfReader(src)));
     }
@@ -80,8 +78,12 @@ public class PdfTagNormalizer {
             comment = "changed to Div";
         }
 
-        // Demote <H1> tags
-        if ("H1".equals(role)) {
+        // Demote <H1> tags after the first
+        if ("H1".equals(role) && this.docTitle == null) {
+            // First H1 becomes Document Title
+            this.docTitle = elem;
+            comment = "first H1, could be document title";
+        } else if ("H1".equals(role)) {
             elem.setRole(new PdfName("H2"));
             comment = "demoted to H2";
         }
