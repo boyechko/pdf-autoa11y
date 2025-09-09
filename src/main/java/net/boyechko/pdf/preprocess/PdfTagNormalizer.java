@@ -93,6 +93,11 @@ public class PdfTagNormalizer {
             comment = normalizeLI(elem);
         }
 
+        // Warn about empty elements
+        if (elem.getKids() == null || elem.getKids().isEmpty()) {
+            comment = "empty " + role;
+        }
+
         // Print the element with any comment
         String tagOutput = indent + "- " + role;
         if (comment.isEmpty()) {
