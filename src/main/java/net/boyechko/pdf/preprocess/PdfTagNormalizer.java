@@ -68,13 +68,13 @@ public class PdfTagNormalizer {
 
         // Change top-level <Sect> to <Document>
         if ("Sect".equals(role) && level == 0) {
-            elem.setRole(new PdfName("Document"));
+            elem.setRole(PdfName.Document);
             comment = "changed to Document";
         }
 
         // Change rogue TextBox tags to <Div>
         if ("TextBox".equals(role)) {
-            elem.setRole(new PdfName("Div"));
+            elem.setRole(PdfName.Div);
             comment = "changed to Div";
         }
 
@@ -84,7 +84,7 @@ public class PdfTagNormalizer {
             this.docTitle = elem;
             comment = "first H1, could be document title";
         } else if ("H1".equals(role)) {
-            elem.setRole(new PdfName("H2"));
+            elem.setRole(PdfName.H2);
             comment = "demoted to H2";
         }
 
@@ -154,7 +154,7 @@ public class PdfTagNormalizer {
             PdfStructElem child = structKids[0];
             String childRole = child.getRole().getValue();
             if ("P".equals(childRole)) {
-                child.setRole(new PdfName("LBody"));
+                child.setRole(PdfName.LBody);
                 warning = "converted P to LBody, missing Lbl";
             } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
                 warning = "unexpected single child: " + childRole;
@@ -180,14 +180,14 @@ public class PdfTagNormalizer {
 
             // Case: P + LBody -> convert P to Lbl
             if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
-                first.setRole(new PdfName("Lbl"));
+                first.setRole(PdfName.Lbl);
                 return "converted P to Lbl";
             }
 
             // Case: P + P -> convert first to Lbl, second to LBody
             if ("P".equals(firstRole) && "P".equals(secondRole)) {
-                first.setRole(new PdfName("Lbl"));
-                second.setRole(new PdfName("LBody"));
+                first.setRole(PdfName.Lbl);
+                second.setRole(PdfName.LBody);
                 return "converted P+P to Lbl+LBody";
             }
 
