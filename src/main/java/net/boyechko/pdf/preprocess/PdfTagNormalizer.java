@@ -22,36 +22,10 @@ public class PdfTagNormalizer {
         this(new PdfDocument(new PdfReader(src)));
     }
 
-   public void analyzePdf() {
-        if (root != null) {
-            System.out.println("Tag structure found in the document:");
-            displayTagStructure(root, 0);
-        } else {
-            System.out.println("No tag structure found in the document.");
-        }
-    }
-
-    private void displayTagStructure(PdfStructTreeRoot root, int level) {
-        for (Object kid : root.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                displayTagStructure((PdfStructElem) kid, level);
-            }
-        }
-    }
-
-    private void displayTagStructure(PdfStructElem elem, int level) {
-        String indent = "  ".repeat(level);
-        String role = elem.getRole().getValue();
-
-        System.out.println(indent + "- " + role);
-
-        for (Object kid : elem.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                displayTagStructure((PdfStructElem) kid, level + 1);
-            }
-        }
-    }
-
+    /**
+     * Processes the PDF structure, normalizing tags and displaying changes.
+     * Outputs a summary of changes and warnings.
+     */
     public void processAndDisplayChanges() {
         if (root != null) {
             System.out.println("Processing PDF structure and displaying changes:");
