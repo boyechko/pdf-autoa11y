@@ -13,21 +13,56 @@ public class PdfNormalizerApp {
         }
 
         String file = args[0];
-        String src  = "inputs/" + file;
+        String password = args.length > 1 ? args[1] : null;
+        String src = "inputs/" + file;
         String dest = "outputs/" + file;
         Files.createDirectories(Paths.get(dest).getParent());
 
+        // First, try to open and check if password-protected
         ReaderProperties readerProps = new ReaderProperties();
-        if (args.length == 2) {
-            String password = args[1];
+        if (password != null) {
             readerProps.setPassword(password.getBytes());
         }
-        PdfReader pdfReader = new PdfReader(src, readerProps);
 
-        try (PdfDocument pdfDoc = new PdfDocument(pdfReader, new PdfWriter(dest))) {
-            System.out.println("Number of pages: " + pdfDoc.getNumberOfPages());
-            PdfTagNormalizer processor = new PdfTagNormalizer(pdfDoc);
-            processor.processAndDisplayChanges();
+        try {
+            // Open for reading to check encryption properties
+            PdfReader testReader = new PdfReader(src, readerProps);
+            PdfDocument testDoc = new PdfDocument(testReader);
+            
+            int permissions = testReader.getPermissions();
+            int cryptoMode = testReader.getCryptoMode();
+            boolean isEncrypted = testReader.isEncrypted();
+            
+            testDoc.close();
+            
+            // Now open for processing with proper writer properties
+            PdfReader pdfReader = new PdfReader(src, readerProps);
+            WriterProperties writerProps = new WriterProperties();
+            
+            if (isEncrypted && password != null) {
+                writerProps.setStandardEncryption(
+                    null, // user password (null means same as owner)
+                    password.getBytes(), // owner password
+                    permissions,
+                    cryptoMode
+                );
+            }
+            
+            PdfWriter pdfWriter = new PdfWriter(dest, writerProps);
+            
+            try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
+                System.out.println("Number of pages: " + pdfDoc.getNumberOfPages());
+                PdfTagNormalizer processor = new PdfTagNormalizer(pdfDoc);
+                processor.processAndDisplayChanges();
+            }
+            
+        } catch (Exception e) {
+            if (password == null && e.getMessage().contains("Bad user password")) {
+                System.err.println("The PDF is password-protected. Please provide a password as the second argument.");
+                System.exit(1);
+            } else {
+                throw e;
+            }
         }
     }
 }
