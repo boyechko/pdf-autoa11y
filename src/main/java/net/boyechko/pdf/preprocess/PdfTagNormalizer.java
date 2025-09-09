@@ -41,7 +41,7 @@ public class PdfTagNormalizer {
         String indent = "  ".repeat(level);
         String role = elem.getRole().getValue();
 
-            System.out.println(indent + "- " + role);
+        System.out.println(indent + "- " + role);
 
         for (Object kid : elem.getKids()) {
             if (kid instanceof PdfStructElem) {
@@ -86,10 +86,9 @@ public class PdfTagNormalizer {
             comment = "demoted to H2";
         }
 
-        // Change P elememnt in <LI><P>...</P><LBody>...</LBody></LI> to Lbl
-        if ("P".equals(role) && shouldConvertPToLbl(elem)) {
-            elem.setRole(new PdfName("Lbl"));
-            comment = "changed to Lbl";
+        // Normalize list items
+        if ("LI".equals(role)) {
+            comment = normalizeLI(elem);
         }
 
         // Print the element with any comment
@@ -112,25 +111,82 @@ public class PdfTagNormalizer {
         }
     }
 
-    private boolean shouldConvertPToLbl(PdfStructElem elem) {
-        PdfStructElem parent = (PdfStructElem) elem.getParent();
-
-        if (!"LI".equals(parent.getRole().getValue())) {
-            return false;
+    /**
+     * Normalizes LI elements to have proper Lbl and LBody structure.
+     * Expected: <LI><Lbl>...</Lbl><LBody>...</LBody></LI>
+     * 
+     * @param liElem The LI element to normalize
+     * @return A comment string describing what was done, or empty if no changes
+     */
+    private String normalizeLI(PdfStructElem liElem) {
+        Object[] liKids = liElem.getKids().toArray();
+        
+        if (liKids.length == 0) {
+            return "empty LI";
         }
 
-        // Check if LI has exactly 2 children: P and LBody
-        Object[] liKids = parent.getKids().toArray();
-        if (liKids.length != 2) {
-        return false;
+        // Filter to only structure elements
+        PdfStructElem[] structKids = new PdfStructElem[liKids.length];
+        int structCount = 0;
+        for (Object kid : liKids) {
+            if (kid instanceof PdfStructElem) {
+                structKids[structCount++] = (PdfStructElem) kid;
+            }
         }
 
-        PdfStructElem firstChild = (PdfStructElem) liKids[0];
-        PdfStructElem secondChild = (PdfStructElem) liKids[1];
+        if (structCount == 0) {
+            return "LI contains no structure elements";
+        }
 
-        // Check if this P element is the first child and second is LBody
-        return "P".equals(firstChild.getRole().getValue()) &&
-            "LBody".equals(secondChild.getRole().getValue());
+        if (structCount == 1) {
+            PdfStructElem child = structKids[0];
+            String childRole = child.getRole().getValue();
+            if ("P".equals(childRole)) {
+                child.setRole(new PdfName("Lbl"));
+                return "converted P to Lbl, missing LBody";
+            } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
+                return "unexpected single child: " + childRole;
+            } else if ("Lbl".equals(childRole)) {
+                return "missing LBody";
+            } else {
+                return "missing Lbl";
+            }
+        }
+
+        if (structCount == 2) {
+            PdfStructElem first = structKids[0];
+            PdfStructElem second = structKids[1];
+            String firstRole = first.getRole().getValue();
+            String secondRole = second.getRole().getValue();
+
+            // Perfect case
+            if ("Lbl".equals(firstRole) && "LBody".equals(secondRole)) {
+                return ""; // No comment needed
+            }
+
+            // Case: P + LBody -> convert P to Lbl
+            if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
+                first.setRole(new PdfName("Lbl"));
+                return "converted P to Lbl";
+            }
+
+            // Case: P + P -> convert first to Lbl, second to LBody
+            if ("P".equals(firstRole) && "P".equals(secondRole)) {
+                first.setRole(new PdfName("Lbl"));
+                second.setRole(new PdfName("LBody"));
+                return "converted P+P to Lbl+LBody";
+            }
+
+            // Other problematic cases
+            return "unexpected children: " + firstRole + "+" + secondRole;
+        }
+
+        if (structCount > 2) {
+            return "too many children (" + structCount + ")";
+        }
+
+        return "";
     }
 
+    // Remove the old shouldConvertPToLbl method since it's no longer needed
 }
