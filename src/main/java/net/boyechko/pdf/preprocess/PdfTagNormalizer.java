@@ -9,12 +9,14 @@ public class PdfTagNormalizer {
     private static final int DISPLAY_COLUMN_WIDTH = 40;
     private static final String INDENT = "  ";
 
+    private final PdfDocument document;
     private final PdfStructTreeRoot root;
     private PdfStructElem docTitle;
     private int changeCount;
     private int warningCount;
 
     public PdfTagNormalizer(PdfDocument doc) {
+        this.document = doc;
         this.root = doc.getStructTreeRoot();
         this.docTitle = null;
         this.changeCount = 0;
