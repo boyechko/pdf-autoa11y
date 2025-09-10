@@ -250,7 +250,7 @@ public class PdfTagNormalizer {
 
     private String escalateWarning(PdfStructElem elem, String text) {
         elem.put(PdfName.T, new PdfString(text));
-        if (elem.getParent() instanceof PdfStructElem) {
+        if (elem.getParent() instanceof PdfStructElem && elem.getParent().getRole() != PdfName.Document) {
             escalateWarning((PdfStructElem) elem.getParent(), text);
         }
         return text;
