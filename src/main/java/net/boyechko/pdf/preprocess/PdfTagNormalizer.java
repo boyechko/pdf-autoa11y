@@ -207,13 +207,16 @@ public class PdfTagNormalizer {
     private NormalizationResult handleSingleListItemChild(PdfStructElem child) {
         String childRole = child.getRole().getValue();
         if ("P".equals(childRole)) {
-            // Enclose P in LBody
             PdfStructElem parentLI = (PdfStructElem) child.getParent();
-            PdfStructElem newLBody = new PdfStructElem(parentLI.getPdfObject());
-            newLBody.setRole(PdfName.LBody);
+            
+            // Create new LBody and immediately add it to parent
+            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+            parentLI.addKid(newLBody);  // Add to parent first!
+            
+            // Now move the P
             parentLI.removeKid(child);
             newLBody.addKid(child);
-            parentLI.addKid(newLBody);
+            
             return NormalizationResult.change("enclosed P in LBody, missing Lbl");
         } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
             return NormalizationResult.warning("unexpected single child: " + childRole);
@@ -236,7 +239,7 @@ public class PdfTagNormalizer {
         // Case: P + LBody -> convert P to Lbl
         if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
             first.setRole(PdfName.Lbl);
-            return NormalizationResult.change("converted P to Lbl");
+            return NormalizationResult.change("converted P+Body to Lbl+LBody");
         }
 
         // Case: P + P -> convert first to Lbl, second to LBody
