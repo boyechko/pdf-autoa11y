@@ -2,8 +2,11 @@ package net.boyechko.pdf.preprocess;
 
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PdfTagNormalizer {
     private static final int DISPLAY_COLUMN_WIDTH = 40;
@@ -115,18 +118,22 @@ public class PdfTagNormalizer {
     }
 
     private void processList(PdfStructElem listElem, int level) {
-        String comment = "";
-        for (Object kid : listElem.getKids()) {
+        // Create a copy to iterate over safely
+        List<IStructureNode> kidsCopy = new ArrayList<>(listElem.getKids());
+
+        logPdfStructure(listElem, level, kidsCopy.size() + " children");
+        
+        for (IStructureNode kid : kidsCopy) {
             if (kid instanceof PdfStructElem) {
-                PdfStructElem liElem = (PdfStructElem) kid;
-                if ("LI".equals(liElem.getRole().getValue())) {
-                    processListItem(liElem, level + 1);
+                PdfStructElem kidElem = (PdfStructElem) kid;
+                if ("LI".equals(kidElem.getRole().getValue())) {
+                    processListItem(kidElem, level + 1);
                 } else {
                     // Unexpected child in L
                     warningCount++;
-                    String warnComment = "unexpected child in L: " + liElem.getRole().getValue();
-                    escalateWarning(liElem, warnComment);
-                    comment = warnComment;
+                    String warnComment = "unexpected child in L: " + kidElem.getRole().getValue();
+                    escalateWarning(kidElem, warnComment);
+                    logPdfStructure(kidElem, level + 1, warnComment);
                 }
             }
         }
