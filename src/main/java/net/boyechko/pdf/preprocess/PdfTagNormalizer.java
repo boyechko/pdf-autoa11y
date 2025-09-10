@@ -128,6 +128,8 @@ public class PdfTagNormalizer {
                 PdfStructElem kidElem = (PdfStructElem) kid;
                 if ("LI".equals(kidElem.getRole().getValue())) {
                     processListItem(kidElem, level + 1);
+                } else if ("P".equals(kidElem.getRole().getValue())) {
+                    wrapInLI(listElem, kidElem, level);
                 } else {
                     // Unexpected child in L
                     warningCount++;
@@ -137,8 +139,24 @@ public class PdfTagNormalizer {
                 }
             }
         }
+    }
+    
+    private void wrapInLI(PdfStructElem listElem, PdfStructElem kidElem, int level) {
+        // Create new LI and immediately add it to parent
+        PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
+        listElem.addKid(newLI);  // Add to parent first!
         
-        logPdfStructure(listElem, level, comment);
+        // Create new LBody and add to LI
+        PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+        newLI.addKid(newLBody);
+
+        // Now move the child
+        listElem.removeKid(kidElem);
+        newLBody.addKid(kidElem);
+        
+        changeCount++;
+        String comment = "enclosed unexpected " + kidElem.getRole().getValue() + " in LI";
+        logPdfStructure(newLI, level + 1, comment);
     }
 
     /**
