@@ -36,7 +36,7 @@ public class PdfTagNormalizer {
             
             for (Object kid : root.getKids()) {
                 if (kid instanceof PdfStructElem) {
-                    processElementWithDisplay((PdfStructElem) kid, 0);
+                    processElement((PdfStructElem) kid, 0);
                 }
             }
             
@@ -48,7 +48,7 @@ public class PdfTagNormalizer {
         }
     }
 
-    private void processElementWithDisplay(PdfStructElem elem, int level) {
+    private void processElement(PdfStructElem elem, int level) {
         String comment = "";
         String role = elem.getRole().getValue();
 
@@ -89,16 +89,16 @@ public class PdfTagNormalizer {
         }
 
         // Print the element with any comment
-        printElement(elem, level, comment);
+        logPdfStructure(elem, level, comment);
 
         for (Object kid : elem.getKids()) {
             if (kid instanceof PdfStructElem) {
-                processElementWithDisplay((PdfStructElem) kid, level + 1);
+                processElement((PdfStructElem) kid, level + 1);
             }
         }
     }
 
-    private void printElement(PdfStructElem elem, int level, String comment) {
+    private void logPdfStructure(PdfStructElem elem, int level, String comment) {
         String role = elem.getRole().getValue();
         String tagOutput = INDENT.repeat(level) + "- " + role;
         if (comment.isEmpty()) {
@@ -129,7 +129,7 @@ public class PdfTagNormalizer {
             }
         }
         
-        printElement(listElem, level, comment);
+        logPdfStructure(listElem, level, comment);
     }
 
     /**
@@ -152,7 +152,7 @@ public class PdfTagNormalizer {
             } else if (result.comment.contains("converted")) {
                 changeCount++;
             }
-            printElement(liElem, level, result.comment);
+            logPdfStructure(liElem, level, result.comment);
         }
     }
 
@@ -172,19 +172,12 @@ public class PdfTagNormalizer {
             }
         }
 
-        if (structCount == 0) {
-            return NormalizationResult.warning("LI contains no structure elements");
-        }
-
-        if (structCount == 1) {
-            return handleSingleChild(structKids[0]);
-        }
-
-        if (structCount == 2) {
-            return handleTwoChildren(structKids[0], structKids[1]);
-        }
-
-        return NormalizationResult.warning("too many children (" + structCount + ")");
+        return switch (structCount) {
+            case 0 -> NormalizationResult.warning("LI contains no structure elements");
+            case 1 -> handleSingleListItemChild(structKids[0]);
+            case 2 -> handleTwoListItemChildren(structKids[0], structKids[1]);
+            default -> NormalizationResult.warning("too many children (" + structCount + ")");
+        };
     }
 
     private static class NormalizationResult {
@@ -209,7 +202,7 @@ public class PdfTagNormalizer {
         }
     }
 
-    private NormalizationResult handleSingleChild(PdfStructElem child) {
+    private NormalizationResult handleSingleListItemChild(PdfStructElem child) {
         String childRole = child.getRole().getValue();
         if ("P".equals(childRole)) {
             // Enclose P in LBody
@@ -229,7 +222,7 @@ public class PdfTagNormalizer {
         }
     }
 
-    private NormalizationResult handleTwoChildren(PdfStructElem first, PdfStructElem second) {
+    private NormalizationResult handleTwoListItemChildren(PdfStructElem first, PdfStructElem second) {
         String firstRole = first.getRole().getValue();
         String secondRole = second.getRole().getValue();
 
