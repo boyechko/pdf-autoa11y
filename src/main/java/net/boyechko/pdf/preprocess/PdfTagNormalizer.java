@@ -119,14 +119,28 @@ public class PdfTagNormalizer {
      * @return A comment string describing what was done, or empty if no changes
      */
     private String normalizeLI(PdfStructElem liElem) {
-        Object[] liKids = liElem.getKids().toArray();
-        String warning = "";
+        NormalizationResult result = normalizeLIInternal(liElem);
         
-        if (liKids.length == 0) {
-            warning = "empty LI";
+        if (result.isWarning) {
             warningCount++;
-            escalateWarning(liElem, warning);
-            return warning;
+            escalateWarning(liElem, result.comment);
+        } else if (!result.comment.isEmpty()) {
+            // Count changes based on the comment content
+            if (result.comment.contains("P+P")) {
+                changeCount += 2;
+            } else if (result.comment.contains("converted")) {
+                changeCount++;
+            }
+        }
+        
+        return result.comment;
+    }
+
+    private NormalizationResult normalizeLIInternal(PdfStructElem liElem) {
+        Object[] liKids = liElem.getKids().toArray();
+
+        if (liKids.length == 0) {
+            return NormalizationResult.warning("empty LI");
         }
 
         // Filter to only structure elements
@@ -139,72 +153,80 @@ public class PdfTagNormalizer {
         }
 
         if (structCount == 0) {
-            warning = "LI contains no structure elements";
-            warningCount++;
-            escalateWarning(liElem, warning);
-            return warning;
+            return NormalizationResult.warning("LI contains no structure elements");
         }
 
         if (structCount == 1) {
-            PdfStructElem child = structKids[0];
-            String childRole = child.getRole().getValue();
-            if ("P".equals(childRole)) {
-                child.setRole(PdfName.LBody);
-                changeCount++;
-                warning = "converted P to LBody, missing Lbl";
-            } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
-                warning = "unexpected single child: " + childRole;
-            } else if ("Lbl".equals(childRole)) {
-                warning = "missing LBody";
-            } else {
-                warning = "missing Lbl";
-            }
-            warningCount++;
-            escalateWarning(liElem, warning);
-            return warning;
+            return handleSingleChild(structKids[0]);
         }
 
         if (structCount == 2) {
-            PdfStructElem first = structKids[0];
-            PdfStructElem second = structKids[1];
-            String firstRole = first.getRole().getValue();
-            String secondRole = second.getRole().getValue();
-
-            // Perfect case
-            if ("Lbl".equals(firstRole) && "LBody".equals(secondRole)) {
-                return ""; // No comment needed
-            }
-
-            // Case: P + LBody -> convert P to Lbl
-            if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
-                first.setRole(PdfName.Lbl);
-                changeCount++;
-                return "converted P to Lbl";
-            }
-
-            // Case: P + P -> convert first to Lbl, second to LBody
-            if ("P".equals(firstRole) && "P".equals(secondRole)) {
-                first.setRole(PdfName.Lbl);
-                second.setRole(PdfName.LBody);
-                changeCount += 2;
-                return "converted P+P to Lbl+LBody";
-            }
-
-            // Other problematic cases
-            warning = "unexpected children: " + firstRole + "+" + secondRole;
-            warningCount++;
-            escalateWarning(liElem, warning);
-            return warning;
+            return handleTwoChildren(structKids[0], structKids[1]);
         }
 
-        if (structCount > 2) {
-            warning = "too many children (" + structCount + ")";
-            warningCount++;
-            escalateWarning(liElem, warning);
-            return warning;
+        return NormalizationResult.warning("too many children (" + structCount + ")");
+    }
+
+    private static class NormalizationResult {
+        final String comment;
+        final boolean isWarning;
+        
+        NormalizationResult(String comment, boolean isWarning) {
+            this.comment = comment;
+            this.isWarning = isWarning;
+        }
+        
+        static NormalizationResult change(String comment) {
+            return new NormalizationResult(comment, false);
+        }
+        
+        static NormalizationResult warning(String comment) {
+            return new NormalizationResult(comment, true);
+        }
+        
+        static NormalizationResult noChange() {
+            return new NormalizationResult("", false);
+        }
+    }
+
+    private NormalizationResult handleSingleChild(PdfStructElem child) {
+        String childRole = child.getRole().getValue();
+        if ("P".equals(childRole)) {
+            child.setRole(PdfName.LBody);
+            return NormalizationResult.change("converted P to LBody, missing Lbl");
+        } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
+            return NormalizationResult.warning("unexpected single child: " + childRole);
+        } else if ("Lbl".equals(childRole)) {
+            return NormalizationResult.warning("missing LBody");
+        } else {
+            return NormalizationResult.warning("missing Lbl");
+        }
+    }
+
+    private NormalizationResult handleTwoChildren(PdfStructElem first, PdfStructElem second) {
+        String firstRole = first.getRole().getValue();
+        String secondRole = second.getRole().getValue();
+
+        // Perfect case
+        if ("Lbl".equals(firstRole) && "LBody".equals(secondRole)) {
+            return NormalizationResult.noChange(); // No comment needed
         }
 
-        return "";
+        // Case: P + LBody -> convert P to Lbl
+        if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
+            first.setRole(PdfName.Lbl);
+            return NormalizationResult.change("converted P to Lbl");
+        }
+
+        // Case: P + P -> convert first to Lbl, second to LBody
+        if ("P".equals(firstRole) && "P".equals(secondRole)) {
+            first.setRole(PdfName.Lbl);
+            second.setRole(PdfName.LBody);
+            return NormalizationResult.change("converted P+P to Lbl+LBody");
+        }
+
+        // Other problematic cases
+        return NormalizationResult.warning("unexpected children: " + firstRole + "+" + secondRole);
     }
 
     private String escalateWarning(PdfStructElem elem, String text) {
