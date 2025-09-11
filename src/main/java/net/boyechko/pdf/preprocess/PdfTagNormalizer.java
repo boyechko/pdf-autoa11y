@@ -55,42 +55,37 @@ public class PdfTagNormalizer {
 
     private void processElement(PdfStructElem elem, int level) {
         String comment = "";
-        String role = elem.getRole().getValue();
+        PdfName role = elem.getRole();
 
         // Change top-level <Sect> to <Document>
-        if ("Sect".equals(role) && level == 0) {
+        if (PdfName.Sect.equals(role) && level == 0) {
             elem.setRole(PdfName.Document);
             comment = "changed to Document";
             changeCount++;
         }
 
         // Change rogue TextBox tags to <Div>
-        if ("TextBox".equals(role)) {
+        if ("TextBox".equals(role.getValue())) {
             elem.setRole(PdfName.Div);
             comment = "changed to Div";
             changeCount++;
         }
 
         // Demote <H1> tags after the first
-        if ("H1".equals(role) && this.docTitle == null) {
+        if (PdfName.H1.equals(role) && this.docTitle == null) {
             // First H1 becomes Document Title
             this.docTitle = elem;
             comment = "first H1, treating as document title";
-        } else if ("H1".equals(role)) {
+        } else if (PdfName.H1.equals(role)) {
             elem.setRole(PdfName.H2);
             comment = "extra H1 demoted to H2";
             changeCount++;
         }
 
         // Normalize lists
-        if ("L".equals(role)) {
+        if (PdfName.L.equals(role)) {
             processList(elem, level);
             return; // L processing handles its own display
-        }
-
-        // Warn about empty elements
-        if (elem.getKids() == null || elem.getKids().isEmpty()) {
-            comment = "empty " + role;
         }
 
         // Print the element with any comment
@@ -126,17 +121,19 @@ public class PdfTagNormalizer {
         for (IStructureNode kid : kidsCopy) {
             if (kid instanceof PdfStructElem) {
                 PdfStructElem kidElem = (PdfStructElem) kid;
-                if ("LI".equals(kidElem.getRole().getValue())) {
+                PdfName kidRole = kidElem.getRole();
+                
+                if (PdfName.LI.equals(kidRole)) {
                     processListItem(kidElem, level + 1);
-                } else if ("P".equals(kidElem.getRole().getValue())) {
+                } else if (PdfName.P.equals(kidRole)) {
                     wrapInLI(listElem, kidElem, level);
-                } else if (kidElem.getRole() == PdfName.Caption) {
+                } else if (PdfName.Caption.equals(kidRole)) {
                     // Allow Caption in lists without changes
                     logPdfStructure(kidElem, level + 1, "");
                 } else {
                     // Unexpected child in L
                     warningCount++;
-                    String warnComment = "unexpected child in L: " + kidElem.getRole().getValue();
+                    String warnComment = "unexpected child in L: " + kidRole.getValue();
                     setVisualMarker(kidElem, warnComment);
                     escalateWarning(kidElem, "attention needed");
                     logPdfStructure(kidElem, level + 1, warnComment);
@@ -235,8 +232,9 @@ public class PdfTagNormalizer {
     }
 
     private NormalizationResult handleSingleListItemChild(PdfStructElem child) {
-        String childRole = child.getRole().getValue();
-        if ("P".equals(childRole)) {
+        PdfName childRole = child.getRole();
+        
+        if (PdfName.P.equals(childRole)) {
             PdfStructElem parentLI = (PdfStructElem) child.getParent();
             
             // Create new LBody and immediately add it to parent
@@ -248,9 +246,9 @@ public class PdfTagNormalizer {
             newLBody.addKid(child);
             
             return NormalizationResult.change("enclosed P in LBody, missing Lbl");
-        } else if (!"Lbl".equals(childRole) && !"LBody".equals(childRole)) {
-            return NormalizationResult.warning("unexpected single child: " + childRole);
-        } else if ("Lbl".equals(childRole)) {
+        } else if (!PdfName.Lbl.equals(childRole) && !PdfName.LBody.equals(childRole)) {
+            return NormalizationResult.warning("unexpected single child: " + childRole.getValue());
+        } else if (PdfName.Lbl.equals(childRole)) {
             return NormalizationResult.warning("missing LBody");
         } else {
             return NormalizationResult.warning("missing Lbl");
@@ -258,35 +256,35 @@ public class PdfTagNormalizer {
     }
 
     private NormalizationResult handleTwoListItemChildren(PdfStructElem first, PdfStructElem second) {
-        String firstRole = first.getRole().getValue();
-        String secondRole = second.getRole().getValue();
+        PdfName firstRole = first.getRole();
+        PdfName secondRole = second.getRole();
 
         // Perfect case
-        if ("Lbl".equals(firstRole) && "LBody".equals(secondRole)) {
+        if (PdfName.Lbl.equals(firstRole) && PdfName.LBody.equals(secondRole)) {
             return NormalizationResult.noChange(); // No comment needed
         }
 
         // Case: P + LBody -> convert P to Lbl
-        if ("P".equals(firstRole) && "LBody".equals(secondRole)) {
+        if (PdfName.P.equals(firstRole) && PdfName.LBody.equals(secondRole)) {
             first.setRole(PdfName.Lbl);
             return NormalizationResult.change("converted P+Body to Lbl+LBody");
         }
 
         // Case: P + P -> convert first to Lbl, second to LBody
-        if ("P".equals(firstRole) && "P".equals(secondRole)) {
+        if (PdfName.P.equals(firstRole) && PdfName.P.equals(secondRole)) {
             first.setRole(PdfName.Lbl);
             second.setRole(PdfName.LBody);
             return NormalizationResult.change("converted P+P to Lbl+LBody");
         }
 
         // Other problematic cases
-        return NormalizationResult.warning("unexpected children: " + firstRole + "+" + secondRole);
+        return NormalizationResult.warning("unexpected children: " + firstRole.getValue() + "+" + secondRole.getValue());
     }
 
     // Recursively escalate a warning message up to the Document level
     private String escalateWarning(PdfStructElem elem, String text) {
         PdfStructElem parent = (PdfStructElem) elem.getParent();
-        if (parent.getRole() != PdfName.Document) {
+        if (!PdfName.Document.equals(parent.getRole())) {
             setVisualMarker(parent, text);
             escalateWarning(parent, text);
         }
