@@ -48,6 +48,7 @@ public class PdfNormalizerApp {
                 );
             }
             
+            writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
             PdfWriter pdfWriter = new PdfWriter(dest, writerProps);
             
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
