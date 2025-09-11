@@ -145,7 +145,7 @@ public class PdfTagNormalizer {
                     warningCount++;
                     String warnComment = "unexpected child in L: " + kidRole.getValue();
                     setVisualMarker(kidElem, warnComment);
-                    escalateWarning(kidElem, "attention needed");
+                    escalateWarning(kidElem);
                     printElement(kidElem, level + 1, warnComment);
                 }
             }
@@ -183,7 +183,7 @@ public class PdfTagNormalizer {
         if (result.isWarning) {
             warningCount++;
             setVisualMarker(liElem, result.comment);
-            escalateWarning(liElem, "attention needed");
+            escalateWarning(liElem);
         } else if (!result.comment.isEmpty()) {
             // Count changes based on the comment content
             if (result.comment.contains("P+P")) {
@@ -299,6 +299,10 @@ public class PdfTagNormalizer {
             escalateWarning(parent, text);
         }
         return text;
+    }
+
+    private String escalateWarning(PdfStructElem elem) {
+        return escalateWarning(elem, "attention needed");
     }
 
     private void setVisualMarker(PdfStructElem elem, String text) {
