@@ -1,0 +1,12 @@
+#!/bin/bash
+# filepath: preprocess-pdf/normalize-pdf
+
+if [ $# -eq 0 ]; then
+    echo "Usage: normalize-pdf <filename> [password]"
+    echo "Example: normalize-pdf banks2020.pdf somepassword"
+    exit 1
+fi
+
+cd "$(dirname "$0")"
+
+mvn -q exec:java -Dexec.args="$*" 2>/dev/null
