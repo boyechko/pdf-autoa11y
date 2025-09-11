@@ -2,11 +2,17 @@
 # filepath: preprocess-pdf/normalize-pdf
 
 if [ $# -eq 0 ]; then
-    echo "Usage: normalize-pdf <filename> [password]"
-    echo "Example: normalize-pdf banks2020.pdf somepassword"
+    echo "Usage: normalize-pdf-dev <filename> [password]"
     exit 1
 fi
 
 cd "$(dirname "$0")"
 
-mvn -q exec:java -Dexec.args="$*" 2>/dev/null
+# Compile if needed
+if [ src/main/java -nt target/classes ] || [ ! -d target/classes ]; then
+    mvn -q compile
+fi
+
+# Run directly with classpath - handles spaces perfectly
+java -cp "target/classes:$(mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
+     net.boyechko.pdf.preprocess.PdfNormalizerApp "$@"
