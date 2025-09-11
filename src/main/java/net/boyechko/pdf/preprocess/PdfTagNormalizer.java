@@ -78,7 +78,7 @@ public class PdfTagNormalizer {
             comment = "first H1, treating as document title";
         } else if ("H1".equals(role)) {
             elem.setRole(PdfName.H2);
-            comment = "demoted to H2";
+            comment = "extra H1 demoted to H2";
             changeCount++;
         }
 
@@ -130,6 +130,9 @@ public class PdfTagNormalizer {
                     processListItem(kidElem, level + 1);
                 } else if ("P".equals(kidElem.getRole().getValue())) {
                     wrapInLI(listElem, kidElem, level);
+                } else if (kidElem.getRole() == PdfName.Caption) {
+                    // Allow Caption in lists without changes
+                    logPdfStructure(kidElem, level + 1, "");
                 } else {
                     // Unexpected child in L
                     warningCount++;
@@ -146,7 +149,7 @@ public class PdfTagNormalizer {
         // Create new LI and immediately add it to parent
         PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
         listElem.addKid(newLI);  // Add to parent first!
-        
+       
         // Create new LBody and add to LI
         PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
         newLI.addKid(newLBody);
@@ -159,7 +162,7 @@ public class PdfTagNormalizer {
         String comment = "enclosed unexpected " + kidElem.getRole().getValue() + " in LI";
         logPdfStructure(newLI, level + 1, comment);
     }
-
+    
     /**
      * Normalizes LI elements to have proper Lbl and LBody structure.
      * Expected: <LI><Lbl>...</Lbl><LBody>...</LBody></LI>
