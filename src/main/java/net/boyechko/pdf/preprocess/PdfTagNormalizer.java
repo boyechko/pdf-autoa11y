@@ -30,24 +30,28 @@ public class PdfTagNormalizer {
         this(new PdfDocument(new PdfReader(src)));
     }
 
+    public int getChangeCount() {
+        return changeCount;
+    }
+    
+    public int getWarningCount() {
+        return warningCount;
+    }
+
     /**
      * Processes the PDF structure, normalizing tags and displaying changes.
      * Outputs a summary of changes and warnings.
      */
     public void processAndDisplayChanges() {
         if (root != null) {
-            System.out.println("Processing PDF structure and displaying changes:");
             changeCount = 0;
+            warningCount = 0;
             
             for (Object kid : root.getKids()) {
                 if (kid instanceof PdfStructElem) {
                     processElement((PdfStructElem) kid, 0);
                 }
             }
-            
-            // Print simple summary
-            System.out.println("\nTotal changes made: " + changeCount);
-            System.out.println("Total warnings raised: " + warningCount);
         } else {
             System.out.println("No tag structure found in the document.");
         }

@@ -33,6 +33,9 @@ public class PdfNormalizerApp {
             int cryptoMode = testReader.getCryptoMode();
             boolean isEncrypted = testReader.isEncrypted();
             
+            // Print header with document info
+            printHeader(file, testDoc);
+            
             testDoc.close();
             
             // Now open for processing with proper writer properties
@@ -52,9 +55,11 @@ public class PdfNormalizerApp {
             PdfWriter pdfWriter = new PdfWriter(dest, writerProps);
             
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
-                System.out.println("Number of pages: " + pdfDoc.getNumberOfPages());
                 PdfTagNormalizer processor = new PdfTagNormalizer(pdfDoc);
                 processor.processAndDisplayChanges();
+                
+                // Print summary
+                printSummary(processor, dest);
             }
             
         } catch (Exception e) {
@@ -65,5 +70,41 @@ public class PdfNormalizerApp {
                 throw e;
             }
         }
+    }
+    
+    private static void printHeader(String filename, PdfDocument doc) {
+        System.out.println("=== PDF ACCESSIBILITY TAG NORMALIZER ===");
+        System.out.println("Automatically fixes common PDF accessibility issues:");
+        System.out.println("• Converts malformed list structures to proper format");
+        System.out.println("• Demotes multiple H1 headings to H2 for proper hierarchy");
+        System.out.println("• Standardizes document structure tags");
+        System.out.println();
+        System.out.println("Processing: " + filename);
+        if (doc.getDocumentInfo().getTitle() != null && !doc.getDocumentInfo().getTitle().isEmpty()) {
+            System.out.println("Document title: " + doc.getDocumentInfo().getTitle());
+        }
+        System.out.println("Pages: " + doc.getNumberOfPages());
+        System.out.println();
+        System.out.println("Tag structure analysis and fixes:");
+        System.out.println("────────────────────────────────────────");
+    }
+    
+    private static void printSummary(PdfTagNormalizer processor, String outputPath) {
+        System.out.println();
+        System.out.println("=== REMEDIATION SUMMARY ===");
+        
+        int changes = processor.getChangeCount();
+        int warnings = processor.getWarningCount();
+        
+        if (changes == 0 && warnings == 0) {
+            System.out.println("✓ Document structure is already compliant - no changes needed");
+        } else {
+            System.out.println("✓ Automated fixes applied: " + changes);
+            System.out.println("✓ Set PDF/UA-1 compliance flag");
+            if (warnings > 0) {
+                System.out.println("⚠ Manual review needed for: " + warnings + " items");
+            }
+        }
+        System.out.println("Output saved to: " + outputPath);
     }
 }
