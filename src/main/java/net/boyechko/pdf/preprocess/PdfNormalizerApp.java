@@ -7,15 +7,30 @@ import java.nio.file.*;
 public class PdfNormalizerApp {
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
-            System.err.println("Usage: java PdfNormalizerApp <filepath> [password]");
-            System.err.println("Example: java PdfNormalizerApp /path/to/document.pdf abracadabra");
-            System.err.println("Example: java PdfNormalizerApp document.pdf abracadabra");
+            System.err.println("Usage: java PdfNormalizerApp [-p password] <filepath>");
+            System.err.println("Example: java PdfNormalizerApp -p somepassword /path/to/document.pdf");
+            System.err.println("Example: java PdfNormalizerApp document.pdf");
             System.exit(1);
         }
 
-        String inputPath = args[0];
-        String password = args.length > 1 ? args[1] : null;
+        String password = null;
+        String inputPath = null;
         
+        // Parse arguments
+        for (int i = 0; i < args.length; i++) {
+            if ("-p".equals(args[i]) && i + 1 < args.length) {
+                password = args[i + 1];
+                i++; // Skip the next argument since it's the password
+            } else if (inputPath == null) {
+                inputPath = args[i];
+            }
+        }
+        
+        if (inputPath == null) {
+            System.err.println("Error: No input file specified");
+            System.exit(1);
+        }
+
         // Handle both absolute paths and relative filenames
         Path srcPath = Paths.get(inputPath);
         if (!srcPath.isAbsolute() && !Files.exists(srcPath)) {
