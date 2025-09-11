@@ -58,47 +58,53 @@ public class PdfTagNormalizer {
     }
 
     private void processElement(PdfStructElem elem, int level) {
-        String comment = "";
-        PdfName role = elem.getRole();
-
-        // Change top-level <Sect> to <Document>
-        if (PdfName.Sect.equals(role) && level == 0) {
-            elem.setRole(PdfName.Document);
-            comment = "changed to Document";
-            changeCount++;
-        }
-
-        // Change rogue TextBox tags to <Div>
-        if ("TextBox".equals(role.getValue())) {
-            elem.setRole(PdfName.Div);
-            comment = "changed to Div";
-            changeCount++;
-        }
-
-        // Demote <H1> tags after the first
-        if (PdfName.H1.equals(role) && this.docTitle == null) {
-            // First H1 becomes Document Title
-            this.docTitle = elem;
-            comment = "first H1, treating as document title";
-        } else if (PdfName.H1.equals(role)) {
-            elem.setRole(PdfName.H2);
-            comment = "extra H1 demoted to H2";
-            changeCount++;
-        }
-
-        // Normalize lists
-        if (PdfName.L.equals(role)) {
+        // Special handling for lists (they're more complex and handle their own display)
+        if (PdfName.L.equals(elem.getRole())) {
             processList(elem, level);
-            return; // L processing handles its own display
+            return;
         }
-
+        
+        // Try transformations
+        String comment = tryTransformations(elem, level);
+        
         // Print the element with any comment
         printElement(elem, level, comment);
 
+        // Process children
         for (Object kid : elem.getKids()) {
             if (kid instanceof PdfStructElem) {
                 processElement((PdfStructElem) kid, level + 1);
             }
+        }
+    }
+    
+    private String tryTransformations(PdfStructElem elem, int level) {
+        PdfName role = elem.getRole();
+        
+        // Document structure fixes
+        if (PdfName.Sect.equals(role) && level == 0) return handleSectToDocument(elem);
+        
+        // Heading fixes
+        if (PdfName.H1.equals(role)) return handleH1(elem);
+        
+        // No transformation applied
+        return "";
+    }
+    
+    private String handleSectToDocument(PdfStructElem elem) {
+        elem.setRole(PdfName.Document);
+        changeCount++;
+        return "changed to Document";
+    }
+    
+    private String handleH1(PdfStructElem elem) {
+        if (this.docTitle == null) {
+            this.docTitle = elem;
+            return "first H1, treating as document title";
+        } else {
+            elem.setRole(PdfName.H2);
+            changeCount++;
+            return "extra H1 demoted to H2";
         }
     }
 
