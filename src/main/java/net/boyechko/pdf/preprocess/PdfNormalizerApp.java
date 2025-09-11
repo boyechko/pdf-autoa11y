@@ -7,15 +7,34 @@ import java.nio.file.*;
 public class PdfNormalizerApp {
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
-            System.err.println("Usage: java PdfNormalizerApp <filename> [password]");
-            System.err.println("Example: java PdfNormalizerApp input.pdf abracadabra");
+            System.err.println("Usage: java PdfNormalizerApp <filepath> [password]");
+            System.err.println("Example: java PdfNormalizerApp /path/to/document.pdf abracadabra");
+            System.err.println("Example: java PdfNormalizerApp document.pdf abracadabra");
             System.exit(1);
         }
 
-        String file = args[0];
+        String inputPath = args[0];
         String password = args.length > 1 ? args[1] : null;
-        String src = "inputs/" + file;
-        String dest = "outputs/" + "normalized_" + file;
+        
+        // Handle both absolute paths and relative filenames
+        Path srcPath = Paths.get(inputPath);
+        if (!srcPath.isAbsolute() && !Files.exists(srcPath)) {
+            // If it's not absolute and doesn't exist in current dir, try inputs/ folder
+            srcPath = Paths.get("inputs", inputPath);
+        }
+        
+        String src = srcPath.toString();
+        
+        // Extract just the filename for output
+        String filename = srcPath.getFileName().toString();
+        String dest = "outputs/normalized_" + filename;
+        
+        // Ensure both paths exist
+        if (!Files.exists(srcPath)) {
+            System.err.println("Error: File not found: " + src);
+            System.exit(1);
+        }
+        
         Files.createDirectories(Paths.get(dest).getParent());
 
         // First, try to open and check if password-protected
@@ -34,7 +53,7 @@ public class PdfNormalizerApp {
             boolean isEncrypted = testReader.isEncrypted();
             
             // Print header with document info
-            printHeader(file, testDoc);
+            printHeader(filename, testDoc);
             
             testDoc.close();
             
