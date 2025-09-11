@@ -93,7 +93,7 @@ public class PdfTagNormalizer {
         }
 
         // Print the element with any comment
-        logPdfStructure(elem, level, comment);
+        printElement(elem, level, comment);
 
         for (Object kid : elem.getKids()) {
             if (kid instanceof PdfStructElem) {
@@ -102,7 +102,7 @@ public class PdfTagNormalizer {
         }
     }
 
-    private void logPdfStructure(PdfStructElem elem, int level, String comment) {
+    private void printElement(PdfStructElem elem, int level, String comment) {
         String role = elem.getRole().getValue();
         String tagOutput = INDENT.repeat(level) + "- " + role;
         if (comment.isEmpty()) {
@@ -120,7 +120,7 @@ public class PdfTagNormalizer {
         // Create a copy to iterate over safely
         List<IStructureNode> kidsCopy = new ArrayList<>(listElem.getKids());
 
-        logPdfStructure(listElem, level, kidsCopy.size() + " children");
+        printElement(listElem, level, kidsCopy.size() + " children");
         
         for (IStructureNode kid : kidsCopy) {
             if (kid instanceof PdfStructElem) {
@@ -133,14 +133,14 @@ public class PdfTagNormalizer {
                     wrapInLI(listElem, kidElem, level);
                 } else if (PdfName.Caption.equals(kidRole)) {
                     // Allow Caption in lists without changes
-                    logPdfStructure(kidElem, level + 1, "");
+                    printElement(kidElem, level + 1, "");
                 } else {
                     // Unexpected child in L
                     warningCount++;
                     String warnComment = "unexpected child in L: " + kidRole.getValue();
                     setVisualMarker(kidElem, warnComment);
                     escalateWarning(kidElem, "attention needed");
-                    logPdfStructure(kidElem, level + 1, warnComment);
+                    printElement(kidElem, level + 1, warnComment);
                 }
             }
         }
@@ -161,7 +161,7 @@ public class PdfTagNormalizer {
         
         changeCount++;
         String comment = "enclosed unexpected " + kidElem.getRole().getValue() + " in LI";
-        logPdfStructure(newLI, level + 1, comment);
+        printElement(newLI, level + 1, comment);
     }
     
     /**
@@ -185,7 +185,7 @@ public class PdfTagNormalizer {
             } else if (result.comment.contains("converted")) {
                 changeCount++;
             }
-            logPdfStructure(liElem, level, result.comment);
+            printElement(liElem, level, result.comment);
         }
     }
 
