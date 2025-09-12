@@ -3,8 +3,11 @@ package net.boyechko.pdf.preprocess;
 import com.itextpdf.kernel.pdf.*;
 import java.io.*;
 import java.nio.file.*;
+import java.util.ArrayList;
 
 public class PdfNormalizerApp {
+    private static ArrayList<String> changesApplied = new ArrayList<>();
+
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
             System.err.println("Usage: java PdfNormalizerApp [-p password] <filepath>");
@@ -86,12 +89,19 @@ public class PdfNormalizerApp {
             }
             
             writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
+            changesApplied.add("Set PDF/UA-1 compliance flag");
             PdfWriter pdfWriter = new PdfWriter(dest, writerProps);
             
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
                 PdfTagNormalizer processor = new PdfTagNormalizer(pdfDoc);
                 processor.processAndDisplayChanges();
-                
+
+                // Set tab order for all pages to structure order
+                for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                    pdfDoc.getPage(i).setTabOrder(PdfName.S);
+                }
+                changesApplied.add("Set tab order to structure order for all pages");
+
                 // Print summary
                 printSummary(processor, dest);
             }
@@ -134,7 +144,9 @@ public class PdfNormalizerApp {
             System.out.println("✓ Document structure is already compliant - no changes needed");
         } else {
             System.out.println("✓ Automated fixes applied: " + changes);
-            System.out.println("✓ Set PDF/UA-1 compliance flag");
+            for (String change : changesApplied) {
+                System.out.println("✓ " + change);
+            }
             if (warnings > 0) {
                 System.out.println("⚠ Manual review needed for: " + warnings + " items");
             }
