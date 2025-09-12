@@ -16,201 +16,219 @@ public class PdfNormalizerGUI extends JFrame {
     private JButton processButton;
     private JPasswordField passwordField;
     private File selectedFile;
-    
+
     public PdfNormalizerGUI() {
         initializeGUI();
     }
-    
+
     private void initializeGUI() {
         setTitle("PDF Accessibility Normalizer");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        
+
         // Top panel - file drop area
         JPanel dropPanel = createDropPanel();
         add(dropPanel, BorderLayout.NORTH);
-        
+
         // Center panel - output text
         JPanel outputPanel = createOutputPanel();
         add(outputPanel, BorderLayout.CENTER);
-        
+
         // Bottom panel - controls
         JPanel controlPanel = createControlPanel();
         add(controlPanel, BorderLayout.SOUTH);
-        
+
         pack();
         setLocationRelativeTo(null); // Center on screen
         setVisible(true);
     }
-    
+
     private JPanel createDropPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new TitledBorder("1. Drop PDF File Here"));
         panel.setPreferredSize(new Dimension(600, 100));
-        
+
         dropLabel = new JLabel("Drop a PDF file here or click to browse", JLabel.CENTER);
         dropLabel.setFont(dropLabel.getFont().deriveFont(14f));
         dropLabel.setBorder(BorderFactory.createDashedBorder(Color.GRAY, 2, 5, 5, false));
         dropLabel.setOpaque(true);
         dropLabel.setBackground(Color.LIGHT_GRAY);
-        
+
         // Enable drag and drop
         new DropTarget(dropLabel, new FileDropHandler());
-        
+
         // Enable click to browse
         dropLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 browseForFile();
             }
         });
-        
+
         panel.add(dropLabel, BorderLayout.CENTER);
-        
+
         // Password field
         JPanel passwordPanel = new JPanel(new FlowLayout());
         passwordPanel.add(new JLabel("Password (if needed):"));
         passwordField = new JPasswordField(15);
         passwordPanel.add(passwordField);
         panel.add(passwordPanel, BorderLayout.SOUTH);
-        
+
         return panel;
     }
-    
+
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new TitledBorder("2. Processing Output"));
-        
+
         outputArea = new JTextArea(20, 60);
         outputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         outputArea.setEditable(false);
-        
+
         JScrollPane scrollPane = new JScrollPane(outputArea);
         panel.add(scrollPane, BorderLayout.CENTER);
-        
+
         return panel;
     }
-    
+
     private JPanel createControlPanel() {
         JPanel panel = new JPanel(new FlowLayout());
-        
+
         processButton = new JButton("Process PDF");
         processButton.setEnabled(false);
         processButton.addActionListener(e -> processPDF());
-        
+
         panel.add(processButton);
-        
+
         return panel;
     }
-    
+
     private class FileDropHandler extends DropTargetAdapter {
         @Override
         public void drop(DropTargetDropEvent dtde) {
             try {
                 dtde.acceptDrop(DnDConstants.ACTION_COPY);
-                
+
                 @SuppressWarnings("unchecked")
                 List<File> files = (List<File>) dtde.getTransferable()
                     .getTransferData(DataFlavor.javaFileListFlavor);
-                
+
                 if (!files.isEmpty()) {
                     File file = files.get(0);
                     if (file.getName().toLowerCase().endsWith(".pdf")) {
                         setSelectedFile(file);
                     } else {
-                        JOptionPane.showMessageDialog(PdfNormalizerGUI.this, 
+                        JOptionPane.showMessageDialog(PdfNormalizerGUI.this,
                             "Please select a PDF file");
                     }
                 }
                 dtde.dropComplete(true);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(PdfNormalizerGUI.this, 
+                JOptionPane.showMessageDialog(PdfNormalizerGUI.this,
                     "Error handling dropped file: " + e.getMessage());
             }
         }
     }
-    
+
     private void browseForFile() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
             "PDF Files", "pdf"));
-        
+
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             setSelectedFile(chooser.getSelectedFile());
         }
     }
-    
+
     private void setSelectedFile(File file) {
         selectedFile = file;
         dropLabel.setText("Selected: " + file.getName());
         dropLabel.setBackground(Color.WHITE);
         processButton.setEnabled(true);
     }
-    
+
     private void processPDF() {
         if (selectedFile == null) return;
-        
-        // Disable button during processing
+
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
-        
-        // Run processing in background thread to avoid freezing GUI
-        SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
+
+        SwingWorker<PdfProcessingService.ProcessingResult, String> worker =
+            new SwingWorker<PdfProcessingService.ProcessingResult, String>() {
+
             @Override
-            protected Void doInBackground() throws Exception {
-                try {
-                    // Redirect output to capture it
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    PrintStream ps = new PrintStream(baos);
-                    PrintStream originalOut = System.out;
-                    System.setOut(ps);
-                    
-                    // Process the PDF (you'll need to modify PdfTagNormalizer for this)
-                    String password = passwordField.getPassword().length > 0 ? 
-                        new String(passwordField.getPassword()) : null;
-                    
-                    // For now, simulate processing - replace with actual call
-                    publish("Starting PDF processing...\n");
-                    Thread.sleep(1000); // Simulate work
-                    publish("Processing complete!\n");
-                    
-                    // Restore original output
-                    System.setOut(originalOut);
-                    
-                    // Show save dialog
-                    SwingUtilities.invokeLater(() -> showSaveDialog());
-                    
-                } catch (Exception e) {
-                    publish("Error: " + e.getMessage() + "\n");
-                }
-                return null;
+            protected PdfProcessingService.ProcessingResult doInBackground() throws Exception {
+                // Create custom PrintStream for GUI output
+                PrintStream guiOutput = new PrintStream(new OutputStream() {
+                    @Override
+                    public void write(int b) throws IOException {
+                        publish(String.valueOf((char) b));
+                    }
+
+                    @Override
+                    public void write(byte[] b, int off, int len) throws IOException {
+                        publish(new String(b, off, len));
+                    }
+                });
+
+                String password = passwordField.getPassword().length > 0 ?
+                    new String(passwordField.getPassword()) : null;
+
+                String outputPath = "outputs/normalized_" + selectedFile.getName();
+
+                // Use the service
+                PdfProcessingService service = new PdfProcessingService();
+                PdfProcessingService.ProcessingRequest request =
+                    new PdfProcessingService.ProcessingRequest(
+                        selectedFile.getAbsolutePath(),
+                        outputPath,
+                        password,
+                        guiOutput
+                    );
+
+                return service.processPdf(request);
             }
-            
+
             @Override
             protected void process(List<String> chunks) {
                 for (String chunk : chunks) {
                     outputArea.append(chunk);
                 }
             }
-            
+
             @Override
             protected void done() {
+                try {
+                    PdfProcessingService.ProcessingResult result = get();
+                    if (result.isSuccess()) {
+                        outputArea.append("\n=== PROCESSING COMPLETE ===\n");
+                        outputArea.append("Changes applied: " + result.getChangeCount() + "\n");
+                        if (result.getWarningCount() > 0) {
+                            outputArea.append("Warnings: " + result.getWarningCount() + "\n");
+                        }
+                        showSaveDialog();
+                    } else {
+                        outputArea.append("\nError: " + result.getErrorMessage() + "\n");
+                    }
+                } catch (Exception e) {
+                    outputArea.append("\nError: " + e.getMessage() + "\n");
+                }
                 processButton.setEnabled(true);
             }
         };
-        
+
         worker.execute();
     }
-    
+
     private void showSaveDialog() {
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File("normalized_" + selectedFile.getName()));
-        
+
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "File would be saved to: " + chooser.getSelectedFile().getAbsolutePath());
         }
     }
-    
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
