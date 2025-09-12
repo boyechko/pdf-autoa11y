@@ -86,6 +86,9 @@ public class PdfTagNormalizer {
         
         // Heading fixes
         if (PdfName.H1.equals(role)) return handleH1(elem);
+
+        // Reference handling
+        if (PdfName.Reference.equals(role)) return handleLinkInReference(elem);
         
         // No transformation applied
         return "";
@@ -106,6 +109,21 @@ public class PdfTagNormalizer {
             changeCount++;
             return "extra H1 demoted to H2";
         }
+    }
+
+    // Reference/Link becomes just Link
+    private String handleLinkInReference(PdfStructElem elem) {
+        List<IStructureNode> kids = elem.getKids();
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem) {
+                PdfStructElem kidElem = (PdfStructElem) kid;
+                if (PdfName.Link.equals(kidElem.getRole())) {
+                    escalateWarning(elem);
+                    return "Link nested in Reference";
+                }
+            }
+        }
+        return "";
     }
 
     private void printElement(PdfStructElem elem, int level, String comment) {
