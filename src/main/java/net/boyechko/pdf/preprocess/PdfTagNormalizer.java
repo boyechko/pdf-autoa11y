@@ -14,22 +14,34 @@ public class PdfTagNormalizer {
 
     private final PdfDocument document;
     private final PdfStructTreeRoot root;
+    private final PrintStream output;
     private PdfStructElem docTitle;
     private int changeCount;
     private int warningCount;
 
-    public PdfTagNormalizer(PdfDocument doc) {
+    // Constructor with custom output
+    public PdfTagNormalizer(PdfDocument doc, PrintStream output) {
         this.document = doc;
         this.root = doc.getStructTreeRoot();
+        this.output = output;
         this.docTitle = null;
         this.changeCount = 0;
         this.warningCount = 0;
     }
 
-    public PdfTagNormalizer(String src) throws IOException {
-        this(new PdfDocument(new PdfReader(src)));
+    // Constructor with default output (backwards compatibility)
+    public PdfTagNormalizer(PdfDocument doc) {
+        this(doc, System.out);
     }
 
+    public PdfTagNormalizer(String src) throws IOException {
+        this(new PdfDocument(new PdfReader(src)), System.out);
+    }
+
+    public PdfTagNormalizer(String src, PrintStream output) throws IOException {
+        this(new PdfDocument(new PdfReader(src)), output);
+    }
+    
     public int getChangeCount() {
         return changeCount;
     }
@@ -53,7 +65,7 @@ public class PdfTagNormalizer {
                 }
             }
         } else {
-            System.out.println("No tag structure found in the document.");
+            output.println("No accessibility tags found - document may need initial tagging."); // Changed from System.out
         }
     }
 
@@ -130,13 +142,13 @@ public class PdfTagNormalizer {
         String role = elem.getRole().getValue();
         String tagOutput = INDENT.repeat(level) + "- " + role;
         if (comment.isEmpty()) {
-            System.out.println(tagOutput);
+            output.println(tagOutput); // Changed from System.out
         } else {
             // Pad to column 40, or use minimum spacing if already longer
             int currentLength = tagOutput.length();
             String padding = currentLength < DISPLAY_COLUMN_WIDTH ? 
                 " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
-            System.out.println(tagOutput + padding + "; " + comment);
+            output.println(tagOutput + padding + "; " + comment); // Changed from System.out
         }
     }
 
