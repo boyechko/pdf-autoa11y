@@ -7,8 +7,12 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+
+import net.boyechko.pdf.preprocess.fixes.PdfUaComplianceFix;
+import net.boyechko.pdf.preprocess.fixes.TabOrderFix;
+import net.boyechko.pdf.preprocess.fixes.TagNormalizationFix;
 
 public class PdfNormalizerGUI extends JFrame {
     private JLabel dropLabel;
@@ -179,14 +183,22 @@ public class PdfNormalizerGUI extends JFrame {
                 tempOutputFile = File.createTempFile("pdf_normalized_", ".pdf");
                 tempOutputFile.deleteOnExit(); // Clean up if something goes wrong
 
-                // Use the service with temp file
+                // Create the same processing steps as CLI
+                List<PdfAccessibilityFix> steps = Arrays.asList(
+                    new TagNormalizationFix(),
+                    new PdfUaComplianceFix(),
+                    new TabOrderFix()
+                );
+
+                // Use the service with temp file and steps
                 PdfProcessingService service = new PdfProcessingService();
                 PdfProcessingService.ProcessingRequest request =
                     new PdfProcessingService.ProcessingRequest(
                         selectedFile.getAbsolutePath(),
                         tempOutputFile.getAbsolutePath(),
                         password,
-                        guiOutput
+                        guiOutput,
+                        steps
                     );
 
                 return service.processPdf(request);

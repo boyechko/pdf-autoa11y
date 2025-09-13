@@ -2,6 +2,11 @@ package net.boyechko.pdf.preprocess;
 
 import java.io.*;
 import java.nio.file.*;
+import java.util.*;
+
+import net.boyechko.pdf.preprocess.fixes.PdfUaComplianceFix;
+import net.boyechko.pdf.preprocess.fixes.TabOrderFix;
+import net.boyechko.pdf.preprocess.fixes.TagNormalizationFix;
 
 public class PdfNormalizerCLI {
 
@@ -43,11 +48,18 @@ public class PdfNormalizerCLI {
         
         // Print header
         printHeader(filename, src);
+
+        // Create default processing steps
+        List<PdfAccessibilityFix> steps = Arrays.asList(
+            new TagNormalizationFix(),
+            new PdfUaComplianceFix(),
+            new TabOrderFix()
+        );
         
-        // Process using the service
+        // Process using the service with steps
         PdfProcessingService service = new PdfProcessingService();
         PdfProcessingService.ProcessingRequest request = 
-            new PdfProcessingService.ProcessingRequest(src, dest, password, System.out);
+            new PdfProcessingService.ProcessingRequest(src, dest, password, System.out, steps);
         
         PdfProcessingService.ProcessingResult result = service.processPdf(request);
         
