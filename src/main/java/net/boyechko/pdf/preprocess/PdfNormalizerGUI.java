@@ -155,6 +155,8 @@ public class PdfNormalizerGUI extends JFrame {
         SwingWorker<PdfProcessingService.ProcessingResult, String> worker =
             new SwingWorker<PdfProcessingService.ProcessingResult, String>() {
 
+            private File tempOutputFile;
+
             @Override
             protected PdfProcessingService.ProcessingResult doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
@@ -173,14 +175,16 @@ public class PdfNormalizerGUI extends JFrame {
                 String password = passwordField.getPassword().length > 0 ?
                     new String(passwordField.getPassword()) : null;
 
-                String outputPath = "outputs/normalized_" + selectedFile.getName();
+                // Create temporary file for output
+                tempOutputFile = File.createTempFile("pdf_normalized_", ".pdf");
+                tempOutputFile.deleteOnExit(); // Clean up if something goes wrong
 
-                // Use the service
+                // Use the service with temp file
                 PdfProcessingService service = new PdfProcessingService();
                 PdfProcessingService.ProcessingRequest request =
                     new PdfProcessingService.ProcessingRequest(
                         selectedFile.getAbsolutePath(),
-                        outputPath,
+                        tempOutputFile.getAbsolutePath(),
                         password,
                         guiOutput
                     );
@@ -205,12 +209,22 @@ public class PdfNormalizerGUI extends JFrame {
                         if (result.getWarningCount() > 0) {
                             outputArea.append("Warnings: " + result.getWarningCount() + "\n");
                         }
-                        showSaveDialog();
+
+                        // Show save dialog and handle the file move
+                        showSaveDialog(tempOutputFile);
                     } else {
                         outputArea.append("\nError: " + result.getErrorMessage() + "\n");
+                        // Clean up temp file on error
+                        if (tempOutputFile != null && tempOutputFile.exists()) {
+                            tempOutputFile.delete();
+                        }
                     }
                 } catch (Exception e) {
                     outputArea.append("\nError: " + e.getMessage() + "\n");
+                    // Clean up temp file on error
+                    if (tempOutputFile != null && tempOutputFile.exists()) {
+                        tempOutputFile.delete();
+                    }
                 }
                 processButton.setEnabled(true);
             }
@@ -219,13 +233,26 @@ public class PdfNormalizerGUI extends JFrame {
         worker.execute();
     }
 
-    private void showSaveDialog() {
+    private void showSaveDialog(File tempFile) {
         JFileChooser chooser = new JFileChooser();
         chooser.setSelectedFile(new File("normalized_" + selectedFile.getName()));
 
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            JOptionPane.showMessageDialog(this,
-                "File would be saved to: " + chooser.getSelectedFile().getAbsolutePath());
+            File targetFile = chooser.getSelectedFile();
+            // Move temp file to selected location
+            try {
+                Files.move(tempFile.toPath(), targetFile.toPath());
+                JOptionPane.showMessageDialog(this,
+                    "File saved to: " + targetFile.getAbsolutePath());
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this,
+                    "Error saving file: " + e.getMessage());
+            }
+        } else {
+            // User canceled, delete temp file
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
         }
     }
 
