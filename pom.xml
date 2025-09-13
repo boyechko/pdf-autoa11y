@@ -63,7 +63,8 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>net.boyechko.pdf.preprocess.PdfNormalizerApp</mainClass>
+          <mainClass>net.boyechko.pdf.preprocess.PdfNormalizerCLI</mainClass>
+          <commandlineArgs>${exec.args}</commandlineArgs>
         </configuration>
       </plugin>
     </plugins>

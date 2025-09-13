@@ -3,13 +3,13 @@ package net.boyechko.pdf.preprocess;
 import java.io.*;
 import java.nio.file.*;
 
-public class PdfNormalizerApp {
+public class PdfNormalizerCLI {
 
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
-            System.err.println("Usage: java PdfNormalizerApp [-p password] <filepath>");
-            System.err.println("Example: java PdfNormalizerApp -p somepassword /path/to/document.pdf");
-            System.err.println("Example: java PdfNormalizerApp document.pdf");
+            System.err.println("Usage: java PdfNormalizerCLI [-p password] <filepath>");
+            System.err.println("Example: java PdfNormalizerCLI -p somepassword /path/to/document.pdf");
+            System.err.println("Example: java PdfNormalizerCLI document.pdf");
             System.exit(1);
         }
 
