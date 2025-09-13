@@ -13,9 +13,8 @@
   <url>http://www.example.com</url>
 
   <properties>
+    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
     <itext.version>9.3.0</itext.version>
   </properties>
 
