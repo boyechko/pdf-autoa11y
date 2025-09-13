@@ -1,0 +1,13 @@
+#!/bin/bash
+# filepath: preprocess-pdf/normalize-pdf-gui
+
+cd "$(dirname "$0")"
+
+# Compile if needed
+if [ src/main/java -nt target/classes ] || [ ! -d target/classes ]; then
+    mvn -q compile
+fi
+
+# Run GUI
+java -cp "target/classes:$(mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
+     net.boyechko.pdf.preprocess.PdfNormalizerGUI
