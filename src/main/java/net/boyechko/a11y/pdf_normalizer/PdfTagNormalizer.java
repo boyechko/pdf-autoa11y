@@ -70,16 +70,51 @@ public class PdfTagNormalizer {
     }
 
     private void processElement(PdfStructElem elem, int level) {
+        PdfName role = elem.getRole();
+        PdfName mappedRole = getMappedRole(role);
+        PdfName parentRole = elem.getParent() != null ? elem.getParent().getRole() : null;
+        String comment = "";
+
         // Special handling for lists (they're more complex and handle their own display)
-        if (PdfName.L.equals(elem.getRole())) {
+        if (PdfName.L.equals(role) || PdfName.L.equals(mappedRole)) {
             processList(elem, level);
             return;
         }
-        
-        // Try transformations
-        String comment = tryTransformations(elem, level);
-        
-        // Print the element with any comment
+
+        // Handle other tags
+        switch (mappedRole != null ? mappedRole.getValue() : role.getValue()) {
+            case "Document", "Part", "Art", "Div",
+                 "H2", "H3", "H4", "H5", "H6", "BlockQuote", "P",
+                 "Caption", "Figure", "Formula", "Link", "Note", "Reference", "Span",
+                 "Table", "TR", "TH", "TD" -> {
+                // No special handling needed, just print
+            }
+            case "Sect" -> {
+                comment = handleSect(elem, level);
+            }
+            case "H1" -> {
+                comment = handleH1(elem);
+            }
+            case "LBody", "Lbl" -> {
+                if (!PdfName.LI.equals(parentRole)) {
+                    warningCount++;
+                    comment = "unexpected " + role.getValue() + " outside LI";
+                    setVisualMarker(elem, comment);
+                    escalateWarning(elem);
+                    printElement(elem, level, comment);
+                }
+            }
+            default -> {
+                // Unknown or unexpected tag
+                warningCount++;
+                comment = "unexpected tag: " + role.getValue();
+                setVisualMarker(elem, comment);
+                escalateWarning(elem);
+                printElement(elem, level, comment);
+            }
+        }
+
+       // Print the element with any comment
         printElement(elem, level, comment);
 
         // Process children
@@ -89,24 +124,11 @@ public class PdfTagNormalizer {
             }
         }
     }
-    
-    private String tryTransformations(PdfStructElem elem, int level) {
-        PdfName role = elem.getRole();
-        
-        // Document structure fixes
-        if (PdfName.Sect.equals(role) && level == 0) return handleSectToDocument(elem);
-        
-        // Heading fixes
-        if (PdfName.H1.equals(role)) return handleH1(elem);
 
-        // Reference handling
-        if (PdfName.Reference.equals(role)) return handleLinkInReference(elem);
-        
-        // No transformation applied
-        return "";
-    }
-    
-    private String handleSectToDocument(PdfStructElem elem) {
+    private String handleSect(PdfStructElem elem, int level) {
+        if (level > 0) {
+            return ""; // No change needed for nested Sect
+        }
         elem.setRole(PdfName.Document);
         changeCount++;
         return "changed to Document";
@@ -123,23 +145,24 @@ public class PdfTagNormalizer {
         }
     }
 
-    // Reference/Link becomes just Link
-    private String handleLinkInReference(PdfStructElem elem) {
-        List<IStructureNode> kids = elem.getKids();
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem kidElem = (PdfStructElem) kid;
-                if (PdfName.Link.equals(kidElem.getRole())) {
-                    escalateWarning(elem);
-                    return "Link nested in Reference";
-                }
-            }
+    private PdfName getMappedRole(PdfName role) {
+        PdfDictionary roleMap = this.root.getRoleMap();
+
+        if (roleMap != null) {
+            return roleMap.getAsName(role);
         }
-        return "";
+        return null;
     }
 
     private void printElement(PdfStructElem elem, int level, String comment) {
-        String role = elem.getRole().getValue();
+        PdfName mappedRole = getMappedRole(elem.getRole());
+        String role = null;
+        if (mappedRole != null) {
+            role = mappedRole.getValue() + " (mapped from " + elem.getRole().getValue() + ")";
+        } else {
+            role = elem.getRole().getValue();
+        }
+
         String tagOutput = INDENT.repeat(level) + "- " + role;
         if (comment.isEmpty()) {
             output.println(tagOutput); // Changed from System.out
