@@ -2,13 +2,8 @@ package net.boyechko.a11y.pdf_normalizer;
 
 import com.itextpdf.kernel.pdf.*;
 
-import net.boyechko.a11y.pdf_normalizer.fixes.PdfUaComplianceFix;
-import net.boyechko.a11y.pdf_normalizer.fixes.TabOrderFix;
-import net.boyechko.a11y.pdf_normalizer.fixes.TagNormalizationFix;
-
 import java.io.*;
 import java.nio.file.*;
-import java.util.*;
 
 public class PdfProcessingService {
 
@@ -17,27 +12,12 @@ public class PdfProcessingService {
         private final String outputPath;
         private final String password;
         private final PrintStream outputStream;
-        private final List<PdfAccessibilityFix> enabledSteps;
 
-        public ProcessingRequest(String inputPath, String outputPath, String password, PrintStream outputStream, List<PdfAccessibilityFix> enabledSteps) {
+        public ProcessingRequest(String inputPath, String outputPath, String password, PrintStream outputStream) {
             this.inputPath = inputPath;
             this.outputPath = outputPath;
             this.password = password;
             this.outputStream = outputStream;
-            this.enabledSteps = enabledSteps != null ? enabledSteps : getDefaultSteps();
-        }
-
-        // Convenience constructor with default steps
-        public ProcessingRequest(String inputPath, String outputPath, String password, PrintStream outputStream) {
-            this(inputPath, outputPath, password, outputStream, null);
-        }
-
-        private static List<PdfAccessibilityFix> getDefaultSteps() {
-            return Arrays.asList(
-                new TagNormalizationFix(),
-                new PdfUaComplianceFix(),
-                new TabOrderFix()
-            );
         }
 
         // Getters
@@ -45,7 +25,6 @@ public class PdfProcessingService {
         public String getOutputPath() { return outputPath; }
         public String getPassword() { return password; }
         public PrintStream getOutputStream() { return outputStream; }
-        public List<PdfAccessibilityFix> getEnabledSteps() { return enabledSteps; }
     }
 
     public static class ProcessingResult {
@@ -123,17 +102,25 @@ public class PdfProcessingService {
                 int totalChanges = 0;
                 int totalWarnings = 0;
 
-                // Execute each enabled step
-                for (PdfAccessibilityFix step : request.getEnabledSteps()) {
-                    OperationResult result = step.execute(pdfDoc, request.getOutputStream());
+                // Step 1: Tag structure normalization
+                request.getOutputStream().println("Tag structure analysis and fixes:");
+                request.getOutputStream().println("────────────────────────────────────────");
 
-                    if (!result.isSuccess()) {
-                        return ProcessingResult.error("Failed at step: " + step.getName() + " - " + result.getMessage());
-                    }
+                PdfTagNormalizer normalizer = new PdfTagNormalizer(pdfDoc, request.getOutputStream());
+                normalizer.processAndDisplayChanges();
 
-                    totalChanges += result.getChangeCount();
-                    totalWarnings += result.getWarningCount();
+                totalChanges += normalizer.getChangeCount();
+                totalWarnings += normalizer.getWarningCount();
+
+                // Step 2: PDF/UA-1 compliance (already set in writer properties)
+                request.getOutputStream().println("✓ Set PDF/UA-1 compliance flag");
+
+                // Step 3: Tab order
+                int pageCount = pdfDoc.getNumberOfPages();
+                for (int i = 1; i <= pageCount; i++) {
+                    pdfDoc.getPage(i).setTabOrder(PdfName.S);
                 }
+                request.getOutputStream().println("✓ Set tab order to structure order for all " + pageCount + " pages");
 
                 return ProcessingResult.success(totalChanges, totalWarnings);
             }
