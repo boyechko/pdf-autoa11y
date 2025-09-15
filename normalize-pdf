@@ -15,4 +15,4 @@ fi
 
 # Run directly with classpath - handles spaces perfectly
 java -cp "target/classes:$(mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
-     net.boyechko.pdf.preprocess.PdfNormalizerCLI "$@"
+     net.boyechko.a11y.pdf_normalizer.PdfNormalizerCLI "$@"

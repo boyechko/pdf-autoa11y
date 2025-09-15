@@ -1,4 +1,4 @@
-package net.boyechko.pdf.preprocess;
+package net.boyechko.a11y.pdf_normalizer;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -10,9 +10,9 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
-import net.boyechko.pdf.preprocess.fixes.PdfUaComplianceFix;
-import net.boyechko.pdf.preprocess.fixes.TabOrderFix;
-import net.boyechko.pdf.preprocess.fixes.TagNormalizationFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.PdfUaComplianceFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.TabOrderFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.TagNormalizationFix;
 
 public class PdfNormalizerGUI extends JFrame {
     private JLabel dropLabel;

@@ -10,4 +10,4 @@ fi
 
 # Run GUI
 java -cp "target/classes:$(mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
-     net.boyechko.pdf.preprocess.PdfNormalizerGUI
+     net.boyechko.a11y.pdf_normalizer.PdfNormalizerGUI

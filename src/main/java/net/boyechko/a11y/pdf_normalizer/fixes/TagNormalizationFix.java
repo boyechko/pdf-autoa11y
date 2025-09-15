@@ -1,6 +1,6 @@
-package net.boyechko.pdf.preprocess.fixes;
+package net.boyechko.a11y.pdf_normalizer.fixes;
 
-import net.boyechko.pdf.preprocess.*;
+import net.boyechko.a11y.pdf_normalizer.*;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import java.io.PrintStream;
 

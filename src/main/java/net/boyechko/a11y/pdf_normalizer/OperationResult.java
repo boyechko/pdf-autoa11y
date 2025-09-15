@@ -1,4 +1,4 @@
-package net.boyechko.pdf.preprocess;
+package net.boyechko.a11y.pdf_normalizer;
 
 public class OperationResult {
     private final boolean success;

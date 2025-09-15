@@ -1,10 +1,10 @@
-package net.boyechko.pdf.preprocess;
+package net.boyechko.a11y.pdf_normalizer;
 
 import com.itextpdf.kernel.pdf.*;
 
-import net.boyechko.pdf.preprocess.fixes.PdfUaComplianceFix;
-import net.boyechko.pdf.preprocess.fixes.TabOrderFix;
-import net.boyechko.pdf.preprocess.fixes.TagNormalizationFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.PdfUaComplianceFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.TabOrderFix;
+import net.boyechko.a11y.pdf_normalizer.fixes.TagNormalizationFix;
 
 import java.io.*;
 import java.nio.file.*;

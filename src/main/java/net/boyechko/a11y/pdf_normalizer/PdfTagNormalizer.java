@@ -1,4 +1,4 @@
-package net.boyechko.pdf.preprocess;
+package net.boyechko.a11y.pdf_normalizer;
 
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
