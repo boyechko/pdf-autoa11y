@@ -34,13 +34,13 @@ public class PdfNormalizerGUI extends JFrame {
         JPanel dropPanel = createDropPanel();
         add(dropPanel, BorderLayout.NORTH);
 
-        // Center panel - output text
-        JPanel outputPanel = createOutputPanel();
-        add(outputPanel, BorderLayout.CENTER);
-
-        // Bottom panel - controls
+        // Center panel - controls
         JPanel controlPanel = createControlPanel();
-        add(controlPanel, BorderLayout.SOUTH);
+        add(controlPanel, BorderLayout.CENTER);
+
+        // Bottom panel - output text
+        JPanel outputPanel = createOutputPanel();
+        add(outputPanel, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null); // Center on screen
@@ -50,7 +50,7 @@ public class PdfNormalizerGUI extends JFrame {
     private JPanel createDropPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new TitledBorder("1. Drop PDF File Here"));
-        panel.setPreferredSize(new Dimension(600, 100));
+        panel.setPreferredSize(new Dimension(300, 300));
 
         dropLabel = new JLabel("Drop a PDF file here or click to browse", JLabel.CENTER);
         dropLabel.setFont(dropLabel.getFont().deriveFont(14f));
@@ -82,6 +82,7 @@ public class PdfNormalizerGUI extends JFrame {
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setPreferredSize(new Dimension(600, 400));
         panel.setBorder(new TitledBorder("2. Processing Output"));
 
         outputArea = new JTextArea(20, 60);
