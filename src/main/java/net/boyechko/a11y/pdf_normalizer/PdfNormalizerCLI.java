@@ -73,16 +73,9 @@ public class PdfNormalizerCLI {
     
     private static void printHeader(String filename, String src) {
         System.out.println("=== PDF ACCESSIBILITY TAG NORMALIZER ===");
-        System.out.println("Automatically fixes common PDF accessibility issues:");
-        System.out.println("• Converts malformed list structures to proper format");
-        System.out.println("• Demotes multiple H1 headings to H2 for proper hierarchy");
-        System.out.println("• Standardizes document structure tags");
-        System.out.println();
         System.out.println("Processing: " + filename);
         System.out.println("Source: " + src);
         System.out.println();
-        System.out.println("Tag structure analysis and fixes:");
-        System.out.println("────────────────────────────────────────");
     }
     
     private static void printSummary(PdfProcessingService.ProcessingResult result, String outputPath) {
@@ -96,8 +89,6 @@ public class PdfNormalizerCLI {
             System.out.println("✓ Document structure is already compliant - no changes needed");
         } else {
             System.out.println("✓ Automated fixes applied: " + changes);
-            System.out.println("✓ Set PDF/UA-1 compliance flag");
-            System.out.println("✓ Set tab order to structure order for all pages");
             if (warnings > 0) {
                 System.out.println("⚠ Manual review needed for: " + warnings + " items");
             }
