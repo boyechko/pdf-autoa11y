@@ -1,9 +1,10 @@
 package net.boyechko.a11y.pdf_normalizer;
 
-import com.itextpdf.kernel.pdf.*;
-
 import java.io.*;
 import java.nio.file.*;
+import java.util.List;
+
+import com.itextpdf.kernel.pdf.*;
 
 public class PdfProcessingService {
 
@@ -101,6 +102,21 @@ public class PdfProcessingService {
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
                 int totalChanges = 0;
                 int totalWarnings = 0;
+
+                // Step 0: Validate the tag structure
+                request.getOutputStream().println("Validating existing tag structure:");
+                request.getOutputStream().println("────────────────────────────────────────");
+                PdfTagValidator validator = new PdfTagValidator(TagSchema.minimalLists());
+                List<Issue> issues = validator.validate(pdfDoc.getStructTreeRoot());
+                for (Issue issue : issues) {
+                    request.getOutputStream().println("Issue: " + issue.nodePath() + " " + issue.message());
+                }
+                if (issues.isEmpty()) {
+                    request.getOutputStream().println("✓ No issues found in tag structure");
+                } else {
+                    request.getOutputStream().println("Total issues found: " + issues.size());
+                }
+                request.getOutputStream().println();
 
                 // Step 1: Tag structure normalization
                 request.getOutputStream().println("Tag structure analysis and fixes:");
