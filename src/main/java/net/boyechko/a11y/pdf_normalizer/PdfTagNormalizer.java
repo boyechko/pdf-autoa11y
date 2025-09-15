@@ -41,11 +41,11 @@ public class PdfTagNormalizer {
     public PdfTagNormalizer(String src, PrintStream output) throws IOException {
         this(new PdfDocument(new PdfReader(src)), output);
     }
-    
+
     public int getChangeCount() {
         return changeCount;
     }
-    
+
     public int getWarningCount() {
         return warningCount;
     }
@@ -58,7 +58,7 @@ public class PdfTagNormalizer {
         if (root != null) {
             changeCount = 0;
             warningCount = 0;
-            
+
             for (Object kid : root.getKids()) {
                 if (kid instanceof PdfStructElem) {
                     processElement((PdfStructElem) kid, 0);
@@ -111,7 +111,7 @@ public class PdfTagNormalizer {
         changeCount++;
         return "changed to Document";
     }
-    
+
     private String handleH1(PdfStructElem elem) {
         if (this.docTitle == null) {
             this.docTitle = elem;
@@ -146,7 +146,7 @@ public class PdfTagNormalizer {
         } else {
             // Pad to column 40, or use minimum spacing if already longer
             int currentLength = tagOutput.length();
-            String padding = currentLength < DISPLAY_COLUMN_WIDTH ? 
+            String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
                 " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
             output.println(tagOutput + padding + "; " + comment); // Changed from System.out
         }
@@ -156,13 +156,13 @@ public class PdfTagNormalizer {
         // Create a copy to iterate over safely
         List<IStructureNode> kidsCopy = new ArrayList<>(listElem.getKids());
 
-        printElement(listElem, level, kidsCopy.size() + " children");
-        
+        printElement(listElem, level, "");
+
         for (IStructureNode kid : kidsCopy) {
             if (kid instanceof PdfStructElem) {
                 PdfStructElem kidElem = (PdfStructElem) kid;
                 PdfName kidRole = kidElem.getRole();
-                
+
                 if (PdfName.LI.equals(kidRole)) {
                     processListItem(kidElem, level + 1);
                 } else if (PdfName.P.equals(kidRole)) {
@@ -181,12 +181,12 @@ public class PdfTagNormalizer {
             }
         }
     }
-    
+
     private void wrapInLI(PdfStructElem listElem, PdfStructElem kidElem, int level) {
         // Create new LI and immediately add it to parent
         PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
         listElem.addKid(newLI);  // Add to parent first!
-       
+
         // Create new LBody and add to LI
         PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
         newLI.addKid(newLBody);
@@ -194,22 +194,22 @@ public class PdfTagNormalizer {
         // Now move the child
         listElem.removeKid(kidElem);
         newLBody.addKid(kidElem);
-        
+
         changeCount++;
         String comment = "enclosed unexpected " + kidElem.getRole().getValue() + " in LI";
         printElement(newLI, level + 1, comment);
     }
-    
+
     /**
      * Normalizes LI elements to have proper Lbl and LBody structure.
      * Expected: <LI><Lbl>...</Lbl><LBody>...</LBody></LI>
-     * 
+     *
      * @param liElem The LI element to normalize
      * @return A comment string describing what was done, or empty if no changes
      */
     private void processListItem(PdfStructElem liElem, int level) {
         NormalizationResult result = processListItemInternal(liElem);
-        
+
         if (result.isWarning) {
             warningCount++;
             setVisualMarker(liElem, result.comment);
@@ -259,20 +259,20 @@ public class PdfTagNormalizer {
     private static class NormalizationResult {
         final String comment;
         final boolean isWarning;
-        
+
         NormalizationResult(String comment, boolean isWarning) {
             this.comment = comment;
             this.isWarning = isWarning;
         }
-        
+
         static NormalizationResult change(String comment) {
             return new NormalizationResult(comment, false);
         }
-        
+
         static NormalizationResult warning(String comment) {
             return new NormalizationResult(comment, true);
         }
-        
+
         static NormalizationResult noChange() {
             return new NormalizationResult("", false);
         }
@@ -280,18 +280,18 @@ public class PdfTagNormalizer {
 
     private NormalizationResult handleSingleListItemChild(PdfStructElem child) {
         PdfName childRole = child.getRole();
-        
+
         if (PdfName.P.equals(childRole)) {
             PdfStructElem parentLI = (PdfStructElem) child.getParent();
-            
+
             // Create new LBody and immediately add it to parent
             PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
             parentLI.addKid(newLBody);  // Add to parent first!
-            
+
             // Now move the P
             parentLI.removeKid(child);
             newLBody.addKid(child);
-            
+
             return NormalizationResult.change("enclosed P in LBody, missing Lbl");
         } else if (!PdfName.Lbl.equals(childRole) && !PdfName.LBody.equals(childRole)) {
             return NormalizationResult.warning("unexpected single child: " + childRole.getValue());
