@@ -223,6 +223,13 @@ public class PdfTagNormalizer {
             }
             printElement(liElem, level, result.comment);
         }
+
+        // Recurse into children to handle nested elements
+        for (Object kid : liElem.getKids()) {
+            if (kid instanceof PdfStructElem) {
+                processElement((PdfStructElem) kid, level + 1);
+            }
+        }
     }
 
     private NormalizationResult processListItemInternal(PdfStructElem liElem) {
