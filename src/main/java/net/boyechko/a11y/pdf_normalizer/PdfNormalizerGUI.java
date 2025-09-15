@@ -271,6 +271,16 @@ public class PdfNormalizerGUI extends JFrame {
     }
 
     public static void main(String[] args) {
+        // macOS integration to make the app appear in task switcher
+        System.setProperty("apple.awt.application.name", "PDF Normalizer");
+        try {
+            Class<?> appClass = Class.forName("com.apple.eawt.Application");
+            Object app = appClass.getMethod("getApplication").invoke(null);
+            // Optionally set dock icon badge to null
+        } catch (Exception e) {
+            // Not on macOS or library not available, ignore
+        }
+
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getLookAndFeel());
