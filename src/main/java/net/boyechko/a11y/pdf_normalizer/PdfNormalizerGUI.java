@@ -248,7 +248,8 @@ public class PdfNormalizerGUI extends JFrame {
 
     private void showSaveDialog(File tempFile) {
         JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File("normalized_" + selectedFile.getName()));
+        chooser.setCurrentDirectory(selectedFile.getParentFile());
+        chooser.setSelectedFile(new File(selectedFile.getName()));
 
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
