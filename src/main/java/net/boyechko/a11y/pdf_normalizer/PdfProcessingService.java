@@ -111,7 +111,7 @@ public class PdfProcessingService {
                 PdfTagValidator validator = new PdfTagValidator(TagSchema.minimalLists());
                 List<Issue> issues = validator.validate(pdfDoc.getStructTreeRoot());
                 for (Issue issue : issues) {
-                    request.getOutputStream().println("Issue: " + issue.nodePath() + " " + issue.message());
+                    request.getOutputStream().println("Issue at " + issue.nodePath() + ": " + issue.message());
                 }
                 if (issues.isEmpty()) {
                     request.getOutputStream().println("✓ No issues found in tag structure");
