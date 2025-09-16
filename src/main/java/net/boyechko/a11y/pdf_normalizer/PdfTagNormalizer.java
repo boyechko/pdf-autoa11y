@@ -237,13 +237,16 @@ public class PdfTagNormalizer {
             warningCount++;
             setVisualMarker(liElem, result.comment);
             escalateWarning(liElem);
-        } else if (!result.comment.isEmpty()) {
+        } else if (result.isChange) {
             // Count changes based on the comment content
             if (result.comment.contains("P+P")) {
                 changeCount += 2;
             } else if (result.comment.contains("converted")) {
                 changeCount++;
             }
+            printElement(liElem, level, result.comment);
+        } else if (!result.comment.isEmpty()) {
+            // Just a comment, no change or warning
             printElement(liElem, level, result.comment);
         }
 
@@ -281,23 +284,29 @@ public class PdfTagNormalizer {
 
     private static class NormalizationResult {
         final String comment;
+        final boolean isChange;
         final boolean isWarning;
 
-        NormalizationResult(String comment, boolean isWarning) {
+        NormalizationResult(String comment, boolean isChange, boolean isWarning) {
             this.comment = comment;
+            this.isChange = isChange;
             this.isWarning = isWarning;
         }
 
         static NormalizationResult change(String comment) {
-            return new NormalizationResult(comment, false);
+            return new NormalizationResult(comment, true, false);
         }
 
         static NormalizationResult warning(String comment) {
-            return new NormalizationResult(comment, true);
+            return new NormalizationResult(comment, false, true);
+        }
+
+        static NormalizationResult comment(String comment) {
+            return new NormalizationResult(comment, false, false);
         }
 
         static NormalizationResult noChange() {
-            return new NormalizationResult("", false);
+            return new NormalizationResult("", false, false);
         }
     }
 
@@ -319,9 +328,9 @@ public class PdfTagNormalizer {
         } else if (!PdfName.Lbl.equals(childRole) && !PdfName.LBody.equals(childRole)) {
             return NormalizationResult.warning("unexpected single child: " + childRole.getValue());
         } else if (PdfName.Lbl.equals(childRole)) {
-            return NormalizationResult.warning("missing LBody");
+            return NormalizationResult.comment("missing LBody");
         } else {
-            return NormalizationResult.warning("missing Lbl");
+            return NormalizationResult.comment("missing Lbl");
         }
     }
 
