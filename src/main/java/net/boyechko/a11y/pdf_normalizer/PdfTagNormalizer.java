@@ -156,12 +156,7 @@ public class PdfTagNormalizer {
 
     private void printElement(PdfStructElem elem, int level, String comment) {
         PdfName mappedRole = getMappedRole(elem.getRole());
-        String role = null;
-        if (mappedRole != null) {
-            role = mappedRole.getValue() + " (mapped from " + elem.getRole().getValue() + ")";
-        } else {
-            role = elem.getRole().getValue();
-        }
+        String role = mappedRole != null ? mappedRole.getValue() : elem.getRole().getValue();
 
         String tagOutput = INDENT.repeat(level) + "- " + role;
         if (comment.isEmpty()) {
