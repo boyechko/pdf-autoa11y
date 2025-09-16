@@ -172,24 +172,28 @@ final class PdfTagValidator {
     public List<Issue> validate(PdfStructTreeRoot root) {
         this.root = root;
         List<Issue> out = new ArrayList<>();
-        walk(root, "/", out);
+        walk(root, out);
         return out;
     }
 
-    private void walk(PdfStructTreeRoot root, String path, List<Issue> out) {
+    private void walk(PdfStructTreeRoot root, List<Issue> out) {
+        String path = "/";
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
+        int index = 1;  // human-readable indices
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem) {
-                walk((PdfStructElem) kid, path + mappedRole((PdfStructElem) kid), out);
+                walk((PdfStructElem) kid, path, index, out);
+                index++;
             }
         }
    }
 
-    private void walk(PdfStructElem node, String path, List<Issue> out) {
+    private void walk(PdfStructElem node, String path, int index, List<Issue> out) {
         String role = mappedRole(node);
         RoleRule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
+        path = path + role + "[" + index + "]/";
 
         // Parent rule
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
@@ -232,9 +236,11 @@ final class PdfTagValidator {
             }
         }
 
-        // Recurse
-        for (int i=0;i<kids.size();i++) {
-            walk(kids.get(i), path + role + "["+(i+1)+"]/", out);
+        // Recurse with child's index
+        int i = 1;  // human-readable indices
+        for (PdfStructElem kid : kids) {
+            walk(kid, path, i, out);
+            i++;
         }
     }
 
