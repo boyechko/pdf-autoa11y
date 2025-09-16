@@ -183,8 +183,8 @@ public class PdfNormalizerGUI extends JFrame {
                 PdfProcessingService service = new PdfProcessingService();
                 PdfProcessingService.ProcessingRequest request =
                     new PdfProcessingService.ProcessingRequest(
-                        selectedFile.getAbsolutePath(),
-                        tempOutputFile.getAbsolutePath(),
+                        selectedFile.toPath(),
+                        tempOutputFile.toPath(),
                         password,
                         guiOutput
                     );

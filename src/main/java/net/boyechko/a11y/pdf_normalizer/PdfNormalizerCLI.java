@@ -8,8 +8,7 @@ public class PdfNormalizerCLI {
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
             System.err.println("Usage: java PdfNormalizerCLI [-p password] <filepath>");
-            System.err.println("Example: java PdfNormalizerCLI -p somepassword /path/to/document.pdf");
-            System.err.println("Example: java PdfNormalizerCLI document.pdf");
+            System.err.println("Example: java PdfNormalizerCLI -p somepassword document.pdf");
             System.exit(1);
         }
 
@@ -34,12 +33,13 @@ public class PdfNormalizerCLI {
         // Handle path resolution
         Path srcPath = Paths.get(inputPath);
         if (!srcPath.isAbsolute() && !Files.exists(srcPath)) {
-            srcPath = Paths.get("inputs", inputPath);
+            System.err.println("Error: File not found - " + inputPath);
+            System.exit(1);
         }
         
         String src = srcPath.toString();
         String filename = srcPath.getFileName().toString();
-        String dest = "outputs/normalized_" + filename;
+        String dest = filename.replaceFirst("[.][^.]+$", "") + "_norm.pdf";
         
         // Print header
         printHeader(filename, src);
@@ -47,7 +47,7 @@ public class PdfNormalizerCLI {
         // Process using the service
         PdfProcessingService service = new PdfProcessingService();
         PdfProcessingService.ProcessingRequest request = 
-            new PdfProcessingService.ProcessingRequest(src, dest, password, System.out);
+            new PdfProcessingService.ProcessingRequest(Paths.get(src), Paths.get(dest), password, System.out);
         
         PdfProcessingService.ProcessingResult result = service.processPdf(request);
         

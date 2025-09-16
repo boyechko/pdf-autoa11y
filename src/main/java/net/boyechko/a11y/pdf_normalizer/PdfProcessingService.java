@@ -9,12 +9,12 @@ import com.itextpdf.kernel.pdf.*;
 public class PdfProcessingService {
 
     public static class ProcessingRequest {
-        private final String inputPath;
-        private final String outputPath;
+        private final Path inputPath;
+        private final Path outputPath;
         private final String password;
         private final PrintStream outputStream;
 
-        public ProcessingRequest(String inputPath, String outputPath, String password, PrintStream outputStream) {
+        public ProcessingRequest(Path inputPath, Path outputPath, String password, PrintStream outputStream) {
             this.inputPath = inputPath;
             this.outputPath = outputPath;
             this.password = password;
@@ -22,8 +22,8 @@ public class PdfProcessingService {
         }
 
         // Getters
-        public String getInputPath() { return inputPath; }
-        public String getOutputPath() { return outputPath; }
+        public Path getInputPath() { return inputPath; }
+        public Path getOutputPath() { return outputPath; }
         public String getPassword() { return password; }
         public PrintStream getOutputStream() { return outputStream; }
     }
@@ -59,11 +59,10 @@ public class PdfProcessingService {
     public ProcessingResult processPdf(ProcessingRequest request) {
         try {
             // Ensure output directory exists
-            Files.createDirectories(Paths.get(request.getOutputPath()).getParent());
+            Files.createDirectories(request.getOutputPath().getParent());
 
             // Check if input file exists
-            Path srcPath = Paths.get(request.getInputPath());
-            if (!Files.exists(srcPath)) {
+            if (!Files.exists(request.getInputPath())) {
                 return ProcessingResult.error("File not found: " + request.getInputPath());
             }
 
@@ -74,7 +73,7 @@ public class PdfProcessingService {
             }
 
             // Open for reading to check encryption properties
-            PdfReader testReader = new PdfReader(request.getInputPath(), readerProps);
+            PdfReader testReader = new PdfReader(request.getInputPath().toString(), readerProps);
             PdfDocument testDoc = new PdfDocument(testReader);
 
             int permissions = testReader.getPermissions();
@@ -84,7 +83,7 @@ public class PdfProcessingService {
             testDoc.close();
 
             // Now open for processing
-            PdfReader pdfReader = new PdfReader(request.getInputPath(), readerProps);
+            PdfReader pdfReader = new PdfReader(request.getInputPath().toString(), readerProps);
             WriterProperties writerProps = new WriterProperties();
 
             if (isEncrypted && request.getPassword() != null) {
@@ -97,7 +96,7 @@ public class PdfProcessingService {
             }
 
             writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
-            PdfWriter pdfWriter = new PdfWriter(request.getOutputPath(), writerProps);
+            PdfWriter pdfWriter = new PdfWriter(request.getOutputPath().toString(), writerProps);
 
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
                 int totalChanges = 0;
