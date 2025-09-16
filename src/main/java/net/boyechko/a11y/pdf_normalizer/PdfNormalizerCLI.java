@@ -37,17 +37,16 @@ public class PdfNormalizerCLI {
             System.exit(1);
         }
         
-        String src = srcPath.toString();
         String filename = srcPath.getFileName().toString();
         String dest = filename.replaceFirst("[.][^.]+$", "") + "_norm.pdf";
         
         // Print header
-        printHeader(filename, src);
+        printHeader(srcPath);
 
         // Process using the service
         PdfProcessingService service = new PdfProcessingService();
         PdfProcessingService.ProcessingRequest request = 
-            new PdfProcessingService.ProcessingRequest(Paths.get(src), Paths.get(dest), password, System.out);
+            new PdfProcessingService.ProcessingRequest(srcPath, Paths.get(dest), password, System.out);
         
         PdfProcessingService.ProcessingResult result = service.processPdf(request);
         
@@ -59,10 +58,10 @@ public class PdfNormalizerCLI {
         }
     }
     
-    private static void printHeader(String filename, String src) {
+    private static void printHeader(Path srcPath) {
         System.out.println("=== PDF ACCESSIBILITY TAG NORMALIZER ===");
-        System.out.println("Processing: " + filename);
-        System.out.println("Source: " + src);
+        System.out.println("Processing: " + srcPath.getFileName());
+        System.out.println("Source: " + srcPath.toAbsolutePath().toString());
         System.out.println();
     }
     
