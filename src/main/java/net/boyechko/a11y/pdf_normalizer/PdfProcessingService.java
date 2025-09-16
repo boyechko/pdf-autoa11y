@@ -58,8 +58,11 @@ public class PdfProcessingService {
 
     public ProcessingResult processPdf(ProcessingRequest request) {
         try {
-            // Ensure output directory exists
-            Files.createDirectories(request.getOutputPath().getParent());
+            // Only create directories if the output path has a parent
+            Path outputParent = request.getOutputPath().getParent();
+            if (outputParent != null) {
+                Files.createDirectories(outputParent);
+            }
 
             // Check if input file exists
             if (!Files.exists(request.getInputPath())) {
