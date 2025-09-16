@@ -6,13 +6,11 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Compile if needed
-if [ src/main/java -nt target/classes ] || [ ! -d target/classes ]; then
-    mvn -q compile
+if [ "$SCRIPT_DIR/src/main/java" -nt "$SCRIPT_DIR/target/classes" ] || [ ! -d "$SCRIPT_DIR/target/classes" ]; then
+    (cd "$SCRIPT_DIR" && mvn -q compile)
 fi
 
-# Run directly with classpath - handles spaces perfectly
-java -cp "target/classes:$(mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
+java -cp "$SCRIPT_DIR/target/classes:$(cd "$SCRIPT_DIR" && mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
      net.boyechko.a11y.pdf_normalizer.PdfNormalizerCLI "$@"
