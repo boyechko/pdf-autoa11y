@@ -30,27 +30,30 @@ public class PdfProcessingService {
 
     public static class ProcessingResult {
         private final boolean success;
+        private final int issueCount;
         private final int changeCount;
         private final int warningCount;
         private final String errorMessage;
 
-        private ProcessingResult(boolean success, int changeCount, int warningCount, String errorMessage) {
+        private ProcessingResult(boolean success, int issueCount, int changeCount, int warningCount, String errorMessage) {
             this.success = success;
+            this.issueCount = issueCount;
             this.changeCount = changeCount;
             this.warningCount = warningCount;
             this.errorMessage = errorMessage;
         }
 
-        public static ProcessingResult success(int changeCount, int warningCount) {
-            return new ProcessingResult(true, changeCount, warningCount, null);
+        public static ProcessingResult success(int issueCount, int changeCount, int warningCount) {
+            return new ProcessingResult(true, issueCount, changeCount, warningCount, null);
         }
 
         public static ProcessingResult error(String errorMessage) {
-            return new ProcessingResult(false, 0, 0, errorMessage);
+            return new ProcessingResult(false, 0, 0, 0, errorMessage);
         }
 
         // Getters
         public boolean isSuccess() { return success; }
+        public int getIssueCount() { return issueCount; }
         public int getChangeCount() { return changeCount; }
         public int getWarningCount() { return warningCount; }
         public String getErrorMessage() { return errorMessage; }
@@ -104,19 +107,21 @@ public class PdfProcessingService {
             try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
                 int totalChanges = 0;
                 int totalWarnings = 0;
+                int totalIssues = 0;
 
                 // Step 0: Validate the tag structure
                 request.getOutputStream().println("Validating existing tag structure:");
                 request.getOutputStream().println("────────────────────────────────────────");
                 PdfTagValidator validator = new PdfTagValidator(TagSchema.minimalLists());
-                List<Issue> issues = validator.validate(pdfDoc.getStructTreeRoot());
-                for (Issue issue : issues) {
+                List<Issue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
+                for (Issue issue : tagIssues) {
                     request.getOutputStream().println("Issue at " + issue.nodePath() + ": " + issue.message());
                 }
-                if (issues.isEmpty()) {
+                if (tagIssues.isEmpty()) {
                     request.getOutputStream().println("✓ No issues found in tag structure");
                 } else {
-                    request.getOutputStream().println("Total issues found: " + issues.size());
+                    request.getOutputStream().println("Tag issues found: " + tagIssues.size());
+                    totalIssues += tagIssues.size();
                 }
                 request.getOutputStream().println();
 
@@ -140,7 +145,7 @@ public class PdfProcessingService {
                 }
                 request.getOutputStream().println("✓ Set tab order to structure order for all " + pageCount + " pages");
 
-                return ProcessingResult.success(totalChanges, totalWarnings);
+                return ProcessingResult.success(totalIssues, totalChanges, totalWarnings);
             }
 
         } catch (Exception e) {
