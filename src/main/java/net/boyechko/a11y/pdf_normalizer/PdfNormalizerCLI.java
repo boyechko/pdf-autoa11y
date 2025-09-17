@@ -69,12 +69,14 @@ public class PdfNormalizerCLI {
         System.out.println();
         System.out.println("=== REMEDIATION SUMMARY ===");
         
+        int issues = result.getIssueCount();
         int changes = result.getChangeCount();
         int warnings = result.getWarningCount();
-        
-        if (changes == 0 && warnings == 0) {
-            System.out.println("✓ Document structure is already compliant - no changes needed");
+
+        if (issues == 0 && changes == 0 && warnings == 0) {
+            System.out.println("✓ Document structure is already compliant");
         } else {
+            System.out.println("✗ Issues found: " + issues);
             System.out.println("✓ Automated fixes applied: " + changes);
             if (warnings > 0) {
                 System.out.println("⚠ Manual review needed for: " + warnings + " items");
