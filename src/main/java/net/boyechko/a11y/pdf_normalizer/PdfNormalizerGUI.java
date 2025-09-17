@@ -241,8 +241,18 @@ public class PdfNormalizerGUI extends JFrame {
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
             // Move temp file to selected location
+            if (targetFile.exists()) {
+                int response = JOptionPane.showConfirmDialog(this,
+                    "File exists. Overwrite?", "Confirm Overwrite",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (response != JOptionPane.YES_OPTION) {
+                    // User chose not to overwrite
+                    tempFile.delete();
+                    return;
+                }
+            }
             try {
-                Files.move(tempFile.toPath(), targetFile.toPath());
+                Files.move(tempFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 JOptionPane.showMessageDialog(this,
                     "File saved to: " + targetFile.getAbsolutePath());
             } catch (IOException e) {
