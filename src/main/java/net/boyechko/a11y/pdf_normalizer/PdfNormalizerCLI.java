@@ -38,7 +38,7 @@ public class PdfNormalizerCLI {
         }
         
         String filename = srcPath.getFileName().toString();
-        String dest = filename.replaceFirst("[.][^.]+$", "") + "_norm.pdf";
+        String dest = filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf";
         
         // Print header
         printHeader(srcPath);
