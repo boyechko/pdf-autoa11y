@@ -104,6 +104,9 @@ public class PdfTagNormalizer {
                     printElement(elem, level, comment);
                 }
             }
+            case "Aside" -> {
+                comment = handleAside(elem);
+            }
             default -> {
                 // Unknown or unexpected tag
                 warningCount++;
@@ -143,6 +146,13 @@ public class PdfTagNormalizer {
             changeCount++;
             return "extra H1 demoted to H2";
         }
+    }
+
+    private String handleAside(PdfStructElem elem) {
+        // add role mapping for Aside -> Div in the PDF role map
+        this.root.getRoleMap().put(PdfName.Aside, PdfName.Div);
+        changeCount++;
+        return "added role mapping Aside -> Div";
     }
 
     private PdfName getMappedRole(PdfName role) {
