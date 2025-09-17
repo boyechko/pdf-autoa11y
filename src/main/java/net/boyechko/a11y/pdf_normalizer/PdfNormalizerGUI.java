@@ -274,6 +274,7 @@ public class PdfNormalizerGUI extends JFrame {
             Class<?> appClass = Class.forName("com.apple.eawt.Application");
             Object app = appClass.getMethod("getApplication").invoke(null);
             // Optionally set dock icon badge to null
+            app.getClass().getMethod("setDockIconBadge", String.class).invoke(app, (String) null);
         } catch (Exception e) {
             // Not on macOS or library not available, ignore
         }
