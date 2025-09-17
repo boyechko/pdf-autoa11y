@@ -13,7 +13,7 @@ public class PdfNormalizerGUI extends JFrame {
     private JLabel dropLabel;
     private JTextArea outputArea;
     private JButton processButton;
-    private JPasswordField passwordField;
+    private JTextField passwordField;
     private File selectedFile;
 
     public PdfNormalizerGUI() {
@@ -68,7 +68,7 @@ public class PdfNormalizerGUI extends JFrame {
         // Password field
         JPanel passwordPanel = new JPanel(new FlowLayout());
         passwordPanel.add(new JLabel("Password (if needed):"));
-        passwordField = new JPasswordField(15);
+        passwordField = new JTextField(15);
         passwordPanel.add(passwordField);
         panel.add(passwordPanel, BorderLayout.SOUTH);
 
@@ -172,8 +172,8 @@ public class PdfNormalizerGUI extends JFrame {
                     }
                 });
 
-                String password = passwordField.getPassword().length > 0 ?
-                    new String(passwordField.getPassword()) : null;
+                String password = passwordField.getText().length() > 0 ?
+                    passwordField.getText() : null;
 
                 // Create temporary file for output
                 tempOutputFile = File.createTempFile("pdf_normalized_", ".pdf");
