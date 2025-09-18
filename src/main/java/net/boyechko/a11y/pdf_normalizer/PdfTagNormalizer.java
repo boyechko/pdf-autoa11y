@@ -15,7 +15,6 @@ public class PdfTagNormalizer {
     private final PdfDocument document;
     private final PdfStructTreeRoot root;
     private final PrintStream output;
-    private PdfStructElem docTitle;
     private int changeCount;
     private int warningCount;
 
@@ -24,7 +23,6 @@ public class PdfTagNormalizer {
         this.document = doc;
         this.root = doc.getStructTreeRoot();
         this.output = output;
-        this.docTitle = null;
         this.changeCount = 0;
         this.warningCount = 0;
     }
@@ -83,17 +81,11 @@ public class PdfTagNormalizer {
 
         // Handle other tags
         switch (mappedRole != null ? mappedRole.getValue() : role.getValue()) {
-            case "Document", "Part", "Art", "Div",
-                 "H2", "H3", "H4", "H5", "H6", "BlockQuote", "P",
+            case "Document", "Sect", "Part", "Art", "Div",
+                 "H1", "H2", "H3", "H4", "H5", "H6", "BlockQuote", "P",
                  "Caption", "Figure", "Formula", "Link", "Note", "Reference", "Span",
                  "Table", "TR", "TH", "TD" -> {
                 // No special handling needed, just print
-            }
-            case "Sect" -> {
-                comment = handleSect(elem, level);
-            }
-            case "H1" -> {
-                comment = handleH1(elem);
             }
             case "LBody", "Lbl" -> {
                 if (!PdfName.LI.equals(parentRole)) {
@@ -125,26 +117,6 @@ public class PdfTagNormalizer {
             if (kid instanceof PdfStructElem) {
                 processElement((PdfStructElem) kid, level + 1);
             }
-        }
-    }
-
-    private String handleSect(PdfStructElem elem, int level) {
-        if (level > 0) {
-            return ""; // No change needed for nested Sect
-        }
-        elem.setRole(PdfName.Document);
-        changeCount++;
-        return "changed to Document";
-    }
-
-    private String handleH1(PdfStructElem elem) {
-        if (this.docTitle == null) {
-            this.docTitle = elem;
-            return "first H1, treating as document title";
-        } else {
-            elem.setRole(PdfName.H2);
-            changeCount++;
-            return "extra H1 demoted to H2";
         }
     }
 
