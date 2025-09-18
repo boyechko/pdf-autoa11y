@@ -73,12 +73,6 @@ public class PdfTagNormalizer {
         PdfName parentRole = elem.getParent() != null ? elem.getParent().getRole() : null;
         String comment = "";
 
-        // Special handling for lists (they're more complex and handle their own display)
-        if (PdfName.L.equals(role) || PdfName.L.equals(mappedRole)) {
-            processList(elem, level);
-            return;
-        }
-
         // Handle other tags
         switch (mappedRole != null ? mappedRole.getValue() : role.getValue()) {
             case "Document", "Sect", "Part", "Art", "Div",
@@ -86,6 +80,10 @@ public class PdfTagNormalizer {
                  "Caption", "Figure", "Formula", "Link", "Note", "Reference", "Span",
                  "Table", "TR", "TH", "TD" -> {
                 // No special handling needed, just print
+            }
+            case "L" -> {
+                processList(elem, level);
+                return; // processList handles printing
             }
             case "LBody", "Lbl" -> {
                 if (!PdfName.LI.equals(parentRole)) {
