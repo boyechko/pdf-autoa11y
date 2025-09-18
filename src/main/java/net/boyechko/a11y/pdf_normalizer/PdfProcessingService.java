@@ -123,6 +123,17 @@ public class PdfProcessingService {
                     request.getOutputStream().println("Tag issues found: " + tagIssues.size());
                     totalIssues += tagIssues.size();
                 }
+
+                PdfCatalog cat = pdfDoc.getCatalog();
+                PdfNameTree markInfo = cat.getNameTree(PdfName.MarkInfo);
+                PdfObject isMarked = markInfo.getEntry("Marked");
+                if (isMarked == null || !isMarked.toString().equals("true")) {
+                    request.getOutputStream().println("✗ Document is not marked as tagged PDF");
+                    totalIssues++;
+                } else {
+                    request.getOutputStream().println("✓ Document is marked as tagged PDF");
+                }
+
                 request.getOutputStream().println();
 
                 // Step 1: Tag structure normalization
@@ -135,8 +146,12 @@ public class PdfProcessingService {
                 totalChanges += normalizer.getChangeCount();
                 totalWarnings += normalizer.getWarningCount();
 
-                // Step 2: PDF/UA-1 compliance (already set in writer properties)
+                // Step 2: Set document as tagged PDF & PDF/UA-1 compliant
+                markInfo.addEntry("Marked", PdfBoolean.TRUE);
+                request.getOutputStream().println("✓ Set document as tagged PDF");
+                // PDF/UA-1 compliance flag is set via writer properties earlier
                 request.getOutputStream().println("✓ Set PDF/UA-1 compliance flag");
+                totalChanges++;
 
                 // Step 3: Tab order
                 int pageCount = pdfDoc.getNumberOfPages();
