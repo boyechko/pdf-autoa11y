@@ -134,6 +134,13 @@ public class PdfProcessingService {
                     request.getOutputStream().println("✓ Document is marked as tagged PDF");
                 }
 
+                if (cat.getLang() == null) {
+                    request.getOutputStream().println("✗ Document language (Lang) is not set");
+                    totalIssues++;
+                } else {
+                    request.getOutputStream().println("✓ Document language (Lang) is set to: " + cat.getLang());
+                }
+
                 request.getOutputStream().println();
 
                 // Step 1: Tag structure normalization
@@ -152,6 +159,13 @@ public class PdfProcessingService {
                 // PDF/UA-1 compliance flag is set via writer properties earlier
                 request.getOutputStream().println("✓ Set PDF/UA-1 compliance flag");
                 totalChanges++;
+
+                // Step 2b: Ensure document language is set
+                if (cat.getLang() == null) {
+                    cat.setLang(new PdfString("en-US"));
+                    request.getOutputStream().println("✓ Set document language (Lang) to en-US");
+                    totalChanges++;
+                }
 
                 // Step 3: Tab order
                 int pageCount = pdfDoc.getNumberOfPages();
