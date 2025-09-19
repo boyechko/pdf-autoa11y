@@ -152,13 +152,13 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
-        SwingWorker<ProcessingService.ProcessingResult, String> worker =
-            new SwingWorker<ProcessingService.ProcessingResult, String>() {
+        SwingWorker<ProcessingResult, String> worker =
+            new SwingWorker<ProcessingResult, String>() {
 
             private File tempOutputFile;
 
             @Override
-            protected ProcessingService.ProcessingResult doInBackground() throws Exception {
+            protected ProcessingResult doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
                 PrintStream guiOutput = new PrintStream(new OutputStream() {
                     @Override
@@ -181,8 +181,8 @@ public class PdfAutoA11yGUI extends JFrame {
 
                 // Use the service with temp file
                 ProcessingService service = new ProcessingService();
-                ProcessingService.ProcessingRequest request =
-                    new ProcessingService.ProcessingRequest(
+                ProcessingRequest request =
+                    new ProcessingRequest(
                         selectedFile.toPath(),
                         tempOutputFile.toPath(),
                         password,
@@ -202,7 +202,7 @@ public class PdfAutoA11yGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    ProcessingService.ProcessingResult result = get();
+                    ProcessingResult result = get();
                     if (result.isSuccess()) {
                         outputArea.append("\n=== PROCESSING COMPLETE ===\n");
                         outputArea.append("Changes applied: " + result.getChangeCount() + "\n");

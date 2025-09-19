@@ -8,57 +8,6 @@ import com.itextpdf.kernel.pdf.*;
 
 public class ProcessingService {
 
-    public static class ProcessingRequest {
-        private final Path inputPath;
-        private final Path outputPath;
-        private final String password;
-        private final PrintStream outputStream;
-
-        public ProcessingRequest(Path inputPath, Path outputPath, String password, PrintStream outputStream) {
-            this.inputPath = inputPath;
-            this.outputPath = outputPath;
-            this.password = password;
-            this.outputStream = outputStream;
-        }
-
-        // Getters
-        public Path getInputPath() { return inputPath; }
-        public Path getOutputPath() { return outputPath; }
-        public String getPassword() { return password; }
-        public PrintStream getOutputStream() { return outputStream; }
-    }
-
-    public static class ProcessingResult {
-        private final boolean success;
-        private final int issueCount;
-        private final int changeCount;
-        private final int warningCount;
-        private final String errorMessage;
-
-        private ProcessingResult(boolean success, int issueCount, int changeCount, int warningCount, String errorMessage) {
-            this.success = success;
-            this.issueCount = issueCount;
-            this.changeCount = changeCount;
-            this.warningCount = warningCount;
-            this.errorMessage = errorMessage;
-        }
-
-        public static ProcessingResult success(int issueCount, int changeCount, int warningCount) {
-            return new ProcessingResult(true, issueCount, changeCount, warningCount, null);
-        }
-
-        public static ProcessingResult error(String errorMessage) {
-            return new ProcessingResult(false, 0, 0, 0, errorMessage);
-        }
-
-        // Getters
-        public boolean isSuccess() { return success; }
-        public int getIssueCount() { return issueCount; }
-        public int getChangeCount() { return changeCount; }
-        public int getWarningCount() { return warningCount; }
-        public String getErrorMessage() { return errorMessage; }
-    }
-
     public ProcessingResult processPdf(ProcessingRequest request) {
         try {
             // Only create directories if the output path has a parent
