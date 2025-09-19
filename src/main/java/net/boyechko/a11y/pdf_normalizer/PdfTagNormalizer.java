@@ -154,6 +154,13 @@ public class PdfTagNormalizer {
         // Create a copy to iterate over safely
         List<IStructureNode> kidsCopy = new ArrayList<>(listElem.getKids());
 
+        // Convert even number of P children directly under L to LIs
+       if (everyStructChild(kidsCopy, PdfName.P) && kidsCopy.size() % 2 == 0) {
+            printElement(listElem, level, "converted even number of P to LIs");
+            wrapPairsOfPInLI(listElem, kidsCopy, level);
+            return;
+        }
+
         printElement(listElem, level, "");
 
         for (IStructureNode kid : kidsCopy) {
@@ -179,6 +186,44 @@ public class PdfTagNormalizer {
             }
         }
     }
+
+    private boolean everyStructChild(List<IStructureNode> kids, PdfName role) {
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem) {
+                PdfStructElem kidElem = (PdfStructElem) kid;
+                if (!role.equals(kidElem.getRole())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void wrapPairsOfPInLI(PdfStructElem listElem, List<IStructureNode> kids, int level) {
+        for (int i = 0; i < kids.size(); i += 2) {
+            PdfStructElem p1 = (PdfStructElem) kids.get(i);
+            PdfStructElem p2 = (PdfStructElem) kids.get(i + 1);
+
+            // Create new LI and immediately add it to parent
+            PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
+            listElem.addKid(newLI);  // Add to parent first!
+
+            // Create new Lbl and add to LI
+            PdfStructElem newLbl = new PdfStructElem(document, PdfName.Lbl);
+            newLI.addKid(newLbl);
+            listElem.removeKid(p1);
+            newLbl.addKid(p1);
+
+            // Create new LBody and add to LI
+            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+            newLI.addKid(newLBody);
+            listElem.removeKid(p2);
+            newLBody.addKid(p2);
+
+            changeCount += 2;
+            printElement(newLI, level + 1, "");
+        }
+   }
 
     private void wrapInLI(PdfStructElem listElem, PdfStructElem kidElem, int level) {
         // Create new LI and immediately add it to parent
