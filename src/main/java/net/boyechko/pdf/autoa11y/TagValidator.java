@@ -63,6 +63,10 @@ public final class TagValidator {
    }
 
     private void walk(PdfStructElem node, String path, int index, int level, List<Issue> out) {
+        walk(node, path, index, level, out, null);
+    }
+
+    private void walk(PdfStructElem node, String path, int index, int level, List<Issue> out, List<String> inheritedIssues) {
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
@@ -70,6 +74,11 @@ public final class TagValidator {
 
         // Collect issues for this element
         List<String> elementIssues = new ArrayList<>();
+
+        // Add any inherited issues from parent (like "not allowed under X")
+        if (inheritedIssues != null) {
+            elementIssues.addAll(inheritedIssues);
+        }
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
             out.add(new Issue(IssueType.TAG_PARENT_MISMATCH,
@@ -101,6 +110,12 @@ public final class TagValidator {
             }
         }
 
+        // Create a map of child-specific issues to pass down
+        List<List<String>> childSpecificIssues = new ArrayList<>();
+        for (int i = 0; i < kids.size(); i++) {
+            childSpecificIssues.add(new ArrayList<>());
+        }
+
         if (rule != null && rule.allowedChildren != null && !rule.allowedChildren.isEmpty()) {
             for (int i=0;i<childRoles.size();i++) {
                 String cr = childRoles.get(i);
@@ -109,7 +124,8 @@ public final class TagValidator {
                             IssueSeverity.ERROR,
                             new IssueLocation(null, path),
                             "Child #"+i+" role '"+cr+"' not allowed under "+role));
-                    elementIssues.add("✗ Child #"+i+" role '"+cr+"' not allowed under "+role);
+                    // Pass this issue down to the specific child instead of showing at parent
+                    childSpecificIssues.get(i).add("✗ Role '"+cr+"' not allowed under "+role);
                 }
             }
         }
@@ -128,8 +144,10 @@ public final class TagValidator {
         printElement(role, level, elementIssues, output);
 
         int i = 1;
-        for (PdfStructElem kid : kids) {
-            walk(kid, path, i, level + 1, out);
+        for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
+            PdfStructElem kid = kids.get(kidIndex);
+            List<String> kidIssues = childSpecificIssues.get(kidIndex);
+            walk(kid, path, i, level + 1, out, kidIssues.isEmpty() ? null : kidIssues);
             i++;
         }
     }
