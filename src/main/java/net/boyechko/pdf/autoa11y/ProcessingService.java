@@ -1,10 +1,9 @@
 package net.boyechko.pdf.autoa11y;
 
-import java.io.*;
 import java.nio.file.*;
 import java.util.List;
-
 import com.itextpdf.kernel.pdf.*;
+import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
 
@@ -58,6 +57,19 @@ public class ProcessingService {
                 int totalWarnings = 0;
                 int totalIssues = 0;
 
+                RuleEngine engine = new RuleEngine(java.util.List.of(
+                    new LanguageSetRule(),
+                    new TabOrderRule(),
+                    new TaggedPdfRule()
+                ));
+                ProcessingContext ctx = new ProcessingContext(pdfDoc, request.getOutputStream());
+
+                // Phase 1: Detect issues
+                List<Issue> issues = engine.detectAll(ctx);
+                for (Issue i : issues) {
+                    request.getOutputStream().println("Issue detected: " + i.message());
+                }
+
                 // Step 0: Validate the tag structure
                 request.getOutputStream().println("Validating existing tag structure:");
                 request.getOutputStream().println("────────────────────────────────────────");
@@ -73,24 +85,7 @@ public class ProcessingService {
                     totalIssues += tagIssues.size();
                 }
 
-                PdfCatalog cat = pdfDoc.getCatalog();
-                PdfNameTree markInfo = cat.getNameTree(PdfName.MarkInfo);
-                PdfObject isMarked = markInfo.getEntry("Marked");
-                if (isMarked == null || !isMarked.toString().equals("true")) {
-                    request.getOutputStream().println("✗ Document is not marked as tagged PDF");
-                    totalIssues++;
-                } else {
-                    request.getOutputStream().println("✓ Document is marked as tagged PDF");
-                }
-
-                if (cat.getLang() == null) {
-                    request.getOutputStream().println("✗ Document language (Lang) is not set");
-                    totalIssues++;
-                } else {
-                    request.getOutputStream().println("✓ Document language (Lang) is set to: " + cat.getLang());
-                }
-
-                request.getOutputStream().println();
+               request.getOutputStream().println();
 
                 // Step 1: Tag structure normalization
                 request.getOutputStream().println("Tag structure analysis and fixes:");
@@ -102,26 +97,11 @@ public class ProcessingService {
                 totalChanges += normalizer.getChangeCount();
                 totalWarnings += normalizer.getWarningCount();
 
-                // Step 2: Set document as tagged PDF & PDF/UA-1 compliant
-                markInfo.addEntry("Marked", PdfBoolean.TRUE);
-                request.getOutputStream().println("✓ Set document as tagged PDF");
-                // PDF/UA-1 compliance flag is set via writer properties earlier
-                request.getOutputStream().println("✓ Set PDF/UA-1 compliance flag");
-                totalChanges++;
-
-                // Step 2b: Ensure document language is set
-                if (cat.getLang() == null) {
-                    cat.setLang(new PdfString("en-US"));
-                    request.getOutputStream().println("✓ Set document language (Lang) to en-US");
-                    totalChanges++;
-                }
-
-                // Step 3: Tab order
-                int pageCount = pdfDoc.getNumberOfPages();
-                for (int i = 1; i <= pageCount; i++) {
-                    pdfDoc.getPage(i).setTabOrder(PdfName.S);
-                }
-                request.getOutputStream().println("✓ Set tab order to structure order for all " + pageCount + " pages");
+                // Step 2: Apply rule-based fixes
+                request.getOutputStream().println();
+                request.getOutputStream().println("Applying rule-based fixes:");
+                request.getOutputStream().println("────────────────────────────────────────");
+                engine.applyFixes(ctx, issues);
 
                 return ProcessingResult.success(totalIssues, totalChanges, totalWarnings);
             }
