@@ -113,8 +113,8 @@ public class ProcessingService {
                 request.getOutputStream().println("Validating existing tag structure:");
                 request.getOutputStream().println("────────────────────────────────────────");
                 TagValidator validator = new TagValidator(TagSchema.minimalLists());
-                List<Issue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
-                for (Issue issue : tagIssues) {
+                List<TagIssue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
+                for (TagIssue issue : tagIssues) {
                     request.getOutputStream().println("Issue at " + issue.nodePath() + ": " + issue.message());
                 }
                 if (tagIssues.isEmpty()) {

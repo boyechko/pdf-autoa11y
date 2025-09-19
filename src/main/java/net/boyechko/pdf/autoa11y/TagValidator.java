@@ -51,7 +51,7 @@ final class TagSchema {
 }
 
 // --- Issue type ---
-record Issue(String code, String message, String nodePath, String role) {}
+record TagIssue(String code, String message, String nodePath, String role) {}
 
 // --- PatternMatcher (same as before) ---
 final class PatternMatcher {
@@ -165,14 +165,14 @@ final class TagValidator {
 
     TagValidator(TagSchema schema){ this.schema = schema; }
 
-    public List<Issue> validate(PdfStructTreeRoot root) {
+    public List<TagIssue> validate(PdfStructTreeRoot root) {
         this.root = root;
-        List<Issue> out = new ArrayList<>();
+        List<TagIssue> out = new ArrayList<>();
         walk(root, out);
         return out;
     }
 
-    private void walk(PdfStructTreeRoot root, List<Issue> out) {
+    private void walk(PdfStructTreeRoot root, List<TagIssue> out) {
         String path = "/";
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
@@ -185,14 +185,14 @@ final class TagValidator {
         }
    }
 
-    private void walk(PdfStructElem node, String path, int index, List<Issue> out) {
+    private void walk(PdfStructElem node, String path, int index, List<TagIssue> out) {
         String role = mappedRole(node);
         RoleRule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
         path = path + role + "[" + index + "]/";
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
-            out.add(new Issue("ParentMismatch",
+            out.add(new TagIssue("ParentMismatch",
                     "Parent must be "+rule.parentMustBe+" but is "+parentRole,
                     path, role));
         }
@@ -202,10 +202,10 @@ final class TagValidator {
 
         if (rule != null) {
             if (rule.minChildren != null && childRoles.size() < rule.minChildren)
-                out.add(new Issue("CardinalityViolation",
+                out.add(new TagIssue("CardinalityViolation",
                         "Has "+childRoles.size()+" children; min is "+rule.minChildren, path, role));
             if (rule.maxChildren != null && childRoles.size() > rule.maxChildren)
-                out.add(new Issue("CardinalityViolation",
+                out.add(new TagIssue("CardinalityViolation",
                         "Has "+childRoles.size()+" children; max is "+rule.maxChildren, path, role));
         }
 
@@ -213,7 +213,7 @@ final class TagValidator {
             for (int i=0;i<childRoles.size();i++) {
                 String cr = childRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
-                    out.add(new Issue("IllegalChild",
+                    out.add(new TagIssue("IllegalChild",
                             "Child #"+i+" role '"+cr+"' not allowed under "+role, path, role));
                 }
             }
@@ -222,7 +222,7 @@ final class TagValidator {
         if (rule != null && rule.childPattern != null) {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(childRoles)) {
-        out.add(new Issue("OrderViolation",
+        out.add(new TagIssue("OrderViolation",
             "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'", path, role));
             }
         }
