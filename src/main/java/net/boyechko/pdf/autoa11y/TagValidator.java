@@ -15,6 +15,7 @@ public final class TagValidator {
     private final TagSchema schema;
     private PrintStream output;
     private PdfStructTreeRoot root;
+    private List<Issue> issues;
 
     TagValidator(TagSchema schema, PrintStream output) {
         this.schema = schema;
@@ -28,45 +29,45 @@ public final class TagValidator {
 
     public List<Issue> validate(PdfStructTreeRoot root) {
         this.root = root;
-        List<Issue> out = new ArrayList<>();
+        this.issues = new ArrayList<>(); // Reset for new validation
 
         output.println("Tag structure validation:");
         output.println("────────────────────────────────────────");
 
         if (root == null || root.getKids() == null) {
             output.println("No accessibility tags found");
-            return out;
+            return List.copyOf(issues); // Return immutable copy
         }
 
-        walk(root, out);
+        walk(root);
 
-        if (out.isEmpty()) {
+        if (issues.isEmpty()) {
             output.println("✓ No issues found in tag structure");
         } else {
-            output.println("Tag issues found: " + out.size());
+            output.println("Tag issues found: " + issues.size());
         }
 
-        return out;
+        return List.copyOf(issues); // Return immutable copy
     }
 
-    private void walk(PdfStructTreeRoot root, List<Issue> out) {
+    private void walk(PdfStructTreeRoot root) {
         String path = "/";
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
         int index = 1;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem) {
-                walk((PdfStructElem) kid, path, index, 0, out);
+                walk((PdfStructElem) kid, path, index, 0);
                 index++;
             }
         }
    }
 
-    private void walk(PdfStructElem node, String path, int index, int level, List<Issue> out) {
-        walk(node, path, index, level, out, null);
+    private void walk(PdfStructElem node, String path, int index, int level) {
+        walk(node, path, index, level, null);
     }
 
-    private void walk(PdfStructElem node, String path, int index, int level, List<Issue> out, List<String> inheritedIssues) {
+    private void walk(PdfStructElem node, String path, int index, int level, List<String> inheritedIssues) {
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
@@ -81,7 +82,7 @@ public final class TagValidator {
         }
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
-            out.add(new Issue(IssueType.TAG_PARENT_MISMATCH,
+            issues.add(new Issue(IssueType.TAG_PARENT_MISMATCH,
                     IssueSeverity.ERROR,
                     new IssueLocation(null, path),
                     "Parent must be "+rule.parentMustBe+" but is "+parentRole));
@@ -95,14 +96,14 @@ public final class TagValidator {
 
         if (rule != null) {
             if (rule.minChildren != null && childRoles.size() < rule.minChildren) {
-                out.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
                         IssueSeverity.ERROR,
                         new IssueLocation(null, path),
                         "Has "+childRoles.size()+" children; min is "+rule.minChildren));
                 elementIssues.add("✗ Has "+childRoles.size()+" children; min is "+rule.minChildren);
             }
             if (rule.maxChildren != null && childRoles.size() > rule.maxChildren) {
-                out.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
                         IssueSeverity.ERROR,
                         new IssueLocation(null, path),
                         "Has "+childRoles.size()+" children; max is "+rule.maxChildren));
@@ -120,7 +121,7 @@ public final class TagValidator {
             for (int i=0;i<childRoles.size();i++) {
                 String cr = childRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
-                    out.add(new Issue(IssueType.TAG_ILLEGAL_CHILD,
+                    issues.add(new Issue(IssueType.TAG_ILLEGAL_CHILD,
                             IssueSeverity.ERROR,
                             new IssueLocation(null, path),
                             "Child #"+i+" role '"+cr+"' not allowed under "+role));
@@ -133,7 +134,7 @@ public final class TagValidator {
         if (rule != null && rule.childPattern != null) {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(childRoles)) {
-                out.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
                         IssueSeverity.ERROR,
                         new IssueLocation(null, path),
                         "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'"));
@@ -147,7 +148,7 @@ public final class TagValidator {
         for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
             PdfStructElem kid = kids.get(kidIndex);
             List<String> kidIssues = childSpecificIssues.get(kidIndex);
-            walk(kid, path, i, level + 1, out, kidIssues.isEmpty() ? null : kidIssues);
+            walk(kid, path, i, level + 1, kidIssues.isEmpty() ? null : kidIssues);
             i++;
         }
     }
