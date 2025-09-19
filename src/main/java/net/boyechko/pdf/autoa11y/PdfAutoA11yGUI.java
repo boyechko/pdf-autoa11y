@@ -1,4 +1,4 @@
-package net.boyechko.a11y.pdf_normalizer;
+package net.boyechko.pdf.autoa11y;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -9,19 +9,19 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
 
-public class PdfNormalizerGUI extends JFrame {
+public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
     private JTextArea outputArea;
     private JButton processButton;
     private JTextField passwordField;
     private File selectedFile;
 
-    public PdfNormalizerGUI() {
+    public PdfAutoA11yGUI() {
         initializeGUI();
     }
 
     private void initializeGUI() {
-        setTitle("PDF Accessibility Normalizer");
+        setTitle("PDF Auto A11y");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -117,13 +117,13 @@ public class PdfNormalizerGUI extends JFrame {
                     if (file.getName().toLowerCase().endsWith(".pdf")) {
                         setSelectedFile(file);
                     } else {
-                        JOptionPane.showMessageDialog(PdfNormalizerGUI.this,
+                        JOptionPane.showMessageDialog(PdfAutoA11yGUI.this,
                             "Please select a PDF file");
                     }
                 }
                 dtde.dropComplete(true);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(PdfNormalizerGUI.this,
+                JOptionPane.showMessageDialog(PdfAutoA11yGUI.this,
                     "Error handling dropped file: " + e.getMessage());
             }
         }
@@ -269,7 +269,7 @@ public class PdfNormalizerGUI extends JFrame {
 
     public static void main(String[] args) {
         // macOS integration to make the app appear in task switcher
-        System.setProperty("apple.awt.application.name", "PDF Normalizer");
+        System.setProperty("apple.awt.application.name", "PDF Auto A11y");
         try {
             Class<?> appClass = Class.forName("com.apple.eawt.Application");
             Object app = appClass.getMethod("getApplication").invoke(null);
@@ -285,7 +285,7 @@ public class PdfNormalizerGUI extends JFrame {
             } catch (Exception e) {
                 // Use default look and feel
             }
-            new PdfNormalizerGUI();
+            new PdfAutoA11yGUI();
         });
     }
 }
