@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.itextpdf.kernel.pdf.*;
 
-public class PdfProcessingService {
+public class ProcessingService {
 
     public static class ProcessingRequest {
         private final Path inputPath;
@@ -112,7 +112,7 @@ public class PdfProcessingService {
                 // Step 0: Validate the tag structure
                 request.getOutputStream().println("Validating existing tag structure:");
                 request.getOutputStream().println("────────────────────────────────────────");
-                PdfTagValidator validator = new PdfTagValidator(TagSchema.minimalLists());
+                TagValidator validator = new TagValidator(TagSchema.minimalLists());
                 List<Issue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
                 for (Issue issue : tagIssues) {
                     request.getOutputStream().println("Issue at " + issue.nodePath() + ": " + issue.message());
@@ -147,7 +147,7 @@ public class PdfProcessingService {
                 request.getOutputStream().println("Tag structure analysis and fixes:");
                 request.getOutputStream().println("────────────────────────────────────────");
 
-                PdfTagNormalizer normalizer = new PdfTagNormalizer(pdfDoc, request.getOutputStream());
+                TagNormalizer normalizer = new TagNormalizer(pdfDoc, request.getOutputStream());
                 normalizer.processAndDisplayChanges();
 
                 totalChanges += normalizer.getChangeCount();

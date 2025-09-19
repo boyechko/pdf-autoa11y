@@ -12,12 +12,12 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
 // --- Schema types ---
 final class RoleRule {
-    String parentMustBe;                    // optional
-    Set<String> allowedChildren = Set.of(); // optional
-    String childPattern;                    // optional EBNF-ish: "Lbl LBody", "LI+", "Lbl? LBody"
-    Integer minChildren;                    // optional
-    Integer maxChildren;                    // optional
-    Set<String> requiredChildren = Set.of();// optional
+    String parentMustBe;
+    Set<String> allowedChildren = Set.of();
+    String childPattern;
+    Integer minChildren;
+    Integer maxChildren;
+    Set<String> requiredChildren = Set.of();
 }
 
 final class TagSchema {
@@ -53,11 +53,9 @@ final class TagSchema {
 // --- Issue type ---
 record Issue(String code, String message, String nodePath, String role) {}
 
-// --- A tiny EBNF-ish matcher over child role sequences ---
-// Supports tokens (role names), concatenation, ?, *, +, and parentheses ().
-// No alternation yet; add '|' later if needed.
+// --- PatternMatcher (same as before) ---
 final class PatternMatcher {
-    private static sealed interface Node permits Seq, Atom, Opt, Star, Plus, Group {
+    private static sealed interface Node permits PatternMatcher.Seq, PatternMatcher.Atom, PatternMatcher.Opt, PatternMatcher.Star, PatternMatcher.Plus, PatternMatcher.Group {
         boolean match(List<String> input, int[] idx);
     }
     private static final class Seq implements Node {
@@ -98,6 +96,20 @@ final class PatternMatcher {
         public boolean match(List<String> in, int[] i){ return inner.match(in,i); }
     }
 
+    private final Node root;
+    private PatternMatcher(Node root){ this.root = root; }
+
+    static PatternMatcher compile(String pattern) {
+        if (pattern == null || pattern.isBlank()) return null;
+        return new PatternMatcher(new Parser(pattern).parse());
+    }
+
+    boolean fullMatch(List<String> seq) {
+        int[] i = {0};
+        boolean ok = root.match(seq, i);
+        return ok && i[0] == seq.size();
+    }
+
     private static final class Parser {
         final List<String> toks; int p=0;
         Parser(String s){ this.toks = lex(s); }
@@ -107,7 +119,6 @@ final class PatternMatcher {
                 String t = toks.get(p);
                 if (")".equals(t)) break;
                 Node n = parseAtom();
-                // postfix operators
                 while (p < toks.size()) {
                     String op = toks.get(p);
                     if ("?".equals(op)) { p++; n = new Opt(n); }
@@ -126,7 +137,6 @@ final class PatternMatcher {
                 expect(")");
                 return new Group(inner);
             }
-            // token is a role name
             return new Atom(t);
         }
         private void expect(String s) {
@@ -147,28 +157,13 @@ final class PatternMatcher {
         }
         private static void flush(StringBuilder b,List<String> o){ if(b.length()>0){ o.add(b.toString()); b.setLength(0);} }
     }
-
-    private final Node root;
-    private PatternMatcher(Node root){ this.root = root; }
-
-    static PatternMatcher compile(String pattern) {
-        if (pattern == null || pattern.isBlank()) return null;
-        return new PatternMatcher(new Parser(pattern).parse());
-    }
-
-    boolean fullMatch(List<String> seq) {
-        int[] i = {0};
-        boolean ok = root.match(seq, i);
-        return ok && i[0] == seq.size();
-    }
 }
 
-// --- The Validator ---
-final class PdfTagValidator {
+final class TagValidator {
     private final TagSchema schema;
     private PdfStructTreeRoot root;
 
-    PdfTagValidator(TagSchema schema){ this.schema = schema; }
+    TagValidator(TagSchema schema){ this.schema = schema; }
 
     public List<Issue> validate(PdfStructTreeRoot root) {
         this.root = root;
@@ -181,7 +176,7 @@ final class PdfTagValidator {
         String path = "/";
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
-        int index = 1;  // human-readable indices
+        int index = 1;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem) {
                 walk((PdfStructElem) kid, path, index, out);
@@ -196,18 +191,15 @@ final class PdfTagValidator {
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
         path = path + role + "[" + index + "]/";
 
-        // Parent rule
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
             out.add(new Issue("ParentMismatch",
                     "Parent must be "+rule.parentMustBe+" but is "+parentRole,
                     path, role));
         }
 
-        // Children roles
         List<PdfStructElem> kids = childrenOf(node);
         List<String> childRoles = kids.stream().map(this::mappedRole).toList();
 
-        // min/max children
         if (rule != null) {
             if (rule.minChildren != null && childRoles.size() < rule.minChildren)
                 out.add(new Issue("CardinalityViolation",
@@ -217,7 +209,6 @@ final class PdfTagValidator {
                         "Has "+childRoles.size()+" children; max is "+rule.maxChildren, path, role));
         }
 
-        // allowed children set
         if (rule != null && rule.allowedChildren != null && !rule.allowedChildren.isEmpty()) {
             for (int i=0;i<childRoles.size();i++) {
                 String cr = childRoles.get(i);
@@ -228,17 +219,15 @@ final class PdfTagValidator {
             }
         }
 
-        // ordered child pattern
         if (rule != null && rule.childPattern != null) {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(childRoles)) {
-                out.add(new Issue("OrderViolation",
-                        "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'", path, role));
+        out.add(new Issue("OrderViolation",
+            "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'", path, role));
             }
         }
 
-        // Recurse with child's index
-        int i = 1;  // human-readable indices
+        int i = 1;
         for (PdfStructElem kid : kids) {
             walk(kid, path, i, out);
             i++;

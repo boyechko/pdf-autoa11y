@@ -152,13 +152,13 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
-        SwingWorker<PdfProcessingService.ProcessingResult, String> worker =
-            new SwingWorker<PdfProcessingService.ProcessingResult, String>() {
+        SwingWorker<ProcessingService.ProcessingResult, String> worker =
+            new SwingWorker<ProcessingService.ProcessingResult, String>() {
 
             private File tempOutputFile;
 
             @Override
-            protected PdfProcessingService.ProcessingResult doInBackground() throws Exception {
+            protected ProcessingService.ProcessingResult doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
                 PrintStream guiOutput = new PrintStream(new OutputStream() {
                     @Override
@@ -180,9 +180,9 @@ public class PdfAutoA11yGUI extends JFrame {
                 tempOutputFile.deleteOnExit(); // Clean up if something goes wrong
 
                 // Use the service with temp file
-                PdfProcessingService service = new PdfProcessingService();
-                PdfProcessingService.ProcessingRequest request =
-                    new PdfProcessingService.ProcessingRequest(
+                ProcessingService service = new ProcessingService();
+                ProcessingService.ProcessingRequest request =
+                    new ProcessingService.ProcessingRequest(
                         selectedFile.toPath(),
                         tempOutputFile.toPath(),
                         password,
@@ -202,7 +202,7 @@ public class PdfAutoA11yGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    PdfProcessingService.ProcessingResult result = get();
+                    ProcessingService.ProcessingResult result = get();
                     if (result.isSuccess()) {
                         outputArea.append("\n=== PROCESSING COMPLETE ===\n");
                         outputArea.append("Changes applied: " + result.getChangeCount() + "\n");

@@ -44,11 +44,11 @@ public class PdfAutoA11yCLI {
         printHeader(srcPath);
 
         // Process using the service
-        PdfProcessingService service = new PdfProcessingService();
-        PdfProcessingService.ProcessingRequest request =
-            new PdfProcessingService.ProcessingRequest(srcPath, Paths.get(dest), password, System.out);
+        ProcessingService service = new ProcessingService();
+        ProcessingService.ProcessingRequest request = 
+            new ProcessingService.ProcessingRequest(srcPath, Paths.get(dest), password, System.out);
 
-        PdfProcessingService.ProcessingResult result = service.processPdf(request);
+        ProcessingService.ProcessingResult result = service.processPdf(request);
 
         if (result.isSuccess()) {
             printSummary(result, dest);
@@ -65,7 +65,7 @@ public class PdfAutoA11yCLI {
         System.out.println();
     }
 
-    private static void printSummary(PdfProcessingService.ProcessingResult result, String outputPath) {
+    private static void printSummary(ProcessingService.ProcessingResult result, String outputPath) {
         System.out.println();
         System.out.println("=== REMEDIATION SUMMARY ===");
 
