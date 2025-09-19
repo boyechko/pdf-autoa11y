@@ -2,162 +2,13 @@ package net.boyechko.pdf.autoa11y;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.List;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
-// --- Schema types ---
-final class RoleRule {
-    String parentMustBe;
-    Set<String> allowedChildren = Set.of();
-    String childPattern;
-    Integer minChildren;
-    Integer maxChildren;
-    Set<String> requiredChildren = Set.of();
-}
-
-final class TagSchema {
-    Map<String, RoleRule> roles = new HashMap<>();
-    static TagSchema minimalLists() {
-        TagSchema s = new TagSchema();
-        RoleRule L = new RoleRule();
-        L.allowedChildren = Set.of("LI");
-        L.childPattern = "LI+";
-        L.minChildren = 1;
-        s.roles.put("L", L);
-
-        RoleRule LI = new RoleRule();
-        LI.parentMustBe = "L";
-        LI.allowedChildren = Set.of("Lbl", "LBody");
-        LI.childPattern = "Lbl* LBody";
-        LI.minChildren = 1;
-        LI.maxChildren = 2;
-        s.roles.put("LI", LI);
-
-        RoleRule Lbl = new RoleRule();
-        Lbl.parentMustBe = "LI";
-        s.roles.put("Lbl", Lbl);
-
-        RoleRule LBody = new RoleRule();
-        LBody.parentMustBe = "LI";
-        s.roles.put("LBody", LBody);
-
-        return s;
-    }
-}
-
-// --- PatternMatcher (same as before) ---
-final class PatternMatcher {
-    private static sealed interface Node permits PatternMatcher.Seq, PatternMatcher.Atom, PatternMatcher.Opt, PatternMatcher.Star, PatternMatcher.Plus, PatternMatcher.Group {
-        boolean match(List<String> input, int[] idx);
-    }
-    private static final class Seq implements Node {
-        final List<Node> parts;
-        Seq(List<Node> parts) { this.parts = parts; }
-        public boolean match(List<String> in, int[] i) {
-            int start = i[0];
-            for (Node n : parts) if (!n.match(in, i)) { i[0] = start; return false; }
-            return true;
-        }
-    }
-    private static final class Atom implements Node {
-        final String sym;
-        Atom(String s) { this.sym = s; }
-        public boolean match(List<String> in, int[] i) {
-            if (i[0] < in.size() && in.get(i[0]).equals(sym)) { i[0]++; return true; }
-            return false;
-        }
-    }
-    private static final class Opt implements Node {
-        final Node inner;
-        Opt(Node n){ this.inner = n; }
-        public boolean match(List<String> in, int[] i){ int save=i[0]; if(!inner.match(in,i)) i[0]=save; return true; }
-    }
-    private static final class Star implements Node {
-        final Node inner;
-        Star(Node n){ this.inner = n; }
-        public boolean match(List<String> in, int[] i){ while(inner.match(in,i)){} return true; }
-    }
-    private static final class Plus implements Node {
-        final Node inner;
-        Plus(Node n){ this.inner = n; }
-        public boolean match(List<String> in, int[] i){ if(!inner.match(in,i)) return false; while(inner.match(in,i)){} return true; }
-    }
-    private static final class Group implements Node {
-        final Node inner;
-        Group(Node n){ this.inner = n; }
-        public boolean match(List<String> in, int[] i){ return inner.match(in,i); }
-    }
-
-    private final Node root;
-    private PatternMatcher(Node root){ this.root = root; }
-
-    static PatternMatcher compile(String pattern) {
-        if (pattern == null || pattern.isBlank()) return null;
-        return new PatternMatcher(new Parser(pattern).parse());
-    }
-
-    boolean fullMatch(List<String> seq) {
-        int[] i = {0};
-        boolean ok = root.match(seq, i);
-        return ok && i[0] == seq.size();
-    }
-
-    private static final class Parser {
-        final List<String> toks; int p=0;
-        Parser(String s){ this.toks = lex(s); }
-        Node parse() {
-            List<Node> seq = new ArrayList<>();
-            while (p < toks.size()) {
-                String t = toks.get(p);
-                if (")".equals(t)) break;
-                Node n = parseAtom();
-                while (p < toks.size()) {
-                    String op = toks.get(p);
-                    if ("?".equals(op)) { p++; n = new Opt(n); }
-                    else if ("*".equals(op)) { p++; n = new Star(n); }
-                    else if ("+".equals(op)) { p++; n = new Plus(n); }
-                    else break;
-                }
-                seq.add(n);
-            }
-            return seq.size()==1 ? seq.get(0) : new Seq(seq);
-        }
-        private Node parseAtom() {
-            String t = toks.get(p++);
-            if ("(".equals(t)) {
-                Node inner = parse();
-                expect(")");
-                return new Group(inner);
-            }
-            return new Atom(t);
-        }
-        private void expect(String s) {
-            if (p>=toks.size() || !toks.get(p).equals(s)) throw new IllegalArgumentException("Expected '"+s+"'");
-            p++;
-        }
-        private static List<String> lex(String s) {
-            List<String> out = new ArrayList<>();
-            StringBuilder buf = new StringBuilder();
-            for (int i=0;i<s.length();i++){
-                char c = s.charAt(i);
-                if (Character.isWhitespace(c)) { flush(buf,out); continue; }
-                if ("()?*+".indexOf(c)>=0) { flush(buf,out); out.add(String.valueOf(c)); continue; }
-                buf.append(c);
-            }
-            flush(buf,out);
-            return out;
-        }
-        private static void flush(StringBuilder b,List<String> o){ if(b.length()>0){ o.add(b.toString()); b.setLength(0);} }
-    }
-}
-
-final class TagValidator {
+public final class TagValidator {
     private static final int DISPLAY_COLUMN_WIDTH = 40;
     private static final String INDENT = "  ";
 
@@ -213,7 +64,7 @@ final class TagValidator {
 
     private void walk(PdfStructElem node, String path, int index, int level, List<Issue> out) {
         String role = mappedRole(node);
-        RoleRule rule = schema.roles.get(role);
+        TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
         path = path + role + "[" + index + "]/";
 
