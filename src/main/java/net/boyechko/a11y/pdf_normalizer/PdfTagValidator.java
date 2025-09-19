@@ -31,6 +31,7 @@ final class TagSchema {
         s.roles.put("L", L);
 
         RoleRule LI = new RoleRule();
+        LI.parentMustBe = "L";
         LI.allowedChildren = Set.of("Lbl", "LBody");
         LI.childPattern = "Lbl* LBody";
         LI.minChildren = 1;
