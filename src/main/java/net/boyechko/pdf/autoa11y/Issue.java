@@ -11,6 +11,10 @@ public final class Issue {
     private boolean failed;
     private String resolutionNote;
 
+    public Issue(IssueType type, IssueSeverity sev, IssueLocation where, String message) {
+        this(type, sev, where, message, null);
+    }
+
     public Issue(IssueType type, IssueSeverity sev, IssueLocation where, String message, IssueFix fix) {
         this.type = type; this.severity = sev; this.where = where; this.message = message; this.fix = fix;
     }
