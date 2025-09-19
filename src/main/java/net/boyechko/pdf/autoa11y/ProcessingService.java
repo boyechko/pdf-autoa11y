@@ -71,19 +71,9 @@ public class ProcessingService {
                 }
 
                 // Step 0: Validate the tag structure
-                request.getOutputStream().println("Validating existing tag structure:");
-                request.getOutputStream().println("────────────────────────────────────────");
-                TagValidator validator = new TagValidator(TagSchema.minimalLists());
+                TagValidator validator = new TagValidator(TagSchema.minimalLists(), request.getOutputStream());
                 List<Issue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
-                for (Issue issue : tagIssues) {
-                    request.getOutputStream().println("Issue at " + issue.where().path() + ": " + issue.message());
-                }
-                if (tagIssues.isEmpty()) {
-                    request.getOutputStream().println("✓ No issues found in tag structure");
-                } else {
-                    request.getOutputStream().println("Tag issues found: " + tagIssues.size());
-                    totalIssues += tagIssues.size();
-                }
+                totalIssues += tagIssues.size();
 
                request.getOutputStream().println();
 
