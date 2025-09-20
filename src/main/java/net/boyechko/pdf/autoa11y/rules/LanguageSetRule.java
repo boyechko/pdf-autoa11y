@@ -28,8 +28,10 @@ public class LanguageSetRule implements Rule {
         };
 
         Issue issue = new Issue(
-            IssueType.LANGUAGE_NOT_SET, IssueSeverity.ERROR, new IssueLocation(null, null),
-            "✗ Document language (Lang) is not set", fix
+            IssueType.LANGUAGE_NOT_SET,
+            IssueSeverity.ERROR,
+            "✗ Document language (Lang) is not set",
+            fix
         );
         return java.util.List.of(issue);
     }

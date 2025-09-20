@@ -36,8 +36,10 @@ public class TaggedPdfRule implements Rule {
         };
 
         Issue issue = new Issue(
-            IssueType.NOT_TAGGED_PDF, IssueSeverity.ERROR, new IssueLocation(null, null),
-            "✗ Document is not marked as tagged PDF", fix
+            IssueType.NOT_TAGGED_PDF,
+            IssueSeverity.ERROR,
+            "✗ Document is not marked as tagged PDF",
+            fix
         );
         return java.util.List.of(issue);
     }

@@ -23,8 +23,10 @@ public class TabOrderRule implements Rule {
         };
 
         Issue issue = new Issue(
-            IssueType.TAB_ORDER_NOT_SET, IssueSeverity.ERROR, new IssueLocation(null, null),
-            "✗ Document tab order is not set", fix
+            IssueType.TAB_ORDER_NOT_SET,
+            IssueSeverity.ERROR,
+            "✗ Document tab order is not set",
+            fix
         );
         return java.util.List.of(issue);
     }
