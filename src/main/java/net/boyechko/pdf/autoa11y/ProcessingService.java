@@ -1,13 +1,18 @@
 package net.boyechko.pdf.autoa11y;
 
+import java.io.PrintStream;
 import java.nio.file.*;
 import java.util.List;
 import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
+    private PrintStream output = System.out;
 
     public ProcessingResult processPdf(ProcessingRequest request) {
+        this.output = request.getOutputStream();
+
         try {
             // Only create directories if the output path has a parent
             Path outputParent = request.getOutputPath().getParent();
@@ -62,40 +67,54 @@ public class ProcessingService {
                     new TabOrderRule(),
                     new TaggedPdfRule()
                 ));
-                ProcessingContext ctx = new ProcessingContext(pdfDoc, request.getOutputStream());
+                ProcessingContext ctx = new ProcessingContext(pdfDoc, output);
 
                 // Phase 1: Detect issues
                 List<Issue> issues = engine.detectAll(ctx);
                 if (!issues.isEmpty()) {
                     totalIssues += issues.size();
-                    request.getOutputStream().println("Issues detected: ");
-                    request.getOutputStream().println("────────────────────────────────────────");
+                    output.println("Issues detected: ");
+                    output.println("────────────────────────────────────────");
                     for (Issue i : issues) {
-                        request.getOutputStream().println(i.message());
+                        output.println(i.message());
                     }
                 }
 
                 // Step 0: Validate the tag structure
-                TagValidator validator = new TagValidator(TagSchema.minimalLists(), request.getOutputStream());
-                List<Issue> tagIssues = validator.validate(pdfDoc.getStructTreeRoot());
-                totalIssues += tagIssues.size();
+                PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+                if (root == null || root.getKids() == null) {
+                    output.println("✗ No accessibility tags found");
+                } else {
+                    output.println();
+                    output.println("Tag structure validation:");
+                    output.println("────────────────────────────────────────");
 
-               request.getOutputStream().println();
+                    TagValidator validator = new TagValidator(TagSchema.minimalLists(), output);
+                    List<Issue> tagIssues = validator.validate(root);
+                    totalIssues += tagIssues.size();
+
+                    if (issues.isEmpty()) {
+                        output.println("✓ No issues found in tag structure");
+                    } else {
+                        output.println("✗ Tag issues found: " + tagIssues.size());
+                    }
+                }
 
                 // Step 1: Tag structure normalization
-                request.getOutputStream().println("Tag structure analysis and fixes:");
-                request.getOutputStream().println("────────────────────────────────────────");
+                output.println();
+                output.println("Tag structure analysis and fixes:");
+                output.println("────────────────────────────────────────");
 
-                TagNormalizer normalizer = new TagNormalizer(pdfDoc, request.getOutputStream());
+                TagNormalizer normalizer = new TagNormalizer(pdfDoc, output);
                 normalizer.processAndDisplayChanges();
 
                 totalChanges += normalizer.getChangeCount();
                 totalWarnings += normalizer.getWarningCount();
 
                 // Step 2: Apply rule-based fixes
-                request.getOutputStream().println();
-                request.getOutputStream().println("Applying rule-based fixes:");
-                request.getOutputStream().println("────────────────────────────────────────");
+                output.println();
+                output.println("Applying rule-based fixes:");
+                output.println("────────────────────────────────────────");
                 engine.applyFixes(ctx, issues);
 
                 return ProcessingResult.success(totalIssues, totalChanges, totalWarnings);

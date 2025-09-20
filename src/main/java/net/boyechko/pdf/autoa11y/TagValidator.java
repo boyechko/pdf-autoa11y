@@ -29,25 +29,11 @@ public final class TagValidator {
 
     public List<Issue> validate(PdfStructTreeRoot root) {
         this.root = root;
-        this.issues = new ArrayList<>(); // Reset for new validation
-
-        output.println("Tag structure validation:");
-        output.println("────────────────────────────────────────");
-
-        if (root == null || root.getKids() == null) {
-            output.println("No accessibility tags found");
-            return List.copyOf(issues); // Return immutable copy
-        }
+        this.issues = new ArrayList<>();
 
         walk(root);
 
-        if (issues.isEmpty()) {
-            output.println("✓ No issues found in tag structure");
-        } else {
-            output.println("Tag issues found: " + issues.size());
-        }
-
-        return List.copyOf(issues); // Return immutable copy
+        return List.copyOf(issues);
     }
 
     private void walk(PdfStructTreeRoot root) {
