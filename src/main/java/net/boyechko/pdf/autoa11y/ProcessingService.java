@@ -117,6 +117,22 @@ public class ProcessingService {
                 output.println("────────────────────────────────────────");
                 engine.applyFixes(ctx, issues);
 
+                // Step 3: List remaining issues
+                if (!issues.isEmpty()) {
+                    List<Issue> remaining = issues.stream().filter(i -> !i.isResolved()).toList();
+                    if (!remaining.isEmpty()) {
+                        output.println();
+                        output.println("Remaining issues after fixes:");
+                        output.println("────────────────────────────────────────");
+                        for (Issue i : remaining) {
+                            String where = (i.where() != null) ? (" at " + i.where().path()) : "";
+                            output.println("✗ " + i.message() + where);
+                        }
+                    } else {
+                        output.println("✓ All detected issues have been resolved.");
+                    }
+                }
+
                 return ProcessingResult.success(totalIssues, totalChanges, totalWarnings);
             }
 
