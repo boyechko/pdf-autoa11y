@@ -70,7 +70,7 @@ public final class TagValidator {
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
             issues.add(new Issue(IssueType.TAG_PARENT_MISMATCH,
                     IssueSeverity.ERROR,
-                    new IssueLocation(null, path),
+                    new IssueLocation(node, path),
                     "Parent must be "+rule.parentMustBe+" but is "+parentRole));
             if (output != null) {
                 elementIssues.add("✗ Parent must be "+rule.parentMustBe+" but is "+parentRole);
@@ -84,14 +84,14 @@ public final class TagValidator {
             if (rule.minChildren != null && childRoles.size() < rule.minChildren) {
                 issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
                         IssueSeverity.ERROR,
-                        new IssueLocation(null, path),
+                        new IssueLocation(node, path),
                         "Has "+childRoles.size()+" children; min is "+rule.minChildren));
                 elementIssues.add("✗ Has "+childRoles.size()+" children; min is "+rule.minChildren);
             }
             if (rule.maxChildren != null && childRoles.size() > rule.maxChildren) {
                 issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
                         IssueSeverity.ERROR,
-                        new IssueLocation(null, path),
+                        new IssueLocation(node, path),
                         "Has "+childRoles.size()+" children; max is "+rule.maxChildren));
                 elementIssues.add("✗ Has "+childRoles.size()+" children; max is "+rule.maxChildren);
             }
@@ -109,7 +109,7 @@ public final class TagValidator {
                 if (!rule.allowedChildren.contains(cr)) {
                     issues.add(new Issue(IssueType.TAG_ILLEGAL_CHILD,
                             IssueSeverity.ERROR,
-                            new IssueLocation(null, path),
+                            new IssueLocation(kids.get(i), path),
                             "Child #"+i+" role '"+cr+"' not allowed under "+role));
                     // Pass this issue down to the specific child instead of showing at parent
                     childSpecificIssues.get(i).add("✗ Role '"+cr+"' not allowed under "+role);
@@ -122,7 +122,7 @@ public final class TagValidator {
             if (pm != null && !pm.fullMatch(childRoles)) {
                 issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
                         IssueSeverity.ERROR,
-                        new IssueLocation(null, path),
+                        new IssueLocation(node, path),
                         "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'"));
                 elementIssues.add("✗ Children "+childRoles+" do not match pattern '"+rule.childPattern+"'");
             }
