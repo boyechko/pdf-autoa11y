@@ -37,8 +37,8 @@ public final class Issue {
     public String message() { return message; }
     public IssueFix fix() { return fix; }
 
-    public boolean resolved() { return resolved; }
-    public boolean failed() { return failed; }
+    public boolean hasFailed() { return failed; }
+    public boolean isResolved() { return resolved; }
     public String resolutionNote() { return resolutionNote; }
     public void markResolved(String note) { this.resolved = true; this.resolutionNote = note; }
     public void markFailed(String note) { this.failed = true; this.resolutionNote = note; }
