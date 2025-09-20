@@ -10,14 +10,6 @@ public class TabOrderRule implements Rule {
 
     @Override
     public java.util.List<Issue> findIssues(ProcessingContext ctx) {
-        PdfCatalog cat = ctx.doc().getCatalog();
-
-        if (cat.getLang() != null) {
-            ctx.out().println("✓ Document language (Lang) is set to: " + cat.getLang());
-            return java.util.List.of();
-        }
-        ctx.out().println("✗ Document language (Lang) is not set");
-
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set document tab order"; }
@@ -32,7 +24,7 @@ public class TabOrderRule implements Rule {
 
         Issue issue = new Issue(
             IssueType.TAB_ORDER_NOT_SET, IssueSeverity.ERROR, new IssueLocation(null, null),
-            "Document tab order is not set", fix
+            "✗ Document tab order is not set", fix
         );
         return java.util.List.of(issue);
     }

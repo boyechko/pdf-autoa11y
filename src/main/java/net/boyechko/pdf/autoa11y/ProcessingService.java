@@ -66,8 +66,13 @@ public class ProcessingService {
 
                 // Phase 1: Detect issues
                 List<Issue> issues = engine.detectAll(ctx);
-                for (Issue i : issues) {
-                    request.getOutputStream().println("Issue detected: " + i.message());
+                if (!issues.isEmpty()) {
+                    totalIssues += issues.size();
+                    request.getOutputStream().println("Issues detected: ");
+                    request.getOutputStream().println("────────────────────────────────────────");
+                    for (Issue i : issues) {
+                        request.getOutputStream().println(i.message());
+                    }
                 }
 
                 // Step 0: Validate the tag structure

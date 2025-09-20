@@ -21,8 +21,6 @@ public class TaggedPdfRule implements Rule {
             return java.util.List.of();
         }
 
-        ctx.out().println("✗ Document is not marked as tagged PDF");
-
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set /MarkInfo /Marked true"; }
@@ -39,7 +37,7 @@ public class TaggedPdfRule implements Rule {
 
         Issue issue = new Issue(
             IssueType.NOT_TAGGED_PDF, IssueSeverity.ERROR, new IssueLocation(null, null),
-            "Document is not marked as tagged PDF (/MarkInfo /Marked true expected)", fix
+            "✗ Document is not marked as tagged PDF", fix
         );
         return java.util.List.of(issue);
     }
