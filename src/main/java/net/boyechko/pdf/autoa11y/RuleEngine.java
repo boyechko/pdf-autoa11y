@@ -32,12 +32,26 @@ public class RuleEngine {
             .sorted(Comparator.comparingInt(e -> e.getValue().priority()))
             .toList();
 
+        // Track applied fixes to check for invalidation
+        List<IssueFix> appliedFixes = new ArrayList<>();
+
         // iterate using the cached IssueFix
         for (Map.Entry<Issue, IssueFix> e : ordered) {
             Issue i = e.getKey();
             IssueFix fx = e.getValue();
+
+            // Check if this fix has been invalidated by any previously applied fix
+            boolean isInvalidated = appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
+
+            if (isInvalidated) {
+                i.markResolved("Skipped - invalidated by higher priority fix");
+                logger.debug("Skipping fix {} - invalidated by higher priority fix", fx.describe());
+                continue;
+            }
+
             try {
                 fx.apply(ctx);                  // idempotent by contract
+                appliedFixes.add(fx);           // Track this fix as applied
                 i.markResolved(fx.describe());
             } catch (Exception ex) {
                 i.markFailed(fx.describe() + " failed: " + ex.getMessage());
