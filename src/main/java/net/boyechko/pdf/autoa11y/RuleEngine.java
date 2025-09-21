@@ -23,8 +23,8 @@ public class RuleEngine {
         return all;
     }
 
-    /** Phase 2 — apply fixes in priority order. You decide which issues to apply. */
-    public void applyFixes(ProcessingContext ctx, List<Issue> issuesToFix) {
+    /** Phase 2 — apply fixes in priority order. */
+    public List<Issue> applyFixes(ProcessingContext ctx, List<Issue> issuesToFix) {
         // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered = issuesToFix.stream()
             .map(i -> Map.entry(i, i.fix()))              // compute once
@@ -58,5 +58,7 @@ public class RuleEngine {
                 logger.error("Error applying fix: " + ex.getMessage());
             }
         }
+
+        return issuesToFix.stream().filter(Issue::isResolved).toList();
     }
 }

@@ -107,7 +107,7 @@ public class ProcessingService {
                 output.println();
                 output.println("Applying automatic fixes:");
                 output.println("────────────────────────────────────────");
-                engine.applyFixes(ctx, issues);
+                totalChanges += (int) engine.applyFixes(ctx, issues).size();
 
                 // Step 3: List remaining issues
                 if (!issues.isEmpty()) {
