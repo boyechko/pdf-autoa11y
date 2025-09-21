@@ -1,9 +1,15 @@
 package net.boyechko.pdf.autoa11y;
 
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Comparator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RuleEngine {
     private final List<Rule> rules;
+    private static final Logger logger = LoggerFactory.getLogger(RuleEngine.class);
 
     public RuleEngine(List<Rule> rules) { this.rules = List.copyOf(rules); }
 
@@ -35,7 +41,7 @@ public class RuleEngine {
                 i.markResolved(fx.describe());
             } catch (Exception ex) {
                 i.markFailed(fx.describe() + " failed: " + ex.getMessage());
-                // consider logging ex (stack trace) or escalating severity here
+                logger.error("Error applying fix: " + ex.getMessage());
             }
         }
     }
