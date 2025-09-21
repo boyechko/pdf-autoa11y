@@ -10,20 +10,135 @@ import net.boyechko.pdf.autoa11y.rules.*;
 public class ProcessingService {
     private PrintStream output = System.out;
 
+    private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
+
+    private void setupOutputPath(ProcessingRequest request) throws Exception {
+        Path outputParent = request.getOutputPath().getParent();
+        if (outputParent != null) {
+            Files.createDirectories(outputParent);
+        }
+    }
+
+    private void validateInputFile(ProcessingRequest request) throws Exception {
+        if (!Files.exists(request.getInputPath())) {
+            throw new IllegalArgumentException("File not found: " + request.getInputPath());
+        }
+    }
+
+    private EncryptionInfo analyzeEncryption(ProcessingRequest request, ReaderProperties readerProps) throws Exception {
+        try (PdfReader testReader = new PdfReader(request.getInputPath().toString(), readerProps);
+             PdfDocument testDoc = new PdfDocument(testReader)) {
+
+            return new EncryptionInfo(
+                testReader.getPermissions(),
+                testReader.getCryptoMode(),
+                testReader.isEncrypted()
+            );
+        }
+    }
+
+    private PdfDocument createPdfDocument(ProcessingRequest request, ReaderProperties readerProps, EncryptionInfo encInfo) throws Exception {
+        PdfReader pdfReader = new PdfReader(request.getInputPath().toString(), readerProps);
+        WriterProperties writerProps = new WriterProperties();
+
+        if (encInfo.isEncrypted() && request.getPassword() != null) {
+            writerProps.setStandardEncryption(
+                null,
+                request.getPassword().getBytes(),
+                encInfo.permissions(),
+                encInfo.cryptoMode()
+            );
+        }
+
+        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
+        PdfWriter pdfWriter = new PdfWriter(request.getOutputPath().toString(), writerProps);
+
+        return new PdfDocument(pdfReader, pdfWriter);
+    }
+
+    private List<Issue> detectAllIssues(PdfDocument pdfDoc, ProcessingContext ctx) {
+        List<Issue> allIssues = new java.util.ArrayList<>();
+
+        // Phase 1: Rule-based detection
+        RuleEngine engine = new RuleEngine(java.util.List.of(
+            new LanguageSetRule(),
+            new TabOrderRule(),
+            new TaggedPdfRule()
+        ));
+
+        List<Issue> ruleIssues = engine.detectAll(ctx);
+        if (!ruleIssues.isEmpty()) {
+            output.println();
+            output.println("Issues detected: ");
+            output.println("────────────────────────────────────────");
+            for (Issue i : ruleIssues) {
+                output.println(i.message());
+            }
+            allIssues.addAll(ruleIssues);
+        }
+
+        // Phase 2: Tag structure validation
+        PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            output.println("✗ No accessibility tags found");
+        } else {
+            output.println();
+            output.println("Tag structure validation:");
+            output.println("────────────────────────────────────────");
+
+            TagValidator validator = new TagValidator(TagSchema.minimalLists(), output);
+            List<Issue> tagIssues = validator.validate(root);
+
+            if (tagIssues.isEmpty()) {
+                output.println("✓ No issues found in tag structure");
+            } else {
+                output.println("✗ Tag issues found: " + tagIssues.size());
+                allIssues.addAll(tagIssues);
+            }
+        }
+
+        return allIssues;
+    }
+
+    private int applyFixesAndReport(List<Issue> issues, ProcessingContext ctx) {
+        RuleEngine engine = new RuleEngine(java.util.List.of(
+            new LanguageSetRule(),
+            new TabOrderRule(),
+            new TaggedPdfRule()
+        ));
+
+        output.println();
+        output.println("Applying automatic fixes:");
+        output.println("────────────────────────────────────────");
+
+        int changesApplied = (int) engine.applyFixes(ctx, issues).size();
+
+        // Report remaining issues
+        if (!issues.isEmpty()) {
+            List<Issue> remaining = issues.stream().filter(i -> !i.isResolved()).toList();
+            if (!remaining.isEmpty()) {
+                output.println();
+                output.println("Remaining issues after fixes:");
+                output.println("────────────────────────────────────────");
+                for (Issue i : remaining) {
+                    String where = (i.where() != null) ? (" at " + i.where().path()) : "";
+                    output.println("✗ " + i.message() + where);
+                }
+            } else {
+                output.println("✓ All detected issues have been resolved.");
+            }
+        }
+
+        return changesApplied;
+    }
+
     public ProcessingResult processPdf(ProcessingRequest request) {
         this.output = request.getOutputStream();
 
         try {
-            // Only create directories if the output path has a parent
-            Path outputParent = request.getOutputPath().getParent();
-            if (outputParent != null) {
-                Files.createDirectories(outputParent);
-            }
-
-            // Check if input file exists
-            if (!Files.exists(request.getInputPath())) {
-                return ProcessingResult.error("File not found: " + request.getInputPath());
-            }
+            // File system setup
+            setupOutputPath(request);
+            validateInputFile(request);
 
             // Setup reader properties
             ReaderProperties readerProps = new ReaderProperties();
@@ -31,101 +146,21 @@ public class ProcessingService {
                 readerProps.setPassword(request.getPassword().getBytes());
             }
 
-            // Open for reading to check encryption properties
-            PdfReader testReader = new PdfReader(request.getInputPath().toString(), readerProps);
-            PdfDocument testDoc = new PdfDocument(testReader);
+            // Analyze encryption
+            EncryptionInfo encInfo = analyzeEncryption(request, readerProps);
 
-            int permissions = testReader.getPermissions();
-            int cryptoMode = testReader.getCryptoMode();
-            boolean isEncrypted = testReader.isEncrypted();
-
-            testDoc.close();
-
-            // Now open for processing
-            PdfReader pdfReader = new PdfReader(request.getInputPath().toString(), readerProps);
-            WriterProperties writerProps = new WriterProperties();
-
-            if (isEncrypted && request.getPassword() != null) {
-                writerProps.setStandardEncryption(
-                    null,
-                    request.getPassword().getBytes(),
-                    permissions,
-                    cryptoMode
-                );
-            }
-
-            writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
-            PdfWriter pdfWriter = new PdfWriter(request.getOutputPath().toString(), writerProps);
-
-            try (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter)) {
-                int totalChanges = 0;
-                int totalWarnings = 0;
-                int totalIssues = 0;
-
-                RuleEngine engine = new RuleEngine(java.util.List.of(
-                    new LanguageSetRule(),
-                    new TabOrderRule(),
-                    new TaggedPdfRule()
-                ));
+            // Create PDF document for processing
+            try (PdfDocument pdfDoc = createPdfDocument(request, readerProps, encInfo)) {
                 ProcessingContext ctx = new ProcessingContext(pdfDoc, output);
 
-                // Phase 1: Detect issues
-                List<Issue> issues = new java.util.ArrayList<>(engine.detectAll(ctx));
-                if (!issues.isEmpty()) {
-                    totalIssues += issues.size();
-                    output.println();
-                    output.println("Issues detected: ");
-                    output.println("────────────────────────────────────────");
-                    for (Issue i : issues) {
-                        output.println(i.message());
-                    }
-                }
+                // Detect all issues
+                List<Issue> issues = detectAllIssues(pdfDoc, ctx);
+                int totalIssues = issues.size();
 
-                PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-                if (root == null || root.getKids() == null) {
-                    output.println("✗ No accessibility tags found");
-                } else {
-                    output.println();
-                    output.println("Tag structure validation:");
-                    output.println("────────────────────────────────────────");
+                // Apply fixes and report
+                int totalChanges = applyFixesAndReport(issues, ctx);
 
-                    TagValidator validator = new TagValidator(TagSchema.minimalLists(), output);
-                    List<Issue> tagIssues = validator.validate(root);
-                    totalIssues += tagIssues.size();
-
-                    if (tagIssues.isEmpty()) {
-                        output.println("✓ No issues found in tag structure");
-                    } else {
-                        output.println("✗ Tag issues found: " + tagIssues.size());
-                    }
-
-                    // Add tag issues to the main issues list for fixing
-                    issues.addAll(tagIssues);
-                }
-
-                // Step 2: Apply rule-based and tag structure fixes
-                output.println();
-                output.println("Applying automatic fixes:");
-                output.println("────────────────────────────────────────");
-                totalChanges += (int) engine.applyFixes(ctx, issues).size();
-
-                // Step 3: List remaining issues
-                if (!issues.isEmpty()) {
-                    List<Issue> remaining = issues.stream().filter(i -> !i.isResolved()).toList();
-                    if (!remaining.isEmpty()) {
-                        output.println();
-                        output.println("Remaining issues after fixes:");
-                        output.println("────────────────────────────────────────");
-                        for (Issue i : remaining) {
-                            String where = (i.where() != null) ? (" at " + i.where().path()) : "";
-                            output.println("✗ " + i.message() + where);
-                        }
-                    } else {
-                        output.println("✓ All detected issues have been resolved.");
-                    }
-                }
-
-                return ProcessingResult.success(totalIssues, totalChanges, totalWarnings);
+                return ProcessingResult.success(totalIssues, totalChanges, 0);
             }
 
         } catch (Exception e) {
