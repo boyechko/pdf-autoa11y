@@ -69,7 +69,7 @@ public class ProcessingService {
         List<Issue> ruleIssues = engine.detectAll(ctx);
         if (!ruleIssues.isEmpty()) {
             output.println();
-            output.println("Issues detected: ");
+            output.println("Document issues found: " + ruleIssues.size());
             output.println("────────────────────────────────────────");
             for (Issue i : ruleIssues) {
                 output.println(i.message());
@@ -92,7 +92,7 @@ public class ProcessingService {
             if (tagIssues.isEmpty()) {
                 output.println("✓ No issues found in tag structure");
             } else {
-                output.println("✗ Tag issues found: " + tagIssues.size());
+                output.println("Tag issues found: " + tagIssues.size());
                 allIssues.addAll(tagIssues);
             }
         }
@@ -107,14 +107,14 @@ public class ProcessingService {
             new TaggedPdfRule()
         ));
 
-        output.println();
-        output.println("Applying automatic fixes:");
-        output.println("────────────────────────────────────────");
-
-        int changesApplied = (int) engine.applyFixes(ctx, issues).size();
-
         // Report remaining issues
         if (!issues.isEmpty()) {
+            output.println();
+            output.println("Applying automatic fixes:");
+            output.println("────────────────────────────────────────");
+
+            int changesApplied = (int) engine.applyFixes(ctx, issues).size();
+
             List<Issue> remaining = issues.stream().filter(i -> !i.isResolved()).toList();
             if (!remaining.isEmpty()) {
                 output.println();
@@ -124,12 +124,10 @@ public class ProcessingService {
                     String where = (i.where() != null) ? (" at " + i.where().path()) : "";
                     output.println("✗ " + i.message() + where);
                 }
-            } else {
-                output.println("✓ All detected issues have been resolved.");
             }
+            return changesApplied;
         }
-
-        return changesApplied;
+        return 0;
     }
 
     public ProcessingResult processPdf(ProcessingRequest request) {
