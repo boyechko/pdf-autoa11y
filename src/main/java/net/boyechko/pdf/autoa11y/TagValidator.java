@@ -50,7 +50,7 @@ public final class TagValidator {
                 index++;
             }
         }
-   }
+    }
 
     private void walk(PdfStructElem node, String path, int index, int level) {
         walk(node, path, index, level, null);
@@ -110,10 +110,19 @@ public final class TagValidator {
             for (int i=0;i<childRoles.size();i++) {
                 String cr = childRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
+                    // Create IssueFix for automatic wrapping
+                    IssueFix fix = null;
+                    if ("L".equals(role) && "P".equals(cr)) {
+                        fix = new WrapInProperContainer(kids.get(i), node, role, cr);
+                    } else {
+                        logger.info("No automatic fix available for child role "+cr+" under parent role "+role);
+                    }
+
                     issues.add(new Issue(IssueType.TAG_ILLEGAL_CHILD,
                             IssueSeverity.ERROR,
                             new IssueLocation(kids.get(i), path),
-                            "Child #"+i+" role '"+cr+"' not allowed under "+role));
+                            "Child #"+i+" role '"+cr+"' not allowed under "+role,
+                            fix));
                     // Pass this issue down to the specific child instead of showing at parent
                     childSpecificIssues.get(i).add("✗ Role '"+cr+"' not allowed under "+role);
                 }
@@ -123,10 +132,17 @@ public final class TagValidator {
         if (rule != null && rule.childPattern != null) {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(childRoles)) {
+                // Create IssueFix for automatic structure correction
+                IssueFix fix = null;
+                if ("L".equals(role) && allChildrenAreP(childRoles)) {
+                    fix = new FixListStructure(node, kids, role, childRoles);
+                }
+
                 issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
-                        "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'"));
+                        "Children "+childRoles+" do not match pattern '"+rule.childPattern+"'",
+                        fix));
                 elementIssues.add("✗ Children "+childRoles+" do not match pattern '"+rule.childPattern+"'");
             }
         }
@@ -168,6 +184,10 @@ public final class TagValidator {
         return out;
     }
 
+    private boolean allChildrenAreP(List<String> childRoles) {
+        return childRoles.stream().allMatch("P"::equals);
+    }
+
     private void printElement(String role, int level, List<String> issues, java.io.PrintStream output) {
         String tagOutput = INDENT.repeat(level) + "- " + role;
 
@@ -179,6 +199,121 @@ public final class TagValidator {
             String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
                 " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
             output.println(tagOutput + padding + "; " + comment);
+        }
+    }
+
+    // IssueFix implementations for automatic tag structure fixes
+
+    private static class FixListStructure implements IssueFix {
+        private final PdfStructElem listElement;
+        private final List<PdfStructElem> children;
+        private final String role;
+        private final List<String> childRoles;
+
+        FixListStructure(PdfStructElem listElement, List<PdfStructElem> children, String role, List<String> childRoles) {
+            this.listElement = listElement;
+            this.children = List.copyOf(children);
+            this.role = role;
+            this.childRoles = List.copyOf(childRoles);
+        }
+
+        @Override
+        public int priority() {
+            return 10;
+        }
+
+        @Override
+        public void apply(ProcessingContext ctx) throws Exception {
+            // For L elements with all P children, wrap pairs in LI->LBody structure
+            if ("L".equals(role) && allChildrenAreP() && (childRoles.size() % 2 == 0)) {
+                wrapPairsOfPInLI(ctx.doc());
+            }
+            // TODO: Add other pattern fixes as needed
+        }
+
+        @Override
+        public String describe() {
+            return "wrapped P elements in LI->LBody structure for list " + role;
+        }
+
+        @Override
+        public boolean invalidates(IssueFix otherFix) {
+            // If this fix operates on L with P children, it invalidates individual WrapInProperContainer
+            // fixes that target any of the same child elements
+            if (otherFix instanceof WrapInProperContainer) {
+                WrapInProperContainer wrapper = (WrapInProperContainer) otherFix;
+                return "L".equals(role) && "L".equals(wrapper.parentRole) &&
+                       wrapper.parent.equals(listElement) && children.contains(wrapper.child);
+            }
+            return false;
+        }
+
+        private boolean allChildrenAreP() {
+            return childRoles.stream().allMatch("P"::equals);
+        }
+
+        private void wrapPairsOfPInLI(PdfDocument document) throws Exception {
+            for (int i = 0; i < children.size(); i += 2) {
+                PdfStructElem p1 = (PdfStructElem) children.get(i);
+                PdfStructElem p2 = (PdfStructElem) children.get(i + 1);
+
+                PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
+                listElement.addKid(newLI);
+
+                PdfStructElem newLbl = new PdfStructElem(document, PdfName.Lbl);
+                newLI.addKid(newLbl);
+                listElement.removeKid(p1);
+                newLbl.addKid(p1);
+
+                PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+                newLI.addKid(newLBody);
+                listElement.removeKid(p2);
+                newLBody.addKid(p2);
+            }
+        }
+    }
+
+    private static class WrapInProperContainer implements IssueFix {
+        final PdfStructElem child;
+        final PdfStructElem parent;
+        final String parentRole;
+        private final String childRole;
+
+        WrapInProperContainer(PdfStructElem child, PdfStructElem parent, String parentRole, String childRole) {
+            this.child = child;
+            this.parent = parent;
+            this.parentRole = parentRole;
+            this.childRole = childRole;
+        }
+
+        @Override
+        public int priority() {
+            return 15;
+        }
+
+        @Override
+        public void apply(ProcessingContext ctx) throws Exception {
+            if ("L".equals(parentRole) && "P".equals(childRole)) {
+                // Wrap P in LI->LBody
+                wrapPInLILBody(ctx.doc());
+            }
+            // TODO: Add other wrapping cases as needed
+        }
+
+        @Override
+        public String describe() {
+            return "wrapped " + childRole + " in proper container under " + parentRole;
+        }
+
+        private void wrapPInLILBody(PdfDocument document) throws Exception {
+            PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
+            parent.addKid(newLI);
+
+            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+            newLI.addKid(newLBody);
+
+            parent.removeKid(child);
+            newLBody.addKid(child);
         }
     }
 }
