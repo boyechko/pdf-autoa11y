@@ -100,16 +100,6 @@ public class ProcessingService {
                     }
                 }
 
-                // Step 1: Tag structure normalization
-                output.println();
-                output.println("Tag structure analysis and fixes:");
-                output.println("────────────────────────────────────────");
-
-                TagNormalizer normalizer = new TagNormalizer(pdfDoc, output);
-                normalizer.processAndDisplayChanges();
-
-                totalChanges += normalizer.getChangeCount();
-                totalWarnings += normalizer.getWarningCount();
 
                 // Step 2: Apply rule-based fixes
                 output.println();
