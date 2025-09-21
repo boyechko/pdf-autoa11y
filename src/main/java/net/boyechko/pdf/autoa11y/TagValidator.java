@@ -7,10 +7,13 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class TagValidator {
     private static final int DISPLAY_COLUMN_WIDTH = 40;
     private static final String INDENT = "  ";
+    private static final Logger logger = LoggerFactory.getLogger(TagValidator.class);
 
     private final TagSchema schema;
     private PrintStream output;
