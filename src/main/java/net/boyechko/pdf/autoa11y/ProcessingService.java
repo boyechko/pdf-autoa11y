@@ -70,9 +70,10 @@ public class ProcessingService {
                 ProcessingContext ctx = new ProcessingContext(pdfDoc, output);
 
                 // Phase 1: Detect issues
-                List<Issue> issues = engine.detectAll(ctx);
+                List<Issue> issues = new java.util.ArrayList<>(engine.detectAll(ctx));
                 if (!issues.isEmpty()) {
                     totalIssues += issues.size();
+                    output.println();
                     output.println("Issues detected: ");
                     output.println("────────────────────────────────────────");
                     for (Issue i : issues) {
@@ -80,7 +81,6 @@ public class ProcessingService {
                     }
                 }
 
-                // Step 0: Validate the tag structure
                 PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
                 if (root == null || root.getKids() == null) {
                     output.println("✗ No accessibility tags found");
@@ -93,17 +93,19 @@ public class ProcessingService {
                     List<Issue> tagIssues = validator.validate(root);
                     totalIssues += tagIssues.size();
 
-                    if (issues.isEmpty()) {
+                    if (tagIssues.isEmpty()) {
                         output.println("✓ No issues found in tag structure");
                     } else {
                         output.println("✗ Tag issues found: " + tagIssues.size());
                     }
+
+                    // Add tag issues to the main issues list for fixing
+                    issues.addAll(tagIssues);
                 }
 
-
-                // Step 2: Apply rule-based fixes
+                // Step 2: Apply rule-based and tag structure fixes
                 output.println();
-                output.println("Applying rule-based fixes:");
+                output.println("Applying automatic fixes:");
                 output.println("────────────────────────────────────────");
                 engine.applyFixes(ctx, issues);
 
