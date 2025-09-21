@@ -52,7 +52,27 @@
         <version>3.1.0</version>
         <configuration>
           <mainClass>net.boyechko.pdf.autoa11y.PdfAutoA11yCLI</mainClass>
-          <commandlineArgs>${exec.args}</commandlineArgs>
+          <arguments>
+            <argument>${exec.args}</argument>
+          </arguments>
+          <systemProperties>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.dateTimeFormat</key>
+              <value>HH:mm:ss</value>
+            </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.showDateTime</key>
+              <value>true</value>
+            </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.showThreadName</key>
+              <value>false</value>
+            </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.showLogName</key>
+              <value>true</value>
+            </systemProperty>
+          </systemProperties>
         </configuration>
       </plugin>
     </plugins>
