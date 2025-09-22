@@ -192,7 +192,10 @@ public final class TagValidator {
         String role = mappedRole(node);
         String tagOutput = INDENT.repeat(level) + "- " + role;
 
-        if (issues.isEmpty()) {
+        if (role == "Span" && issues.isEmpty()) {
+            // Skip printing Span with no issues
+            return;
+        } else if (issues.isEmpty()) {
             printTwoColumns(tagOutput, path, output);
         } else {
             String comment = String.join("; ", issues);
