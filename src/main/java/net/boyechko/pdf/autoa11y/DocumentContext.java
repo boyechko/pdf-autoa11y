@@ -4,12 +4,12 @@ import java.io.*;
 import java.util.*;
 import com.itextpdf.kernel.pdf.*;
 
-public class ProcessingContext {
+public class DocumentContext {
     private final PdfDocument doc;
     private final PrintStream out;
     private final List<Issue> issues = new ArrayList<>();
 
-    public ProcessingContext(PdfDocument doc, PrintStream out) {
+    public DocumentContext(PdfDocument doc, PrintStream out) {
         this.doc = doc; this.out = out;
     }
     public PdfDocument doc() { return doc; }

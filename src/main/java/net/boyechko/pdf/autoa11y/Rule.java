@@ -2,5 +2,5 @@ package net.boyechko.pdf.autoa11y;
 
 public interface Rule {
     String name();
-    IssueList findIssues(ProcessingContext ctx);
+    IssueList findIssues(DocumentContext ctx);
 }

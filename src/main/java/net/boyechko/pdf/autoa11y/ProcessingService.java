@@ -17,7 +17,7 @@ public class ProcessingService {
 
     // State variables that persist through processing
     private EncryptionInfo encryptionInfo;
-    private ProcessingContext context;
+    private DocumentContext context;
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
 
@@ -47,12 +47,11 @@ public class ProcessingService {
 
         // Create PDF document for processing
         try (PdfDocument pdfDoc = openForModification()) {
-            this.context = new ProcessingContext(pdfDoc, output);
+            this.context = new DocumentContext(pdfDoc, output);
 
             IssueList issues = detectAndReportIssues();
             applyFixesAndReport(issues);
             printSummary(issues);
-
             return issues;
         }
     }

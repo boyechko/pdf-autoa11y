@@ -9,7 +9,7 @@ public class TaggedPdfRule implements Rule {
     @Override public String name() { return "Tagged PDF"; }
 
     @Override
-    public IssueList findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(DocumentContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
         PdfDictionary mi = cat.getPdfObject().getAsDictionary(PdfName.MarkInfo);
         boolean marked = mi != null
@@ -24,7 +24,7 @@ public class TaggedPdfRule implements Rule {
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set /MarkInfo /Marked true"; }
-            @Override public void apply(ProcessingContext c) {
+            @Override public void apply(DocumentContext c) {
                 PdfCatalog cat2 = c.doc().getCatalog();
                 PdfDictionary mi2 = cat2.getPdfObject().getAsDictionary(PdfName.MarkInfo);
                 if (mi2 == null) { mi2 = new PdfDictionary(); cat2.getPdfObject().put(PdfName.MarkInfo, mi2); }

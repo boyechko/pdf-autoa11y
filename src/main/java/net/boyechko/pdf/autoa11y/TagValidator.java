@@ -223,7 +223,7 @@ public final class TagValidator {
         }
 
         @Override
-        public void apply(ProcessingContext ctx) throws Exception {
+        public void apply(DocumentContext ctx) throws Exception {
             // For L elements with all P kids, wrap pairs in LI->LBody structure
             if ("L".equals(role) && allKidsAreP() && (kidRoles.size() % 2 == 0)) {
                 wrapPairsOfPInLI(ctx.doc());
@@ -292,7 +292,7 @@ public final class TagValidator {
         }
 
         @Override
-        public void apply(ProcessingContext ctx) throws Exception {
+        public void apply(DocumentContext ctx) throws Exception {
             if ("L".equals(parentRole) && "P".equals(kidRole)) {
                 // Wrap P in LI->LBody
                 wrapPInLILBody(ctx.doc());

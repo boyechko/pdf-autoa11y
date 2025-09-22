@@ -9,7 +9,7 @@ public class LanguageSetRule implements Rule {
     @Override public String name() { return "Language Set"; }
 
     @Override
-    public IssueList findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(DocumentContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
 
         if (cat.getLang() != null) {
@@ -20,7 +20,7 @@ public class LanguageSetRule implements Rule {
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set document language (Lang)"; }
-            @Override public void apply(ProcessingContext c) {
+            @Override public void apply(DocumentContext c) {
                 PdfCatalog cat2 = c.doc().getCatalog();
                 cat2.put(PdfName.Lang, new PdfString("en-US")); // Default to English; ideally should be user-specified
                 c.out().println("✓ Set document language (Lang)");

@@ -9,11 +9,11 @@ public class TabOrderRule implements Rule {
     @Override public String name() { return "Tab Order"; }
 
     @Override
-    public IssueList findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(DocumentContext ctx) {
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set document tab order"; }
-            @Override public void apply(ProcessingContext c) {
+            @Override public void apply(DocumentContext c) {
                 int pageCount = c.doc().getNumberOfPages();
                 for (int i = 1; i <= pageCount; i++) {
                     c.doc().getPage(i).setTabOrder(PdfName.S);

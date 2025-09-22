@@ -18,7 +18,7 @@ public class RuleEngine {
      * @param ctx Processing context
      * @return IssueList of detected issues
      */
-    public IssueList detectIssues(ProcessingContext ctx) {
+    public IssueList detectIssues(DocumentContext ctx) {
         IssueList all = new IssueList();
         for (Rule r : rules) {
             IssueList found = r.findIssues(ctx);
@@ -34,7 +34,7 @@ public class RuleEngine {
      * @param issuesToFix IssueList of issues to attempt to fix
      * @return IssueList of issues that were successfully fixed
      */
-    public IssueList applyFixes(ProcessingContext ctx, IssueList issuesToFix) {
+    public IssueList applyFixes(DocumentContext ctx, IssueList issuesToFix) {
         // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered = issuesToFix.stream()
             .map(i -> Map.entry(i, i.fix()))              // compute once

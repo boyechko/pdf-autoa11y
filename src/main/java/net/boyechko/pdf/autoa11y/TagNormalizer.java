@@ -145,7 +145,7 @@ public class TagNormalizer {
     private void processList(PdfStructElem listElem, int level) {
         List<IStructureNode> kidsCopy = new ArrayList<>(listElem.getKids());
 
-       if (everyStructChild(kidsCopy, PdfName.P) && kidsCopy.size() % 2 == 0) {
+        if (everyStructChild(kidsCopy, PdfName.P) && kidsCopy.size() % 2 == 0) {
             printElement(listElem, level, "converted even number of P to LIs");
             wrapPairsOfPInLI(listElem, kidsCopy, level);
             return;

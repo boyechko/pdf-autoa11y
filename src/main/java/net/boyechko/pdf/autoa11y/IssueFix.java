@@ -5,7 +5,7 @@ public interface IssueFix {
     int priority();
 
     /** Idempotent application of the fix. */
-    void apply(ProcessingContext ctx) throws Exception;
+    void apply(DocumentContext ctx) throws Exception;
 
     /** Human-readable for logs/UI. */
     default String describe() { return getClass().getSimpleName(); }
