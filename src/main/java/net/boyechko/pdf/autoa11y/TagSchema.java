@@ -21,14 +21,12 @@ public final class TagSchema {
 
         Rule L = new Rule();
         L.allowedChildren = Set.of("LI");
-        L.childPattern = "LI+";
         L.minChildren = 1;
         s.roles.put("L", L);
 
         Rule LI = new Rule();
         LI.parentMustBe = "L";
         LI.allowedChildren = Set.of("Lbl", "LBody");
-        LI.childPattern = "Lbl* LBody";
         LI.minChildren = 1;
         LI.maxChildren = 2;
         s.roles.put("LI", LI);
