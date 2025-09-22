@@ -37,31 +37,22 @@ public class ProcessingService {
         ));
     }
 
-    public ProcessingResult process() {
-        try {
-            // File system setup
-            setupOutputPath();
-            validateInputFile();
+    public ProcessingResult process() throws Exception {
+        // File system setup
+        setupOutputPath();
+        validateInputFile();
 
-            // Analyze encryption
-            this.encryptionInfo = analyzeEncryption();
+        // Analyze encryption
+        this.encryptionInfo = analyzeEncryption();
 
-            // Create PDF document for processing
-            try (PdfDocument pdfDoc = openForModification()) {
-                this.context = new ProcessingContext(pdfDoc, output);
+        // Create PDF document for processing
+        try (PdfDocument pdfDoc = openForModification()) {
+            this.context = new ProcessingContext(pdfDoc, output);
 
-                // Detect all issues
-                List<Issue> issues = detectIssues();
-                int totalIssues = issues.size();
+            List<Issue> issues = detectAndReportIssues();
+            applyFixesAndReport(issues);
 
-                // Apply fixes and report
-                int totalChanges = applyFixes(issues);
-
-                return ProcessingResult.success(totalIssues, totalChanges, 0);
-            }
-
-        } catch (Exception e) {
-            return handleError(e);
+            return new ProcessingResult(issues);
         }
     }
 
@@ -109,7 +100,7 @@ public class ProcessingService {
         return new PdfDocument(pdfReader, pdfWriter);
     }
 
-    private List<Issue> detectIssues() {
+    private List<Issue> detectAndReportIssues() {
         List<Issue> allIssues = new java.util.ArrayList<>();
 
         // Phase 1: Rule-based detection
@@ -147,12 +138,12 @@ public class ProcessingService {
         return allIssues;
     }
 
-    private int applyFixes(List<Issue> issues) {
+    private void applyFixesAndReport(List<Issue> issues) {
         output.println();
         output.println("Applying automatic fixes:");
         output.println("────────────────────────────────────────");
 
-        int changesApplied = (int) engine.applyFixes(context, issues).size();
+        engine.applyFixes(context, issues);
 
         // Report remaining issues
         if (!issues.isEmpty()) {
@@ -167,16 +158,5 @@ public class ProcessingService {
                 }
             }
         }
-
-        return changesApplied;
     }
-
-    private ProcessingResult handleError(Exception e) {
-        if (password == null && e.getMessage().contains("Bad user password")) {
-            return ProcessingResult.error("The PDF is password-protected. Please provide a password.");
-        } else {
-            return ProcessingResult.error("Processing error: " + e.getMessage());
-        }
-    }
-
 }
