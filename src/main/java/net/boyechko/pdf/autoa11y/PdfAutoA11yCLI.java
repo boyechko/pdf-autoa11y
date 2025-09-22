@@ -92,7 +92,15 @@ public class PdfAutoA11yCLI {
             service.process();
             System.out.println("Output saved to: " + config.outputPath());
         } catch (Exception e) {
-            System.err.println("Error processing PDF: " + e.getMessage());
+            if (isDevelopment()) {
+                e.printStackTrace();
+            } else {
+                System.err.println("Processing failed: " + e.getMessage());
+            }
         }
+    }
+
+    private static boolean isDevelopment() {
+        return "true".equals(System.getProperty("debug"));
     }
 }
