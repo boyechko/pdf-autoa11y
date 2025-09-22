@@ -13,8 +13,12 @@ public class RuleEngine {
 
     public RuleEngine(List<Rule> rules) { this.rules = List.copyOf(rules); }
 
-    /** Phase 1 — detect everything (audit). */
-    public List<Issue> detectAll(ProcessingContext ctx) {
+    /**
+     * Detect issues in the document using the defined rules.
+     * @param ctx Processing context
+     * @return List of detected issues
+     */
+    public List<Issue> detectIssues(ProcessingContext ctx) {
         List<Issue> all = new ArrayList<>();
         for (Rule r : rules) {
             List<Issue> found = r.findIssues(ctx);
@@ -23,7 +27,13 @@ public class RuleEngine {
         return all;
     }
 
-    /** Phase 2 — apply fixes in priority order. */
+    /**
+     * Apply fixes to the given issues in order of their IssueFix.priority().
+     * If a fix invalidates another fix, the invalidated fix is skipped.
+     * @param ctx Processing context
+     * @param issuesToFix List of issues to attempt to fix
+     * @return List of issues that were successfully fixed
+     */
     public List<Issue> applyFixes(ProcessingContext ctx, List<Issue> issuesToFix) {
         // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered = issuesToFix.stream()

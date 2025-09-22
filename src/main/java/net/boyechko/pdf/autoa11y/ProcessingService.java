@@ -113,7 +113,7 @@ public class ProcessingService {
         List<Issue> allIssues = new java.util.ArrayList<>();
 
         // Phase 1: Rule-based detection
-        List<Issue> ruleIssues = engine.detectAll(context);
+        List<Issue> ruleIssues = engine.detectIssues(context);
         if (!ruleIssues.isEmpty()) {
             output.println();
             output.println("Document issues found: " + ruleIssues.size());
