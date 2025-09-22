@@ -51,8 +51,10 @@ public class ProcessingService {
 
             List<Issue> issues = detectAndReportIssues();
             applyFixesAndReport(issues);
+            ProcessingResult result = new ProcessingResult(issues);
+            printSummary(result);
 
-            return new ProcessingResult(issues);
+            return result;
         }
     }
 
@@ -156,6 +158,25 @@ public class ProcessingService {
                     String where = (i.where() != null) ? (" at " + i.where().path()) : "";
                     output.println("✗ " + i.message() + where);
                 }
+            }
+        }
+    }
+
+    private void printSummary(ProcessingResult result) {
+        output.println();
+        output.println("=== REMEDIATION SUMMARY ===");
+
+        int detected = result.getDetectedIssues().size();
+        int resolved = result.getResolvedIssues().size();
+        int remaining = (detected - resolved);
+
+        if (detected == 0 && resolved == 0) {
+            output.println("✓ Document structure is already compliant");
+        } else {
+            output.println("✗ Issues found: " + detected);
+            output.println("✓ Resolved: " + resolved);
+            if (remaining > 0) {
+                output.println("⚠ Manual review needed for: " + remaining);
             }
         }
     }

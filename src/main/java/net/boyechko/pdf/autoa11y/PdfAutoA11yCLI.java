@@ -76,7 +76,9 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
-        printHeader(config.inputPath());
+        System.out.println("=== PDF AUTO A11Y ===");
+        System.out.println("Processing: " + config.inputPath().toString());
+        System.out.println();
 
         // Process using the service
         ProcessingService service = new ProcessingService(
@@ -85,39 +87,12 @@ public class PdfAutoA11yCLI {
             config.password(),
             System.out
         );
-        ProcessingResult result = service.process();
 
-        if (result.isSuccess()) {
-            printSummary(result, config.outputPath());
-        } else {
-            throw new RuntimeException(result.getErrorMessage());
+        try {
+            service.process();
+            System.out.println("Output saved to: " + config.outputPath());
+        } catch (Exception e) {
+            System.err.println("Error processing PDF: " + e.getMessage());
         }
-    }
-
-    private static void printHeader(Path srcPath) {
-        System.out.println("=== PDF AUTO A11Y ===");
-        System.out.println("Processing: " + srcPath.getFileName());
-        System.out.println("Source: " + srcPath.toAbsolutePath().toString());
-        System.out.println();
-    }
-
-    private static void printSummary(ProcessingResult result, Path outputPath) {
-        System.out.println();
-        System.out.println("=== REMEDIATION SUMMARY ===");
-
-        int issues = result.getIssueCount();
-        int changes = result.getChangeCount();
-        int warnings = result.getWarningCount();
-
-        if (issues == 0 && changes == 0 && warnings == 0) {
-            System.out.println("✓ Document structure is already compliant");
-        } else {
-            System.out.println("✗ Issues found: " + issues);
-            System.out.println("✓ Automated fixes applied: " + changes);
-            if (warnings > 0) {
-                System.out.println("⚠ Manual review needed for: " + warnings + " items");
-            }
-        }
-        System.out.println("Output saved to: " + outputPath);
     }
 }
