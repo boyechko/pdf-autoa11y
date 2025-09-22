@@ -5,23 +5,31 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.DocumentContext;
 import net.boyechko.pdf.autoa11y.IssueFix;
 
+import java.util.List;
 import java.util.Optional;
 
 public abstract sealed class TagWrongChildFix implements IssueFix
-    permits TagWrongChildFix.WrapPInLILBody, TagWrongChildFix.WrapSpanInLBody {
+    permits TagWrongChildFix.WrapPInLILBody,
+            TagWrongChildFix.WrapSpanInLBody,
+            TagWrongChildFix.WrapPairsOfPInLI {
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
+    protected final List<PdfStructElem> allKids;
 
-    protected TagWrongChildFix(PdfStructElem kid, PdfStructElem parent) {
+    protected TagWrongChildFix(PdfStructElem kid, PdfStructElem parent, List<PdfStructElem> allKids) {
         this.kid = kid;
         this.parent = parent;
+        this.allKids = allKids != null ? List.copyOf(allKids) : List.of();
     }
 
-    public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
+    public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent, List<PdfStructElem> allKids) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
-        if ("L".equals(parentRole) && "P".equals(kidRole)) {
+
+        if ("L".equals(parentRole) && allKids.stream().allMatch(k -> "P".equals(k.getRole().getValue()))) {
+            return Optional.of(new WrapPairsOfPInLI(kid, parent, allKids));
+        } else if ("L".equals(parentRole) && "P".equals(kidRole)) {
             return Optional.of(new WrapPInLILBody(kid, parent));
         } else if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
             return Optional.of(new WrapSpanInLBody(kid, parent));
@@ -37,11 +45,12 @@ public abstract sealed class TagWrongChildFix implements IssueFix
     // Getters for invalidation logic in other fixes
     public PdfStructElem getKid() { return kid; }
     public PdfStructElem getParent() { return parent; }
+    public List<PdfStructElem> getAllKids() { return List.copyOf(allKids); }
     public String getParentRole() { return parent.getRole().getValue(); }
 
     public static final class WrapPInLILBody extends TagWrongChildFix {
         private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent) {
-            super(kid, parent);
+            super(kid, parent, null);
         }
 
         @Override
@@ -65,7 +74,7 @@ public abstract sealed class TagWrongChildFix implements IssueFix
 
     public static final class WrapSpanInLBody extends TagWrongChildFix {
         private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent) {
-            super(kid, parent);
+            super(kid, parent, null);
         }
 
         @Override
@@ -83,4 +92,59 @@ public abstract sealed class TagWrongChildFix implements IssueFix
                    + parent.getPdfObject().getIndirectReference().getObjNumber();
         }
     }
+
+    public static final class WrapPairsOfPInLI extends TagWrongChildFix {
+        private WrapPairsOfPInLI(PdfStructElem kid, PdfStructElem parent, List<PdfStructElem> allKids) {
+            super(kid, parent, allKids);
+        }
+
+        @Override
+        public void apply(DocumentContext ctx) throws Exception {
+            for (int i = 0; i < allKids.size(); i += 2) {
+                PdfStructElem p1 = allKids.get(i);
+                PdfStructElem p2 = allKids.get(i + 1);
+
+                PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
+                parent.addKid(newLI);
+
+                PdfStructElem newLbl = new PdfStructElem(ctx.doc(), PdfName.Lbl);
+                newLI.addKid(newLbl);
+                parent.removeKid(p1);
+                newLbl.addKid(p1);
+
+                PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
+                newLI.addKid(newLBody);
+                parent.removeKid(p2);
+                newLBody.addKid(p2);
+            }
+        }
+
+        @Override
+        public int priority() {
+            return 25; // More complex content fix
+        }
+
+        @Override
+        public String describe() {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            return "Wrapped pairs of P in Lbl+LBody for L object #" + objNum;
+        }
+
+        @Override
+        public boolean invalidates(IssueFix otherFix) {
+            // If this fix operates on L with P kids, it invalidates individual
+            // WrapInProperContainer fixes that target any of the same kid
+            // elements
+            if (otherFix instanceof TagWrongChildFix) {
+                TagWrongChildFix wrapper = (TagWrongChildFix) otherFix;
+                return "L".equals(wrapper.getParentRole()) &&
+                    wrapper.getParent().equals(parent) &&
+                    allKids.contains(wrapper.getKid());
+            }
+            return false;
+        }
+    }
+
+
+
 }

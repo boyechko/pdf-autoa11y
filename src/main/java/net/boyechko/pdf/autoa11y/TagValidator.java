@@ -121,7 +121,7 @@ public final class TagValidator {
             for (int i=0;i<kidRoles.size();i++) {
                 String kidRole = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(kidRole)) {
-                    IssueFix fix = TagWrongChildFix.createIfApplicable(kids.get(i), node).orElse(null);
+                    IssueFix fix = TagWrongChildFix.createIfApplicable(kids.get(i), node, kids).orElse(null);
                     if (fix == null) {
                         logger.info("No automatic fix available for kid role "+kidRole+" under parent role "+role);
                     }
