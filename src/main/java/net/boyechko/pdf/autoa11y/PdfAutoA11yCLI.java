@@ -5,53 +5,92 @@ import java.nio.file.*;
 
 public class PdfAutoA11yCLI {
 
-    public static void main(String[] args) throws IOException {
-        if (args.length == 0) {
-            System.err.println("Usage: java PdfAutoA11yCLI [-p password] <filepath>");
-            System.err.println("Example: java PdfAutoA11yCLI -p somepassword document.pdf");
+    // Configuration record to hold parsed CLI arguments
+    public record CLIConfig(
+        Path inputPath,
+        Path outputPath,
+        String password
+    ) {
+        public CLIConfig {
+            if (inputPath == null) {
+                throw new IllegalArgumentException("Input path is required");
+            }
+            if (outputPath == null) {
+                throw new IllegalArgumentException("Output path is required");
+            }
+        }
+    }
+
+    // Custom exception for CLI errors
+    public static class CLIException extends Exception {
+        public CLIException(String message) {
+            super(message);
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            CLIConfig config = parseArguments(args);
+            processFile(config);
+        } catch (CLIException e) {
+            System.err.println("Error: " + e.getMessage());
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Processing error: " + e.getMessage());
             System.exit(1);
         }
+    }
 
+    private static CLIConfig parseArguments(String[] args) throws CLIException {
+        if (args.length == 0) {
+            throw new CLIException("No input file specified\n" +
+                "Usage: java PdfAutoA11yCLI [-p password] <filepath>\n" +
+                "Example: java PdfAutoA11yCLI -p somepassword document.pdf");
+        }
+
+        Path inputPath = null;
         String password = null;
-        String inputPath = null;
 
-        // Parse arguments
         for (int i = 0; i < args.length; i++) {
             if ("-p".equals(args[i]) && i + 1 < args.length) {
                 password = args[i + 1];
                 i++;
             } else if (inputPath == null) {
-                inputPath = args[i];
+                inputPath = Paths.get(args[i]);
             }
         }
 
         if (inputPath == null) {
-            System.err.println("Error: No input file specified");
-            System.exit(1);
+            throw new CLIException("No input file specified");
         }
 
-        // Handle path resolution
-        Path srcPath = Paths.get(inputPath);
-        if (!srcPath.isAbsolute() && !Files.exists(srcPath)) {
-            System.err.println("Error: File not found - " + inputPath);
-            System.exit(1);
+        if (!Files.exists(inputPath)) {
+            throw new CLIException("File not found: " + inputPath);
         }
 
-        String filename = srcPath.getFileName().toString();
-        String dest = filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf";
+        // Generate output path
+        String filename = inputPath.getFileName().toString();
+        Path outputPath = Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
 
-        // Print header
-        printHeader(srcPath);
+        return new CLIConfig(inputPath, outputPath, password);
+    }
+
+    private static void processFile(CLIConfig config) {
+        printHeader(config.inputPath());
 
         // Process using the service
-        ProcessingService service = new ProcessingService(srcPath, Paths.get(dest), password, System.out);
+        ProcessingService service = new ProcessingService(
+            config.inputPath(),
+            config.outputPath(),
+            config.password(),
+            System.out
+        );
         ProcessingResult result = service.process();
 
         if (result.isSuccess()) {
-            printSummary(result, dest);
+            printSummary(result, config.outputPath());
         } else {
-            System.err.println("Error: " + result.getErrorMessage());
-            System.exit(1);
+            throw new RuntimeException(result.getErrorMessage());
         }
     }
 
@@ -62,7 +101,7 @@ public class PdfAutoA11yCLI {
         System.out.println();
     }
 
-    private static void printSummary(ProcessingResult result, String outputPath) {
+    private static void printSummary(ProcessingResult result, Path outputPath) {
         System.out.println();
         System.out.println("=== REMEDIATION SUMMARY ===");
 
