@@ -8,6 +8,8 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.fixes.FixListStructure;
+import net.boyechko.pdf.autoa11y.fixes.WrapInProperContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,10 +190,6 @@ public final class TagValidator {
         return out;
     }
 
-    private boolean allKidsAreP(List<String> kidRoles) {
-        return kidRoles.stream().allMatch("P"::equals);
-    }
-
     private void printElement(PdfStructElem node, int level, List<String> issues, PrintStream output) {
         String role = mappedRole(node);
 
@@ -219,144 +217,5 @@ public final class TagValidator {
 
     private int getObjNum(PdfStructElem node) {
         return node.getPdfObject().getIndirectReference().getObjNumber();
-    }
-
-    // IssueFix implementations for automatic tag structure fixes
-
-    private static class FixListStructure implements IssueFix {
-        private final PdfStructElem listElement;
-        private final List<PdfStructElem> kids;
-        private final String role;
-        private final List<String> kidRoles;
-
-        private FixListStructure(PdfStructElem listElement, List<PdfStructElem> kids, String role, List<String> kidRoles) {
-            this.listElement = listElement;
-            this.kids = List.copyOf(kids);
-            this.role = role;
-            this.kidRoles = List.copyOf(kidRoles);
-        }
-
-        public static Optional<IssueFix> createIfApplicable(PdfStructElem node, List<PdfStructElem> kids, String role, List<String> kidRoles) {
-            if ("L".equals(role) && kidRoles.stream().allMatch("P"::equals)) {
-                return Optional.of(new FixListStructure(node, kids, role, kidRoles));
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public int priority() {
-            return 10;
-        }
-
-        @Override
-        public void apply(DocumentContext ctx) throws Exception {
-            // For L elements with all P kids, wrap pairs in LI->LBody structure
-            if ("L".equals(role) && allKidsAreP() && (kidRoles.size() % 2 == 0)) {
-                wrapPairsOfPInLI(ctx.doc());
-            }
-            // TODO: Add other pattern fixes as needed
-        }
-
-        @Override
-        public String describe() {
-            return "wrapped P elements in LI->LBody structure for list " + role;
-        }
-
-        @Override
-        public boolean invalidates(IssueFix otherFix) {
-            // If this fix operates on L with P kids, it invalidates individual WrapInProperContainer
-            // fixes that target any of the same kid elements
-            if (otherFix instanceof WrapInProperContainer) {
-                WrapInProperContainer wrapper = (WrapInProperContainer) otherFix;
-                return "L".equals(role) && "L".equals(wrapper.parentRole) &&
-                       wrapper.parent.equals(listElement) && kids.contains(wrapper.kid);
-            }
-            return false;
-        }
-
-        private boolean allKidsAreP() {
-            return kidRoles.stream().allMatch("P"::equals);
-        }
-
-        private void wrapPairsOfPInLI(PdfDocument document) throws Exception {
-            for (int i = 0; i < kids.size(); i += 2) {
-                PdfStructElem p1 = (PdfStructElem) kids.get(i);
-                PdfStructElem p2 = (PdfStructElem) kids.get(i + 1);
-
-                PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
-                listElement.addKid(newLI);
-
-                PdfStructElem newLbl = new PdfStructElem(document, PdfName.Lbl);
-                newLI.addKid(newLbl);
-                listElement.removeKid(p1);
-                newLbl.addKid(p1);
-
-                PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
-                newLI.addKid(newLBody);
-                listElement.removeKid(p2);
-                newLBody.addKid(p2);
-            }
-        }
-    }
-
-    private static class WrapInProperContainer implements IssueFix {
-        final PdfStructElem kid;
-        final PdfStructElem parent;
-        final String parentRole;
-        private final String kidRole;
-
-        private WrapInProperContainer(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
-            this.kid = kid;
-            this.parent = parent;
-            this.parentRole = parentRole;
-            this.kidRole = kidRole;
-        }
-
-        public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
-            if (("L".equals(parentRole) && "P".equals(kidRole)) || ("LI".equals(parentRole) && "Span".equals(kidRole))) {
-                return Optional.of(new WrapInProperContainer(kid, parent, parentRole, kidRole));
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public int priority() {
-            return 15;
-        }
-
-        @Override
-        public void apply(DocumentContext ctx) throws Exception {
-            if ("L".equals(parentRole) && "P".equals(kidRole)) {
-                // Wrap P in LI->LBody
-                wrapPInLILBody(ctx.doc());
-            } else if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
-                // Wrap Span in LBody
-                wrapSpanInLBody(ctx.doc());
-            }
-        }
-
-        @Override
-        public String describe() {
-            return "wrapped " + kidRole + " in proper container under " + parentRole;
-        }
-
-        private void wrapPInLILBody(PdfDocument document) throws Exception {
-            PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
-            parent.addKid(newLI);
-
-            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
-            newLI.addKid(newLBody);
-
-            parent.removeKid(kid);
-            newLBody.addKid(kid);
-        }
-
-        private void wrapSpanInLBody(PdfDocument document) throws Exception {
-            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
-            parent.addKid(newLBody);
-
-            parent.removeKid(kid);
-            newLBody.addKid(kid);
-        }
     }
 }
