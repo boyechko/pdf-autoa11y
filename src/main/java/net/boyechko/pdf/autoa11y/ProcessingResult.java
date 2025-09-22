@@ -1,32 +1,27 @@
 package net.boyechko.pdf.autoa11y;
-    
+
+import java.util.List;
+
 public class ProcessingResult {
-    private final boolean success;
-    private final int issueCount;
-    private final int changeCount;
-    private final int warningCount;
-    private final String errorMessage;
+    private final List<Issue> detectedIssues;
 
-    private ProcessingResult(boolean success, int issueCount, int changeCount, int warningCount, String errorMessage) {
-        this.success = success;
-        this.issueCount = issueCount;
-        this.changeCount = changeCount;
-        this.warningCount = warningCount;
-        this.errorMessage = errorMessage;
+    public ProcessingResult(List<Issue> detectedIssues) {
+        this.detectedIssues = detectedIssues != null ? List.copyOf(detectedIssues) : List.of();
     }
 
-    public static ProcessingResult success(int issueCount, int changeCount, int warningCount) {
-        return new ProcessingResult(true, issueCount, changeCount, warningCount, null);
+    // Core data
+    public List<Issue> getDetectedIssues() { return detectedIssues; }
+
+    // Derived convenience methods for UI layers
+    public List<Issue> getResolvedIssues() {
+        return detectedIssues.stream()
+            .filter(Issue::isResolved)
+            .toList();
     }
 
-    public static ProcessingResult error(String errorMessage) {
-        return new ProcessingResult(false, 0, 0, 0, errorMessage);
+    public List<Issue> getRemainingIssues() {
+        return detectedIssues.stream()
+            .filter(issue -> !issue.isResolved())
+            .toList();
     }
-
-    // Getters
-    public boolean isSuccess() { return success; }
-    public int getIssueCount() { return issueCount; }
-    public int getChangeCount() { return changeCount; }
-    public int getWarningCount() { return warningCount; }
-    public String getErrorMessage() { return errorMessage; }
 }
