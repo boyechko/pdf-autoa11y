@@ -18,6 +18,7 @@ public final class TagSchema {
     
     public static TagSchema minimal() {
         TagSchema s = new TagSchema();
+
         Rule L = new Rule();
         L.allowedChildren = Set.of("LI");
         L.childPattern = "LI+";
@@ -33,7 +34,6 @@ public final class TagSchema {
         s.roles.put("LI", LI);
 
         Rule Lbl = new Rule();
-        Lbl.parentMustBe = "LI";
         s.roles.put("Lbl", Lbl);
 
         Rule LBody = new Rule();
