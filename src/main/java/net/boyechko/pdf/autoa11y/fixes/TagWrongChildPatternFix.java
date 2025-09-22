@@ -1,6 +1,5 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.DocumentContext;
@@ -9,17 +8,15 @@ import net.boyechko.pdf.autoa11y.IssueFix;
 import java.util.List;
 import java.util.Optional;
 
-import org.bouncycastle.jcajce.provider.symmetric.AES.Wrap;
-
-public abstract sealed class FixListStructure implements IssueFix
-    permits FixListStructure.WrapPairsOfPInLI {
+public abstract sealed class TagWrongChildPatternFix implements IssueFix
+    permits TagWrongChildPatternFix.WrapPairsOfPInLI {
 
     protected final PdfStructElem listElement;
     protected final List<PdfStructElem> kids;
     protected final String role = "L";
     protected final List<String> kidRoles;
 
-    protected FixListStructure(PdfStructElem listElement, List<PdfStructElem> kids, List<String> kidRoles) {
+    protected TagWrongChildPatternFix(PdfStructElem listElement, List<PdfStructElem> kids, List<String> kidRoles) {
         this.listElement = listElement;
         this.kids = List.copyOf(kids);
         this.kidRoles = List.copyOf(kidRoles);
@@ -38,7 +35,7 @@ public abstract sealed class FixListStructure implements IssueFix
         return 20; // Structure fix
     }
 
-    public static final class WrapPairsOfPInLI extends FixListStructure {
+    public static final class WrapPairsOfPInLI extends TagWrongChildPatternFix {
         private WrapPairsOfPInLI(PdfStructElem listElement, List<PdfStructElem> kids, List<String> kidRoles) {
             super(listElement, kids, kidRoles);
         }

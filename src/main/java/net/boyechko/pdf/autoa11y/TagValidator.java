@@ -8,7 +8,7 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.fixes.FixListStructure;
+import net.boyechko.pdf.autoa11y.fixes.TagWrongChildPatternFix;
 import net.boyechko.pdf.autoa11y.fixes.TagIllegalChildFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +142,7 @@ public final class TagValidator {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
-                IssueFix fix = FixListStructure.createIfApplicable(node, kids, kidRoles).orElse(null);
+                IssueFix fix = TagWrongChildPatternFix.createIfApplicable(node, kids, kidRoles).orElse(null);
 
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
