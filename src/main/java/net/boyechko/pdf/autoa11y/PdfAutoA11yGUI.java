@@ -200,22 +200,8 @@ public class PdfAutoA11yGUI extends JFrame {
             protected void done() {
                 try {
                     ProcessingResult result = get();
-                    if (result.isSuccess()) {
-                        outputArea.append("\n=== PROCESSING COMPLETE ===\n");
-                        outputArea.append("Changes applied: " + result.getChangeCount() + "\n");
-                        if (result.getWarningCount() > 0) {
-                            outputArea.append("Warnings: " + result.getWarningCount() + "\n");
-                        }
-
-                        // Show save dialog and handle the file move
-                        showSaveDialog(tempOutputFile);
-                    } else {
-                        outputArea.append("\nError: " + result.getErrorMessage() + "\n");
-                        // Clean up temp file on error
-                        if (tempOutputFile != null && tempOutputFile.exists()) {
-                            tempOutputFile.delete();
-                        }
-                    }
+                    // Show save dialog and handle the file move
+                    showSaveDialog(tempOutputFile);
                 } catch (Exception e) {
                     outputArea.append("\nError: " + e.getMessage() + "\n");
                     // Clean up temp file on error
