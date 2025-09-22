@@ -60,7 +60,7 @@ public class RuleEngine {
             boolean isInvalidated = appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
 
             if (isInvalidated) {
-                i.markResolved("Skipped - invalidated by higher priority fix");
+                i.markResolved("Skipped - resolved by higher priority fix");
                 logger.debug("Skipping fix {} - invalidated by higher priority fix", fx.describe());
                 continue;
             }

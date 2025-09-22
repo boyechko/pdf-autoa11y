@@ -101,7 +101,7 @@ public class ProcessingService {
     }
 
     private IssueList detectAndReportIssues() {
-        // Phase 1: Rule-based detection using the engine
+        // Phase 1: Rule-based detection
         output.println();
         output.println("Checking document compliance:");
         output.println("────────────────────────────────────────");
@@ -155,9 +155,9 @@ public class ProcessingService {
         IssueList appliedFixes = engine.applyFixes(context, issues);
 
         // Report successful fixes
-        for (Issue fixed : appliedFixes) {
-            if (fixed.isResolved() && fixed.fix() != null) {
-                output.println("✓ " + fixed.fix().describe());
+        for (Issue issue : appliedFixes) {
+            if (issue.isResolved() && issue.fix() != null) {
+                output.println("✓ " + issue.resolutionNote());
             }
         }
 
