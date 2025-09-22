@@ -11,9 +11,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class TagValidator {
-    private static final int DISPLAY_COLUMN_WIDTH = 40;
-    private static final String INDENT = "  ";
     private static final Logger logger = LoggerFactory.getLogger(TagValidator.class);
+    private static final String INDENT = "  ";
+    private static final int ELEMENT_NAME_WIDTH = 30;
+    private static final int PAGE_NUM_WIDTH = 10;
+    private static final int OBJ_NUM_WIDTH = 20;
+    // element, page, obj num, issues
+    private static final String ROW_FORMAT =
+        "%-" + ELEMENT_NAME_WIDTH + "s" +
+        "%-" + PAGE_NUM_WIDTH + "s" +
+        "%" + OBJ_NUM_WIDTH + "d" +
+        "%s%n";
 
     private final TagSchema schema;
     private PrintStream output;
@@ -147,7 +155,7 @@ public final class TagValidator {
             }
         }
 
-        printElement(node, level, path, elementIssues, output);
+        printElement(node, level, elementIssues, output);
 
         int i = 1;
         for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
@@ -188,26 +196,33 @@ public final class TagValidator {
         return kidRoles.stream().allMatch("P"::equals);
     }
 
-    private void printElement(PdfStructElem node, int level, String path, List<String> issues, java.io.PrintStream output) {
+    private void printElement(PdfStructElem node, int level, List<String> issues, PrintStream output) {
         String role = mappedRole(node);
-        String tagOutput = INDENT.repeat(level) + "- " + role;
 
-        if (role == "Span" && issues.isEmpty()) {
-            // Skip printing Span with no issues
+        if ("Span".equals(role) && issues.isEmpty()) {
             return;
-        } else if (issues.isEmpty()) {
-            printTwoColumns(tagOutput, path, output);
-        } else {
-            String comment = String.join("; ", issues);
-            printTwoColumns(tagOutput, comment, output);
         }
+
+        String elementName = INDENT.repeat(level) + "- " + role;
+        int pageNum = getPageNumber(node);
+        String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
+        String issuesText = issues.isEmpty() ? "" : String.join("; ", issues);
+        output.printf(ROW_FORMAT, elementName, pageString, getObjNum(node), issuesText);
     }
 
-    private void printTwoColumns(String left, String right, java.io.PrintStream output) {
-        int currentLength = left.length();
-        String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
-            " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
-        output.println(left + padding + right);
+    private int getPageNumber(PdfStructElem node) {
+        PdfDictionary dict = node.getPdfObject();
+        PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);
+
+        if (pg == null) {
+            return 0;
+        }
+        PdfDocument doc = root.getDocument();
+        return doc.getPageNumber(pg);
+    }
+
+    private int getObjNum(PdfStructElem node) {
+        return node.getPdfObject().getIndirectReference().getObjNumber();
     }
 
     // IssueFix implementations for automatic tag structure fixes
