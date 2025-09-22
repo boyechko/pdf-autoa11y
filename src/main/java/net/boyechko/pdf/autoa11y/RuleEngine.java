@@ -43,8 +43,8 @@ public class RuleEngine {
     public IssueList applyFixes(DocumentContext ctx, IssueList issuesToFix) {
         // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered = issuesToFix.stream()
-            .map(i -> Map.entry(i, i.fix()))              // compute once
-            .filter(e -> e.getValue() != null)
+            .filter(i -> i.fix() != null)                 // filter nulls first
+            .map(i -> Map.entry(i, i.fix()))              // safe to create entry now
             .sorted(Comparator.comparingInt(e -> e.getValue().priority()))
             .toList();
 
