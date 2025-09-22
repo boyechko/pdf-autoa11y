@@ -7,13 +7,13 @@ import net.boyechko.pdf.autoa11y.IssueFix;
 
 import java.util.Optional;
 
-public abstract sealed class WrapInProperContainer implements IssueFix
-    permits WrapInProperContainer.WrapPInLILBody, WrapInProperContainer.WrapSpanInLBody {
+public abstract sealed class TagIllegalChildFix implements IssueFix
+    permits TagIllegalChildFix.WrapPInLILBody, TagIllegalChildFix.WrapSpanInLBody {
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
 
-    protected WrapInProperContainer(PdfStructElem kid, PdfStructElem parent) {
+    protected TagIllegalChildFix(PdfStructElem kid, PdfStructElem parent) {
         this.kid = kid;
         this.parent = parent;
     }
@@ -39,7 +39,7 @@ public abstract sealed class WrapInProperContainer implements IssueFix
     public PdfStructElem getParent() { return parent; }
     public String getParentRole() { return parent.getRole().getValue(); }
 
-    public static final class WrapPInLILBody extends WrapInProperContainer {
+    public static final class WrapPInLILBody extends TagIllegalChildFix {
         private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent) {
             super(kid, parent);
         }
@@ -63,7 +63,7 @@ public abstract sealed class WrapInProperContainer implements IssueFix
         }
     }
 
-    public static final class WrapSpanInLBody extends WrapInProperContainer {
+    public static final class WrapSpanInLBody extends TagIllegalChildFix {
         private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent) {
             super(kid, parent);
         }

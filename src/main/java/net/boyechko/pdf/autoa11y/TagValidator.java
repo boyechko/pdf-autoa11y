@@ -9,7 +9,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.fixes.FixListStructure;
-import net.boyechko.pdf.autoa11y.fixes.WrapInProperContainer;
+import net.boyechko.pdf.autoa11y.fixes.TagIllegalChildFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +122,7 @@ public final class TagValidator {
                 String cr = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
                     // Create IssueFix for automatic wrapping
-                    IssueFix fix = WrapInProperContainer.createIfApplicable(kids.get(i), node).orElse(null);
+                    IssueFix fix = TagIllegalChildFix.createIfApplicable(kids.get(i), node).orElse(null);
                     if (fix == null) {
                         logger.info("No automatic fix available for kid role "+cr+" under parent role "+role);
                     }
