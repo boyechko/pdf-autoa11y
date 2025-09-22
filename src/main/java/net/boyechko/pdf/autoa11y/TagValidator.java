@@ -147,7 +147,7 @@ public final class TagValidator {
             }
         }
 
-        printElement(role, level, elementIssues, output);
+        printElement(node, level, path, elementIssues, output);
 
         int i = 1;
         for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
@@ -188,18 +188,23 @@ public final class TagValidator {
         return kidRoles.stream().allMatch("P"::equals);
     }
 
-    private void printElement(String role, int level, List<String> issues, java.io.PrintStream output) {
+    private void printElement(PdfStructElem node, int level, String path, List<String> issues, java.io.PrintStream output) {
+        String role = mappedRole(node);
         String tagOutput = INDENT.repeat(level) + "- " + role;
 
         if (issues.isEmpty()) {
-            output.println(tagOutput);
+            printTwoColumns(tagOutput, path, output);
         } else {
             String comment = String.join("; ", issues);
-            int currentLength = tagOutput.length();
-            String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
-                " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
-            output.println(tagOutput + padding + "; " + comment);
+            printTwoColumns(tagOutput, comment, output);
         }
+    }
+
+    private void printTwoColumns(String left, String right, java.io.PrintStream output) {
+        int currentLength = left.length();
+        String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
+            " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
+        output.println(left + padding + right);
     }
 
     // IssueFix implementations for automatic tag structure fixes
