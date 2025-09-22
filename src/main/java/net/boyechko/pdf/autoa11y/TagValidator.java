@@ -96,14 +96,14 @@ public final class TagValidator {
 
         if (rule != null) {
             if (rule.minChildren != null && kidRoles.size() < rule.minChildren) {
-                issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
                         "Has "+kidRoles.size()+" kids; min is "+rule.minChildren));
                 elementIssues.add("✗ Has "+kidRoles.size()+" kids; min is "+rule.minChildren);
             }
             if (rule.maxChildren != null && kidRoles.size() > rule.maxChildren) {
-                issues.add(new Issue(IssueType.TAG_CARDINALITY_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
                         "Has "+kidRoles.size()+" kids; max is "+rule.maxChildren));

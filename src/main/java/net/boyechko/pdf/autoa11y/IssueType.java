@@ -7,7 +7,7 @@ public enum IssueType {
 
     // Tag Issues
     TAG_PARENT_MISMATCH,
-    TAG_CARDINALITY_VIOLATION,
+    TAG_WRONG_CHILD_COUNT,
     TAG_ILLEGAL_CHILD,
     TAG_WRONG_CHILD_PATTERN
 }
