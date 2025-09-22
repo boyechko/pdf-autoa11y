@@ -72,8 +72,8 @@ public abstract sealed class TagWrongChildPatternFix implements IssueFix
             // If this fix operates on L with P kids, it invalidates individual
             // WrapInProperContainer fixes that target any of the same kid
             // elements
-            if (otherFix instanceof TagIllegalChildFix) {
-                TagIllegalChildFix wrapper = (TagIllegalChildFix) otherFix;
+            if (otherFix instanceof TagWrongChildFix) {
+                TagWrongChildFix wrapper = (TagWrongChildFix) otherFix;
                 return "L".equals(wrapper.getParentRole()) &&
                     wrapper.getParent().equals(listElement) &&
                     kids.contains(wrapper.getKid());

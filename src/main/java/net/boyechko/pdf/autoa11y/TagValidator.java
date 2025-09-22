@@ -9,7 +9,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.fixes.TagWrongChildPatternFix;
-import net.boyechko.pdf.autoa11y.fixes.TagIllegalChildFix;
+import net.boyechko.pdf.autoa11y.fixes.TagWrongChildFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public final class TagValidator {
         }
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
-            issues.add(new Issue(IssueType.TAG_PARENT_MISMATCH,
+            issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
                     IssueSeverity.ERROR,
                     new IssueLocation(node, path),
                     "Parent must be "+rule.parentMustBe+" but is "+parentRole));
@@ -119,21 +119,20 @@ public final class TagValidator {
 
         if (rule != null && rule.allowedChildren != null && !rule.allowedChildren.isEmpty()) {
             for (int i=0;i<kidRoles.size();i++) {
-                String cr = kidRoles.get(i);
-                if (!rule.allowedChildren.contains(cr)) {
-                    // Create IssueFix for automatic wrapping
-                    IssueFix fix = TagIllegalChildFix.createIfApplicable(kids.get(i), node).orElse(null);
+                String kidRole = kidRoles.get(i);
+                if (!rule.allowedChildren.contains(kidRole)) {
+                    IssueFix fix = TagWrongChildFix.createIfApplicable(kids.get(i), node).orElse(null);
                     if (fix == null) {
-                        logger.info("No automatic fix available for kid role "+cr+" under parent role "+role);
+                        logger.info("No automatic fix available for kid role "+kidRole+" under parent role "+role);
                     }
 
-                    issues.add(new Issue(IssueType.TAG_ILLEGAL_CHILD,
+                    issues.add(new Issue(IssueType.TAG_WRONG_CHILD,
                             IssueSeverity.ERROR,
                             new IssueLocation(kids.get(i), path),
-                            "Kid #"+i+" role '"+cr+"' not allowed under "+role,
+                            "Kid #"+i+" role '"+kidRole+"' not allowed under "+role,
                             fix));
                     // Pass this issue down to the specific kid instead of showing at parent
-                    kidSpecificIssues.get(i).add("✗ Role '"+cr+"' not allowed under "+role);
+                    kidSpecificIssues.get(i).add("✗ Role '"+kidRole+"' not allowed under "+role);
                 }
             }
         }

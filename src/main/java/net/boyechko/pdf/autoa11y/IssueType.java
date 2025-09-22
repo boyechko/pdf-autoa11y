@@ -6,8 +6,8 @@ public enum IssueType {
     TAB_ORDER_NOT_SET,
 
     // Tag Issues
-    TAG_PARENT_MISMATCH,
-    TAG_WRONG_CHILD_COUNT,
-    TAG_ILLEGAL_CHILD,
-    TAG_WRONG_CHILD_PATTERN
+    TAG_WRONG_PARENT,           // Child has wrong parent type
+    TAG_WRONG_CHILD,            // Parent contains a child type it shouldn't
+    TAG_WRONG_CHILD_COUNT,      // Parent has too many/few children
+    TAG_WRONG_CHILD_PATTERN     // Parent's children don't match pattern
 }
