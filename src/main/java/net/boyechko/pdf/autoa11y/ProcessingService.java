@@ -129,7 +129,7 @@ public class ProcessingService {
             output.println("Tag structure validation:");
             output.println("────────────────────────────────────────");
 
-            TagValidator validator = new TagValidator(TagSchema.minimalLists(), output);
+            TagValidator validator = new TagValidator(TagSchema.minimal(), output);
             List<Issue> tagIssues = validator.validate(root);
 
             if (tagIssues.isEmpty()) {

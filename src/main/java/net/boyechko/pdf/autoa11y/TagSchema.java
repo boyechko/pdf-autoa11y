@@ -16,7 +16,7 @@ public final class TagSchema {
         Set<String> requiredChildren = Set.of();
     }
     
-    public static TagSchema minimalLists() {
+    public static TagSchema minimal() {
         TagSchema s = new TagSchema();
         Rule L = new Rule();
         L.allowedChildren = Set.of("LI");
