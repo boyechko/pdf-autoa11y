@@ -144,7 +144,7 @@ public final class TagValidator {
                 // Create IssueFix for automatic structure correction
                 IssueFix fix = FixListStructure.createIfApplicable(node, kids, kidRoles).orElse(null);
 
-                issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
+                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
                         "Kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'",
