@@ -37,7 +37,7 @@ public class ProcessingService {
         ));
     }
 
-    public ProcessingResult process() throws Exception {
+    public IssueList process() throws Exception {
         // File system setup
         setupOutputPath();
         validateInputFile();
@@ -49,12 +49,11 @@ public class ProcessingService {
         try (PdfDocument pdfDoc = openForModification()) {
             this.context = new ProcessingContext(pdfDoc, output);
 
-            List<Issue> issues = detectAndReportIssues();
+            IssueList issues = detectAndReportIssues();
             applyFixesAndReport(issues);
-            ProcessingResult result = new ProcessingResult(issues);
-            printSummary(result);
+            printSummary(issues);
 
-            return result;
+            return issues;
         }
     }
 
@@ -102,11 +101,11 @@ public class ProcessingService {
         return new PdfDocument(pdfReader, pdfWriter);
     }
 
-    private List<Issue> detectAndReportIssues() {
-        List<Issue> allIssues = new java.util.ArrayList<>();
+    private IssueList detectAndReportIssues() {
+        IssueList allIssues = new IssueList();
 
         // Phase 1: Rule-based detection
-        List<Issue> ruleIssues = engine.detectIssues(context);
+        IssueList ruleIssues = engine.detectIssues(context);
         if (!ruleIssues.isEmpty()) {
             output.println();
             output.println("Document issues found: " + ruleIssues.size());
@@ -140,7 +139,7 @@ public class ProcessingService {
         return allIssues;
     }
 
-    private void applyFixesAndReport(List<Issue> issues) {
+    private void applyFixesAndReport(IssueList issues) {
         output.println();
         output.println("Applying automatic fixes:");
         output.println("────────────────────────────────────────");
@@ -149,7 +148,7 @@ public class ProcessingService {
 
         // Report remaining issues
         if (!issues.isEmpty()) {
-            List<Issue> remaining = issues.stream().filter(i -> !i.isResolved()).toList();
+            IssueList remaining = issues.getRemainingIssues();
             if (!remaining.isEmpty()) {
                 output.println();
                 output.println("Remaining issues after fixes:");
@@ -162,11 +161,11 @@ public class ProcessingService {
         }
     }
 
-    private void printSummary(ProcessingResult result) {
+    private void printSummary(IssueList result) {
         output.println();
         output.println("=== REMEDIATION SUMMARY ===");
 
-        int detected = result.getDetectedIssues().size();
+        int detected = result.size();
         int resolved = result.getResolvedIssues().size();
         int remaining = (detected - resolved);
 

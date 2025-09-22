@@ -16,12 +16,12 @@ public class RuleEngine {
     /**
      * Detect issues in the document using the defined rules.
      * @param ctx Processing context
-     * @return List of detected issues
+     * @return IssueList of detected issues
      */
-    public List<Issue> detectIssues(ProcessingContext ctx) {
-        List<Issue> all = new ArrayList<>();
+    public IssueList detectIssues(ProcessingContext ctx) {
+        IssueList all = new IssueList();
         for (Rule r : rules) {
-            List<Issue> found = r.findIssues(ctx);
+            IssueList found = r.findIssues(ctx);
             all.addAll(found);
         }
         return all;
@@ -31,10 +31,10 @@ public class RuleEngine {
      * Apply fixes to the given issues in order of their IssueFix.priority().
      * If a fix invalidates another fix, the invalidated fix is skipped.
      * @param ctx Processing context
-     * @param issuesToFix List of issues to attempt to fix
-     * @return List of issues that were successfully fixed
+     * @param issuesToFix IssueList of issues to attempt to fix
+     * @return IssueList of issues that were successfully fixed
      */
-    public List<Issue> applyFixes(ProcessingContext ctx, List<Issue> issuesToFix) {
+    public IssueList applyFixes(ProcessingContext ctx, IssueList issuesToFix) {
         // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered = issuesToFix.stream()
             .map(i -> Map.entry(i, i.fix()))              // compute once
@@ -69,6 +69,6 @@ public class RuleEngine {
             }
         }
 
-        return issuesToFix.stream().filter(Issue::isResolved).toList();
+        return new IssueList(issuesToFix.getResolvedIssues());
     }
 }

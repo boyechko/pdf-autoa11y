@@ -9,7 +9,7 @@ public class TabOrderRule implements Rule {
     @Override public String name() { return "Tab Order"; }
 
     @Override
-    public java.util.List<Issue> findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(ProcessingContext ctx) {
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set document tab order"; }
@@ -28,6 +28,6 @@ public class TabOrderRule implements Rule {
             "✗ Document tab order is not set",
             fix
         );
-        return java.util.List.of(issue);
+        return new IssueList(issue);
     }
 }

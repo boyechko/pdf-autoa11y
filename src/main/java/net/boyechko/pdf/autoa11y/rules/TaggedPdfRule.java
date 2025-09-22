@@ -9,7 +9,7 @@ public class TaggedPdfRule implements Rule {
     @Override public String name() { return "Tagged PDF"; }
 
     @Override
-    public java.util.List<Issue> findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(ProcessingContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
         PdfDictionary mi = cat.getPdfObject().getAsDictionary(PdfName.MarkInfo);
         boolean marked = mi != null
@@ -18,7 +18,7 @@ public class TaggedPdfRule implements Rule {
 
         if (marked) {
             ctx.out().println("✓ Document is marked as tagged PDF");
-            return java.util.List.of();
+            return new IssueList();
         }
 
         IssueFix fix = new IssueFix() {
@@ -41,6 +41,6 @@ public class TaggedPdfRule implements Rule {
             "✗ Document is not marked as tagged PDF",
             fix
         );
-        return java.util.List.of(issue);
+        return new IssueList(issue);
     }
 }

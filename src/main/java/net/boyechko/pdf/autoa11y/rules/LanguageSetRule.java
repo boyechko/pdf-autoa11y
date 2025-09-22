@@ -9,12 +9,12 @@ public class LanguageSetRule implements Rule {
     @Override public String name() { return "Language Set"; }
 
     @Override
-    public java.util.List<Issue> findIssues(ProcessingContext ctx) {
+    public IssueList findIssues(ProcessingContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
 
         if (cat.getLang() != null) {
             ctx.out().println("✓ Document language (Lang) is set to: " + cat.getLang());
-            return java.util.List.of();
+            return new IssueList();
         }
 
         IssueFix fix = new IssueFix() {
@@ -33,6 +33,6 @@ public class LanguageSetRule implements Rule {
             "✗ Document language (Lang) is not set",
             fix
         );
-        return java.util.List.of(issue);
+        return new IssueList(issue);
     }
 }
