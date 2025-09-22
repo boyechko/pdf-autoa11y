@@ -142,7 +142,7 @@ public final class TagValidator {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
-                IssueFix fix = FixListStructure.createIfApplicable(node, kids, role, kidRoles).orElse(null);
+                IssueFix fix = FixListStructure.createIfApplicable(node, kids, kidRoles).orElse(null);
 
                 issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
                         IssueSeverity.ERROR,
