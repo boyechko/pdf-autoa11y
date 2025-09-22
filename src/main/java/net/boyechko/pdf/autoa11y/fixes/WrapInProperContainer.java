@@ -12,21 +12,19 @@ public abstract sealed class WrapInProperContainer implements IssueFix
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
-    protected final String parentRole;
-    protected final String kidRole;
 
-    protected WrapInProperContainer(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
+    protected WrapInProperContainer(PdfStructElem kid, PdfStructElem parent) {
         this.kid = kid;
         this.parent = parent;
-        this.parentRole = parentRole;
-        this.kidRole = kidRole;
     }
 
-    public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
+    public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
+        String kidRole = kid.getRole().getValue();
+        String parentRole = parent.getRole().getValue();
         if ("L".equals(parentRole) && "P".equals(kidRole)) {
-            return Optional.of(new WrapPInLILBody(kid, parent, parentRole, kidRole));
+            return Optional.of(new WrapPInLILBody(kid, parent));
         } else if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
-            return Optional.of(new WrapSpanInLBody(kid, parent, parentRole, kidRole));
+            return Optional.of(new WrapSpanInLBody(kid, parent));
         }
         return Optional.empty();
     }
@@ -39,11 +37,11 @@ public abstract sealed class WrapInProperContainer implements IssueFix
     // Getters for invalidation logic in other fixes
     public PdfStructElem getKid() { return kid; }
     public PdfStructElem getParent() { return parent; }
-    public String getParentRole() { return parentRole; }
+    public String getParentRole() { return parent.getRole().getValue(); }
 
     public static final class WrapPInLILBody extends WrapInProperContainer {
-        private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
-            super(kid, parent, parentRole, kidRole);
+        private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent) {
+            super(kid, parent);
         }
 
         @Override
@@ -66,8 +64,8 @@ public abstract sealed class WrapInProperContainer implements IssueFix
     }
 
     public static final class WrapSpanInLBody extends WrapInProperContainer {
-        private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
-            super(kid, parent, parentRole, kidRole);
+        private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent) {
+            super(kid, parent);
         }
 
         @Override

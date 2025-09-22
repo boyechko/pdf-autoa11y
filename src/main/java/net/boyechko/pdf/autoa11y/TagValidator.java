@@ -122,7 +122,7 @@ public final class TagValidator {
                 String cr = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
                     // Create IssueFix for automatic wrapping
-                    IssueFix fix = WrapInProperContainer.createIfApplicable(kids.get(i), node, role, cr).orElse(null);
+                    IssueFix fix = WrapInProperContainer.createIfApplicable(kids.get(i), node).orElse(null);
                     if (fix == null) {
                         logger.info("No automatic fix available for kid role "+cr+" under parent role "+role);
                     }
