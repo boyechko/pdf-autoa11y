@@ -8,23 +8,83 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
+    private final Path inputPath;
+    private final Path outputPath;
+    private final String password;
+    private final PrintStream output;
+    private final RuleEngine engine;
+
+    // State variables that persist through processing
+    private EncryptionInfo encryptionInfo;
+    private ProcessingContext context;
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
 
-    private static void setupOutputPath(Path outputPath) throws Exception {
+    public ProcessingService(Path inputPath, Path outputPath, String password, PrintStream output) {
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+        this.password = password;
+        this.output = output;
+        this.engine = new RuleEngine(List.of(
+            new LanguageSetRule(),
+            new TabOrderRule(),
+            new TaggedPdfRule()
+        ));
+    }
+
+    public ProcessingResult process() {
+        try {
+            // File system setup
+            setupOutputPath();
+            validateInputFile();
+
+            // Setup reader properties
+            ReaderProperties readerProps = createReaderProperties();
+
+            // Analyze encryption
+            this.encryptionInfo = analyzeEncryption(readerProps);
+
+            // Create PDF document for processing
+            try (PdfDocument pdfDoc = createPdfDocument(readerProps)) {
+                this.context = new ProcessingContext(pdfDoc, output);
+
+                // Detect all issues
+                List<Issue> issues = detectAllIssues();
+                int totalIssues = issues.size();
+
+                // Apply fixes and report
+                int totalChanges = applyFixesAndReport(issues);
+
+                return ProcessingResult.success(totalIssues, totalChanges, 0);
+            }
+
+        } catch (Exception e) {
+            return handleError(e);
+        }
+    }
+
+    private void setupOutputPath() throws Exception {
         Path outputParent = outputPath.getParent();
         if (outputParent != null) {
             Files.createDirectories(outputParent);
         }
     }
 
-    private static void validateInputFile(Path inputPath) throws Exception {
+    private void validateInputFile() throws Exception {
         if (!Files.exists(inputPath)) {
             throw new IllegalArgumentException("File not found: " + inputPath);
         }
     }
 
-    private static EncryptionInfo analyzeEncryption(Path inputPath, ReaderProperties readerProps) throws Exception {
+    private ReaderProperties createReaderProperties() {
+        ReaderProperties readerProps = new ReaderProperties();
+        if (password != null) {
+            readerProps.setPassword(password.getBytes());
+        }
+        return readerProps;
+    }
+
+    private EncryptionInfo analyzeEncryption(ReaderProperties readerProps) throws Exception {
         try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
              PdfDocument testDoc = new PdfDocument(testReader)) {
 
@@ -36,16 +96,16 @@ public class ProcessingService {
         }
     }
 
-    private static PdfDocument createPdfDocument(Path inputPath, Path outputPath, String password, ReaderProperties readerProps, EncryptionInfo encInfo) throws Exception {
+    private PdfDocument createPdfDocument(ReaderProperties readerProps) throws Exception {
         PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
         WriterProperties writerProps = new WriterProperties();
 
-        if (encInfo.isEncrypted() && password != null) {
+        if (encryptionInfo.isEncrypted() && password != null) {
             writerProps.setStandardEncryption(
                 null,
                 password.getBytes(),
-                encInfo.permissions(),
-                encInfo.cryptoMode()
+                encryptionInfo.permissions(),
+                encryptionInfo.cryptoMode()
             );
         }
 
@@ -55,17 +115,11 @@ public class ProcessingService {
         return new PdfDocument(pdfReader, pdfWriter);
     }
 
-    private static List<Issue> detectAllIssues(PdfDocument pdfDoc, ProcessingContext ctx, PrintStream output) {
+    private List<Issue> detectAllIssues() {
         List<Issue> allIssues = new java.util.ArrayList<>();
 
         // Phase 1: Rule-based detection
-        RuleEngine engine = new RuleEngine(java.util.List.of(
-            new LanguageSetRule(),
-            new TabOrderRule(),
-            new TaggedPdfRule()
-        ));
-
-        List<Issue> ruleIssues = engine.detectAll(ctx);
+        List<Issue> ruleIssues = engine.detectAll(context);
         if (!ruleIssues.isEmpty()) {
             output.println();
             output.println("Document issues found: " + ruleIssues.size());
@@ -77,7 +131,7 @@ public class ProcessingService {
         }
 
         // Phase 2: Tag structure validation
-        PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+        PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             output.println("✗ No accessibility tags found");
         } else {
@@ -99,18 +153,12 @@ public class ProcessingService {
         return allIssues;
     }
 
-    private static int applyFixesAndReport(List<Issue> issues, ProcessingContext ctx, PrintStream output) {
-        RuleEngine engine = new RuleEngine(java.util.List.of(
-            new LanguageSetRule(),
-            new TabOrderRule(),
-            new TaggedPdfRule()
-        ));
-
+    private int applyFixesAndReport(List<Issue> issues) {
         output.println();
         output.println("Applying automatic fixes:");
         output.println("────────────────────────────────────────");
 
-        int changesApplied = (int) engine.applyFixes(ctx, issues).size();
+        int changesApplied = (int) engine.applyFixes(context, issues).size();
 
         // Report remaining issues
         if (!issues.isEmpty()) {
@@ -129,41 +177,12 @@ public class ProcessingService {
         return changesApplied;
     }
 
-    public static ProcessingResult processPdf(Path inputPath, Path outputPath, String password, PrintStream output) {
-        try {
-            // File system setup
-            setupOutputPath(outputPath);
-            validateInputFile(inputPath);
-
-            // Setup reader properties
-            ReaderProperties readerProps = new ReaderProperties();
-            if (password != null) {
-                readerProps.setPassword(password.getBytes());
-            }
-
-            // Analyze encryption
-            EncryptionInfo encInfo = analyzeEncryption(inputPath, readerProps);
-
-            // Create PDF document for processing
-            try (PdfDocument pdfDoc = createPdfDocument(inputPath, outputPath, password, readerProps, encInfo)) {
-                ProcessingContext ctx = new ProcessingContext(pdfDoc, output);
-
-                // Detect all issues
-                List<Issue> issues = detectAllIssues(pdfDoc, ctx, output);
-                int totalIssues = issues.size();
-
-                // Apply fixes and report
-                int totalChanges = applyFixesAndReport(issues, ctx, output);
-
-                return ProcessingResult.success(totalIssues, totalChanges, 0);
-            }
-
-        } catch (Exception e) {
-            if (password == null && e.getMessage().contains("Bad user password")) {
-                return ProcessingResult.error("The PDF is password-protected. Please provide a password.");
-            } else {
-                return ProcessingResult.error("Processing error: " + e.getMessage());
-            }
+    private ProcessingResult handleError(Exception e) {
+        if (password == null && e.getMessage().contains("Bad user password")) {
+            return ProcessingResult.error("The PDF is password-protected. Please provide a password.");
+        } else {
+            return ProcessingResult.error("Processing error: " + e.getMessage());
         }
     }
+
 }
