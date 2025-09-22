@@ -122,6 +122,8 @@ public final class TagValidator {
                     IssueFix fix = null;
                     if ("L".equals(role) && "P".equals(cr)) {
                         fix = new WrapInProperContainer(kids.get(i), node, role, cr);
+                    } else if ("LI".equals(role) && "Span".equals(cr)) {
+                        fix = new WrapInProperContainer(kids.get(i), node, role, cr);
                     } else {
                         logger.info("No automatic fix available for kid role "+cr+" under parent role "+role);
                     }
@@ -319,8 +321,10 @@ public final class TagValidator {
             if ("L".equals(parentRole) && "P".equals(kidRole)) {
                 // Wrap P in LI->LBody
                 wrapPInLILBody(ctx.doc());
+            } else if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
+                // Wrap Span in LBody
+                wrapSpanInLBody(ctx.doc());
             }
-            // TODO: Add other wrapping cases as needed
         }
 
         @Override
@@ -334,6 +338,14 @@ public final class TagValidator {
 
             PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
             newLI.addKid(newLBody);
+
+            parent.removeKid(kid);
+            newLBody.addKid(kid);
+        }
+
+        private void wrapSpanInLBody(PdfDocument document) throws Exception {
+            PdfStructElem newLBody = new PdfStructElem(document, PdfName.LBody);
+            parent.addKid(newLBody);
 
             parent.removeKid(kid);
             newLBody.addKid(kid);
