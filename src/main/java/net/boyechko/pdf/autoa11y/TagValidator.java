@@ -8,8 +8,8 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.fixes.TagWrongChildPatternFix;
-import net.boyechko.pdf.autoa11y.fixes.TagWrongChildFix;
+import net.boyechko.pdf.autoa11y.fixes.TagMultipleChildrenFix;
+import net.boyechko.pdf.autoa11y.fixes.TagSingleChildFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +121,9 @@ public final class TagValidator {
             for (int i=0;i<kidRoles.size();i++) {
                 String kidRole = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(kidRole)) {
-                    IssueFix fix = TagWrongChildFix.createIfApplicable(kids.get(i), node, kids).orElse(null);
+                    IssueFix fix = TagMultipleChildrenFix.createIfApplicable(node, kids)
+                        .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
+                        .orElse(null));
                     if (fix == null) {
                         logger.info("No automatic fix available for kid role "+kidRole+" under parent role "+role);
                     }
@@ -141,7 +143,7 @@ public final class TagValidator {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
-                IssueFix fix = TagWrongChildPatternFix.createIfApplicable(node, kids, kidRoles).orElse(null);
+                IssueFix fix = null;
 
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
