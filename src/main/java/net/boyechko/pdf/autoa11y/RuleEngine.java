@@ -14,6 +14,12 @@ public class RuleEngine {
     public RuleEngine(List<Rule> rules) { this.rules = List.copyOf(rules); }
 
     /**
+     * Get the list of rules managed by this engine.
+     * @return Immutable list of rules
+     */
+    public List<Rule> getRules() { return rules; }
+
+    /**
      * Detect issues in the document using the defined rules.
      * @param ctx Processing context
      * @return IssueList of detected issues

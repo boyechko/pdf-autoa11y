@@ -17,7 +17,7 @@ public class TaggedPdfRule implements Rule {
             && Boolean.TRUE.equals(pb.getValue());
 
         if (marked) {
-            ctx.out().println("✓ Document is marked as tagged PDF");
+            // Document is already marked as tagged PDF
             return new IssueList();
         }
 
@@ -29,9 +29,6 @@ public class TaggedPdfRule implements Rule {
                 PdfDictionary mi2 = cat2.getPdfObject().getAsDictionary(PdfName.MarkInfo);
                 if (mi2 == null) { mi2 = new PdfDictionary(); cat2.getPdfObject().put(PdfName.MarkInfo, mi2); }
                 mi2.put(PdfName.Marked, PdfBoolean.TRUE);
-
-                c.out().println("✓ Marked document as tagged PDF");
-                c.out().println("✓ Set PDF/UA-1 compliance flag");
             }
         };
 

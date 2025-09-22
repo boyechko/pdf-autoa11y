@@ -18,7 +18,6 @@ public class TabOrderRule implements Rule {
                 for (int i = 1; i <= pageCount; i++) {
                     c.doc().getPage(i).setTabOrder(PdfName.S);
                 }
-                c.out().println("✓ Set tab order to structure order for all " + pageCount + " pages");
             }
         };
 

@@ -47,7 +47,7 @@ public class ProcessingService {
 
         // Create PDF document for processing
         try (PdfDocument pdfDoc = openForModification()) {
-            this.context = new DocumentContext(pdfDoc, output);
+            this.context = new DocumentContext(pdfDoc);
 
             IssueList issues = detectAndReportIssues();
             applyFixesAndReport(issues);
@@ -101,18 +101,23 @@ public class ProcessingService {
     }
 
     private IssueList detectAndReportIssues() {
-        IssueList allIssues = new IssueList();
+        // Phase 1: Rule-based detection using the engine
+        output.println();
+        output.println("Checking document compliance:");
+        output.println("────────────────────────────────────────");
 
-        // Phase 1: Rule-based detection
-        IssueList ruleIssues = engine.detectIssues(context);
-        if (!ruleIssues.isEmpty()) {
-            output.println();
-            output.println("Document issues found: " + ruleIssues.size());
-            output.println("────────────────────────────────────────");
-            for (Issue i : ruleIssues) {
-                output.println(i.message());
+        IssueList allIssues = engine.detectIssues(context);
+
+        // Report the results by checking each rule individually for better output
+        for (Rule rule : engine.getRules()) {
+            IssueList ruleIssues = rule.findIssues(context);
+            if (ruleIssues.isEmpty()) {
+                output.println("✓ " + rule.name() + " - compliant");
+            } else {
+                for (Issue issue : ruleIssues) {
+                    output.println(issue.message());
+                }
             }
-            allIssues.addAll(ruleIssues);
         }
 
         // Phase 2: Tag structure validation
@@ -139,23 +144,32 @@ public class ProcessingService {
     }
 
     private void applyFixesAndReport(IssueList issues) {
+        if (issues.isEmpty()) {
+            return; // No issues to fix
+        }
+
         output.println();
         output.println("Applying automatic fixes:");
         output.println("────────────────────────────────────────");
 
-        engine.applyFixes(context, issues);
+        IssueList appliedFixes = engine.applyFixes(context, issues);
+
+        // Report successful fixes
+        for (Issue fixed : appliedFixes) {
+            if (fixed.isResolved() && fixed.fix() != null) {
+                output.println("✓ " + fixed.fix().describe());
+            }
+        }
 
         // Report remaining issues
-        if (!issues.isEmpty()) {
-            IssueList remaining = issues.getRemainingIssues();
-            if (!remaining.isEmpty()) {
-                output.println();
-                output.println("Remaining issues after fixes:");
-                output.println("────────────────────────────────────────");
-                for (Issue i : remaining) {
-                    String where = (i.where() != null) ? (" at " + i.where().path()) : "";
-                    output.println("✗ " + i.message() + where);
-                }
+        IssueList remaining = issues.getRemainingIssues();
+        if (!remaining.isEmpty()) {
+            output.println();
+            output.println("Remaining issues after fixes:");
+            output.println("────────────────────────────────────────");
+            for (Issue i : remaining) {
+                String where = (i.where() != null) ? (" at " + i.where().path()) : "";
+                output.println("✗ " + i.message() + where);
             }
         }
     }

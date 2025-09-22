@@ -13,7 +13,7 @@ public class LanguageSetRule implements Rule {
         PdfCatalog cat = ctx.doc().getCatalog();
 
         if (cat.getLang() != null) {
-            ctx.out().println("✓ Document language (Lang) is set to: " + cat.getLang());
+            // Document language is already set
             return new IssueList();
         }
 
@@ -23,7 +23,6 @@ public class LanguageSetRule implements Rule {
             @Override public void apply(DocumentContext c) {
                 PdfCatalog cat2 = c.doc().getCatalog();
                 cat2.put(PdfName.Lang, new PdfString("en-US")); // Default to English; ideally should be user-specified
-                c.out().println("✓ Set document language (Lang)");
             }
         };
 
