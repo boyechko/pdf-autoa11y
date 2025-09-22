@@ -180,16 +180,12 @@ public class PdfAutoA11yGUI extends JFrame {
                 tempOutputFile.deleteOnExit(); // Clean up if something goes wrong
 
                 // Use the service with temp file
-                ProcessingService service = new ProcessingService();
-                ProcessingRequest request =
-                    new ProcessingRequest(
-                        selectedFile.toPath(),
-                        tempOutputFile.toPath(),
-                        password,
-                        guiOutput
-                    );
-
-                return service.processPdf(request);
+                return ProcessingService.processPdf(
+                    selectedFile.toPath(),
+                    tempOutputFile.toPath(),
+                    password,
+                    guiOutput
+                );
             }
 
             @Override

@@ -44,10 +44,7 @@ public class PdfAutoA11yCLI {
         printHeader(srcPath);
 
         // Process using the service
-        ProcessingService service = new ProcessingService();
-        ProcessingRequest request = new ProcessingRequest(srcPath, Paths.get(dest), password, System.out);
-
-        ProcessingResult result = service.processPdf(request);
+        ProcessingResult result = ProcessingService.processPdf(srcPath, Paths.get(dest), password, System.out);
 
         if (result.isSuccess()) {
             printSummary(result, dest);
