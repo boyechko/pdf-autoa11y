@@ -3,6 +3,7 @@ package net.boyechko.pdf.autoa11y;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -119,12 +120,8 @@ public final class TagValidator {
                 String cr = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(cr)) {
                     // Create IssueFix for automatic wrapping
-                    IssueFix fix = null;
-                    if ("L".equals(role) && "P".equals(cr)) {
-                        fix = new WrapInProperContainer(kids.get(i), node, role, cr);
-                    } else if ("LI".equals(role) && "Span".equals(cr)) {
-                        fix = new WrapInProperContainer(kids.get(i), node, role, cr);
-                    } else {
+                    IssueFix fix = WrapInProperContainer.createIfApplicable(kids.get(i), node, role, cr).orElse(null);
+                    if (fix == null) {
                         logger.info("No automatic fix available for kid role "+cr+" under parent role "+role);
                     }
 
@@ -143,10 +140,7 @@ public final class TagValidator {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
-                IssueFix fix = null;
-                if ("L".equals(role) && allKidsAreP(kidRoles)) {
-                    fix = new FixListStructure(node, kids, role, kidRoles);
-                }
+                IssueFix fix = FixListStructure.createIfApplicable(node, kids, role, kidRoles).orElse(null);
 
                 issues.add(new Issue(IssueType.TAG_ORDER_VIOLATION,
                         IssueSeverity.ERROR,
@@ -235,11 +229,18 @@ public final class TagValidator {
         private final String role;
         private final List<String> kidRoles;
 
-        FixListStructure(PdfStructElem listElement, List<PdfStructElem> kids, String role, List<String> kidRoles) {
+        private FixListStructure(PdfStructElem listElement, List<PdfStructElem> kids, String role, List<String> kidRoles) {
             this.listElement = listElement;
             this.kids = List.copyOf(kids);
             this.role = role;
             this.kidRoles = List.copyOf(kidRoles);
+        }
+
+        public static Optional<IssueFix> createIfApplicable(PdfStructElem node, List<PdfStructElem> kids, String role, List<String> kidRoles) {
+            if ("L".equals(role) && kidRoles.stream().allMatch("P"::equals)) {
+                return Optional.of(new FixListStructure(node, kids, role, kidRoles));
+            }
+            return Optional.empty();
         }
 
         @Override
@@ -304,11 +305,18 @@ public final class TagValidator {
         final String parentRole;
         private final String kidRole;
 
-        WrapInProperContainer(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
+        private WrapInProperContainer(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
             this.kid = kid;
             this.parent = parent;
             this.parentRole = parentRole;
             this.kidRole = kidRole;
+        }
+
+        public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent, String parentRole, String kidRole) {
+            if (("L".equals(parentRole) && "P".equals(kidRole)) || ("LI".equals(parentRole) && "Span".equals(kidRole))) {
+                return Optional.of(new WrapInProperContainer(kid, parent, parentRole, kidRole));
+            }
+            return Optional.empty();
         }
 
         @Override
