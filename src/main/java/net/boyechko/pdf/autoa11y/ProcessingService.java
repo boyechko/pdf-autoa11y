@@ -9,8 +9,9 @@ import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
     private final Path inputPath;
-    private final Path outputPath;
     private final String password;
+    private final ReaderProperties readerProps;
+    private final Path outputPath;
     private final PrintStream output;
     private final RuleEngine engine;
 
@@ -24,6 +25,10 @@ public class ProcessingService {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
         this.password = password;
+        this.readerProps = new ReaderProperties();
+        if (password != null) {
+            this.readerProps.setPassword(password.getBytes());
+        }
         this.output = output;
         this.engine = new RuleEngine(List.of(
             new LanguageSetRule(),
@@ -38,22 +43,19 @@ public class ProcessingService {
             setupOutputPath();
             validateInputFile();
 
-            // Setup reader properties
-            ReaderProperties readerProps = createReaderProperties();
-
             // Analyze encryption
-            this.encryptionInfo = analyzeEncryption(readerProps);
+            this.encryptionInfo = analyzeEncryption();
 
             // Create PDF document for processing
-            try (PdfDocument pdfDoc = createPdfDocument(readerProps)) {
+            try (PdfDocument pdfDoc = openForModification()) {
                 this.context = new ProcessingContext(pdfDoc, output);
 
                 // Detect all issues
-                List<Issue> issues = detectAllIssues();
+                List<Issue> issues = detectIssues();
                 int totalIssues = issues.size();
 
                 // Apply fixes and report
-                int totalChanges = applyFixesAndReport(issues);
+                int totalChanges = applyFixes(issues);
 
                 return ProcessingResult.success(totalIssues, totalChanges, 0);
             }
@@ -76,15 +78,7 @@ public class ProcessingService {
         }
     }
 
-    private ReaderProperties createReaderProperties() {
-        ReaderProperties readerProps = new ReaderProperties();
-        if (password != null) {
-            readerProps.setPassword(password.getBytes());
-        }
-        return readerProps;
-    }
-
-    private EncryptionInfo analyzeEncryption(ReaderProperties readerProps) throws Exception {
+    private EncryptionInfo analyzeEncryption() throws Exception {
         try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
              PdfDocument testDoc = new PdfDocument(testReader)) {
 
@@ -96,7 +90,7 @@ public class ProcessingService {
         }
     }
 
-    private PdfDocument createPdfDocument(ReaderProperties readerProps) throws Exception {
+    private PdfDocument openForModification() throws Exception {
         PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
         WriterProperties writerProps = new WriterProperties();
 
@@ -115,7 +109,7 @@ public class ProcessingService {
         return new PdfDocument(pdfReader, pdfWriter);
     }
 
-    private List<Issue> detectAllIssues() {
+    private List<Issue> detectIssues() {
         List<Issue> allIssues = new java.util.ArrayList<>();
 
         // Phase 1: Rule-based detection
@@ -153,7 +147,7 @@ public class ProcessingService {
         return allIssues;
     }
 
-    private int applyFixesAndReport(List<Issue> issues) {
+    private int applyFixes(List<Issue> issues) {
         output.println();
         output.println("Applying automatic fixes:");
         output.println("────────────────────────────────────────");
