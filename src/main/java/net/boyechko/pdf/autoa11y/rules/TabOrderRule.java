@@ -10,6 +10,10 @@ public class TabOrderRule implements Rule {
 
     @Override
     public IssueList findIssues(DocumentContext ctx) {
+        if (ctx.doc().getPage(1).getTabOrder() != null) {
+            return new IssueList();
+        }
+
         IssueFix fix = new IssueFix() {
             @Override public int priority() { return P_DOC_SETUP; }
             @Override public String describe() { return "Set document tab order"; }
