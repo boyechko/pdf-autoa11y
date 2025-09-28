@@ -20,12 +20,8 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
     }
 
     public static Optional<IssueFix> createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
-        String parentRole = parent.getRole().getValue();
-
-        if ("L".equals(parentRole) && kids.stream().allMatch(k -> "P".equals(k.getRole().getValue()))) {
-            return Optional.of(new WrapPairsOfPInLI(parent, kids));
-        }
-        return Optional.empty();
+        // Try each subclass factory method
+        return WrapPairsOfPInLI.tryCreate(parent, kids);
     }
 
     @Override
@@ -41,6 +37,15 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
     public static final class WrapPairsOfPInLI extends TagMultipleChildrenFix {
         private WrapPairsOfPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
             super(parent, kids);
+        }
+
+        public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
+            String parentRole = parent.getRole().getValue();
+
+            if ("L".equals(parentRole) && kids.stream().allMatch(k -> "P".equals(k.getRole().getValue()))) {
+                return Optional.of(new WrapPairsOfPInLI(parent, kids));
+            }
+            return Optional.empty();
         }
 
         @Override

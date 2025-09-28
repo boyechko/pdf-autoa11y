@@ -19,15 +19,9 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     }
 
     public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
-        String kidRole = kid.getRole().getValue();
-        String parentRole = parent.getRole().getValue();
-
-        if ("L".equals(parentRole) && "P".equals(kidRole)) {
-            return Optional.of(new WrapPInLILBody(kid, parent));
-        } else if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
-            return Optional.of(new WrapSpanInLBody(kid, parent));
-        }
-        return Optional.empty();
+        // Try each subclass factory method
+        return WrapPInLILBody.tryCreate(kid, parent)
+            .or(() -> WrapSpanInLBody.tryCreate(kid, parent));
     }
 
     @Override
@@ -43,6 +37,16 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     public static final class WrapPInLILBody extends TagSingleChildFix {
         private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent) {
             super(kid, parent);
+        }
+
+        public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
+            String kidRole = kid.getRole().getValue();
+            String parentRole = parent.getRole().getValue();
+            
+            if ("L".equals(parentRole) && "P".equals(kidRole)) {
+                return Optional.of(new WrapPInLILBody(kid, parent));
+            }
+            return Optional.empty();
         }
 
         @Override
@@ -67,6 +71,16 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     public static final class WrapSpanInLBody extends TagSingleChildFix {
         private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent) {
             super(kid, parent);
+        }
+
+        public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
+            String kidRole = kid.getRole().getValue();
+            String parentRole = parent.getRole().getValue();
+            
+            if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
+                return Optional.of(new WrapSpanInLBody(kid, parent));
+            }
+            return Optional.empty();
         }
 
         @Override
