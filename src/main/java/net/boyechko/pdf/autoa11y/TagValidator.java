@@ -18,13 +18,14 @@ public final class TagValidator {
     private static final String INDENT = "  ";
     private static final int ELEMENT_NAME_WIDTH = 30;
     private static final int PAGE_NUM_WIDTH = 10;
-    private static final int OBJ_NUM_WIDTH = 20;
+    private static final int OBJ_NUM_WIDTH = 10;
+    private static final int ISSUE_COMMENT_WIDTH = 30;
     // element, page, obj num, issues
     private static final String ROW_FORMAT =
-        "%-" + ELEMENT_NAME_WIDTH + "s" +
-        "%-" + PAGE_NUM_WIDTH + "s" +
-        "%" + OBJ_NUM_WIDTH + "d" +
-        " %s%n";
+        "%-" + ELEMENT_NAME_WIDTH + "s " +
+        "%-" + PAGE_NUM_WIDTH + "s " +
+        "%" + OBJ_NUM_WIDTH + "s " +
+        "%" + ISSUE_COMMENT_WIDTH + "s%n";
 
     private final TagSchema schema;
     private PrintStream output;
@@ -45,9 +46,21 @@ public final class TagValidator {
         this.root = root;
         this.issues = new ArrayList<>();
 
+        printHeader();
         walk(root);
 
         return List.copyOf(issues);
+    }
+
+    private void printHeader() {
+        if (output != null) {
+            output.printf(ROW_FORMAT, "Element", "Page", "Obj#", "Issues");
+            output.printf(ROW_FORMAT,
+                "-".repeat(ELEMENT_NAME_WIDTH),
+                "-".repeat(PAGE_NUM_WIDTH),
+                "-".repeat(OBJ_NUM_WIDTH),
+                "-".repeat(ISSUE_COMMENT_WIDTH));
+        }
     }
 
     private void walk(PdfStructTreeRoot root) {
