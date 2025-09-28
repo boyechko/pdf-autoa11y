@@ -101,26 +101,9 @@ public class ProcessingService {
     }
 
     private IssueList detectAndReportIssues() {
-        // Phase 1: Rule-based detection
-        output.println();
-        output.println("Checking document compliance:");
-        output.println("────────────────────────────────────────");
-
         IssueList allIssues = engine.detectIssues(context);
 
-        // Report the results by checking each rule individually for better output
-        for (Rule rule : engine.getRules()) {
-            IssueList ruleIssues = rule.findIssues(context);
-            if (ruleIssues.isEmpty()) {
-                output.println("✓ " + rule.name() + " - compliant");
-            } else {
-                for (Issue issue : ruleIssues) {
-                    output.println(issue.message());
-                }
-            }
-        }
-
-        // Phase 2: Tag structure validation
+        // Phase 1: Tag structure validation
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             output.println("✗ No accessibility tags found");
@@ -137,6 +120,23 @@ public class ProcessingService {
             } else {
                 output.println("Tag issues found: " + tagIssues.size());
                 allIssues.addAll(tagIssues);
+            }
+        }
+
+        // Phase 2: Rule-based detection
+        output.println();
+        output.println("Checking document compliance:");
+        output.println("────────────────────────────────────────");
+
+        // Report the results by checking each rule individually for better output
+        for (Rule rule : engine.getRules()) {
+            IssueList ruleIssues = rule.findIssues(context);
+            if (ruleIssues.isEmpty()) {
+                output.println("✓ " + rule.name() + " - compliant");
+            } else {
+                for (Issue issue : ruleIssues) {
+                    output.println(issue.message());
+                }
             }
         }
 
