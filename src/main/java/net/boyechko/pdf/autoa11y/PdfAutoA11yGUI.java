@@ -7,6 +7,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class PdfAutoA11yGUI extends JFrame {
@@ -160,13 +161,11 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
-        SwingWorker<Void, String> worker =
-            new SwingWorker<Void, String>() {
-
-            private File tempOutputFile;
+        SwingWorker<Path, String> worker =
+            new SwingWorker<Path, String>() {
 
             @Override
-            protected Void doInBackground() throws Exception {
+            protected Path doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
                 PrintStream guiOutput = new PrintStream(new OutputStream() {
                     @Override
@@ -183,19 +182,14 @@ public class PdfAutoA11yGUI extends JFrame {
                 String password = passwordField.getText().length() > 0 ?
                     passwordField.getText() : null;
 
-                // Create temporary file for output
-                tempOutputFile = File.createTempFile("pdf_normalized_", ".pdf");
-                tempOutputFile.deleteOnExit(); // Clean up if something goes wrong
-
-                // Use the service with temp file
                 ProcessingService service = new ProcessingService(
                     selectedFile.toPath(),
-                    tempOutputFile.toPath(),
                     password,
                     guiOutput
                 );
-                service.process();
-                return null;
+                
+                ProcessingService.ProcessingResult result = service.process();
+                return result.tempOutputFile();
             }
 
             @Override
@@ -208,14 +202,10 @@ public class PdfAutoA11yGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    get(); // Check for exceptions
-                    showSaveDialog(tempOutputFile);
+                    Path tempFile = get(); // Get the temp file path
+                    showSaveDialog(tempFile.toFile());
                 } catch (Exception e) {
                     outputArea.append("\nError: " + e.getMessage() + "\n");
-                    // Clean up temp file on error
-                    if (tempOutputFile != null && tempOutputFile.exists()) {
-                        tempOutputFile.delete();
-                    }
                 }
                 processButton.setEnabled(true);
             }
