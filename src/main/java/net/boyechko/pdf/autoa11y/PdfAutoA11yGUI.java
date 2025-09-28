@@ -43,15 +43,21 @@ public class PdfAutoA11yGUI extends JFrame {
     }
 
     private JPanel createDropPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(new TitledBorder("1. Drop PDF File Here"));
-        panel.setPreferredSize(new Dimension(300, 300));
+
+        // Create a wrapper to center the fixed-sized label
+        JPanel dropWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         dropLabel = new JLabel("Drop a PDF file here or click to browse", JLabel.CENTER);
         dropLabel.setFont(dropLabel.getFont().deriveFont(14f));
         dropLabel.setBorder(BorderFactory.createDashedBorder(Color.GRAY, 2, 5, 5, false));
         dropLabel.setOpaque(true);
         dropLabel.setBackground(Color.LIGHT_GRAY);
+        dropLabel.setMinimumSize(new Dimension(300, 100));
+        dropLabel.setPreferredSize(new Dimension(300, 100));
+        dropLabel.setMaximumSize(new Dimension(300, 300));
 
         // Enable drag and drop
         new DropTarget(dropLabel, new FileDropHandler());
@@ -63,7 +69,8 @@ public class PdfAutoA11yGUI extends JFrame {
             }
         });
 
-        panel.add(dropLabel, BorderLayout.CENTER);
+        dropWrapper.add(dropLabel);
+        panel.add(dropWrapper);
 
         // Password field
         JPanel passwordPanel = new JPanel(new FlowLayout());
