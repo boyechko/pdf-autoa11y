@@ -84,7 +84,7 @@ public final class TagValidator {
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
-        path = path + role + "[" + index + "]/";
+        path = path + role + "[" + index + "]";
 
         // Collect issues for this element
         List<String> elementIssues = new ArrayList<>();
@@ -173,7 +173,7 @@ public final class TagValidator {
         for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
             PdfStructElem kid = kids.get(kidIndex);
             List<String> kidIssues = kidSpecificIssues.get(kidIndex);
-            walk(kid, path, i, level + 1, kidIssues.isEmpty() ? null : kidIssues);
+            walk(kid, path + ".", i, level + 1, kidIssues.isEmpty() ? null : kidIssues);
             i++;
         }
     }
