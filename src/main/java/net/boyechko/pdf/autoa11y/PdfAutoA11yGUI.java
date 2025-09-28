@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import net.boyechko.pdf.autoa11y.ProcessingService.ProcessingResult;
+
 public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
     private JTextArea outputArea;
@@ -161,11 +163,11 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
-        SwingWorker<Path, String> worker =
-            new SwingWorker<Path, String>() {
+        SwingWorker<ProcessingResult, String> worker =
+            new SwingWorker<ProcessingResult, String>() {
 
             @Override
-            protected Path doInBackground() throws Exception {
+            protected ProcessingResult doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
                 PrintStream guiOutput = new PrintStream(new OutputStream() {
                     @Override
@@ -189,7 +191,7 @@ public class PdfAutoA11yGUI extends JFrame {
                 );
                 
                 ProcessingService.ProcessingResult result = service.process();
-                return result.tempOutputFile();
+                return result;
             }
 
             @Override
@@ -202,8 +204,13 @@ public class PdfAutoA11yGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    Path tempFile = get(); // Get the temp file path
-                    showSaveDialog(tempFile.toFile());
+                    ProcessingResult result = get();
+
+                    if (result.issues().getResolvedIssues().isEmpty()) {
+                        outputArea.append("✗ Nothing to save (original unchanged)\n");
+                    } else {
+                        showSaveDialog(result.tempOutputFile().toFile());
+                    }
                 } catch (Exception e) {
                     outputArea.append("\nError: " + e.getMessage() + "\n");
                 }
