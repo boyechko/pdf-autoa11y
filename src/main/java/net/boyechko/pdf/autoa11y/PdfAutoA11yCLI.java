@@ -1,6 +1,5 @@
 package net.boyechko.pdf.autoa11y;
 
-import java.io.*;
 import java.nio.file.*;
 
 public class PdfAutoA11yCLI {
@@ -83,19 +82,27 @@ public class PdfAutoA11yCLI {
         // Process using the service
         ProcessingService service = new ProcessingService(
             config.inputPath(),
-            config.outputPath(),
             config.password(),
             System.out
         );
 
         try {
-            service.process();
-            System.out.println("Output saved to: " + config.outputPath());
+            ProcessingService.ProcessingResult result = service.process();
+
+            Path outputParent = config.outputPath().getParent();
+            if (outputParent != null) {
+                Files.createDirectories(outputParent);
+            }
+
+            Files.move(result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            System.out.println("✓ Output saved to: " + config.outputPath());
         } catch (Exception e) {
             if (isDevelopment()) {
+                System.err.println("✗ Processing failed:");
                 e.printStackTrace();
             } else {
-                System.err.println("Processing failed: " + e.getMessage());
+                System.err.println("✗ Processing failed: " + e.getMessage());
             }
         }
     }
