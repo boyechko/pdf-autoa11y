@@ -125,7 +125,7 @@ public final class TagValidator {
                         .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
                         .orElse(null));
                     if (fix == null) {
-                        logger.info("No automatic fix available for kid role "+kidRole+" under parent role "+role);
+                        logger.debug("No automatic fix available for kid role "+kidRole+" under parent role "+role);
                     }
 
                     issues.add(new Issue(IssueType.TAG_WRONG_CHILD,

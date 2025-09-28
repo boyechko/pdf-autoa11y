@@ -72,6 +72,10 @@
               <key>org.slf4j.simpleLogger.showLogName</key>
               <value>true</value>
             </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
+              <value>info</value>
+            </systemProperty>
           </systemProperties>
         </configuration>
       </plugin>
