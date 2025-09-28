@@ -89,6 +89,11 @@ public class PdfAutoA11yCLI {
         try {
             ProcessingService.ProcessingResult result = service.process();
 
+            if (result.issues().getResolvedIssues().isEmpty()) {
+                System.out.println("✗ No output file created (original unchanged)");
+                return;
+            }
+
             Path outputParent = config.outputPath().getParent();
             if (outputParent != null) {
                 Files.createDirectories(outputParent);
