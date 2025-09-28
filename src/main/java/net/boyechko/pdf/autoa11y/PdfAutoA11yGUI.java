@@ -152,13 +152,13 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
-        SwingWorker<IssueList, String> worker =
-            new SwingWorker<IssueList, String>() {
+        SwingWorker<Void, String> worker =
+            new SwingWorker<Void, String>() {
 
             private File tempOutputFile;
 
             @Override
-            protected IssueList doInBackground() throws Exception {
+            protected Void doInBackground() throws Exception {
                 // Create custom PrintStream for GUI output
                 PrintStream guiOutput = new PrintStream(new OutputStream() {
                     @Override
@@ -186,7 +186,8 @@ public class PdfAutoA11yGUI extends JFrame {
                     password,
                     guiOutput
                 );
-                return service.process();
+                service.process();
+                return null;
             }
 
             @Override
@@ -199,8 +200,7 @@ public class PdfAutoA11yGUI extends JFrame {
             @Override
             protected void done() {
                 try {
-                    IssueList result = get();
-                    // Show save dialog and handle the file move
+                    get(); // Check for exceptions
                     showSaveDialog(tempOutputFile);
                 } catch (Exception e) {
                     outputArea.append("\nError: " + e.getMessage() + "\n");
