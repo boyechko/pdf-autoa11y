@@ -161,8 +161,7 @@ public class ProcessingService {
             output.println("Remaining issues after fixes:");
             output.println("────────────────────────────────────────");
             for (Issue i : remaining) {
-                String where = (i.where() != null) ? (" at " + i.where().path()) : "";
-                output.println("✗ " + i.message() + where);
+                output.println("✗ " + i.message() + ": " + i.where());
             }
         }
     }
