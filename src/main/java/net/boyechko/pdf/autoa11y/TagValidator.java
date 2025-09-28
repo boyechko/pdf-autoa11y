@@ -24,7 +24,7 @@ public final class TagValidator {
         "%-" + ELEMENT_NAME_WIDTH + "s" +
         "%-" + PAGE_NUM_WIDTH + "s" +
         "%" + OBJ_NUM_WIDTH + "d" +
-        "%s%n";
+        " %s%n";
 
     private final TagSchema schema;
     private PrintStream output;
