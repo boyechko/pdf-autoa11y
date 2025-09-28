@@ -84,6 +84,7 @@ public final class TagValidator {
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
+        String message = "";
         path = path + role + "[" + index + "]";
 
         // Collect issues for this element
@@ -95,12 +96,13 @@ public final class TagValidator {
         }
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
+            message = "Parent must be "+formatRole(rule.parentMustBe)+" but is "+formatRole(parentRole);
             issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
                     IssueSeverity.ERROR,
                     new IssueLocation(node, path),
-                    "Parent must be "+rule.parentMustBe+" but is "+parentRole));
+                    message));
             if (output != null) {
-                elementIssues.add("✗ Parent must be "+rule.parentMustBe+" but is "+parentRole);
+                elementIssues.add(message);
             }
         }
 
@@ -109,18 +111,20 @@ public final class TagValidator {
 
         if (rule != null) {
             if (rule.minChildren != null && kidRoles.size() < rule.minChildren) {
+                message = formatRole(role) + " has "+kidRoles.size()+" kids; min is "+rule.minChildren;
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
-                        "Has "+kidRoles.size()+" kids; min is "+rule.minChildren));
-                elementIssues.add("✗ Has "+kidRoles.size()+" kids; min is "+rule.minChildren);
+                        message));
+                elementIssues.add(message);
             }
             if (rule.maxChildren != null && kidRoles.size() > rule.maxChildren) {
+                message = formatRole(role) + " has "+kidRoles.size()+" kids; max is "+rule.maxChildren;
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
-                        "Has "+kidRoles.size()+" kids; max is "+rule.maxChildren));
-                elementIssues.add("✗ Has "+kidRoles.size()+" kids; max is "+rule.maxChildren);
+                        message));
+                elementIssues.add(message);
             }
         }
 
@@ -138,16 +142,17 @@ public final class TagValidator {
                         .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
                         .orElse(null));
                     if (fix == null) {
-                        logger.debug("No automatic fix available for kid role "+kidRole+" under parent role "+role);
+                        logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(parentRole));
                     }
 
+                    message = formatRole(kidRole)+"["+(i+1)+"] not allowed under "+formatRole(role);
                     issues.add(new Issue(IssueType.TAG_WRONG_CHILD,
                             IssueSeverity.ERROR,
                             new IssueLocation(kids.get(i), path),
-                            "Kid #"+i+" role '"+kidRole+"' not allowed under "+role,
+                            message,
                             fix));
                     // Pass this issue down to the specific kid instead of showing at parent
-                    kidSpecificIssues.get(i).add("✗ Role '"+kidRole+"' not allowed under "+role);
+                    kidSpecificIssues.get(i).add(message);
                 }
             }
         }
@@ -157,13 +162,14 @@ public final class TagValidator {
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
                 IssueFix fix = null;
+                message = "Kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'";
 
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
-                        "Kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'",
+                        message,
                         fix));
-                elementIssues.add("✗ Kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'");
+                elementIssues.add(message);
             }
         }
 
@@ -214,7 +220,7 @@ public final class TagValidator {
         String elementName = INDENT.repeat(level) + "- " + role;
         int pageNum = getPageNumber(node);
         String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
-        String issuesText = issues.isEmpty() ? "" : String.join("; ", issues);
+        String issuesText = issues.isEmpty() ? "" : "✗ " + String.join("; ", issues);
         output.printf(ROW_FORMAT, elementName, pageString, getObjNum(node), issuesText);
     }
 
@@ -231,5 +237,9 @@ public final class TagValidator {
 
     private int getObjNum(PdfStructElem node) {
         return node.getPdfObject().getIndirectReference().getObjNumber();
+    }
+
+    private String formatRole(String role) {
+        return "<" + role + ">";
     }
 }
