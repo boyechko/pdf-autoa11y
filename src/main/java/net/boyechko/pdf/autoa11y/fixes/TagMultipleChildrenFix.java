@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract sealed class TagMultipleChildrenFix implements IssueFix
-    permits TagMultipleChildrenFix.WrapPairsOfPInLI {
+    permits TagMultipleChildrenFix.WrapPairsOfPInLI, TagMultipleChildrenFix.ChangePToLblInLI {
 
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
@@ -21,7 +21,8 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
 
     public static Optional<IssueFix> createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
         // Try each subclass factory method
-        return WrapPairsOfPInLI.tryCreate(parent, kids);
+        return WrapPairsOfPInLI.tryCreate(parent, kids)
+            .or(() -> ChangePToLblInLI.tryCreate(parent, kids));
     }
 
     @Override
@@ -33,6 +34,55 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
     public PdfStructElem getParent() { return parent; }
     public List<PdfStructElem> getKids() { return kids; }
     public String getParentRole() { return parent.getRole().getValue(); }
+
+    public static final class ChangePToLblInLI extends TagMultipleChildrenFix {
+        private ChangePToLblInLI(PdfStructElem parent, List<PdfStructElem> kids) {
+            super(parent, kids);
+        }
+
+        public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
+            String parentRole = parent.getRole().getValue();
+            // There should be exactly two kids, one of which is LBody and the other P
+            if ("LI".equals(parentRole) && kids.size() == 2) {
+                String kid1Role = kids.get(0).getRole().getValue();
+                String kid2Role = kids.get(1).getRole().getValue();
+
+                if (("P".equals(kid1Role) && "LBody".equals(kid2Role)) ||
+                    ("LBody".equals(kid1Role) && "P".equals(kid2Role))) {
+                    return Optional.of(new ChangePToLblInLI(parent, kids));
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public void apply(DocumentContext ctx) throws Exception {
+            for (PdfStructElem p : kids) {
+                if ("P".equals(p.getRole().getValue())) {
+                    p.setRole(PdfName.Lbl);
+                }
+            }
+        }
+
+        @Override
+        public String describe() {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            return "Changed P to Lbl in LI object #" + objNum;
+        }
+
+        @Override
+        public boolean invalidates(IssueFix otherFix) {
+            // If this fix operates on LI with P kids, it invalidates individual
+            // TagSingleChildFix that target any of the same kid elements
+            if (otherFix instanceof TagSingleChildFix) {
+                TagSingleChildFix singleFix = (TagSingleChildFix) otherFix;
+                return "LI".equals(singleFix.getParentRole()) &&
+                    singleFix.getParent().equals(parent) &&
+                    kids.contains(singleFix.getKid());
+            }
+            return false;
+        }
+    }
 
     public static final class WrapPairsOfPInLI extends TagMultipleChildrenFix {
         private WrapPairsOfPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
