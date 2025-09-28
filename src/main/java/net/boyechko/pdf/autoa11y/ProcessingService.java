@@ -11,7 +11,6 @@ public class ProcessingService {
     private final Path inputPath;
     private final String password;
     private final ReaderProperties readerProps;
-    private final Path outputPath;
     private final PrintStream output;
     private final RuleEngine engine;
 
@@ -21,9 +20,8 @@ public class ProcessingService {
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
 
-    public ProcessingService(Path inputPath, Path outputPath, String password, PrintStream output) {
+    public ProcessingService(Path inputPath, String password, PrintStream output) {
         this.inputPath = inputPath;
-        this.outputPath = outputPath;
         this.password = password;
         this.readerProps = new ReaderProperties();
         if (password != null) {
@@ -37,29 +35,24 @@ public class ProcessingService {
         ));
     }
 
-    public IssueList process() throws Exception {
-        // File system setup
-        setupOutputPath();
-        validateInputFile();
+    public record ProcessingResult(IssueList issues, Path tempOutputFile) {}
 
-        // Analyze encryption
+    public ProcessingResult process() throws Exception {
+        validateInputFile();
+        Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
+
         this.encryptionInfo = analyzeEncryption();
 
-        // Create PDF document for processing
-        try (PdfDocument pdfDoc = openForModification()) {
+        try (PdfDocument pdfDoc = openForModification(tempOutputFile)) {
             this.context = new DocumentContext(pdfDoc);
 
             IssueList issues = detectAndReportIssues();
             applyFixesAndReport(issues);
             printSummary(issues);
-            return issues;
-        }
-    }
-
-    private void setupOutputPath() throws Exception {
-        Path outputParent = outputPath.getParent();
-        if (outputParent != null) {
-            Files.createDirectories(outputParent);
+            return new ProcessingResult(issues, tempOutputFile);
+        } catch (Exception e) {
+            Files.deleteIfExists(tempOutputFile);
+            throw e;
         }
     }
 
@@ -81,7 +74,7 @@ public class ProcessingService {
         }
     }
 
-    private PdfDocument openForModification() throws Exception {
+    private PdfDocument openForModification(Path outputPath) throws Exception {
         PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
         WriterProperties writerProps = new WriterProperties();
 
