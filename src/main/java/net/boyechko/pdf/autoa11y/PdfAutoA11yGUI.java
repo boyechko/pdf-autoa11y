@@ -29,13 +29,13 @@ public class PdfAutoA11yGUI extends JFrame {
         JPanel dropPanel = createDropPanel();
         add(dropPanel, BorderLayout.NORTH);
 
-        // Center panel - controls
-        JPanel controlPanel = createControlPanel();
-        add(controlPanel, BorderLayout.CENTER);
-
-        // Bottom panel - output text
+        // Center panel - output text (gets stretched)
         JPanel outputPanel = createOutputPanel();
-        add(outputPanel, BorderLayout.SOUTH);
+        add(outputPanel, BorderLayout.CENTER);
+
+        // Bottom panel - controls
+        JPanel controlPanel = createControlPanel();
+        add(controlPanel, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null); // Center on screen
@@ -84,7 +84,7 @@ public class PdfAutoA11yGUI extends JFrame {
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setPreferredSize(new Dimension(600, 400));
+        panel.setPreferredSize(new Dimension(800, 400));
         panel.setBorder(new TitledBorder("2. Processing Output"));
 
         outputArea = new JTextArea(20, 60);
@@ -99,6 +99,7 @@ public class PdfAutoA11yGUI extends JFrame {
 
     private JPanel createControlPanel() {
         JPanel panel = new JPanel(new FlowLayout());
+        panel.setMinimumSize(new Dimension(100, 60));
 
         processButton = new JButton("Process PDF");
         processButton.setEnabled(false);
