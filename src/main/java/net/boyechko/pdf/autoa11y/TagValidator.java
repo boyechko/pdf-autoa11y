@@ -153,6 +153,11 @@ public final class TagValidator {
                             fix));
                     // Pass this issue down to the specific kid instead of showing at parent
                     kidSpecificIssues.get(i).add(message);
+
+                    // If created TagMultipleChildrenFix, stop processing further kids
+                    if (fix instanceof TagMultipleChildrenFix) {
+                        break;
+                    }
                 }
             }
         }
