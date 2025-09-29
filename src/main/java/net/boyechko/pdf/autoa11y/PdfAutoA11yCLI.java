@@ -8,7 +8,8 @@ public class PdfAutoA11yCLI {
     public record CLIConfig(
         Path inputPath,
         Path outputPath,
-        String password
+        String password,
+        boolean debug
     ) {
         public CLIConfig {
             if (inputPath == null) {
@@ -30,6 +31,7 @@ public class PdfAutoA11yCLI {
     public static void main(String[] args) {
         try {
             CLIConfig config = parseArguments(args);
+            configureLogging(config.debug());
             processFile(config);
         } catch (CLIException e) {
             System.err.println("Error: " + e.getMessage());
@@ -43,19 +45,38 @@ public class PdfAutoA11yCLI {
     private static CLIConfig parseArguments(String[] args) throws CLIException {
         if (args.length == 0) {
             throw new CLIException("No input file specified\n" +
-                "Usage: java PdfAutoA11yCLI [-p password] <filepath>\n" +
-                "Example: java PdfAutoA11yCLI -p somepassword document.pdf");
+                "Usage: java PdfAutoA11yCLI [-d] [-p password] <inputpath> [<outputpath>]\n" +
+                "Example: java PdfAutoA11yCLI -p somepassword document.pdf output.pdf");
         }
 
         Path inputPath = null;
+        Path outputPath = null;
         String password = null;
+        boolean debug = false;
 
         for (int i = 0; i < args.length; i++) {
-            if ("-p".equals(args[i]) && i + 1 < args.length) {
-                password = args[i + 1];
-                i++;
-            } else if (inputPath == null) {
-                inputPath = Paths.get(args[i]);
+            switch (args[i]) {
+                case "-p", "--password" -> {
+                    if (i + 1 < args.length) {
+                        password = args[++i];
+                    } else {
+                        throw new CLIException("Password not specified after -p");
+                    }
+                    break;
+                }
+                case "-d", "--debug" -> {
+                    debug = true;
+                    break;
+                }
+                default -> {
+                    if (inputPath == null) {
+                        inputPath = Paths.get(args[i]);
+                    } else if (outputPath == null) {
+                        outputPath = Paths.get(args[i]);
+                    } else {
+                        throw new CLIException("Multiple input files specified");
+                    }
+                }
             }
         }
 
@@ -69,9 +90,19 @@ public class PdfAutoA11yCLI {
 
         // Generate output path
         String filename = inputPath.getFileName().toString();
-        Path outputPath = Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+        if (outputPath == null) {
+            outputPath = Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+        }
 
-        return new CLIConfig(inputPath, outputPath, password);
+        return new CLIConfig(inputPath, outputPath, password, debug);
+    }
+
+    private static void configureLogging(boolean debug) {
+        if (debug) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+        } else {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+        }
     }
 
     private static void processFile(CLIConfig config) {
@@ -103,7 +134,7 @@ public class PdfAutoA11yCLI {
 
             System.out.println("✓ Output saved to: " + config.outputPath());
         } catch (Exception e) {
-            if (isDevelopment()) {
+            if (isDevelopment() || config.debug()) {
                 System.err.println("✗ Processing failed:");
                 e.printStackTrace();
             } else {
