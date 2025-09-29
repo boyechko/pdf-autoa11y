@@ -96,7 +96,7 @@ public final class TagValidator {
         }
 
         if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
-            message = "Parent must be "+formatRole(rule.parentMustBe)+" but is "+formatRole(parentRole);
+            message = "parent must be "+formatRole(rule.parentMustBe)+" but is "+formatRole(parentRole);
             issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
                     IssueSeverity.ERROR,
                     new IssueLocation(node, path),
@@ -142,7 +142,7 @@ public final class TagValidator {
                         .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
                         .orElse(null));
                     if (fix == null) {
-                        logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(parentRole));
+                        logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(role));
                     }
 
                     message = formatRole(kidRole)+"["+(i+1)+"] not allowed under "+formatRole(role);
@@ -167,7 +167,7 @@ public final class TagValidator {
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 // Create IssueFix for automatic structure correction
                 IssueFix fix = null;
-                message = "Kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'";
+                message = "kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'";
 
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
