@@ -1,15 +1,18 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
+import java.util.List;
+import java.util.Optional;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.boyechko.pdf.autoa11y.DocumentContext;
 import net.boyechko.pdf.autoa11y.IssueFix;
 
-import java.util.List;
-import java.util.Optional;
-
 public abstract sealed class TagMultipleChildrenFix implements IssueFix
-    permits TagMultipleChildrenFix.WrapPairsOfPInLI, TagMultipleChildrenFix.ChangePToLblInLI {
+    permits TagMultipleChildrenFix.WrapPairsOfLblPInLI, TagMultipleChildrenFix.ChangePToLblInLI {
+
+    protected static final Logger logger = LoggerFactory.getLogger(TagMultipleChildrenFix.class);
 
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
@@ -21,7 +24,7 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
 
     public static Optional<IssueFix> createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
         // Try each subclass factory method
-        return WrapPairsOfPInLI.tryCreate(parent, kids)
+        return WrapPairsOfLblPInLI.tryCreate(parent, kids)
             .or(() -> ChangePToLblInLI.tryCreate(parent, kids));
     }
 
@@ -84,45 +87,59 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
         }
     }
 
-    public static final class WrapPairsOfPInLI extends TagMultipleChildrenFix {
-        private WrapPairsOfPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
+    public static final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
+        private WrapPairsOfLblPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
             super(parent, kids);
         }
 
         public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
             String parentRole = parent.getRole().getValue();
 
-            if ("L".equals(parentRole) && kids.stream().allMatch(k -> "P".equals(k.getRole().getValue()))) {
-                return Optional.of(new WrapPairsOfPInLI(parent, kids));
+            // Check if parent is L and we have alternating Lbl/P pattern
+            if ("L".equals(parentRole) && kids.size() >= 2 && kids.size() % 2 == 0) {
+                // Verify alternating Lbl/P pattern
+                for (int i = 0; i < kids.size(); i += 2) {
+                    String lblRole = kids.get(i).getRole().getValue();
+                    String pRole = kids.get(i + 1).getRole().getValue();
+
+                    if (!"Lbl".equals(lblRole) || !"P".equals(pRole)) {
+                        return Optional.empty();
+                    }
+                }
+                return Optional.of(new WrapPairsOfLblPInLI(parent, kids));
             }
             return Optional.empty();
         }
 
         @Override
         public void apply(DocumentContext ctx) throws Exception {
+            // Process pairs of Lbl/P elements
+            logger.debug("Applying WrapPairsOfLblPInLI to L object #"
+                        + parent.getPdfObject().getIndirectReference().getObjNumber()
+                        + " with " + kids.size() + " kids");
             for (int i = 0; i < kids.size(); i += 2) {
-                PdfStructElem p1 = kids.get(i);
-                PdfStructElem p2 = kids.get(i + 1);
+                PdfStructElem lbl = kids.get(i);
+                PdfStructElem p = kids.get(i + 1);
 
                 PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
                 parent.addKid(newLI);
 
-                PdfStructElem newLbl = new PdfStructElem(ctx.doc(), PdfName.Lbl);
-                newLI.addKid(newLbl);
-                parent.removeKid(p1);
-                newLbl.addKid(p1);
+                // Move the Lbl directly under LI
+                parent.removeKid(lbl);
+                newLI.addKid(lbl);
 
+                // Create LBody and move P under it
                 PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
                 newLI.addKid(newLBody);
-                parent.removeKid(p2);
-                newLBody.addKid(p2);
+                parent.removeKid(p);
+                newLBody.addKid(p);
             }
         }
 
         @Override
         public String describe() {
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
-            return "Wrapped pairs of P in Lbl+LBody for L object #" + objNum;
+            return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum;
         }
 
         @Override
@@ -138,7 +155,4 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
             return false;
         }
     }
-
-
-
 }
