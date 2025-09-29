@@ -41,6 +41,15 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
     public List<PdfStructElem> getKids() { return kids; }
     public String getParentRole() { return parent.getRole().getValue(); }
 
+    public boolean invalidates(IssueFix otherFix) {
+        if (otherFix instanceof TagSingleChildFix singleFix) {
+            return getParentRole().equals(singleFix.getParentRole()) &&
+                    singleFix.getParent().equals(parent) &&
+                    kids.contains(singleFix.getKid());
+        }
+        return false;
+    }
+
     public static final class ChangePToLblInLI extends TagMultipleChildrenFix {
         private ChangePToLblInLI(PdfStructElem parent, List<PdfStructElem> kids) {
             super(parent, kids);
@@ -74,19 +83,6 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
         public String describe() {
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Changed P to Lbl in LI object #" + objNum;
-        }
-
-        @Override
-        public boolean invalidates(IssueFix otherFix) {
-            // If this fix operates on LI with P kids, it invalidates individual
-            // TagSingleChildFix that target any of the same kid elements
-            if (otherFix instanceof TagSingleChildFix) {
-                TagSingleChildFix singleFix = (TagSingleChildFix) otherFix;
-                return "LI".equals(singleFix.getParentRole()) &&
-                    singleFix.getParent().equals(parent) &&
-                    kids.contains(singleFix.getKid());
-            }
-            return false;
         }
     }
 
@@ -144,19 +140,6 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum;
         }
-
-        @Override
-        public boolean invalidates(IssueFix otherFix) {
-            // If this fix operates on L with P kids, it invalidates individual
-            // TagSingleChildFix that target any of the same kid elements
-            if (otherFix instanceof TagSingleChildFix) {
-                TagSingleChildFix singleFix = (TagSingleChildFix) otherFix;
-                return "L".equals(singleFix.getParentRole()) &&
-                    singleFix.getParent().equals(parent) &&
-                    kids.contains(singleFix.getKid());
-            }
-            return false;
-        }
     }
 
     public static final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
@@ -208,19 +191,6 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
         public String describe() {
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Wrapped pairs of Lbl/LBody in LI elements for L object #" + objNum;
-        }
-
-        @Override
-        public boolean invalidates(IssueFix otherFix) {
-            // If this fix operates on L with LBody kids, it invalidates individual
-            // TagSingleChildFix that target any of the same kid elements
-            if (otherFix instanceof TagSingleChildFix) {
-                TagSingleChildFix singleFix = (TagSingleChildFix) otherFix;
-                return "L".equals(singleFix.getParentRole()) &&
-                    singleFix.getParent().equals(parent) &&
-                    kids.contains(singleFix.getKid());
-            }
-            return false;
         }
     }
 }
