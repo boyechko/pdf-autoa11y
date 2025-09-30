@@ -1,11 +1,11 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
+import java.util.List;
+import java.util.Optional;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.DocumentContext;
 import net.boyechko.pdf.autoa11y.IssueFix;
-
-import java.util.Optional;
 
 public abstract sealed class TagSingleChildFix implements IssueFix
     permits TagSingleChildFix.WrapPInLILBody, TagSingleChildFix.WrapSpanInLBody {
@@ -20,8 +20,7 @@ public abstract sealed class TagSingleChildFix implements IssueFix
 
     public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
         // Try each subclass factory method
-        return WrapPInLILBody.tryCreate(kid, parent)
-            .or(() -> WrapSpanInLBody.tryCreate(kid, parent));
+        return WrapInLI.tryCreate(kid, parent);
     }
 
     @Override
@@ -29,8 +28,14 @@ public abstract sealed class TagSingleChildFix implements IssueFix
         return 30;
     }
 
+    @Override
+    public String describe() {
+        return "Fix a single child, " + getKidRole() + ", under its parent " + getParentRole();
+    }
+
     // Getters for invalidation logic in other fixes
     public PdfStructElem getKid() { return kid; }
+    public String getKidRole() { return kid.getRole().getValue(); }
     public PdfStructElem getParent() { return parent; }
     public String getParentRole() { return parent.getRole().getValue(); }
 
