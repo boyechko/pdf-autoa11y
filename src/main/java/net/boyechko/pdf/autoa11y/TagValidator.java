@@ -145,13 +145,15 @@ public final class TagValidator {
                         logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(role));
                     }
 
-                    message = formatRole(kidRole)+"["+(i+1)+"] not allowed under "+formatRole(role);
+                    message = formatRole(kidRole)+" not allowed under "+formatRole(role);
                     issues.add(new Issue(IssueType.TAG_WRONG_CHILD,
                             IssueSeverity.ERROR,
                             new IssueLocation(kids.get(i), path),
                             message,
                             fix));
-                    // Pass this issue down to the specific kid instead of showing at parent
+                    if (!elementIssues.contains("(child issues)")) {
+                        elementIssues.add("(child issues)");
+                    }
                     kidSpecificIssues.get(i).add(message);
 
                     // If created TagMultipleChildrenFix, stop processing further kids
