@@ -9,6 +9,7 @@ public class PdfAutoA11yCLI {
         Path inputPath,
         Path outputPath,
         String password,
+        boolean force_save,
         boolean debug
     ) {
         public CLIConfig {
@@ -53,6 +54,7 @@ public class PdfAutoA11yCLI {
         Path outputPath = null;
         String password = null;
         boolean debug = false;
+        boolean force_save = false;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -66,6 +68,10 @@ public class PdfAutoA11yCLI {
                 }
                 case "-d", "--debug" -> {
                     debug = true;
+                    break;
+                }
+                case "-f", "--force" -> {
+                    force_save = true;
                     break;
                 }
                 default -> {
@@ -94,7 +100,7 @@ public class PdfAutoA11yCLI {
             outputPath = Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
         }
 
-        return new CLIConfig(inputPath, outputPath, password, debug);
+        return new CLIConfig(inputPath, outputPath, password, force_save, debug);
     }
 
     private static void configureLogging(boolean debug) {
@@ -120,7 +126,7 @@ public class PdfAutoA11yCLI {
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            if (result.issues().getResolvedIssues().isEmpty()) {
+            if (result.issues().getResolvedIssues().isEmpty() && !config.force_save()) {
                 System.out.println("✗ No output file created (original unchanged)");
                 return;
             }
