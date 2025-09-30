@@ -93,8 +93,8 @@ public final class TagValidator {
             elementIssues.addAll(inheritedIssues);
         }
 
-        if (rule != null && rule.parentMustBe != null && parentRole != null && !rule.parentMustBe.equals(parentRole)) {
-            message = "parent must be "+formatRole(rule.parentMustBe)+" but is "+formatRole(parentRole);
+        if (rule != null && rule.getParentMustBe() != null && parentRole != null && !rule.getParentMustBe().equals(parentRole)) {
+            message = "parent must be "+formatRole(rule.getParentMustBe())+" but is "+formatRole(parentRole);
             issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
                     IssueSeverity.ERROR,
                     new IssueLocation(node, path),
@@ -108,16 +108,16 @@ public final class TagValidator {
         List<String> kidRoles = kids.stream().map(this::mappedRole).toList();
 
         if (rule != null) {
-            if (rule.minChildren != null && kidRoles.size() < rule.minChildren) {
-                message = formatRole(role) + " has "+kidRoles.size()+" kids; min is "+rule.minChildren;
+            if (rule.getMinChildren() != null && kidRoles.size() < rule.getMinChildren()) {
+                message = formatRole(role) + " has "+kidRoles.size()+" kids; min is "+rule.getMinChildren();
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
                         message));
                 elementIssues.add(message);
             }
-            if (rule.maxChildren != null && kidRoles.size() > rule.maxChildren) {
-                message = formatRole(role) + " has "+kidRoles.size()+" kids; max is "+rule.maxChildren;
+            if (rule.getMaxChildren() != null && kidRoles.size() > rule.getMaxChildren()) {
+                message = formatRole(role) + " has "+kidRoles.size()+" kids; max is "+rule.getMaxChildren();
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
                         IssueSeverity.ERROR,
                         new IssueLocation(node, path),
@@ -132,11 +132,11 @@ public final class TagValidator {
             kidSpecificIssues.add(new ArrayList<>());
         }
 
-        if (rule != null && rule.allowedChildren != null && !rule.allowedChildren.isEmpty()) {
+        if (rule != null && rule.getAllowedChildren() != null && !rule.getAllowedChildren().isEmpty()) {
             boolean multiFixCreated = false;
             for (int i=0;i<kidRoles.size();i++) {
                 String kidRole = kidRoles.get(i);
-                if (!rule.allowedChildren.contains(kidRole)) {
+                if (!rule.getAllowedChildren().contains(kidRole)) {
                     IssueFix fix = TagMultipleChildrenFix.createIfApplicable(node, kids)
                         .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
                         .orElse(null));
@@ -167,11 +167,11 @@ public final class TagValidator {
             }
         }
 
-        if (rule != null && rule.childPattern != null) {
-            PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
+        if (rule != null && rule.getChildPattern() != null) {
+            PatternMatcher pm = PatternMatcher.compile(rule.getChildPattern());
             if (pm != null && !pm.fullMatch(kidRoles)) {
                 IssueFix fix = null;
-                message = "kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'";
+                message = "kids "+kidRoles+" do not match pattern '"+rule.getChildPattern()+"'";
 
                 issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
                         IssueSeverity.ERROR,
