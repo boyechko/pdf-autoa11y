@@ -5,37 +5,52 @@ import java.util.Map;
 import java.util.Set;
 
 public final class TagSchema {
-    Map<String, Rule> roles = new HashMap<>();
-    
+    public Map<String, Rule> roles;
+
     public static final class Rule {
-        String parentMustBe;
-        Set<String> allowedChildren = Set.of();
-        String childPattern;
-        Integer minChildren;
-        Integer maxChildren;
-        Set<String> requiredChildren = Set.of();
+        String parent_must_be;
+        Set<String> allowed_children;
+        Set<String> required_children;
+        Integer min_children;
+        Integer max_children;
+        String child_pattern;
+
+        public String getParentMustBe() { return parent_must_be; }
+        public Set<String> getAllowedChildren() { return allowed_children; }
+        public Set<String> getRequiredChildren() { return required_children; }
+        public Integer getMinChildren() { return min_children; }
+        public Integer getMaxChildren() { return max_children; }
+        public String getChildPattern() { return child_pattern; }
+    }
+
+    public TagSchema() {
+        this.roles = new HashMap<>();
+    }
+
+    public Map<String, Rule> getRoles() {
+        return roles;
     }
     
     public static TagSchema minimal() {
         TagSchema s = new TagSchema();
 
         Rule L = new Rule();
-        L.allowedChildren = Set.of("LI");
-        L.minChildren = 1;
+        L.allowed_children = Set.of("LI");
+        L.min_children = 1;
         s.roles.put("L", L);
 
         Rule LI = new Rule();
-        LI.parentMustBe = "L";
-        LI.allowedChildren = Set.of("Lbl", "LBody");
-        LI.minChildren = 1;
-        LI.maxChildren = 2;
+        LI.parent_must_be = "L";
+        LI.allowed_children = Set.of("Lbl", "LBody");
+        LI.min_children = 1;
+        LI.max_children = 2;
         s.roles.put("LI", LI);
 
         Rule Lbl = new Rule();
         s.roles.put("Lbl", Lbl);
 
         Rule LBody = new Rule();
-        LBody.parentMustBe = "LI";
+        LBody.parent_must_be = "LI";
         s.roles.put("LBody", LBody);
 
         return s;
