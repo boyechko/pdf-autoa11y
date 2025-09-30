@@ -6,6 +6,7 @@ public enum IssueType {
     TAB_ORDER_NOT_SET,
 
     // Tag Issues
+    TAG_UNKNOWN_ROLE,           // Tag has a role not in the schema
     TAG_WRONG_PARENT,           // Child has wrong parent type
     TAG_WRONG_CHILD,            // Parent contains a child type it shouldn't
     TAG_WRONG_CHILD_COUNT,      // Parent has too many/few children

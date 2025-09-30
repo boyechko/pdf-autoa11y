@@ -88,10 +88,17 @@ public final class TagValidator {
 
         // Collect issues for this element
         List<String> elementIssues = new ArrayList<>();
-
-        // Add any inherited issues from parent (like "not allowed under X")
         if (inheritedIssues != null) {
             elementIssues.addAll(inheritedIssues);
+        }
+
+        if (rule == null) {
+            message = "unknown role";
+            issues.add(new Issue(IssueType.TAG_UNKNOWN_ROLE,
+                    IssueSeverity.ERROR,
+                    new IssueLocation(node, path),
+                    message));
+            elementIssues.add(message);
         }
 
         if (rule != null && rule.getParentMustBe() != null && parentRole != null && !rule.getParentMustBe().equals(parentRole)) {
