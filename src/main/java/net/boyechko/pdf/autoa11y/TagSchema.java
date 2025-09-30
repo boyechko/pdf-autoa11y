@@ -1,10 +1,19 @@
 package net.boyechko.pdf.autoa11y;
 
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public final class TagSchema {
+    private static final String DEFAULT_SCHEMA_RESOURCE = "/tagschema-PDF-UA1.yaml";
+    private static final Logger logger = LoggerFactory.getLogger(TagSchema.class);
+
     public Map<String, Rule> roles;
 
     public static final class Rule {
@@ -30,7 +39,37 @@ public final class TagSchema {
     public Map<String, Rule> getRoles() {
         return roles;
     }
-    
+
+    /**
+     * Load TagSchema from classpath resource (e.g., from src/main/resources/)
+     * @param resourcePath Path starting with "/" for absolute resource path
+     */
+    public static TagSchema fromResource(String resourcePath) {
+        try (var inputStream = TagSchema.class.getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                throw new IllegalArgumentException("Resource not found: " + resourcePath);
+            }
+
+            var yaml = new Yaml(new Constructor(TagSchema.class, new LoaderOptions()));
+            TagSchema schema = yaml.load(inputStream);
+
+            logger.debug("Loaded TagSchema with {} roles from resource {}",
+                    schema.roles.size(), resourcePath);
+            return schema;
+
+        } catch (Exception e) {
+            logger.error("Failed to load TagSchema from resource {}: {}", resourcePath, e.getMessage());
+            throw new RuntimeException("Failed to load schema from resource " + resourcePath + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Load default schema from standard location
+     */
+    public static TagSchema loadDefault() {
+        return fromResource(DEFAULT_SCHEMA_RESOURCE);
+    }
+
     public static TagSchema minimal() {
         TagSchema s = new TagSchema();
 

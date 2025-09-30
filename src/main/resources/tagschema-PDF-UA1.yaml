@@ -1,0 +1,27 @@
+roles:
+  Art:
+    # no constraints
+
+  Caption:
+    parent_must_be: [Figure, Table, List]
+    allowed_children: [Span, P, Figure]
+
+  Document:
+    allowed_children: [Part, Art, Div, Sect, H1, H2, H3, H4, H5, H6, P, L, Table, Figure, Caption]
+
+  L:
+    required_children: [LI]
+    allowed_children: [Caption, LI, L]
+
+  LI:
+    parent_must_be: [L]
+    allowed_children: [Lbl, LBody]
+
+  Note:
+    allowed_children: [Lbl, P]
+
+  P:
+    allowed_children: [Span]
+
+  Table:
+    allowed_children: [Caption, TR, TD, THead, TBody, TFoot]
