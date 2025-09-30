@@ -3,6 +3,7 @@ package net.boyechko.pdf.autoa11y;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -250,5 +251,12 @@ public final class TagValidator {
 
     private String formatRole(String role) {
         return "<" + role + ">";
+    }
+
+    private String formatRole(Set<String> roles) {
+        if (roles.size() == 1) {
+            return formatRole(roles.iterator().next());
+        }
+        return "<" + String.join("|", roles) + ">";
     }
 }
