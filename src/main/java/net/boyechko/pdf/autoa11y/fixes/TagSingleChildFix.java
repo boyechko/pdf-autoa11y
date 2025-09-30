@@ -8,7 +8,7 @@ import net.boyechko.pdf.autoa11y.DocumentContext;
 import net.boyechko.pdf.autoa11y.IssueFix;
 
 public abstract sealed class TagSingleChildFix implements IssueFix
-    permits TagSingleChildFix.WrapPInLILBody, TagSingleChildFix.WrapSpanInLBody {
+    permits TagSingleChildFix.WrapInLI {
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
@@ -39,17 +39,20 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     public PdfStructElem getParent() { return parent; }
     public String getParentRole() { return parent.getRole().getValue(); }
 
-    public static final class WrapPInLILBody extends TagSingleChildFix {
-        private WrapPInLILBody(PdfStructElem kid, PdfStructElem parent) {
+    public static final class WrapInLI extends TagSingleChildFix {
+        private static final List<String> validKidRoles =
+            List.of("Div", "Figure", "LBody", "P", "Span");
+        private String wrappedIn = "";
+
+        private WrapInLI(PdfStructElem kid, PdfStructElem parent) {
             super(kid, parent);
         }
 
         public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
             String kidRole = kid.getRole().getValue();
             String parentRole = parent.getRole().getValue();
-            
-            if ("L".equals(parentRole) && "P".equals(kidRole)) {
-                return Optional.of(new WrapPInLILBody(kid, parent));
+            if ("L".equals(parentRole) && validKidRoles.contains(kidRole)) {
+                return Optional.of(new WrapInLI(kid, parent));
             }
             return Optional.empty();
         }
@@ -59,47 +62,23 @@ public abstract sealed class TagSingleChildFix implements IssueFix
             PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
             parent.addKid(newLI);
 
+            if (getKidRole().equals("LBody")) {
+                newLI.addKid(kid);
+                parent.removeKid(kid);
+                wrappedIn = "LI";
+                return;
+            }
             PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
             newLI.addKid(newLBody);
 
             parent.removeKid(kid);
             newLBody.addKid(kid);
+            wrappedIn = "LI->LBody";
         }
 
         @Override
         public String describe() {
-            return "Wrapped P element in LI->LBody container under L object #"
-                   + parent.getPdfObject().getIndirectReference().getObjNumber();
-        }
-    }
-
-    public static final class WrapSpanInLBody extends TagSingleChildFix {
-        private WrapSpanInLBody(PdfStructElem kid, PdfStructElem parent) {
-            super(kid, parent);
-        }
-
-        public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
-            String kidRole = kid.getRole().getValue();
-            String parentRole = parent.getRole().getValue();
-            
-            if ("LI".equals(parentRole) && "Span".equals(kidRole)) {
-                return Optional.of(new WrapSpanInLBody(kid, parent));
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public void apply(DocumentContext ctx) throws Exception {
-            PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-            parent.addKid(newLBody);
-
-            parent.removeKid(kid);
-            newLBody.addKid(kid);
-        }
-
-        @Override
-        public String describe() {
-            return "Wrapped Span element in LBody container under LI object #"
+            return "Wrapped " + getKidRole() + " in " + wrappedIn + " under L object #"
                    + parent.getPdfObject().getIndirectReference().getObjNumber();
         }
     }
