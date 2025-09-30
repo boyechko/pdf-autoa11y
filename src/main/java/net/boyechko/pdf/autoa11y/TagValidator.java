@@ -133,13 +133,18 @@ public final class TagValidator {
         }
 
         if (rule != null && rule.allowedChildren != null && !rule.allowedChildren.isEmpty()) {
+            boolean multiFixCreated = false;
             for (int i=0;i<kidRoles.size();i++) {
                 String kidRole = kidRoles.get(i);
                 if (!rule.allowedChildren.contains(kidRole)) {
                     IssueFix fix = TagMultipleChildrenFix.createIfApplicable(node, kids)
                         .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
                         .orElse(null));
-                    if (fix == null) {
+                    if (multiFixCreated) {
+                        // Only one fix per parent element
+                        logger.debug("Fix already created for parent "+formatRole(role)+"; no further fix for kid "+formatRole(kidRole));
+                        fix = null;
+                    } else if (fix == null) {
                         logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(role));
                     }
 
@@ -154,9 +159,9 @@ public final class TagValidator {
                     }
                     kidSpecificIssues.get(i).add(message);
 
-                    // If created TagMultipleChildrenFix, stop processing further kids
+                    // If created TagMultipleChildrenFix, remember that so we don't create more
                     if (fix instanceof TagMultipleChildrenFix) {
-                        break;
+                        multiFixCreated = true;
                     }
                 }
             }
