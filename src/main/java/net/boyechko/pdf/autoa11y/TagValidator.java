@@ -3,7 +3,6 @@ package net.boyechko.pdf.autoa11y;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -18,14 +17,13 @@ public final class TagValidator {
     private static final String INDENT = "  ";
     private static final int ELEMENT_NAME_WIDTH = 30;
     private static final int PAGE_NUM_WIDTH = 10;
-    private static final int OBJ_NUM_WIDTH = 10;
-    private static final int ISSUE_COMMENT_WIDTH = 30;
+    private static final int OBJ_NUM_WIDTH = 6;
     // element, page, obj num, issues
     private static final String ROW_FORMAT =
         "%-" + ELEMENT_NAME_WIDTH + "s " +
         "%-" + PAGE_NUM_WIDTH + "s " +
-        "%" + OBJ_NUM_WIDTH + "s " +
-        "%" + ISSUE_COMMENT_WIDTH + "s%n";
+        "%-" + OBJ_NUM_WIDTH + "s " +
+        "%s%n";
 
     private final TagSchema schema;
     private PrintStream output;
@@ -59,7 +57,7 @@ public final class TagValidator {
                 "-".repeat(ELEMENT_NAME_WIDTH),
                 "-".repeat(PAGE_NUM_WIDTH),
                 "-".repeat(OBJ_NUM_WIDTH),
-                "-".repeat(ISSUE_COMMENT_WIDTH));
+                "-".repeat(6)); // "Issues" is 6 chars:w
         }
     }
 
@@ -167,7 +165,6 @@ public final class TagValidator {
         if (rule != null && rule.childPattern != null) {
             PatternMatcher pm = PatternMatcher.compile(rule.childPattern);
             if (pm != null && !pm.fullMatch(kidRoles)) {
-                // Create IssueFix for automatic structure correction
                 IssueFix fix = null;
                 message = "kids "+kidRoles+" do not match pattern '"+rule.childPattern+"'";
 
