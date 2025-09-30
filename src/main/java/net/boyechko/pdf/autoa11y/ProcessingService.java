@@ -23,6 +23,12 @@ public class ProcessingService {
     private DocumentContext context;
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
+    private final int DEFAULT_PERMISSIONS = EncryptionConstants.ALLOW_PRINTING
+            | EncryptionConstants.ALLOW_FILL_IN
+            | EncryptionConstants.ALLOW_MODIFY_ANNOTATIONS
+            | EncryptionConstants.ALLOW_SCREENREADERS;
+    private final int DEFAULT_CRYPTO_MODE = EncryptionConstants.ENCRYPTION_AES_256
+            | EncryptionConstants.DO_NOT_ENCRYPT_METADATA;
 
     public ProcessingService(Path inputPath, String password, PrintStream output) {
         this.inputPath = inputPath;
@@ -91,6 +97,14 @@ public class ProcessingService {
                 password.getBytes(),
                 encryptionInfo.permissions(),
                 encryptionInfo.cryptoMode()
+            );
+        } else if (password != null) {
+            // Set default encryption if input not encrypted but password provided
+            writerProps.setStandardEncryption(
+                null,
+                password.getBytes(),
+                DEFAULT_PERMISSIONS,
+                DEFAULT_CRYPTO_MODE
             );
         }
 
