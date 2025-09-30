@@ -5,9 +5,13 @@ import java.nio.file.*;
 import java.util.List;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
+
     private final Path inputPath;
     private final String password;
     private final ReaderProperties readerProps;
@@ -65,7 +69,10 @@ public class ProcessingService {
     private EncryptionInfo analyzeEncryption() throws Exception {
         try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
              PdfDocument testDoc = new PdfDocument(testReader)) {
-
+            logger.debug("PDF Encryption Analysis:");
+            logger.debug("  Encrypted: " + testReader.isEncrypted());
+            logger.debug("  Permissions: " + testReader.getPermissions());
+            logger.debug("  Crypto Mode: " + testReader.getCryptoMode());
             return new EncryptionInfo(
                 testReader.getPermissions(),
                 testReader.getCryptoMode(),
