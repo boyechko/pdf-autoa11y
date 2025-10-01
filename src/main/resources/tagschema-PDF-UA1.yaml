@@ -1,27 +1,111 @@
 roles:
   Art:
-    # no constraints
+    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+
+  BlockQuote:
+    allowed_children: [P, Span]
 
   Caption:
-    parent_must_be: [Figure, Table, List]
-    allowed_children: [Span, P, Figure]
+    parent_must_be: [Figure, Formula, L, Table, TOC]
+    allowed_children: [Span, P]
+
+  Div:
+    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Table]
 
   Document:
-    allowed_children: [Part, Art, Div, Sect, H1, H2, H3, H4, H5, H6, P, L, Table, Figure, Caption]
+    allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, Index, L, Note, P, Part, Sect, Table, TOC]
+
+  Figure:
+    allowed_children: [Caption]
+
+  Form:
+    allowed_children:
+
+  H1:
+    allowed_children: [Span]
+
+  H2:
+    allowed_children: [Span]
+
+  H3:
+    allowed_children: [Span]
+
+  H5:
+    allowed_children: [Span]
+
+  H5:
+    allowed_children: [Span]
+
+  H6:
+    allowed_children: [Span]
+
+  Index:
+    allowed_children: [L, P]
 
   L:
     required_children: [LI]
-    allowed_children: [Caption, LI, L]
+    allowed_children: [Caption, LI]
+
+  Lbl:
+    parent_must_be: [Figure, Formula, LI, Link, Note, TOCI]
+    allowed_children: [Span]
+
+  LBody:
+    parent_must_be: [LI]
+    allowed_children: [L, P, Span]
 
   LI:
     parent_must_be: [L]
     allowed_children: [Lbl, LBody]
 
+  Link:
+    parent_must_be: [P, Reference]
+    allowed_children: [Lbl, Span]
+
   Note:
     allowed_children: [Lbl, P]
 
   P:
+    allowed_children: [Annot, BibEntry, Code, Figure, Formula, Link, Quote, Span]
+
+  Part:
+    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+
+  Quote:
+    parent_must_be: [P]
     allowed_children: [Span]
 
+  Reference:
+    parent_must_be: [P, TOCI]
+    allowed_children: [Lbl, Link, Span]
+
+  Sect:
+    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+
   Table:
-    allowed_children: [Caption, TR, TD, THead, TBody, TFoot]
+    allowed_children: [Caption, TR, THead, TBody, TFoot]
+
+  TBody:
+    allowed_children: [TR]
+
+  TD:
+    allowed_children: [P, Span]
+
+  TFoot:
+    allowed_children: [TR]
+
+  TH:
+    allowed_children: [P, Span]
+
+  THead:
+    allowed_children: [TR]
+
+  TOC:
+    allowed_children: [Caption, TOC, TOCI]
+
+  TOCI:
+    parent_must_be: [TOC]
+    allowed_children: [P, Span]
+  
+  TR:
+    allowed_children: [TH, TD]
