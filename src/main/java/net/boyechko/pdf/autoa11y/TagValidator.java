@@ -228,9 +228,9 @@ public final class TagValidator {
     }
 
     private void printElement(PdfStructElem node, int level, List<String> issues, PrintStream output) {
-        String role = mappedRole(node);
+        String role = node.getRole().getValue();
 
-        if ("Span".equals(role) && issues.isEmpty()) {
+        if ("Span".equals(role) && (structKidsOf(node).size() == 0) && issues.isEmpty()) {
             return;
         }
 
