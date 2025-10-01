@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,8 +56,10 @@ public final class TagSchema {
 
             logger.debug("Loaded TagSchema with {} roles from resource {}",
                     schema.roles.size(), resourcePath);
+            schema.populateMissingRoles();
+            logger.debug("After populating missing roles, schema has {} roles",
+                    schema.roles.size());
             return schema;
-
         } catch (Exception e) {
             logger.error("Failed to load TagSchema from resource {}: {}", resourcePath, e.getMessage());
             throw new RuntimeException("Failed to load schema from resource " + resourcePath + ": " + e.getMessage(), e);
@@ -92,6 +95,33 @@ public final class TagSchema {
         LBody.parent_must_be = Set.of("LI");
         s.roles.put("LBody", LBody);
 
+        s.populateMissingRoles();
+
         return s;
+    }
+
+    private void populateMissingRoles() {
+        Set<String> existingRoles = roles.keySet();
+        Set<String> referencedRoles = new HashSet<>();
+
+        // Collect all roles that are referenced in constraints
+        for (Rule rule : roles.values()) {
+            if (rule.parent_must_be != null) {
+                referencedRoles.addAll(rule.parent_must_be);
+            }
+            if (rule.allowed_children != null) {
+                referencedRoles.addAll(rule.allowed_children);
+            }
+            if (rule.required_children != null) {
+                referencedRoles.addAll(rule.required_children);
+            }
+        }
+
+        for (String role : referencedRoles) {
+            if (!existingRoles.contains(role)) {
+                logger.debug("Role '{}' is referenced but not defined in schema; adding with no constraints", role);
+                roles.put(role, new Rule());
+            }
+        }
     }
 }
