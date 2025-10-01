@@ -101,7 +101,7 @@ public final class TagValidator {
             elementIssues.add(message);
         }
 
-        if (rule != null && rule.getParentMustBe() != null && parentRole != null && !rule.getParentMustBe().equals(parentRole)) {
+        if (rule != null && rule.getParentMustBe() != null && parentRole != null && !rule.getParentMustBe().contains(parentRole)) {
             message = "parent must be "+formatRole(rule.getParentMustBe())+" but is "+formatRole(parentRole);
             issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
                     IssueSeverity.ERROR,
