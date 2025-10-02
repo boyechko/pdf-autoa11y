@@ -86,7 +86,8 @@ public final class TagValidator {
         String parentRole = parentOf(node) != null ? mappedRole(parentOf(node)) : null;
         List<PdfStructElem> children = structKidsOf(node);
         List<String> childRoles = children.stream().map(this::mappedRole).toList();
-        path = path + role + "[" + index + "]";
+        path = path + role;
+        String location = path + "[" + index + "]";
 
         List<String> elementIssues = new ArrayList<>();
         if (inheritedIssues != null) {
@@ -94,16 +95,16 @@ public final class TagValidator {
         }
 
         // Run each validation
-        validateUnknownRole(node, path, role, rule, elementIssues);
-        validateParentRule(node, path, role, rule, parentRole, elementIssues);
-        validateChildCount(node, path, role, rule, childRoles, elementIssues);
-        validateAllowedChildren(node, path, role, rule, children, childRoles, elementIssues);
-        validateChildPattern(node, path, role, rule, childRoles, elementIssues);
+        validateUnknownRole(node, location, role, rule, elementIssues);
+        validateParentRule(node, location, role, rule, parentRole, elementIssues);
+        validateChildCount(node, location, role, rule, childRoles, elementIssues);
+        validateAllowedChildren(node, location, role, rule, children, childRoles, elementIssues);
+        validateChildPattern(node, location, role, rule, childRoles, elementIssues);
 
         // Output and recurse
         printElement(node, level, elementIssues);
         for (PdfStructElem child : children) {
-            walk(child, path + ".", index + 1, level + 1);
+            walk(child, path + ".", index++, level + 1);
         }
     }
 
