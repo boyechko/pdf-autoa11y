@@ -17,11 +17,13 @@ public final class TagValidator {
     private static final Logger logger = LoggerFactory.getLogger(TagValidator.class);
 
     private static final String INDENT = "  ";
+    private static final int INDEX_WIDTH = 5;
     private static final int ELEMENT_NAME_WIDTH = 30;
     private static final int PAGE_NUM_WIDTH = 10;
     private static final int OBJ_NUM_WIDTH = 6;
     // element, page, obj num, issues
     private static final String ROW_FORMAT =
+        "%-" + INDEX_WIDTH + "s " +
         "%-" + ELEMENT_NAME_WIDTH + "s " +
         "%-" + PAGE_NUM_WIDTH + "s " +
         "%-" + OBJ_NUM_WIDTH + "s " +
@@ -31,6 +33,7 @@ public final class TagValidator {
     private final PrintStream output;
     private PdfStructTreeRoot root;
     private List<Issue> issues = new ArrayList<>();
+    private int globalIndex = 1;
 
     TagValidator(TagSchema schema, PrintStream output) {
         this.schema = schema;
@@ -45,6 +48,7 @@ public final class TagValidator {
     public List<Issue> validate(PdfStructTreeRoot root) {
         this.root = root;
         this.issues = new ArrayList<>();
+        this.globalIndex = 1;
 
         printHeader();
         walk(root);
@@ -54,8 +58,9 @@ public final class TagValidator {
 
     private void printHeader() {
         if (output != null) {
-            output.printf(ROW_FORMAT, "Element", "Page", "Obj#", "Issues");
+            output.printf(ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Issues");
             output.printf(ROW_FORMAT,
+                "-".repeat(INDEX_WIDTH),
                 "-".repeat(ELEMENT_NAME_WIDTH),
                 "-".repeat(PAGE_NUM_WIDTH),
                 "-".repeat(OBJ_NUM_WIDTH),
@@ -67,27 +72,27 @@ public final class TagValidator {
         String path = "/";
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
-        int index = 1;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem) {
-                walk((PdfStructElem) kid, path, index, 0);
-                index++;
+                walk((PdfStructElem) kid, path, 0);
             }
         }
     }
 
-    private void walk(PdfStructElem node, String path, int index, int level) {
-        walk(node, path, index, level, null);
+    private void walk(PdfStructElem node, String path, int level) {
+        walk(node, path, globalIndex++, level, null);
     }
 
     private void walk(PdfStructElem node, String path, int index, int level, List<String> inheritedIssues) {
+        int currentIndex = this.globalIndex++;
+
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
         String parentRole = parentOf(node) != null ? mappedRole(parentOf(node)) : null;
         List<PdfStructElem> children = structKidsOf(node);
         List<String> childRoles = children.stream().map(this::mappedRole).toList();
         path = path + role;
-        String location = path + "[" + index + "]";
+        String location = path + "[" + currentIndex + "]";
 
         List<String> elementIssues = new ArrayList<>();
         if (inheritedIssues != null) {
@@ -102,9 +107,9 @@ public final class TagValidator {
         validateChildPattern(node, location, role, rule, childRoles, elementIssues);
 
         // Output and recurse
-        printElement(node, level, elementIssues);
+        printElement(node, currentIndex, level, elementIssues);
         for (PdfStructElem child : children) {
-            walk(child, path + ".", index++, level + 1);
+            walk(child, path + ".", level + 1);
         }
     }
 
@@ -241,18 +246,19 @@ public final class TagValidator {
             });
     }
 
-    private void printElement(PdfStructElem node, int level, List<String> issues) {
+    private void printElement(PdfStructElem node, int index, int level, List<String> issues) {
         String role = node.getRole().getValue();
 
         if ("Span".equals(role) && (structKidsOf(node).size() == 0) && issues.isEmpty()) {
             return;
         }
 
+        String paddedIndex = String.format("%" + INDEX_WIDTH + "d", index);
         String elementName = INDENT.repeat(level) + "- " + role;
         int pageNum = getPageNumber(node);
         String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
         String issuesText = issues.isEmpty() ? "" : "✗ " + String.join("; ", issues);
-        output.printf(ROW_FORMAT, elementName, pageString, getObjNum(node), issuesText);
+        output.printf(ROW_FORMAT, paddedIndex, elementName, pageString, getObjNum(node), issuesText);
     }
 
     private int getPageNumber(PdfStructElem node) {
