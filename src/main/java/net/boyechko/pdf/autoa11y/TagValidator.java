@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 public final class TagValidator {
     private static final Logger logger = LoggerFactory.getLogger(TagValidator.class);
+
     private static final String INDENT = "  ";
     private static final int ELEMENT_NAME_WIDTH = 30;
     private static final int PAGE_NUM_WIDTH = 10;
@@ -27,9 +28,9 @@ public final class TagValidator {
         "%s%n";
 
     private final TagSchema schema;
-    private PrintStream output;
+    private final PrintStream output;
     private PdfStructTreeRoot root;
-    private List<Issue> issues;
+    private List<Issue> issues = new ArrayList<>();
 
     TagValidator(TagSchema schema, PrintStream output) {
         this.schema = schema;
@@ -82,152 +83,164 @@ public final class TagValidator {
     private void walk(PdfStructElem node, String path, int index, int level, List<String> inheritedIssues) {
         String role = mappedRole(node);
         TagSchema.Rule rule = schema.roles.get(role);
-        String parentRole = (parentOf(node) == null) ? null : mappedRole(parentOf(node));
-        String message = "";
+        String parentRole = parentOf(node) != null ? mappedRole(parentOf(node)) : null;
+        List<PdfStructElem> children = structKidsOf(node);
+        List<String> childRoles = children.stream().map(this::mappedRole).toList();
         path = path + role + "[" + index + "]";
 
-        // Collect issues for this element
         List<String> elementIssues = new ArrayList<>();
         if (inheritedIssues != null) {
             elementIssues.addAll(inheritedIssues);
         }
 
+        // Run each validation
+        validateUnknownRole(node, path, role, rule, elementIssues);
+        validateParentRule(node, path, role, rule, parentRole, elementIssues);
+        validateChildCount(node, path, role, rule, childRoles, elementIssues);
+        validateAllowedChildren(node, path, role, rule, children, childRoles, elementIssues);
+        validateChildPattern(node, path, role, rule, childRoles, elementIssues);
+
+        // Output and recurse
+        printElement(node, level, elementIssues);
+        for (PdfStructElem child : children) {
+            walk(child, path + ".", index + 1, level + 1);
+        }
+    }
+
+    private void validateUnknownRole(PdfStructElem node, String path, String role,
+                                     TagSchema.Rule rule, List<String> elementIssues) {
         if (rule == null) {
-            message = "unknown role";
-            issues.add(new Issue(IssueType.TAG_UNKNOWN_ROLE,
-                    IssueSeverity.ERROR,
-                    new IssueLocation(node, path),
-                    message));
+            String message = "unknown role";
+            issues.add(new Issue(
+                IssueType.TAG_UNKNOWN_ROLE,
+                IssueSeverity.ERROR,
+                new IssueLocation(node, path),
+                message
+            ));
+            elementIssues.add(message);
+        }
+    }
+
+    private void validateParentRule(PdfStructElem node, String path, String role,
+                                    TagSchema.Rule rule, String parentRole,
+                                    List<String> elementIssues) {
+        if (rule == null || rule.getParentMustBe() == null) return;
+        if (parentRole == null) return;
+
+        if (!rule.getParentMustBe().contains(parentRole)) {
+            String message = "parent must be " + formatRole(rule.getParentMustBe()) +
+                           " but is " + formatRole(parentRole);
+            issues.add(new Issue(
+                IssueType.TAG_WRONG_PARENT,
+                IssueSeverity.ERROR,
+                new IssueLocation(node, path),
+                message
+            ));
+            elementIssues.add(message);
+        }
+    }
+
+    private void validateChildCount(PdfStructElem node, String path, String role,
+                                    TagSchema.Rule rule, List<String> childRoles,
+                                    List<String> elementIssues) {
+        if (rule == null) return;
+
+        if (rule.getMinChildren() != null && childRoles.size() < rule.getMinChildren()) {
+            String message = formatRole(role) + " has " + childRoles.size() +
+                           " kids; min is " + rule.getMinChildren();
+            issues.add(new Issue(
+                IssueType.TAG_WRONG_CHILD_COUNT,
+                IssueSeverity.ERROR,
+                new IssueLocation(node, path),
+                message
+            ));
             elementIssues.add(message);
         }
 
-        if (rule != null && rule.getParentMustBe() != null && parentRole != null && !rule.getParentMustBe().contains(parentRole)) {
-            message = "parent must be "+formatRole(rule.getParentMustBe())+" but is "+formatRole(parentRole);
-            issues.add(new Issue(IssueType.TAG_WRONG_PARENT,
+        if (rule.getMaxChildren() != null && childRoles.size() > rule.getMaxChildren()) {
+            String message = formatRole(role) + " has " + childRoles.size() +
+                           " kids; max is " + rule.getMaxChildren();
+            issues.add(new Issue(
+                IssueType.TAG_WRONG_CHILD_COUNT,
+                IssueSeverity.ERROR,
+                new IssueLocation(node, path),
+                message
+            ));
+            elementIssues.add(message);
+        }
+    }
+
+    private void validateAllowedChildren(PdfStructElem node, String path, String role,
+                                        TagSchema.Rule rule, List<PdfStructElem> children,
+                                        List<String> childRoles, List<String> elementIssues) {
+        if (rule == null || rule.getAllowedChildren() == null) return;
+        if (rule.getAllowedChildren().isEmpty()) return;
+
+        boolean multiFixCreated = false;
+
+        for (int i = 0; i < childRoles.size(); i++) {
+            String childRole = childRoles.get(i);
+            if (!rule.getAllowedChildren().contains(childRole)) {
+                IssueFix fix = createChildFix(node, children, i, multiFixCreated, role, childRole);
+
+                String message = formatRole(childRole) + " not allowed under " + formatRole(role);
+                issues.add(new Issue(
+                    IssueType.TAG_WRONG_CHILD,
                     IssueSeverity.ERROR,
-                    new IssueLocation(node, path),
-                    message));
-            if (output != null) {
-                elementIssues.add(message);
-            }
-        }
+                    new IssueLocation(children.get(i), path),
+                    message,
+                    fix
+                ));
 
-        List<PdfStructElem> kids = structKidsOf(node);
-        List<String> kidRoles = kids.stream().map(this::mappedRole).toList();
+                if (!elementIssues.contains("(child issues)")) {
+                    elementIssues.add("(child issues)");
+                }
 
-        if (rule != null) {
-            if (rule.getMinChildren() != null && kidRoles.size() < rule.getMinChildren()) {
-                message = formatRole(role) + " has "+kidRoles.size()+" kids; min is "+rule.getMinChildren();
-                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
-                        IssueSeverity.ERROR,
-                        new IssueLocation(node, path),
-                        message));
-                elementIssues.add(message);
-            }
-            if (rule.getMaxChildren() != null && kidRoles.size() > rule.getMaxChildren()) {
-                message = formatRole(role) + " has "+kidRoles.size()+" kids; max is "+rule.getMaxChildren();
-                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_COUNT,
-                        IssueSeverity.ERROR,
-                        new IssueLocation(node, path),
-                        message));
-                elementIssues.add(message);
-            }
-        }
-
-        // Create a map of kid-specific issues to pass down
-        List<List<String>> kidSpecificIssues = new ArrayList<>();
-        for (int i = 0; i < kids.size(); i++) {
-            kidSpecificIssues.add(new ArrayList<>());
-        }
-
-        if (rule != null && rule.getAllowedChildren() != null && !rule.getAllowedChildren().isEmpty()) {
-            boolean multiFixCreated = false;
-            for (int i=0;i<kidRoles.size();i++) {
-                String kidRole = kidRoles.get(i);
-                if (!rule.getAllowedChildren().contains(kidRole)) {
-                    IssueFix fix = TagMultipleChildrenFix.createIfApplicable(node, kids)
-                        .orElse(TagSingleChildFix.createIfApplicable(kids.get(i), node)
-                        .orElse(null));
-                    if (multiFixCreated) {
-                        // Only one fix per parent element
-                        logger.debug("Fix already created for parent "+formatRole(role)+"; no further fix for kid "+formatRole(kidRole));
-                        fix = null;
-                    } else if (fix == null) {
-                        logger.debug("No automatic fix available for kid "+formatRole(kidRole)+" under parent "+formatRole(role));
-                    }
-
-                    message = formatRole(kidRole)+" not allowed under "+formatRole(role);
-                    issues.add(new Issue(IssueType.TAG_WRONG_CHILD,
-                            IssueSeverity.ERROR,
-                            new IssueLocation(kids.get(i), path),
-                            message,
-                            fix));
-                    if (!elementIssues.contains("(child issues)")) {
-                        elementIssues.add("(child issues)");
-                    }
-                    kidSpecificIssues.get(i).add(message);
-
-                    // If created TagMultipleChildrenFix, remember that so we don't create more
-                    if (fix instanceof TagMultipleChildrenFix) {
-                        multiFixCreated = true;
-                    }
+                if (fix instanceof TagMultipleChildrenFix) {
+                    multiFixCreated = true;
                 }
             }
         }
+    }
 
-        if (rule != null && rule.getChildPattern() != null) {
-            PatternMatcher pm = PatternMatcher.compile(rule.getChildPattern());
-            if (pm != null && !pm.fullMatch(kidRoles)) {
-                IssueFix fix = null;
-                message = "kids "+kidRoles+" do not match pattern '"+rule.getChildPattern()+"'";
+    private void validateChildPattern(PdfStructElem node, String path, String role,
+                                      TagSchema.Rule rule, List<String> childRoles,
+                                      List<String> elementIssues) {
+        if (rule == null || rule.getChildPattern() == null) return;
 
-                issues.add(new Issue(IssueType.TAG_WRONG_CHILD_PATTERN,
-                        IssueSeverity.ERROR,
-                        new IssueLocation(node, path),
-                        message,
-                        fix));
-                elementIssues.add(message);
-            }
-        }
-
-        printElement(node, level, elementIssues, output);
-
-        int i = 1;
-        for (int kidIndex = 0; kidIndex < kids.size(); kidIndex++) {
-            PdfStructElem kid = kids.get(kidIndex);
-            List<String> kidIssues = kidSpecificIssues.get(kidIndex);
-            walk(kid, path + ".", i, level + 1, kidIssues.isEmpty() ? null : kidIssues);
-            i++;
+        PatternMatcher pm = PatternMatcher.compile(rule.getChildPattern());
+        if (pm != null && !pm.fullMatch(childRoles)) {
+            String message = "kids " + childRoles + " do not match pattern '" +
+                           rule.getChildPattern() + "'";
+            issues.add(new Issue(
+                IssueType.TAG_WRONG_CHILD_PATTERN,
+                IssueSeverity.ERROR,
+                new IssueLocation(node, path),
+                message
+            ));
+            elementIssues.add(message);
         }
     }
 
-    private String mappedRole(PdfStructElem n) {
-        PdfDictionary roleMap = this.root.getRoleMap();
-        PdfName role = n.getRole();
-
-        if (roleMap != null) {
-            PdfName mappedRole = roleMap.getAsName(role);
-            return (mappedRole != null) ? mappedRole.getValue() : role.getValue();
+    private IssueFix createChildFix(PdfStructElem parent, List<PdfStructElem> children,
+                                   int childIndex, boolean multiFixCreated,
+                                   String parentRole, String childRole) {
+        if (multiFixCreated) {
+            logger.debug("Fix already created for parent {}; no further fix for kid {}",
+                       formatRole(parentRole), formatRole(childRole));
+            return null;
         }
-        return role.getValue();
+
+        return TagMultipleChildrenFix.createIfApplicable(parent, children)
+            .or(() -> TagSingleChildFix.createIfApplicable(children.get(childIndex), parent))
+            .orElseGet(() -> {
+                logger.debug("No automatic fix available for kid {} under parent {}",
+                           formatRole(childRole), formatRole(parentRole));
+                return null;
+            });
     }
 
-    private PdfStructElem parentOf(PdfStructElem n) {
-        IStructureNode p = n.getParent();
-        return (p instanceof PdfStructElem) ? (PdfStructElem)p : null;
-    }
-
-    private List<PdfStructElem> structKidsOf(PdfStructElem n) {
-        List<IStructureNode> kids = n.getKids();
-        if (kids == null) return List.of();
-        List<PdfStructElem> out = new ArrayList<>();
-        for (IStructureNode k : kids) {
-            if (k instanceof PdfStructElem) out.add((PdfStructElem)k);
-        }
-        return out;
-    }
-
-    private void printElement(PdfStructElem node, int level, List<String> issues, PrintStream output) {
+    private void printElement(PdfStructElem node, int level, List<String> issues) {
         String role = node.getRole().getValue();
 
         if ("Span".equals(role) && (structKidsOf(node).size() == 0) && issues.isEmpty()) {
@@ -265,5 +278,31 @@ public final class TagValidator {
             return formatRole(roles.iterator().next());
         }
         return "<" + String.join("|", roles) + ">";
+    }
+
+    private String mappedRole(PdfStructElem n) {
+        PdfDictionary roleMap = this.root.getRoleMap();
+        PdfName role = n.getRole();
+
+        if (roleMap != null) {
+            PdfName mappedRole = roleMap.getAsName(role);
+            return (mappedRole != null) ? mappedRole.getValue() : role.getValue();
+        }
+        return role.getValue();
+    }
+
+    private PdfStructElem parentOf(PdfStructElem n) {
+        IStructureNode p = n.getParent();
+        return (p instanceof PdfStructElem) ? (PdfStructElem)p : null;
+    }
+
+    private List<PdfStructElem> structKidsOf(PdfStructElem n) {
+        List<IStructureNode> kids = n.getKids();
+        if (kids == null) return List.of();
+        List<PdfStructElem> out = new ArrayList<>();
+        for (IStructureNode k : kids) {
+            if (k instanceof PdfStructElem) out.add((PdfStructElem)k);
+        }
+        return out;
     }
 }
