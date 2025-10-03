@@ -41,6 +41,7 @@ public class ProcessingService {
         this.engine = new RuleEngine(List.of(
             new LanguageSetRule(),
             new TabOrderRule(),
+            new StructureTreeRule(),
             new TaggedPdfRule()
         ));
     }

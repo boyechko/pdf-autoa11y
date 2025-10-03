@@ -3,6 +3,7 @@ package net.boyechko.pdf.autoa11y;
 public enum IssueType {
     LANGUAGE_NOT_SET,
     NOT_TAGGED_PDF,
+    NO_STRUCT_TREE,
     TAB_ORDER_NOT_SET,
 
     // Tag Issues
