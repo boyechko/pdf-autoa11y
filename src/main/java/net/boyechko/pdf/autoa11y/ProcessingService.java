@@ -117,16 +117,16 @@ public class ProcessingService {
 
     private IssueList analyzeAndRemediate() throws Exception {
         // Phase 1: Initial detection
-        IssueList issues = detectAndReportTagIssues();
+        IssueList tagIssues = detectAndReportTagIssues();
 
         // Phase 2: Apply fixes
-        IssueList appliedFixes = applyFixesAndReport(issues);
+        IssueList appliedTagFixes = applyFixesAndReport(tagIssues);
 
         // Phase 3: Re-validate and report remaining issues
         IssueList remainingIssues = detectAndReportIssues();
         reportRemainingIssues(remainingIssues);
 
-        printSummary(issues, appliedFixes, remainingIssues);
+        printSummary(tagIssues, appliedTagFixes, remainingIssues);
         return remainingIssues;
    }
 
