@@ -124,37 +124,58 @@ public class ProcessingService {
     }
 
     private IssueList detectAndReportIssues() {
-        IssueList allIssues = engine.detectIssues(context);
+        IssueList allIssues = new IssueList();
 
         // Phase 1: Tag structure validation
+        IssueList tagIssues = detectAndReportTagIssues();
+        allIssues.addAll(tagIssues);
+
+        // Phase 2: Rule-based detection
+        IssueList ruleIssues = detectAndReportRuleIssues();
+        allIssues.addAll(ruleIssues);
+
+        return allIssues;
+    }
+
+    private IssueList detectAndReportTagIssues() {
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             output.println("✗ No accessibility tags found");
-        } else {
-            output.println();
-            output.println("Tag structure validation:");
-            output.println("────────────────────────────────────────");
-
-            TagSchema schema = TagSchema.loadDefault();
-            TagValidator validator = new TagValidator(schema, output);
-            List<Issue> tagIssues = validator.validate(root);
-
-            if (tagIssues.isEmpty()) {
-                output.println("✓ No issues found in tag structure");
-            } else {
-                output.println("Tag issues found: " + tagIssues.size());
-                allIssues.addAll(tagIssues);
-            }
+            return new IssueList();
         }
 
-        // Phase 2: Rule-based detection
+        output.println();
+        output.println("Tag structure validation:");
+        output.println("────────────────────────────────────────");
+
+        TagSchema schema = TagSchema.loadDefault();
+        TagValidator validator = new TagValidator(schema, output);
+        List<Issue> tagIssues = validator.validate(root);
+
+        IssueList issueList = new IssueList();
+        issueList.addAll(tagIssues);
+
+        if (tagIssues.isEmpty()) {
+            output.println("✓ No issues found in tag structure");
+        } else {
+            output.println("Tag issues found: " + tagIssues.size());
+        }
+
+        return issueList;
+    }
+
+    private IssueList detectAndReportRuleIssues() {
         output.println();
         output.println("Checking document compliance:");
         output.println("────────────────────────────────────────");
 
-        // Report the results by checking each rule individually for better output
+        IssueList allRuleIssues = new IssueList();
+
+        // Run each rule individually for better output control
         for (Rule rule : engine.getRules()) {
             IssueList ruleIssues = rule.findIssues(context);
+            allRuleIssues.addAll(ruleIssues);
+
             if (ruleIssues.isEmpty()) {
                 output.println("✓ " + rule.name() + " - compliant");
             } else {
@@ -164,7 +185,7 @@ public class ProcessingService {
             }
         }
 
-        return allIssues;
+        return allRuleIssues;
     }
 
     private IssueList applyFixesAndReport(IssueList issues) {
