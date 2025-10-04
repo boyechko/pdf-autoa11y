@@ -57,10 +57,18 @@ public class ProcessingService {
         try (PdfDocument pdfDoc = openForModification(tempOutputFile)) {
             this.context = new DocumentContext(pdfDoc);
 
+            // Phase 1: Initial detection
             IssueList issues = detectAndReportIssues();
-            applyFixesAndReport(issues);
-            printSummary(issues);
-            return new ProcessingResult(issues, tempOutputFile);
+
+            // Phase 2: Apply fixes
+            IssueList appliedFixes = applyFixesAndReport(issues);
+
+            // Phase 3: Re-validate and report remaining issues
+            IssueList remainingIssues = detectAndReportIssues();
+            reportRemainingIssues(remainingIssues);
+
+            printSummary(issues, appliedFixes, remainingIssues);
+            return new ProcessingResult(remainingIssues, tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
             throw e;
@@ -159,9 +167,9 @@ public class ProcessingService {
         return allIssues;
     }
 
-    private void applyFixesAndReport(IssueList issues) {
+    private IssueList applyFixesAndReport(IssueList issues) {
         if (issues.isEmpty()) {
-            return; // No issues to fix
+            return new IssueList(); // No issues to fix
         }
 
         output.println();
@@ -177,7 +185,10 @@ public class ProcessingService {
             }
         }
 
-        // Report remaining issues
+        return appliedFixes;
+    }
+
+    private void reportRemainingIssues(IssueList issues) {
         IssueList remaining = issues.getRemainingIssues();
         if (!remaining.isEmpty()) {
             output.println();
@@ -189,13 +200,13 @@ public class ProcessingService {
         }
     }
 
-    private void printSummary(IssueList result) {
+    private void printSummary(IssueList originalIssues, IssueList appliedFixes, IssueList remainingIssues) {
         output.println();
         output.println("=== REMEDIATION SUMMARY ===");
 
-        int detected = result.size();
-        int resolved = result.getResolvedIssues().size();
-        int remaining = (detected - resolved);
+        int detected = originalIssues.size();
+        int remaining = remainingIssues.size();
+        int resolved = detected - remaining;
 
         if (detected == 0 && resolved == 0) {
             output.println("✓ Document structure is already compliant");
