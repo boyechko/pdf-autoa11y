@@ -215,8 +215,8 @@ public final class TagValidator {
                     fix
                 ));
 
-                if (!elementIssues.contains("(child issues)")) {
-                    elementIssues.add("(child issues)");
+                if (!elementIssues.contains(message)) {
+                    elementIssues.add(message);
                 }
 
                 if (fix instanceof TagMultipleChildrenFix) {
