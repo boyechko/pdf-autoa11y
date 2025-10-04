@@ -57,17 +57,9 @@ public class ProcessingService {
         try (PdfDocument pdfDoc = openForModification(tempOutputFile)) {
             this.context = new DocumentContext(pdfDoc);
 
-            // Phase 1: Initial detection
-            IssueList issues = detectAndReportIssues();
+            // Delegate to a business logic method
+            IssueList remainingIssues = analyzeAndRemediate();
 
-            // Phase 2: Apply fixes
-            IssueList appliedFixes = applyFixesAndReport(issues);
-
-            // Phase 3: Re-validate and report remaining issues
-            IssueList remainingIssues = detectAndReportIssues();
-            reportRemainingIssues(remainingIssues);
-
-            printSummary(issues, appliedFixes, remainingIssues);
             return new ProcessingResult(remainingIssues, tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
@@ -122,6 +114,21 @@ public class ProcessingService {
 
         return new PdfDocument(pdfReader, pdfWriter);
     }
+
+    private IssueList analyzeAndRemediate() throws Exception {
+        // Phase 1: Initial detection
+        IssueList issues = detectAndReportTagIssues();
+
+        // Phase 2: Apply fixes
+        IssueList appliedFixes = applyFixesAndReport(issues);
+
+        // Phase 3: Re-validate and report remaining issues
+        IssueList remainingIssues = detectAndReportIssues();
+        reportRemainingIssues(remainingIssues);
+
+        printSummary(issues, appliedFixes, remainingIssues);
+        return remainingIssues;
+   }
 
     private IssueList detectAndReportIssues() {
         IssueList allIssues = new IssueList();
