@@ -116,33 +116,34 @@ public class ProcessingService {
     }
 
     private IssueList analyzeAndRemediate() throws Exception {
-        // Phase 1: Initial detection
+        // Phase 1: Initial detection of tag issues
+        output.println();
+        output.println("Validating tag structure:");
+        output.println("────────────────────────────────────────");
         IssueList tagIssues = detectAndReportTagIssues();
 
         // Phase 2: Apply fixes
+        output.println();
+        output.println("Applying automatic fixes:");
+        output.println("────────────────────────────────────────");
         IssueList appliedTagFixes = applyFixesAndReport(tagIssues);
 
         // Phase 3: Re-validate and report remaining issues
-        IssueList remainingIssues = detectAndReportIssues();
-        reportRemainingIssues(remainingIssues);
+        output.println();
+        output.println("Re-validating tag structure:");
+        output.println("────────────────────────────────────────");
+        IssueList remainingIssues = detectAndReportTagIssues();
+
+        // Phase 4: Check for document-level issues
+        output.println();
+        output.println("Checking for document-level issues:");
+        output.println("────────────────────────────────────────");
+        IssueList ruleIssues = detectAndReportRuleIssues();
+        remainingIssues.addAll(ruleIssues);
 
         printSummary(tagIssues, appliedTagFixes, remainingIssues);
         return remainingIssues;
    }
-
-    private IssueList detectAndReportIssues() {
-        IssueList allIssues = new IssueList();
-
-        // Phase 1: Tag structure validation
-        IssueList tagIssues = detectAndReportTagIssues();
-        allIssues.addAll(tagIssues);
-
-        // Phase 2: Rule-based detection
-        IssueList ruleIssues = detectAndReportRuleIssues();
-        allIssues.addAll(ruleIssues);
-
-        return allIssues;
-    }
 
     private IssueList detectAndReportTagIssues() {
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
@@ -150,10 +151,6 @@ public class ProcessingService {
             output.println("✗ No accessibility tags found");
             return new IssueList();
         }
-
-        output.println();
-        output.println("Tag structure validation:");
-        output.println("────────────────────────────────────────");
 
         TagSchema schema = TagSchema.loadDefault();
         TagValidator validator = new TagValidator(schema, output);
@@ -165,17 +162,13 @@ public class ProcessingService {
         if (tagIssues.isEmpty()) {
             output.println("✓ No issues found in tag structure");
         } else {
-            output.println("Tag issues found: " + tagIssues.size());
+            output.println("✗ Tag issues found: " + tagIssues.size());
         }
 
         return issueList;
     }
 
     private IssueList detectAndReportRuleIssues() {
-        output.println();
-        output.println("Checking document compliance:");
-        output.println("────────────────────────────────────────");
-
         IssueList allRuleIssues = new IssueList();
 
         // Run each rule individually for better output control
@@ -197,12 +190,9 @@ public class ProcessingService {
 
     private IssueList applyFixesAndReport(IssueList issues) {
         if (issues.isEmpty()) {
+            output.println("✓ No fixes needed");
             return new IssueList(); // No issues to fix
         }
-
-        output.println();
-        output.println("Applying automatic fixes:");
-        output.println("────────────────────────────────────────");
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
 
