@@ -21,12 +21,14 @@ public final class TagValidator {
     private static final int ELEMENT_NAME_WIDTH = 30;
     private static final int PAGE_NUM_WIDTH = 10;
     private static final int OBJ_NUM_WIDTH = 6;
+    private static final int CONTENT_SUMMARY_WIDTH = 30;
     // element, page, obj num, issues
     private static final String ROW_FORMAT =
         "%-" + INDEX_WIDTH + "s " +
         "%-" + ELEMENT_NAME_WIDTH + "s " +
         "%-" + PAGE_NUM_WIDTH + "s " +
         "%-" + OBJ_NUM_WIDTH + "s " +
+        "%-" + CONTENT_SUMMARY_WIDTH + "s " +
         "%s%n";
 
     private final TagSchema schema;
@@ -89,13 +91,14 @@ public final class TagValidator {
 
     private void printHeader() {
         if (output != null) {
-            output.printf(ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Issues");
+            output.printf(ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Content", "Issues");
             output.printf(ROW_FORMAT,
                 "-".repeat(INDEX_WIDTH),
                 "-".repeat(ELEMENT_NAME_WIDTH),
                 "-".repeat(PAGE_NUM_WIDTH),
                 "-".repeat(OBJ_NUM_WIDTH),
-                "-".repeat(6)); // "Issues" is 6 chars:w
+                "-".repeat(CONTENT_SUMMARY_WIDTH),
+                "-".repeat(6)); // "Issues" is 6 chars
         }
     }
 
@@ -266,12 +269,20 @@ public final class TagValidator {
             return;
         }
 
+        // Add MCR content summary for elements with marked content
+        String mcrSummary = McidTextExtractor.getMcrContentSummary(
+            ctx.node(), 
+            root.getDocument(),
+            getPageNumber(ctx.node())
+        );
+
         String paddedIndex = String.format("%" + INDEX_WIDTH + "d", ctx.index());
         String elementName = INDENT.repeat(ctx.level()) + "- " + ctx.role();
         int pageNum = getPageNumber(ctx.node());
         String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
+        mcrSummary = (mcrSummary == null || mcrSummary.isEmpty()) ? "" : mcrSummary;
         String issuesText = issues.isEmpty() ? "" : "✗ " + String.join("; ", issues);
-        output.printf(ROW_FORMAT, paddedIndex, elementName, pageString, getObjNum(ctx.node()), issuesText);
+        output.printf(ROW_FORMAT, paddedIndex, elementName, pageString, getObjNum(ctx.node()), mcrSummary, issuesText);
     }
 
     private int getPageNumber(PdfStructElem node) {
