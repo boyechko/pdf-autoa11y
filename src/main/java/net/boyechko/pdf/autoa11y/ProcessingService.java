@@ -128,11 +128,16 @@ public class ProcessingService {
         output.println("────────────────────────────────────────");
         IssueList appliedTagFixes = applyFixesAndReport(tagIssues);
 
-        // Phase 3: Re-validate and report remaining issues
-        output.println();
-        output.println("Re-validating tag structure:");
-        output.println("────────────────────────────────────────");
-        IssueList remainingIssues = detectAndReportTagIssues();
+        IssueList remainingIssues;
+        if (!appliedTagFixes.isEmpty()) {
+            // Phase 3: Re-validate and report remaining issues
+            output.println();
+            output.println("Re-validating tag structure:");
+            output.println("────────────────────────────────────────");
+            remainingIssues = detectAndReportTagIssues();
+        } else {
+            remainingIssues = tagIssues; // No fixes applied, so remaining are the same as original
+        }
 
         // Phase 4: Check for document-level issues
         output.println();
