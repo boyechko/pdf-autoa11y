@@ -145,9 +145,14 @@ public class ProcessingService {
         output.println("────────────────────────────────────────");
         IssueList ruleIssues = detectAndReportRuleIssues();
         remainingIssues.addAll(ruleIssues);
+        IssueList appliedRuleFixes = applyFixesAndReport(remainingIssues);
 
-        printSummary(tagIssues, appliedTagFixes, remainingIssues);
-        return remainingIssues;
+        IssueList totalAppliedFixes = new IssueList();
+        totalAppliedFixes.addAll(appliedTagFixes);
+        totalAppliedFixes.addAll(appliedRuleFixes);
+
+        printSummary(tagIssues, totalAppliedFixes, remainingIssues);
+        return totalAppliedFixes;
    }
 
     private IssueList detectAndReportTagIssues() {
