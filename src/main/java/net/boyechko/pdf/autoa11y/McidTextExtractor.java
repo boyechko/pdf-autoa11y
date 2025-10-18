@@ -177,7 +177,7 @@ public final class McidTextExtractor {
         if (text.length() <= MAX_DISPLAY_LENGTH) {
             return text;
         }
-        return text.substring(0, MAX_DISPLAY_LENGTH - 3) + "...";
+        return text.substring(0, MAX_DISPLAY_LENGTH - 1) + "…";
     }
 
 
