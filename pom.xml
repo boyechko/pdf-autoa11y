@@ -56,28 +56,6 @@
           <arguments>
             <argument>${exec.args}</argument>
           </arguments>
-          <systemProperties>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.dateTimeFormat</key>
-              <value>HH:mm:ss</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.showDateTime</key>
-              <value>true</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.showThreadName</key>
-              <value>false</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.showLogName</key>
-              <value>true</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
-              <value>info</value>
-            </systemProperty>
-          </systemProperties>
         </configuration>
       </plugin>
     </plugins>
