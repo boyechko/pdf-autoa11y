@@ -5,11 +5,16 @@ import java.util.Optional;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.boyechko.pdf.autoa11y.DocumentContext;
 import net.boyechko.pdf.autoa11y.IssueFix;
 
 public abstract sealed class TagSingleChildFix implements IssueFix
     permits TagSingleChildFix.WrapInLI, TagSingleChildFix.TreatLblFigureAsBullet {
+
+    private static final Logger logger = LoggerFactory.getLogger(TagSingleChildFix.class);
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
