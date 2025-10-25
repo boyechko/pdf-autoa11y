@@ -64,17 +64,13 @@ public final class McidTextExtractor {
             PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
             processor.processPageContent(page);
 
-            String extractedText = listener.getExtractedText().trim();
+            String rawText = listener.getExtractedText();
+            String cleanedText = cleanExtractedText(rawText);
 
             // Cache the result
-            mcidTextCache.put(cacheKey, extractedText);
+            mcidTextCache.put(cacheKey, cleanedText);
 
-            logger.debug("Extracted text for MCID {} on page {}: \"{}\"",
-                        mcid, pageNumber,
-                        extractedText.length() > 50 ? extractedText.substring(0, 50) + "..." : extractedText);
-
-            return extractedText;
-
+            return cleanedText;
         } catch (Exception e) {
             logger.debug("Failed to extract text for MCID {} on page {}: {}",
                         mcid, pageNumber, e.getMessage());
@@ -121,6 +117,57 @@ public final class McidTextExtractor {
         public String getExtractedText() {
             return extractedText.toString();
         }
+    }
+
+    /**
+     * Cleans extracted text by removing replacement characters and normalizing whitespace.
+     * Handles common issues from PDFs with missing or malformed font glyphs.
+     *
+     * @param text Raw text extracted from PDF content stream
+     * @return Cleaned text with replacement characters removed and whitespace normalized
+     */
+    private static String cleanExtractedText(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+
+        String cleaned = text
+            // Remove Unicode replacement character (U+FFFD)
+            .replace("\uFFFD", "")
+            // Remove common replacement glyph
+            .replace("�", "");
+
+        // Check if text has artificial character spacing (more than 30% single-char words)
+        if (hasArtificialSpacing(cleaned)) {
+            // Remove spaces between single characters
+            cleaned = cleaned.replaceAll("(?<=\\S) (?=\\S)", "");
+        }
+
+        // Normalize whitespace
+        return cleaned.replaceAll("\\s+", " ").trim();
+    }
+
+    /**
+     * Detects if text has artificial character-by-character spacing.
+     * This occurs when PDFs position each character individually in the content stream.
+     *
+     * @param text Text to analyze
+     * @return true if text appears to have artificial spacing between characters
+     */
+    private static boolean hasArtificialSpacing(String text) {
+        String[] words = text.split("\\s+");
+        if (words.length < 2) {
+            return false; // Not enough data to determine
+        }
+
+        // Count single-character "words"
+        long singleCharWords = Arrays.stream(words)
+            .filter(w -> w.length() == 1)
+            .count();
+
+        // If more than 30% are single characters, assume artificial spacing
+        double ratio = (double) singleCharWords / words.length;
+        return ratio > 0.3;
     }
 
     /**
