@@ -1,11 +1,6 @@
 #!/bin/bash
 # pdf-autoa11y
 
-if [ $# -eq 0 ]; then
-    echo "Usage: normalize-pdf [-p password] <filename>"
-    exit 1
-fi
-
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 if [ "$SCRIPT_DIR/src/main/java" -nt "$SCRIPT_DIR/target/classes" ] || [ ! -d "$SCRIPT_DIR/target/classes" ]; then
@@ -13,4 +8,4 @@ if [ "$SCRIPT_DIR/src/main/java" -nt "$SCRIPT_DIR/target/classes" ] || [ ! -d "$
 fi
 
 java -cp "$SCRIPT_DIR/target/classes:$(cd "$SCRIPT_DIR" && mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
-    net.boyechko.pdf.autoa11y.PdfAutoA11yCLI "$@"
+    net.boyechko.pdf.autoa11y.PdfAutoA11yCLI "$@" 2>&1
