@@ -26,8 +26,37 @@ public class ProcessingServiceTest {
 
         try {
             service.process();
+        } catch (ProcessingService.NoTagsException e) {
+            // Expected since the PDF is blank and untagged
+            assertTrue(true);
         } catch (Exception e) {
             assertTrue(false, "Did not expect exception for encrypted PDF with password");
+        }
+    }
+
+    @Test
+    void validPdfIsProcessedSuccessfully() {
+        Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
+        ProcessingService service = new ProcessingService(inputPath, null, System.out);
+
+        try {
+            service.process();
+        } catch (Exception e) {
+            assertTrue(false, "Did not expect exception for valid PDF");
+        }
+    }
+
+    @Test
+    void untaggedPdfRaisesException() {
+        Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
+        ProcessingService service = new ProcessingService(inputPath, null, System.out);
+
+        try {
+            service.process();
+        } catch (ProcessingService.NoTagsException e) {
+            assertTrue(true);
+        } catch (Exception e) {
+            assertTrue(false, "Expected NoTagsException");
         }
     }
 }
