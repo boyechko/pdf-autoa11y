@@ -7,7 +7,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import net.boyechko.pdf.autoa11y.ProcessingService.ProcessingResult;

@@ -1,6 +1,5 @@
 package net.boyechko.pdf.autoa11y;
 
-import java.util.*;
 import com.itextpdf.kernel.pdf.*;
 
 public class DocumentContext {
