@@ -71,7 +71,7 @@ public class RuleEngine {
                 i.markResolved(fx.describe());
             } catch (Exception ex) {
                 i.markFailed(fx.describe() + " failed: " + ex.getMessage());
-                logger.error("Error applying fix: " + ex.getMessage());
+                logger.error("Error applying fix {}: {}", fx.getClass().getSimpleName(), ex.getMessage());
             }
         }
 
