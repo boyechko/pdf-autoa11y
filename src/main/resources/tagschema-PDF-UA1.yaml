@@ -6,7 +6,7 @@ roles:
     allowed_children: [P, Span]
 
   Caption:
-    parent_must_be: [Figure, Formula, L, Table, TOC]
+    parent_must_be: [Formula, L, Note, Table, TOC]
     allowed_children: [Span, P]
 
   Div:
@@ -22,22 +22,22 @@ roles:
     allowed_children:
 
   H1:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   H2:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   H3:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   H5:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   H5:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   H6:
-    allowed_children: [Span]
+    allowed_children: [Lbl, Span, Note, Reference]
 
   Index:
     allowed_children: [L, P]
@@ -47,7 +47,7 @@ roles:
     allowed_children: [Caption, LI]
 
   Lbl:
-    parent_must_be: [Figure, Formula, LI, Link, Note, TOCI]
+    parent_must_be: [Figure, Formula, H1, H2, H3, H4, H5, H6, LI, Link, Note, Reference, TOCI]
     allowed_children: [Span]
 
   LBody:
@@ -59,14 +59,14 @@ roles:
     allowed_children: [Lbl, LBody]
 
   Link:
-    parent_must_be: [P, Reference]
-    allowed_children: [Lbl, Span]
+    parent_must_be: [Div, P, Reference, Span]
+    allowed_children: [Figure, Lbl, Span]
 
   Note:
-    allowed_children: [Lbl, P]
+    allowed_children: [L, Lbl, P, Figure, Caption]
 
   P:
-    allowed_children: [Annot, BibEntry, Code, Figure, Formula, Link, Quote, Span]
+    allowed_children: [Annot, BibEntry, Code, Figure, Formula, Link, Note, Quote, Reference, Span]
 
   Part:
     allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
@@ -76,8 +76,8 @@ roles:
     allowed_children: [Span]
 
   Reference:
-    parent_must_be: [P, TOCI]
-    allowed_children: [Lbl, Link, Span]
+    allowed_children: [Lbl, Span]
+  # Link is also allowed, but Acrobat's autotag abuses that, so need to mark it
 
   Sect:
     allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
