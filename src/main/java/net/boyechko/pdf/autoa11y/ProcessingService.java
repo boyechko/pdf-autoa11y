@@ -48,6 +48,12 @@ public class ProcessingService {
 
     public record ProcessingResult(IssueList issues, Path tempOutputFile) {}
 
+    public class NoTagsException extends Exception {
+        public NoTagsException(String message) {
+            super(message);
+        }
+    }
+
     public ProcessingResult process() throws Exception {
         validateInputFile();
         Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
@@ -155,11 +161,10 @@ public class ProcessingService {
         return totalAppliedFixes;
    }
 
-    private IssueList detectAndReportTagIssues() {
+    private IssueList detectAndReportTagIssues() throws NoTagsException {
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
-            output.println("✗ No accessibility tags found");
-            return new IssueList();
+            throw new NoTagsException("No accessibility tags found");
         }
 
         TagSchema schema = TagSchema.loadDefault();
