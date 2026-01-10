@@ -18,6 +18,17 @@ public final class TagSchema {
     public Map<String, Rule> roles;
 
     public static final class Rule {
+        /**
+         * parent_must_be (Optional): If specified, this element can only appear
+         * under the listed parent roles. If null or empty, the element can
+         * appear under any parent that lists it in allowed_children.
+         *
+         * Note: This is typically redundant with parent allowed_children
+         * constraints, but can be useful for:
+         * - Creating stricter custom schemas
+         * - Expressing child-centric constraints more clearly
+         * - Validating that parents properly declare their children
+         */
         public Set<String> parent_must_be;
         public Set<String> allowed_children;
         public Set<String> required_children;

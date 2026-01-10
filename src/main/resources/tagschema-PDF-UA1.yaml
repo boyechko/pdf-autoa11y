@@ -1,25 +1,44 @@
+# PDF/UA-1 Specific Roles
+# Adapted from "Tagged PDF Best Practices Guide: Syntax" v1.0.1 2023-01
+# <https://pdfa.org/resource/tagged-pdf-best-practice-guide-syntax/>
+#
+# Note: parent_must_be constraints are supported but not used in this schema.
+# All parent-child relationships are expressed via allowed_children for
+# consistency.
+
 roles:
+  Annot:
+    allowed_children: [Span]
+
   Art:
-    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table, TOC]
+
+  BibEntry:
+    allowed_children: [Span]
 
   BlockQuote:
     allowed_children: [P, Span]
 
   Caption:
-    parent_must_be: [Formula, L, Note, Table, TOC]
     allowed_children: [Span, P]
 
+  Code:
+    allowed_children:
+
   Div:
-    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Table]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table, TOC]
 
   Document:
     allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, Index, L, Note, P, Part, Sect, Table, TOC]
 
   Figure:
-    allowed_children: [Caption]
+    allowed_children: [Caption, Lbl]
 
   Form:
     allowed_children:
+
+  Formula:
+    allowed_children: [Caption, Lbl]
 
   H1:
     allowed_children: [Lbl, Span, Note, Reference]
@@ -30,7 +49,7 @@ roles:
   H3:
     allowed_children: [Lbl, Span, Note, Reference]
 
-  H5:
+  H4:
     allowed_children: [Lbl, Span, Note, Reference]
 
   H5:
@@ -47,19 +66,15 @@ roles:
     allowed_children: [Caption, LI]
 
   Lbl:
-    parent_must_be: [Figure, Formula, H1, H2, H3, H4, H5, H6, LI, Link, Note, Reference, TOCI]
     allowed_children: [Span]
 
   LBody:
-    parent_must_be: [LI]
     allowed_children: [L, P, Span]
 
   LI:
-    parent_must_be: [L]
     allowed_children: [Lbl, LBody]
 
   Link:
-    parent_must_be: [Div, P, Reference, Span]
     allowed_children: [Figure, Lbl, Span]
 
   Note:
@@ -69,10 +84,9 @@ roles:
     allowed_children: [Annot, BibEntry, Code, Figure, Formula, Link, Note, Quote, Reference, Span]
 
   Part:
-    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
 
   Quote:
-    parent_must_be: [P]
     allowed_children: [Span]
 
   Reference:
@@ -80,7 +94,10 @@ roles:
   # Link is also allowed, but Acrobat's autotag abuses that, so need to mark it
 
   Sect:
-    allowed_children: [BlockQuote, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+
+  Span:
+    allowed_children: [Span]
 
   Table:
     allowed_children: [Caption, TR, THead, TBody, TFoot]
@@ -104,8 +121,7 @@ roles:
     allowed_children: [Caption, TOC, TOCI]
 
   TOCI:
-    parent_must_be: [TOC]
-    allowed_children: [P, Span]
+    allowed_children: [Lbl, P, Span]
   
   TR:
     allowed_children: [TH, TD]

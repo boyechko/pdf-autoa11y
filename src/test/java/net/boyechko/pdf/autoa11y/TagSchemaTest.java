@@ -15,11 +15,11 @@ public class TagSchemaTest {
 
     @Test
     public void testLoadFromResource() {
-        var resourceStream = TagSchema.class.getResourceAsStream("/tagschema-minimal.yaml");
+        var resourceStream = TagSchema.class.getResourceAsStream("/tagschema-PDF-UA1.yaml");
         assertTrue(resourceStream != null);
-        TagSchema schema = TagSchema.fromResource("/tagschema-minimal.yaml");
+        TagSchema schema = TagSchema.fromResource("/tagschema-PDF-UA1.yaml");
         assertTrue(schema != null);
-        assertTrue(schema.getRoles().size() == 4, "Expected 3 roles in minimal schema but got " + schema.getRoles().size());
+        assertTrue(schema.getRoles().size() == 39, "Expected 39 roles in minimal schema but got " + schema.getRoles().size());
     }
 
     @Test
