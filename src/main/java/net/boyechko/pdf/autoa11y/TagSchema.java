@@ -89,6 +89,17 @@ public final class TagSchema {
             logger.debug(
                     "After populating missing roles, schema has {} roles", schema.roles.size());
 
+            var warnings = schema.validateConsistency();
+            if (!warnings.isEmpty()) {
+                logger.warn(
+                        "Schema loaded from {} has {} consistency warnings:",
+                        resourcePath,
+                        warnings.size());
+                for (String warning : warnings) {
+                    logger.warn("  - {}", warning);
+                }
+            }
+
             return schema;
         } catch (Exception e) {
             logger.error(
@@ -156,5 +167,93 @@ public final class TagSchema {
                 roles.put(role, new Rule());
             }
         }
+    }
+
+    /**
+     * Validates the internal consistency of the schema and returns a list of warnings. This checks
+     * for: - Asymmetric parent_must_be constraints (child requires parent, but parent doesn't allow
+     * child) - Contradictory child count constraints - Required children not in allowed children
+     *
+     * @return List of warning messages describing inconsistencies (empty if schema is consistent)
+     */
+    public java.util.List<String> validateConsistency() {
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+
+        for (Map.Entry<String, Rule> entry : roles.entrySet()) {
+            String roleName = entry.getKey();
+            Rule rule = entry.getValue();
+
+            // Check 1: Asymmetric parent_must_be constraints
+            if (rule.parent_must_be != null) {
+                for (String parentRole : rule.parent_must_be) {
+                    Rule parentRule = roles.get(parentRole);
+                    if (parentRule != null && parentRule.allowed_children != null) {
+                        if (!parentRule.allowed_children.isEmpty()
+                                && !parentRule.allowed_children.contains(roleName)) {
+                            warnings.add(
+                                    String.format(
+                                            "Asymmetric constraint: <%s> requires parent <%s>, but <%s> doesn't list <%s> in allowed_children",
+                                            roleName, parentRole, parentRole, roleName));
+                        }
+                    }
+                }
+            }
+
+            // Check 2: Required children must be in allowed children
+            if (rule.required_children != null && rule.allowed_children != null) {
+                if (!rule.allowed_children.isEmpty()) {
+                    for (String requiredChild : rule.required_children) {
+                        if (!rule.allowed_children.contains(requiredChild)) {
+                            warnings.add(
+                                    String.format(
+                                            "Contradiction: <%s> requires child <%s> but doesn't allow it",
+                                            roleName, requiredChild));
+                        }
+                    }
+                }
+            }
+
+            // Check 3: min_children vs max_children
+            if (rule.min_children != null && rule.max_children != null) {
+                if (rule.min_children > rule.max_children) {
+                    warnings.add(
+                            String.format(
+                                    "Contradiction: <%s> has min_children=%d > max_children=%d",
+                                    roleName, rule.min_children, rule.max_children));
+                }
+            }
+
+            // Check 4: max_children vs required_children
+            if (rule.max_children != null && rule.required_children != null) {
+                if (rule.required_children.size() > rule.max_children) {
+                    warnings.add(
+                            String.format(
+                                    "Contradiction: <%s> requires %d children but max_children=%d",
+                                    roleName, rule.required_children.size(), rule.max_children));
+                }
+            }
+
+            // Check 5: min_children with empty allowed_children
+            if (rule.min_children != null && rule.min_children > 0) {
+                if (rule.allowed_children != null && rule.allowed_children.isEmpty()) {
+                    warnings.add(
+                            String.format(
+                                    "Contradiction: <%s> has min_children=%d but allowed_children is empty",
+                                    roleName, rule.min_children));
+                }
+            }
+
+            // Check 6: required_children without allowed_children
+            if (rule.required_children != null && !rule.required_children.isEmpty()) {
+                if (rule.allowed_children == null || rule.allowed_children.isEmpty()) {
+                    warnings.add(
+                            String.format(
+                                    "Suspicious: <%s> has required_children but no allowed_children defined",
+                                    roleName));
+                }
+            }
+        }
+
+        return warnings;
     }
 }
