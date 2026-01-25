@@ -12,6 +12,11 @@ public interface IssueFix {
         return getClass().getSimpleName();
     }
 
+    /** Human-readable for logs/UI with document context for page numbers. */
+    default String describe(DocumentContext ctx) {
+        return describe();
+    }
+
     /**
      * Check if this fix invalidates another fix. Called after this fix is applied to determine if
      * other pending fixes should be skipped.

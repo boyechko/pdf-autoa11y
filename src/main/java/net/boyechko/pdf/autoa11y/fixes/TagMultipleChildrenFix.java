@@ -93,6 +93,14 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Changed P to Lbl in LI object #" + objNum;
         }
+
+        @Override
+        public String describe(DocumentContext ctx) {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            int pageNum = ctx.getPageNumber(objNum);
+            String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+            return "Changed P to Lbl in LI object #" + objNum + pageInfo;
+        }
     }
 
     public static final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
@@ -152,6 +160,14 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum;
         }
+
+        @Override
+        public String describe(DocumentContext ctx) {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            int pageNum = ctx.getPageNumber(objNum);
+            String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+            return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum + pageInfo;
+        }
     }
 
     public static final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
@@ -206,6 +222,14 @@ public abstract sealed class TagMultipleChildrenFix implements IssueFix
         public String describe() {
             int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
             return "Wrapped pairs of Lbl/LBody in LI elements for L object #" + objNum;
+        }
+
+        @Override
+        public String describe(DocumentContext ctx) {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            int pageNum = ctx.getPageNumber(objNum);
+            String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+            return "Wrapped pairs of Lbl/LBody in LI elements for L object #" + objNum + pageInfo;
         }
     }
 }

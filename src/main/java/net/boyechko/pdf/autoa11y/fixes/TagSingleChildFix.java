@@ -100,6 +100,20 @@ public abstract sealed class TagSingleChildFix implements IssueFix
                     + kid.getPdfObject().getIndirectReference().getObjNumber()
                     + " as a bullet label";
         }
+
+        @Override
+        public String describe(DocumentContext ctx) {
+            int parentObjNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            int kidObjNum = kid.getPdfObject().getIndirectReference().getObjNumber();
+            int pageNum = ctx.getPageNumber(parentObjNum);
+            String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+
+            return "Replace Lbl object #"
+                    + parentObjNum
+                    + pageInfo
+                    + " with its Figure object #"
+                    + kidObjNum
+                    + " as a bullet label";
         }
     }
 
@@ -149,6 +163,20 @@ public abstract sealed class TagSingleChildFix implements IssueFix
                     + " under L object #"
                     + parent.getPdfObject().getIndirectReference().getObjNumber();
         }
+
+        @Override
+        public String describe(DocumentContext ctx) {
+            int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+            int pageNum = ctx.getPageNumber(objNum);
+            String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+
+            return "Wrapped "
+                    + getKidRole()
+                    + " in "
+                    + wrappedIn
+                    + " under L object #"
+                    + objNum
+                    + pageInfo;
         }
     }
 }
