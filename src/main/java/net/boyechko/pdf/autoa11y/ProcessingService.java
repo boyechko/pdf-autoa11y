@@ -35,6 +35,7 @@ public class ProcessingService {
     private final PrintStream output;
     private final RuleEngine engine;
     private final VerbosityLevel verbosity;
+    private final OutputFormatter formatter;
 
     // State variables that persist through processing
     private EncryptionInfo encryptionInfo;
@@ -60,6 +61,7 @@ public class ProcessingService {
         }
         this.output = output;
         this.verbosity = verbosity;
+        this.formatter = new OutputFormatter(output, verbosity);
         this.engine =
                 new RuleEngine(
                         List.of(
@@ -144,40 +146,24 @@ public class ProcessingService {
 
     private IssueList analyzeAndRemediate() throws Exception {
         // Phase 1: Initial detection of tag issues
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println();
-            output.println("Validating tag structure:");
-            output.println("────────────────────────────────────────");
-        }
+        formatter.printPhase(1, 4, "Validating tag structure");
         IssueList tagIssues = detectAndReportTagIssues();
 
         // Phase 2: Apply fixes
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println();
-            output.println("Applying automatic fixes:");
-            output.println("────────────────────────────────────────");
-        }
+        formatter.printPhase(2, 4, "Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(tagIssues);
 
         IssueList remainingIssues;
         if (!appliedTagFixes.isEmpty()) {
             // Phase 3: Re-validate and report remaining issues
-            if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-                output.println();
-                output.println("Re-validating tag structure:");
-                output.println("────────────────────────────────────────");
-            }
+            formatter.printPhase(3, 4, "Re-validating tag structure");
             remainingIssues = detectAndReportTagIssues();
         } else {
             remainingIssues = tagIssues; // No fixes applied, so remaining are the same as original
         }
 
         // Phase 4: Check for document-level issues
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println();
-            output.println("Checking for document-level issues:");
-            output.println("────────────────────────────────────────");
-        }
+        formatter.printPhase(4, 4, "Checking document-level compliance");
         IssueList ruleIssues = detectAndReportRuleIssues();
         remainingIssues.addAll(ruleIssues);
         IssueList appliedRuleFixes = applyFixesAndReport(remainingIssues);
@@ -205,12 +191,10 @@ public class ProcessingService {
         IssueList issueList = new IssueList();
         issueList.addAll(tagIssues);
 
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            if (tagIssues.isEmpty()) {
-                output.println("✓ No issues found in tag structure");
-            } else {
-                output.println("✗ Tag issues found: " + tagIssues.size());
-            }
+        if (tagIssues.isEmpty()) {
+            formatter.printSuccess("No issues found");
+        } else {
+            formatter.printWarning("Found " + tagIssues.size() + " issue(s)");
         }
 
         return issueList;
@@ -224,12 +208,12 @@ public class ProcessingService {
             IssueList ruleIssues = rule.findIssues(context);
             allRuleIssues.addAll(ruleIssues);
 
-            if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            if (formatter.shouldShow(VerbosityLevel.NORMAL)) {
                 if (ruleIssues.isEmpty()) {
-                    output.println("✓ " + rule.name() + " - compliant");
+                    formatter.printSuccess(rule.name());
                 } else {
                     for (Issue issue : ruleIssues) {
-                        output.println(issue.message());
+                        formatter.printWarning(issue.message());
                     }
                 }
             }
@@ -240,19 +224,17 @@ public class ProcessingService {
 
     private IssueList applyFixesAndReport(IssueList issues) {
         if (issues.isEmpty()) {
-            if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-                output.println("✓ No fixes needed");
-            }
+            formatter.printSuccess("No fixes needed");
             return new IssueList(); // No issues to fix
         }
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
 
         // Report successful fixes
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+        if (formatter.shouldShow(VerbosityLevel.NORMAL)) {
             for (Issue issue : appliedFixes) {
                 if (issue.isResolved() && issue.fix() != null) {
-                    output.println("✓ " + issue.resolutionNote());
+                    formatter.printSuccess(issue.resolutionNote());
                 }
             }
         }
@@ -274,25 +256,10 @@ public class ProcessingService {
 
     private void printSummary(
             IssueList originalIssues, IssueList appliedFixes, IssueList remainingIssues) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return; // Skip summary in quiet mode
-        }
-
-        output.println();
-        output.println("=== REMEDIATION SUMMARY ===");
-
         int detected = originalIssues.size();
         int remaining = remainingIssues.size();
         int resolved = detected - remaining;
 
-        if (detected == 0 && resolved == 0) {
-            output.println("✓ Document structure is already compliant");
-        } else {
-            output.println("✗ Issues found: " + detected);
-            output.println("✓ Resolved: " + resolved);
-            if (remaining > 0) {
-                output.println("⚠ Manual review needed for: " + remaining);
-            }
-        }
+        formatter.printSummary(detected, resolved, remaining);
     }
 }

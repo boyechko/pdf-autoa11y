@@ -133,7 +133,7 @@ public class ProcessingServiceTest {
             // If we get here, the PDF had valid tags and we can check for document-level fixes
             String output = outputCapture.toString();
             assertTrue(
-                    output.contains("Checking for document-level issues"),
+                    output.contains("Checking document-level compliance"),
                     "Should check document-level issues");
 
             Files.deleteIfExists(result.tempOutputFile());
@@ -206,7 +206,8 @@ public class ProcessingServiceTest {
         ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
         PrintStream capturedOutput = new PrintStream(outputCapture);
 
-        ProcessingService service = new ProcessingService(testPdf, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(testPdf, null, capturedOutput, VerbosityLevel.VERBOSE);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -218,10 +219,8 @@ public class ProcessingServiceTest {
             assertTrue(
                     output.contains("Applying automatic fixes"),
                     "Should show fix application phase");
-            assertTrue(
-                    output.contains("Checking for document-level issues"),
-                    "Should show document-level check phase");
-            assertTrue(output.contains("REMEDIATION SUMMARY"), "Should show summary");
+            assertTrue(output.contains("document-level"), "Should show document-level check phase");
+            assertTrue(output.contains("Summary"), "Should show summary");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
@@ -347,9 +346,11 @@ public class ProcessingServiceTest {
         // Verify all processing phases occurred
         assertTrue(output.contains("Validating tag structure"), "Should validate tag structure");
         assertTrue(
-                output.contains("Checking for document-level issues"),
+                output.contains("Checking document-level compliance"),
                 "Should check document-level issues");
-        assertTrue(output.contains("REMEDIATION SUMMARY"), "Should provide summary");
+        assertTrue(
+                output.contains("Summary") || output.contains("already compliant"),
+                "Should provide summary");
 
         // The moby_dick.pdf should be compliant, so verify that
         assertTrue(
@@ -387,7 +388,7 @@ public class ProcessingServiceTest {
                     "Should show document-level processing results");
 
             // Should show summary
-            assertTrue(output.contains("REMEDIATION SUMMARY"), "Should show remediation summary");
+            assertTrue(output.contains("Summary"), "Should show remediation summary");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {

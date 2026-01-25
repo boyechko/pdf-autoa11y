@@ -134,12 +134,9 @@ public class PdfAutoA11yCLI {
 
     private static void processFile(CLIConfig config) {
         VerbosityLevel verbosity = config.verbosity();
+        OutputFormatter formatter = new OutputFormatter(System.out, verbosity);
 
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            System.out.println("=== PDF AUTO A11Y ===");
-            System.out.println("Processing: " + config.inputPath().toString());
-            System.out.println();
-        }
+        formatter.printHeader(config.inputPath().toString());
 
         // Process using the service
         ProcessingService service =
@@ -149,9 +146,7 @@ public class PdfAutoA11yCLI {
             ProcessingService.ProcessingResult result = service.process();
 
             if (result.issues().getResolvedIssues().isEmpty() && !config.force_save()) {
-                if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-                    System.out.println("✗ No output file created (original unchanged)");
-                }
+                formatter.printNoOutput();
                 return;
             }
 
@@ -165,18 +160,13 @@ public class PdfAutoA11yCLI {
                     config.outputPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-                System.out.println("✓ Output saved to: " + config.outputPath());
-            } else if (verbosity == VerbosityLevel.QUIET) {
-                // In quiet mode, just show the output path
-                System.out.println(config.outputPath());
-            }
+            formatter.printCompletion(config.outputPath().toString());
         } catch (Exception e) {
             if (isDevelopment() || verbosity.isAtLeast(VerbosityLevel.DEBUG)) {
                 System.err.println("✗ Processing failed:");
                 e.printStackTrace();
             } else {
-                System.err.println("✗ Processing failed: " + e.getMessage());
+                formatter.printError("Processing failed: " + e.getMessage());
             }
         }
     }
