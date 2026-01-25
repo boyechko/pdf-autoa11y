@@ -94,13 +94,21 @@ Basic usage:
 With options:
 
 ```bash
-./pdf-autoa11y [-d] [-f] [-p password] <input.pdf> [output.pdf]
+./pdf-autoa11y [-q|-v|-vv] [-f] [-p password] <input.pdf> [output.pdf]
 ```
 
 Options:
-- `-d, --debug` - Enable debug logging
+- `-q, --quiet` - Only show errors and final status
+- `-v, --verbose` - Show detailed tag structure during validation
+- `-vv, --debug` - Show all debug information including logs
 - `-f, --force` - Force save even if no fixes were applied
 - `-p, --password` - Password for encrypted PDFs
+
+**Verbosity Levels:**
+- **Quiet** (`-q`): Minimal output - only errors and the output file path
+- **Normal** (default): Summary of validation, fixes, and compliance checks
+- **Verbose** (`-v`): Includes detailed tag structure tree with all elements
+- **Debug** (`-vv`): Everything including internal debug logs
 
 Examples:
 
@@ -111,8 +119,17 @@ Examples:
 # Specify output path
 ./pdf-autoa11y input.pdf output/fixed.pdf
 
-# Debug mode with forced save
-./pdf-autoa11y -d -f document.pdf
+# Quiet mode for scripting
+./pdf-autoa11y -q document.pdf
+
+# Verbose mode to see tag structure
+./pdf-autoa11y -v document.pdf
+
+# Debug mode with all information
+./pdf-autoa11y -vv document.pdf
+
+# Force save with verbose output
+./pdf-autoa11y -v -f document.pdf
 ```
 
 ### GUI Application

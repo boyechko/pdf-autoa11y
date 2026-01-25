@@ -23,13 +23,20 @@ public class PdfAutoA11yCLI {
 
     // Configuration record to hold parsed CLI arguments
     public record CLIConfig(
-            Path inputPath, Path outputPath, String password, boolean force_save, boolean debug) {
+            Path inputPath,
+            Path outputPath,
+            String password,
+            boolean force_save,
+            VerbosityLevel verbosity) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
             if (outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
+            }
+            if (verbosity == null) {
+                throw new IllegalArgumentException("Verbosity level is required");
             }
         }
     }
@@ -44,7 +51,7 @@ public class PdfAutoA11yCLI {
     public static void main(String[] args) {
         try {
             CLIConfig config = parseArguments(args);
-            configureLogging(config.debug());
+            configureLogging(config.verbosity());
             processFile(config);
         } catch (CLIException e) {
             System.err.println("Error: " + e.getMessage());
@@ -59,15 +66,20 @@ public class PdfAutoA11yCLI {
         if (args.length == 0) {
             throw new CLIException(
                     "No input file specified\n"
-                            + "Usage: java PdfAutoA11yCLI [-d] [-p password] <inputpath> [<outputpath>]\n"
-                            + "Example: java PdfAutoA11yCLI -p somepassword document.pdf output.pdf");
+                            + "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] <inputpath> [<outputpath>]\n"
+                            + "  -q, --quiet    Only show errors and final status\n"
+                            + "  -v, --verbose  Show detailed tag structure\n"
+                            + "  -vv, --debug   Show all debug information\n"
+                            + "  -f, --force    Force save even if no fixes applied\n"
+                            + "  -p, --password Password for encrypted PDFs\n"
+                            + "Example: java PdfAutoA11yCLI -v document.pdf output.pdf");
         }
 
         Path inputPath = null;
         Path outputPath = null;
         String password = null;
-        boolean debug = false;
         boolean force_save = false;
+        VerbosityLevel verbosity = VerbosityLevel.NORMAL;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -77,16 +89,11 @@ public class PdfAutoA11yCLI {
                     } else {
                         throw new CLIException("Password not specified after -p");
                     }
-                    break;
                 }
-                case "-d", "--debug" -> {
-                    debug = true;
-                    break;
-                }
-                case "-f", "--force" -> {
-                    force_save = true;
-                    break;
-                }
+                case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
+                case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
+                case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
+                case "-f", "--force" -> force_save = true;
                 default -> {
                     if (inputPath == null) {
                         inputPath = Paths.get(args[i]);
@@ -114,11 +121,11 @@ public class PdfAutoA11yCLI {
                     Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
         }
 
-        return new CLIConfig(inputPath, outputPath, password, force_save, debug);
+        return new CLIConfig(inputPath, outputPath, password, force_save, verbosity);
     }
 
-    private static void configureLogging(boolean debug) {
-        if (debug) {
+    private static void configureLogging(VerbosityLevel verbosity) {
+        if (verbosity.isAtLeast(VerbosityLevel.DEBUG)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
         } else {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
@@ -126,19 +133,25 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
-        System.out.println("=== PDF AUTO A11Y ===");
-        System.out.println("Processing: " + config.inputPath().toString());
-        System.out.println();
+        VerbosityLevel verbosity = config.verbosity();
+
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            System.out.println("=== PDF AUTO A11Y ===");
+            System.out.println("Processing: " + config.inputPath().toString());
+            System.out.println();
+        }
 
         // Process using the service
         ProcessingService service =
-                new ProcessingService(config.inputPath(), config.password(), System.out);
+                new ProcessingService(config.inputPath(), config.password(), System.out, verbosity);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
 
             if (result.issues().getResolvedIssues().isEmpty() && !config.force_save()) {
-                System.out.println("✗ No output file created (original unchanged)");
+                if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+                    System.out.println("✗ No output file created (original unchanged)");
+                }
                 return;
             }
 
@@ -152,9 +165,14 @@ public class PdfAutoA11yCLI {
                     config.outputPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            System.out.println("✓ Output saved to: " + config.outputPath());
+            if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+                System.out.println("✓ Output saved to: " + config.outputPath());
+            } else if (verbosity == VerbosityLevel.QUIET) {
+                // In quiet mode, just show the output path
+                System.out.println(config.outputPath());
+            }
         } catch (Exception e) {
-            if (isDevelopment() || config.debug()) {
+            if (isDevelopment() || verbosity.isAtLeast(VerbosityLevel.DEBUG)) {
                 System.err.println("✗ Processing failed:");
                 e.printStackTrace();
             } else {

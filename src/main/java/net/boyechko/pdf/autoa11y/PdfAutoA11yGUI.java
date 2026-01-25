@@ -208,7 +208,11 @@ public class PdfAutoA11yGUI extends JFrame {
                                         : null;
 
                         ProcessingService service =
-                                new ProcessingService(selectedFile.toPath(), password, guiOutput);
+                                new ProcessingService(
+                                        selectedFile.toPath(),
+                                        password,
+                                        guiOutput,
+                                        VerbosityLevel.VERBOSE);
 
                         ProcessingService.ProcessingResult result = service.process();
                         return result;

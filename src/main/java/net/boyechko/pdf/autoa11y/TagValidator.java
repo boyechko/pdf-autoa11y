@@ -304,6 +304,10 @@ public final class TagValidator {
     }
 
     private void printElement(ValidationContext ctx, List<String> issues) {
+        if (output == null) {
+            return;
+        }
+
         // Skip empty Span elements without issues
         if ("Span".equals(ctx.role()) && ctx.children().isEmpty() && issues.isEmpty()) {
             return;
