@@ -215,4 +215,22 @@ mvn spotless:apply
 
 ## License
 
-See LICENSE file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+### Why AGPL?
+
+This project uses [iText PDF](https://itextpdf.com/) library, which is licensed
+under AGPL-3.0. As a derivative work, this project must also be licensed under
+AGPL-3.0 to comply with iText's license terms.
+
+### What This Means
+
+- You are free to use, modify, and distribute this software
+- If you modify this software and make it available over a network (e.g., as a
+  web service), you must make your modified source code available under AGPL-3.0
+- Any software that incorporates this code must also be licensed under AGPL-3.0
+
+For commercial use without AGPL restrictions, you would need to obtain a
+commercial license for iText PDF.
+
+See the LICENSE file for full license text.
