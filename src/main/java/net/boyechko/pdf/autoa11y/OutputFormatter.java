@@ -19,9 +19,7 @@ package net.boyechko.pdf.autoa11y;
 
 import java.io.PrintStream;
 
-/**
- * Provides consistent formatting for CLI output with visual hierarchy.
- */
+/** Provides consistent formatting for CLI output with visual hierarchy. */
 public class OutputFormatter {
     private final PrintStream output;
     private final VerbosityLevel verbosity;

@@ -230,7 +230,7 @@ public class PdfAutoA11yGUI extends JFrame {
                         try {
                             ProcessingResult result = get();
 
-                            if (result.issues().getResolvedIssues().isEmpty()) {
+                            if (result.totalIssuesResolved() == 0) {
                                 outputArea.append("✗ Nothing to save (original unchanged)\n");
                             } else {
                                 showSaveDialog(result.tempOutputFile().toFile());

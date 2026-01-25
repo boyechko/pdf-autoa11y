@@ -27,6 +27,7 @@ import java.util.Map;
 public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
+    private ProcessingService.ProcessingResult processingResult;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
@@ -35,6 +36,14 @@ public class DocumentContext {
 
     public PdfDocument doc() {
         return doc;
+    }
+
+    public void setProcessingResult(ProcessingService.ProcessingResult result) {
+        this.processingResult = result;
+    }
+
+    public ProcessingService.ProcessingResult getProcessingResult() {
+        return processingResult;
     }
 
     /**

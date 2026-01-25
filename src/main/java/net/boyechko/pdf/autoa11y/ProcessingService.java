@@ -75,7 +75,35 @@ public class ProcessingService {
         this(inputPath, password, output, VerbosityLevel.NORMAL);
     }
 
-    public record ProcessingResult(IssueList issues, Path tempOutputFile) {}
+    public record ProcessingResult(
+            IssueList originalTagIssues,
+            IssueList appliedTagFixes,
+            IssueList remainingTagIssues,
+            IssueList documentLevelIssues,
+            IssueList appliedDocumentFixes,
+            IssueList totalRemainingIssues,
+            Path tempOutputFile) {
+
+        public int totalIssuesDetected() {
+            return originalTagIssues.size() + documentLevelIssues.size();
+        }
+
+        public int totalIssuesResolved() {
+            return appliedTagFixes.size() + appliedDocumentFixes.size();
+        }
+
+        public int totalIssuesRemaining() {
+            return totalRemainingIssues.size();
+        }
+
+        public boolean hasTagIssues() {
+            return !originalTagIssues.isEmpty();
+        }
+
+        public boolean hasDocumentIssues() {
+            return !documentLevelIssues.isEmpty();
+        }
+    }
 
     public class NoTagsException extends Exception {
         public NoTagsException(String message) {
@@ -92,10 +120,17 @@ public class ProcessingService {
         try (PdfDocument pdfDoc = openForModification(tempOutputFile)) {
             this.context = new DocumentContext(pdfDoc);
 
-            // Delegate to a business logic method
-            IssueList remainingIssues = analyzeAndRemediate();
+            analyzeAndRemediate();
 
-            return new ProcessingResult(remainingIssues, tempOutputFile);
+            ProcessingResult result = this.context.getProcessingResult();
+            return new ProcessingResult(
+                    result.originalTagIssues(),
+                    result.appliedTagFixes(),
+                    result.remainingTagIssues(),
+                    result.documentLevelIssues(),
+                    result.appliedDocumentFixes(),
+                    result.totalRemainingIssues(),
+                    tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
             throw e;
@@ -145,34 +180,44 @@ public class ProcessingService {
     }
 
     private IssueList analyzeAndRemediate() throws Exception {
-        // Phase 1: Initial detection of tag issues
         formatter.printPhase(1, 4, "Validating tag structure");
-        IssueList tagIssues = detectAndReportTagIssues();
+        IssueList originalTagIssues = detectAndReportTagIssues();
 
-        // Phase 2: Apply fixes
         formatter.printPhase(2, 4, "Applying automatic fixes");
-        IssueList appliedTagFixes = applyFixesAndReport(tagIssues);
+        IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
 
-        IssueList remainingIssues;
+        IssueList remainingTagIssues;
         if (!appliedTagFixes.isEmpty()) {
-            // Phase 3: Re-validate and report remaining issues
             formatter.printPhase(3, 4, "Re-validating tag structure");
-            remainingIssues = detectAndReportTagIssues();
+            remainingTagIssues = detectAndReportTagIssues();
         } else {
-            remainingIssues = tagIssues; // No fixes applied, so remaining are the same as original
+            remainingTagIssues = originalTagIssues;
         }
 
-        // Phase 4: Check for document-level issues
         formatter.printPhase(4, 4, "Checking document-level compliance");
-        IssueList ruleIssues = detectAndReportRuleIssues();
-        remainingIssues.addAll(ruleIssues);
-        IssueList appliedRuleFixes = applyFixesAndReport(remainingIssues);
+        IssueList documentLevelIssues = detectAndReportRuleIssues();
+        IssueList appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
+
+        IssueList totalRemainingIssues = new IssueList();
+        totalRemainingIssues.addAll(remainingTagIssues);
+        totalRemainingIssues.addAll(documentLevelIssues.getRemainingIssues());
 
         IssueList totalAppliedFixes = new IssueList();
         totalAppliedFixes.addAll(appliedTagFixes);
-        totalAppliedFixes.addAll(appliedRuleFixes);
+        totalAppliedFixes.addAll(appliedDocumentFixes);
 
-        printSummary(tagIssues, totalAppliedFixes, remainingIssues);
+        printSummary(originalTagIssues, totalAppliedFixes, totalRemainingIssues);
+
+        this.context.setProcessingResult(
+                new ProcessingResult(
+                        originalTagIssues,
+                        appliedTagFixes,
+                        remainingTagIssues,
+                        documentLevelIssues,
+                        appliedDocumentFixes,
+                        totalRemainingIssues,
+                        null));
+
         return totalAppliedFixes;
     }
 
@@ -240,18 +285,6 @@ public class ProcessingService {
         }
 
         return appliedFixes;
-    }
-
-    private void reportRemainingIssues(IssueList issues) {
-        IssueList remaining = issues.getRemainingIssues();
-        if (!remaining.isEmpty()) {
-            output.println();
-            output.println("Remaining issues after fixes:");
-            output.println("────────────────────────────────────────");
-            for (Issue i : remaining) {
-                output.println("✗ " + i.message() + ": " + i.where());
-            }
-        }
     }
 
     private void printSummary(

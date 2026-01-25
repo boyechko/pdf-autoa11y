@@ -145,7 +145,7 @@ public class PdfAutoA11yCLI {
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            if (result.issues().getResolvedIssues().isEmpty() && !config.force_save()) {
+            if (result.totalIssuesResolved() == 0 && !config.force_save()) {
                 formatter.printNoOutput();
                 return;
             }

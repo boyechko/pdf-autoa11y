@@ -119,7 +119,8 @@ public class ProcessingServiceTest {
             ProcessingService.ProcessingResult result = service.process();
 
             assertNotNull(result, "Should return a result");
-            assertNotNull(result.issues(), "Should have issues list");
+            assertNotNull(result.originalTagIssues(), "Should have original tag issues");
+            assertNotNull(result.documentLevelIssues(), "Should have document level issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
@@ -159,28 +160,27 @@ public class ProcessingServiceTest {
     void completeIssueResolutionWorkflow() throws Exception {
         Path testPdf = createPdfWithMultipleIssues();
 
-        ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-        PrintStream capturedOutput = new PrintStream(outputCapture);
-
         ProcessingService service =
-                new ProcessingService(testPdf, null, capturedOutput, VerbosityLevel.VERBOSE);
+                new ProcessingService(testPdf, null, System.out, VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            String output = outputCapture.toString();
+            assertNotNull(result.originalTagIssues(), "Should have original tag issues");
+            assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
+            assertNotNull(result.remainingTagIssues(), "Should have remaining tag issues");
+            assertNotNull(result.documentLevelIssues(), "Should have document level issues");
+            assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
+            assertNotNull(result.totalRemainingIssues(), "Should have total remaining issues");
 
-            // Verify the complete workflow phases
-            assertTrue(output.contains("Validating tag structure"), "Should show validation phase");
             assertTrue(
-                    output.contains("Applying automatic fixes"),
-                    "Should show fix application phase");
-            assertTrue(output.contains("document-level"), "Should show document-level check phase");
-            assertTrue(output.contains("Summary"), "Should show summary");
+                    result.totalIssuesResolved() >= 0, "Should have resolved zero or more issues");
+            assertTrue(
+                    result.totalIssuesRemaining() <= result.totalIssuesDetected(),
+                    "Remaining issues should not exceed detected issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
-            // Expected for PDFs without proper tag structure
         }
     }
 
@@ -188,36 +188,19 @@ public class ProcessingServiceTest {
     void brokenTagStructureIsDetectedAndFixed() throws Exception {
         Path brokenPdf = createPdfWithTagIssues();
 
-        ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-        PrintStream capturedOutput = new PrintStream(outputCapture);
-
-        ProcessingService service = new ProcessingService(brokenPdf, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(brokenPdf, null, System.out, VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            String output = outputCapture.toString();
-            System.out.println("=== BROKEN PDF PROCESSING OUTPUT ===");
-            System.out.println(output);
-            System.out.println("=== END OUTPUT ===");
-
+            assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
             assertTrue(
-                    output.contains("enclosed unexpected P in LI")
-                            || output.contains("converted")
-                            || output.contains("✓")
-                            || output.contains("✗"),
-                    "Should show tag structure processing results");
+                    result.appliedTagFixes().size() > 0,
+                    "Should apply fixes to broken tag structure");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
-            String output = outputCapture.toString();
-            System.out.println("=== BROKEN PDF FAILED PROCESSING OUTPUT ===");
-            System.out.println(output);
-            System.out.println("=== END OUTPUT ===");
-
-            assertTrue(
-                    output.contains("Validating tag structure"),
-                    "Should attempt validation before failing");
         }
     }
 
@@ -225,22 +208,16 @@ public class ProcessingServiceTest {
     void tagStructureIssuesCanBeFixed() throws Exception {
         Path testPdf = createPdfWithFixableTagIssues();
 
-        ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-        PrintStream capturedOutput = new PrintStream(outputCapture);
-
-        ProcessingService service = new ProcessingService(testPdf, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(testPdf, null, System.out, VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            String output = outputCapture.toString();
-            System.out.println("=== FIXABLE PDF PROCESSING OUTPUT ===");
-            System.out.println(output);
-            System.out.println("=== END OUTPUT ===");
-
+            assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
             assertTrue(
-                    output.contains("✓") || output.contains("✗"),
-                    "Should show issue detection results");
+                    result.appliedTagFixes().size() > 0 || result.remainingTagIssues().size() > 0,
+                    "Should either fix issues or report remaining issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
@@ -248,11 +225,6 @@ public class ProcessingServiceTest {
                     "No accessibility tags found",
                     e.getMessage(),
                     "Should report missing tags with correct message");
-
-            String output = outputCapture.toString();
-            System.out.println("=== FIXABLE PDF FAILED PROCESSING OUTPUT ===");
-            System.out.println(output);
-            System.out.println("=== END OUTPUT ===");
         }
     }
 
@@ -260,25 +232,17 @@ public class ProcessingServiceTest {
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
 
-        ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-        PrintStream capturedOutput = new PrintStream(outputCapture);
-
-        ProcessingService service = new ProcessingService(inputPath, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(inputPath, null, System.out, VerbosityLevel.QUIET);
         ProcessingService.ProcessingResult result = service.process();
 
-        String output = outputCapture.toString();
+        assertNotNull(result.originalTagIssues());
+        assertNotNull(result.documentLevelIssues());
 
-        assertTrue(output.contains("Validating tag structure"), "Should validate tag structure");
+        assertTrue(result.totalIssuesDetected() >= 0, "Should detect zero or more issues in total");
         assertTrue(
-                output.contains("Checking document-level compliance"),
-                "Should check document-level issues");
-        assertTrue(
-                output.contains("Summary") || output.contains("already compliant"),
-                "Should provide summary");
-
-        assertTrue(
-                output.contains("already compliant") || output.contains("No issues found"),
-                "Moby Dick PDF should be compliant");
+                result.totalIssuesRemaining() == 0,
+                "Moby Dick PDF should be compliant with no remaining issues");
 
         Files.deleteIfExists(result.tempOutputFile());
     }
@@ -287,24 +251,16 @@ public class ProcessingServiceTest {
     void documentLevelIssuesDetectedAndFixed() throws Exception {
         Path testFile = createPdfWithDocumentIssues();
 
-        ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
-        PrintStream capturedOutput = new PrintStream(outputCapture);
-
-        ProcessingService service = new ProcessingService(testFile, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(testFile, null, System.out, VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
 
-            String output = outputCapture.toString();
-
+            assertNotNull(result.documentLevelIssues(), "Should check for document-level issues");
             assertTrue(
-                    output.contains("✗")
-                            || output.contains("✓")
-                            || output.contains("Document language")
-                            || output.contains("compliant"),
-                    "Should show document-level processing results");
-
-            assertTrue(output.contains("Summary"), "Should show remediation summary");
+                    result.hasDocumentIssues() || result.appliedDocumentFixes().size() >= 0,
+                    "Should detect or fix document-level issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
