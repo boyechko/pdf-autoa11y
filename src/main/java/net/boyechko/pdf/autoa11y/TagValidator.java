@@ -22,14 +22,16 @@ public final class TagValidator {
     private static final int PAGE_NUM_WIDTH = 10;
     private static final int OBJ_NUM_WIDTH = 6;
     private static final int CONTENT_SUMMARY_WIDTH = 30;
-    // element, page, obj num, issues
+    private static final int ISSUES_WIDTH = 6; // For header separator only; actual issues longer
+
     private static final String ROW_FORMAT =
-        "%-" + INDEX_WIDTH + "s " +
-        "%-" + ELEMENT_NAME_WIDTH + "s " +
-        "%-" + PAGE_NUM_WIDTH + "s " +
-        "%-" + OBJ_NUM_WIDTH + "s " +
-        "%-" + CONTENT_SUMMARY_WIDTH + "s " +
-        "%s%n";
+            String.format(
+                    "%%-%ds %%-%ds %%-%ds %%-%ds %%-%ds %%s%%n",
+                    INDEX_WIDTH,
+                    ELEMENT_NAME_WIDTH,
+                    PAGE_NUM_WIDTH,
+                    OBJ_NUM_WIDTH,
+                    CONTENT_SUMMARY_WIDTH);
 
     private final TagSchema schema;
     private final PrintStream output;
@@ -86,13 +88,14 @@ public final class TagValidator {
     private void printHeader() {
         if (output != null) {
             output.printf(ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Content", "Issues");
-            output.printf(ROW_FORMAT,
-                "-".repeat(INDEX_WIDTH),
-                "-".repeat(ELEMENT_NAME_WIDTH),
-                "-".repeat(PAGE_NUM_WIDTH),
-                "-".repeat(OBJ_NUM_WIDTH),
-                "-".repeat(CONTENT_SUMMARY_WIDTH),
-                "-".repeat(6)); // "Issues" is 6 chars
+            output.printf(
+                    ROW_FORMAT,
+                    "-".repeat(INDEX_WIDTH),
+                    "-".repeat(ELEMENT_NAME_WIDTH),
+                    "-".repeat(PAGE_NUM_WIDTH),
+                    "-".repeat(OBJ_NUM_WIDTH),
+                    "-".repeat(CONTENT_SUMMARY_WIDTH),
+                    "-".repeat(ISSUES_WIDTH));
         }
     }
 
@@ -300,7 +303,14 @@ public final class TagValidator {
         String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
         mcrSummary = (mcrSummary == null || mcrSummary.isEmpty()) ? "" : mcrSummary;
         String issuesText = issues.isEmpty() ? "" : "✗ " + String.join("; ", issues);
-        output.printf(ROW_FORMAT, paddedIndex, elementName, pageString, getObjNum(ctx.node()), mcrSummary, issuesText);
+        output.printf(
+                ROW_FORMAT,
+                paddedIndex,
+                elementName,
+                pageString,
+                getObjNum(ctx.node()),
+                mcrSummary,
+                issuesText);
     }
 
     private int getPageNumber(PdfStructElem node) {
