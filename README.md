@@ -1,41 +1,218 @@
 # PDF-Auto-A11y
 
-**PDF-Auto-A11y** is a lightweight Java tool that automates common, repetitive
-tasks in PDF accessibility remediation. It's designed to save time and reduce
-human error when fixing tag structures, headings, lists, and other accessibility
-issues.
+**PDF-Auto-A11y** is a Java-based PDF accessibility remediation tool that
+validates and automatically fixes common tag structure issues in PDF documents.
+Designed for accessibility professionals, it handles the repetitive structural
+corrections that typically require manual work in Adobe Acrobat or other
+remediation tools.
 
-## Features
+## What It Does
 
-- Automates repetitive accessibility fixes in PDFs
-- Normalizes tag structures (headings, lists, etc.)
-- Reduces manual work in tools like Adobe Acrobat
-- Extensible for future rules and transformations
+PDF-Auto-A11y performs validation and automatic remediation across two areas:
 
-## Why PDF-Auto-A11y?
+### Tag Structure Fixes (Automatic)
 
-Accessibility remediation often involves tedious manual corrections. PDF-Auto-
-A11y provides a framework to apply systematic fixes programmatically, freeing up
-your time to focus on the complex cases that require human judgment.
+The tool detects and automatically corrects invalid tag hierarchies that
+violate PDF/UA-1 standards:
+
+**List Structure Issues:**
+- **Missing LI wrappers** - Wraps orphaned content (P, Div, Figure, Span,
+  LBody) directly under L elements in proper LI containers
+- **Incomplete list items** - Fixes LI elements missing required LBody
+  structure (e.g., `LI > P` becomes `LI > Lbl + LBody > P`)
+- **Flattened list hierarchies** - Restructures alternating `L > Lbl, P, Lbl,
+  P` patterns into proper `L > LI > Lbl + LBody > P` structure
+- **Flattened list bodies** - Wraps alternating `L > Lbl, LBody, Lbl, LBody`
+  patterns into proper `L > LI > Lbl + LBody` structure
+- **Misidentified labels** - Converts P elements to Lbl when found alongside
+  LBody in list items
+
+**Label/Figure Issues:**
+- **Figure-as-bullet** - Converts `Lbl > Figure` patterns to proper Lbl
+  elements with ActualText for decorative bullets
+
+### Document-Level Fixes (Automatic)
+
+The tool automatically sets required PDF/UA-1 document properties:
+- **Document language** - Sets the Lang entry in the document catalog
+  (defaults to en-US)
+- **Tab order** - Configures logical tab order (Tabs/S) for all pages
+- **Tagged PDF marker** - Sets the MarkInfo/Marked flag to indicate the
+  document is tagged
+
+**Note:** The tool validates but cannot fix missing structure trees - documents
+must already have tag structure present.
+
+## Use Cases
+
+This tool is useful when:
+
+- You have PDFs with list structure issues from Word, InDesign, or other
+  authoring tools
+- You need to process multiple documents consistently
+- You want to identify structural issues before manual remediation
+- You want to automate the repetitive parts of accessibility work so you can
+  focus on tasks that require human judgment
+- You need to manually tag long lists, but don't want to manually create four
+  tags per list item
+
+## Requirements
+
+- Java 21 or higher
+- Maven 3.x (for building)
 
 ## Installation
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/pdf-autoa11y.git
+git clone https://github.com/boyechko/pdf-autoa11y.git
 cd pdf-autoa11y
 ```
 
 Build with Maven:
 
 ```bash
-mvn package
+mvn clean package
 ```
 
-Usage:
+This creates two executable scripts in the project root:
+- `pdf-autoa11y` - Command-line interface
+- `pdf-autoa11y-gui` - Graphical interface
+
+## Usage
+
+### Command Line
+
+Basic usage:
 
 ```bash
-java -jar target/pdf-autoa11y.jar [-p password] input.pdf
-# will produce input_autoa11y.pdf
+./pdf-autoa11y input.pdf
+# Produces: input_autoa11y.pdf
 ```
+
+With options:
+
+```bash
+./pdf-autoa11y [-d] [-f] [-p password] <input.pdf> [output.pdf]
+```
+
+Options:
+- `-d, --debug` - Enable debug logging
+- `-f, --force` - Force save even if no fixes were applied
+- `-p, --password` - Password for encrypted PDFs
+
+Examples:
+
+```bash
+# Process with password
+./pdf-autoa11y -p mypassword document.pdf
+
+# Specify output path
+./pdf-autoa11y input.pdf output/fixed.pdf
+
+# Debug mode with forced save
+./pdf-autoa11y -d -f document.pdf
+```
+
+### GUI Application
+
+Launch the graphical interface:
+
+```bash
+./pdf-autoa11y-gui
+```
+
+The GUI allows you to:
+1. Drag and drop PDF files or browse to select them
+2. Enter a password if needed
+3. View processing output in real-time
+4. Save the remediated PDF to your chosen location
+
+## Features
+
+- **Automatic fixes** for common tag structure issues
+- **Automatic document-level fixes** for language, tab order, and tagged PDF
+  marker
+- **Detailed reporting** showing detected issues, applied fixes, and remaining
+  problems
+- **Password support** for encrypted PDFs
+- **Batch processing** via command line
+- **Real-time feedback** in GUI mode
+- **Page number references** for issues requiring manual review
+- **Preserves encryption** when processing password-protected files
+
+## Output
+
+The tool provides a structured workflow report:
+
+**Phase 1: Tag Structure Validation**
+```
+[1/4] Validating tag structure...
+  ✗ L > P (expected L > LI > LBody > P)
+  ✗ LI > P (expected LI > Lbl + LBody > P)
+```
+
+**Phase 2: Automatic Fixes**
+```
+[2/4] Applying automatic fixes...
+  ✓ Wrapped P in LI->LBody under L object #47 (p. 3)
+  ✓ Changed P to Lbl in LI object #52 (p. 3)
+```
+
+**Phase 3: Re-validation** (if fixes were applied)
+```
+[3/4] Re-validating tag structure...
+  ✓ No issues found
+```
+
+**Phase 4: Document-Level Checks**
+```
+[4/4] Checking document-level compliance...
+  ✓ Language Set
+  ✓ Tab Order
+  ✓ Tag Structure Present
+  ✓ Tagged PDF
+```
+
+**Summary**
+```
+──────────────────────────────────────────────────
+Summary
+──────────────────────────────────────────────────
+Issues detected: 5
+Issues resolved: 5
+Remaining issues: 0
+```
+
+### Understanding the Output
+
+- **✓** indicates a check passed or a fix was successfully applied
+- **✗** indicates an issue was detected
+- **⚠** indicates an issue requires manual review
+- Object numbers and page references help locate issues in Acrobat
+- The summary shows your remediation progress at a glance
+
+## Development
+
+Run tests:
+
+```bash
+mvn test
+```
+
+Run with Maven exec plugin:
+
+```bash
+mvn exec:java -Dexec.args="input.pdf"
+```
+
+Code formatting (Google Java Format - AOSP style):
+
+```bash
+mvn spotless:apply
+```
+
+## License
+
+See LICENSE file for details.
