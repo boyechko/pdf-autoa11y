@@ -1,14 +1,13 @@
 package net.boyechko.pdf.autoa11y;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
-
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import net.boyechko.pdf.autoa11y.ProcessingService.ProcessingResult;
 
 public class PdfAutoA11yGUI extends JFrame {
@@ -65,11 +64,12 @@ public class PdfAutoA11yGUI extends JFrame {
         new DropTarget(dropLabel, new FileDropHandler());
 
         // Enable click to browse
-        dropLabel.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                browseForFile();
-            }
-        });
+        dropLabel.addMouseListener(
+                new java.awt.event.MouseAdapter() {
+                    public void mouseClicked(java.awt.event.MouseEvent evt) {
+                        browseForFile();
+                    }
+                });
 
         dropWrapper.add(dropLabel);
         panel.add(dropWrapper);
@@ -119,30 +119,32 @@ public class PdfAutoA11yGUI extends JFrame {
                 dtde.acceptDrop(DnDConstants.ACTION_COPY);
 
                 @SuppressWarnings("unchecked")
-                List<File> files = (List<File>) dtde.getTransferable()
-                    .getTransferData(DataFlavor.javaFileListFlavor);
+                List<File> files =
+                        (List<File>)
+                                dtde.getTransferable()
+                                        .getTransferData(DataFlavor.javaFileListFlavor);
 
                 if (!files.isEmpty()) {
                     File file = files.get(0);
                     if (file.getName().toLowerCase().endsWith(".pdf")) {
                         setSelectedFile(file);
                     } else {
-                        JOptionPane.showMessageDialog(PdfAutoA11yGUI.this,
-                            "Please select a PDF file");
+                        JOptionPane.showMessageDialog(
+                                PdfAutoA11yGUI.this, "Please select a PDF file");
                     }
                 }
                 dtde.dropComplete(true);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(PdfAutoA11yGUI.this,
-                    "Error handling dropped file: " + e.getMessage());
+                JOptionPane.showMessageDialog(
+                        PdfAutoA11yGUI.this, "Error handling dropped file: " + e.getMessage());
             }
         }
     }
 
     private void browseForFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-            "PDF Files", "pdf"));
+        chooser.setFileFilter(
+                new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
 
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             setSelectedFile(chooser.getSelectedFile());
@@ -163,59 +165,61 @@ public class PdfAutoA11yGUI extends JFrame {
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
         SwingWorker<ProcessingResult, String> worker =
-            new SwingWorker<ProcessingResult, String>() {
-
-            @Override
-            protected ProcessingResult doInBackground() throws Exception {
-                // Create custom PrintStream for GUI output
-                PrintStream guiOutput = new PrintStream(new OutputStream() {
-                    @Override
-                    public void write(int b) throws IOException {
-                        publish(String.valueOf((char) b));
-                    }
+                new SwingWorker<ProcessingResult, String>() {
 
                     @Override
-                    public void write(byte[] b, int off, int len) throws IOException {
-                        publish(new String(b, off, len));
+                    protected ProcessingResult doInBackground() throws Exception {
+                        // Create custom PrintStream for GUI output
+                        PrintStream guiOutput =
+                                new PrintStream(
+                                        new OutputStream() {
+                                            @Override
+                                            public void write(int b) throws IOException {
+                                                publish(String.valueOf((char) b));
+                                            }
+
+                                            @Override
+                                            public void write(byte[] b, int off, int len)
+                                                    throws IOException {
+                                                publish(new String(b, off, len));
+                                            }
+                                        });
+
+                        String password =
+                                passwordField.getText().length() > 0
+                                        ? passwordField.getText()
+                                        : null;
+
+                        ProcessingService service =
+                                new ProcessingService(selectedFile.toPath(), password, guiOutput);
+
+                        ProcessingService.ProcessingResult result = service.process();
+                        return result;
                     }
-                });
 
-                String password = passwordField.getText().length() > 0 ?
-                    passwordField.getText() : null;
-
-                ProcessingService service = new ProcessingService(
-                    selectedFile.toPath(),
-                    password,
-                    guiOutput
-                );
-                
-                ProcessingService.ProcessingResult result = service.process();
-                return result;
-            }
-
-            @Override
-            protected void process(List<String> chunks) {
-                for (String chunk : chunks) {
-                    outputArea.append(chunk);
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    ProcessingResult result = get();
-
-                    if (result.issues().getResolvedIssues().isEmpty()) {
-                        outputArea.append("✗ Nothing to save (original unchanged)\n");
-                    } else {
-                        showSaveDialog(result.tempOutputFile().toFile());
+                    @Override
+                    protected void process(List<String> chunks) {
+                        for (String chunk : chunks) {
+                            outputArea.append(chunk);
+                        }
                     }
-                } catch (Exception e) {
-                    outputArea.append("\nError: " + e.getMessage() + "\n");
-                }
-                processButton.setEnabled(true);
-            }
-        };
+
+                    @Override
+                    protected void done() {
+                        try {
+                            ProcessingResult result = get();
+
+                            if (result.issues().getResolvedIssues().isEmpty()) {
+                                outputArea.append("✗ Nothing to save (original unchanged)\n");
+                            } else {
+                                showSaveDialog(result.tempOutputFile().toFile());
+                            }
+                        } catch (Exception e) {
+                            outputArea.append("\nError: " + e.getMessage() + "\n");
+                        }
+                        processButton.setEnabled(true);
+                    }
+                };
 
         worker.execute();
     }
@@ -229,9 +233,13 @@ public class PdfAutoA11yGUI extends JFrame {
             File targetFile = chooser.getSelectedFile();
             // Move temp file to selected location
             if (targetFile.exists()) {
-                int response = JOptionPane.showConfirmDialog(this,
-                    "File exists. Overwrite?", "Confirm Overwrite",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                int response =
+                        JOptionPane.showConfirmDialog(
+                                this,
+                                "File exists. Overwrite?",
+                                "Confirm Overwrite",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.WARNING_MESSAGE);
                 if (response != JOptionPane.YES_OPTION) {
                     // User chose not to overwrite
                     tempFile.delete();
@@ -239,12 +247,14 @@ public class PdfAutoA11yGUI extends JFrame {
                 }
             }
             try {
-                Files.move(tempFile.toPath(), targetFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                JOptionPane.showMessageDialog(this,
-                    "File saved to: " + targetFile.getAbsolutePath());
+                Files.move(
+                        tempFile.toPath(),
+                        targetFile.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                JOptionPane.showMessageDialog(
+                        this, "File saved to: " + targetFile.getAbsolutePath());
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(this,
-                    "Error saving file: " + e.getMessage());
+                JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
             }
         } else {
             // User canceled, delete temp file
@@ -266,13 +276,14 @@ public class PdfAutoA11yGUI extends JFrame {
             // Not on macOS or library not available, ignore
         }
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getLookAndFeel());
-            } catch (Exception e) {
-                // Use default look and feel
-            }
-            new PdfAutoA11yGUI();
-        });
+        SwingUtilities.invokeLater(
+                () -> {
+                    try {
+                        UIManager.setLookAndFeel(UIManager.getLookAndFeel());
+                    } catch (Exception e) {
+                        // Use default look and feel
+                    }
+                    new PdfAutoA11yGUI();
+                });
     }
 }

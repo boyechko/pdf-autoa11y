@@ -23,7 +23,8 @@ public final class Issue {
         this(type, sev, where, message, null);
     }
 
-    public Issue(IssueType type, IssueSeverity sev, IssueLocation where, String message, IssueFix fix) {
+    public Issue(
+            IssueType type, IssueSeverity sev, IssueLocation where, String message, IssueFix fix) {
         this.type = type;
         this.severity = sev;
         this.where = where;
@@ -31,15 +32,45 @@ public final class Issue {
         this.fix = fix;
     }
 
-    public IssueType type() { return type; }
-    public IssueSeverity severity() { return severity; }
-    public IssueLocation where() { return where; }
-    public String message() { return message; }
-    public IssueFix fix() { return fix; }
+    public IssueType type() {
+        return type;
+    }
 
-    public boolean hasFailed() { return failed; }
-    public boolean isResolved() { return resolved; }
-    public String resolutionNote() { return resolutionNote; }
-    public void markResolved(String note) { this.resolved = true; this.resolutionNote = note; }
-    public void markFailed(String note) { this.failed = true; this.resolutionNote = note; }
+    public IssueSeverity severity() {
+        return severity;
+    }
+
+    public IssueLocation where() {
+        return where;
+    }
+
+    public String message() {
+        return message;
+    }
+
+    public IssueFix fix() {
+        return fix;
+    }
+
+    public boolean hasFailed() {
+        return failed;
+    }
+
+    public boolean isResolved() {
+        return resolved;
+    }
+
+    public String resolutionNote() {
+        return resolutionNote;
+    }
+
+    public void markResolved(String note) {
+        this.resolved = true;
+        this.resolutionNote = note;
+    }
+
+    public void markFailed(String note) {
+        this.failed = true;
+        this.resolutionNote = note;
+    }
 }

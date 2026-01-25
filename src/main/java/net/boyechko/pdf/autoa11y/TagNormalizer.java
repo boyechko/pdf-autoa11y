@@ -1,9 +1,9 @@
 package net.boyechko.pdf.autoa11y;
 
 import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,10 +70,30 @@ public class TagNormalizer {
         String comment = "";
 
         switch (mappedRole != null ? mappedRole.getValue() : role.getValue()) {
-            case "Document", "Sect", "Part", "Art", "Div",
-                 "H1", "H2", "H3", "H4", "H5", "H6", "BlockQuote", "P",
-                 "Caption", "Figure", "Formula", "Link", "Note", "Reference", "Span",
-                 "Table", "TR", "TH", "TD" -> {
+            case "Document",
+                    "Sect",
+                    "Part",
+                    "Art",
+                    "Div",
+                    "H1",
+                    "H2",
+                    "H3",
+                    "H4",
+                    "H5",
+                    "H6",
+                    "BlockQuote",
+                    "P",
+                    "Caption",
+                    "Figure",
+                    "Formula",
+                    "Link",
+                    "Note",
+                    "Reference",
+                    "Span",
+                    "Table",
+                    "TR",
+                    "TH",
+                    "TD" -> {
                 // No special handling needed, just print
             }
             case "L" -> {
@@ -101,7 +121,7 @@ public class TagNormalizer {
             }
         }
 
-       // Print the element with any comment
+        // Print the element with any comment
         printElement(elem, level, comment);
 
         // Process children
@@ -136,8 +156,10 @@ public class TagNormalizer {
             output.println(tagOutput);
         } else {
             int currentLength = tagOutput.length();
-            String padding = currentLength < DISPLAY_COLUMN_WIDTH ?
-                " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength) : "  ";
+            String padding =
+                    currentLength < DISPLAY_COLUMN_WIDTH
+                            ? " ".repeat(DISPLAY_COLUMN_WIDTH - currentLength)
+                            : "  ";
             output.println(tagOutput + padding + "; " + comment);
         }
     }
@@ -208,7 +230,7 @@ public class TagNormalizer {
             changeCount += 2;
             printElement(newLI, level + 1, "");
         }
-   }
+    }
 
     private void wrapInLI(PdfStructElem listElem, PdfStructElem kidElem, int level) {
         PdfStructElem newLI = new PdfStructElem(document, PdfName.LI);
@@ -323,7 +345,8 @@ public class TagNormalizer {
         }
     }
 
-    private NormalizationResult handleTwoListItemChildren(PdfStructElem first, PdfStructElem second) {
+    private NormalizationResult handleTwoListItemChildren(
+            PdfStructElem first, PdfStructElem second) {
         PdfName firstRole = first.getRole();
         PdfName secondRole = second.getRole();
 
@@ -342,7 +365,8 @@ public class TagNormalizer {
             return NormalizationResult.change("converted P+P to Lbl+LBody");
         }
 
-        return NormalizationResult.warning("unexpected children: " + firstRole.getValue() + "+" + secondRole.getValue());
+        return NormalizationResult.warning(
+                "unexpected children: " + firstRole.getValue() + "+" + secondRole.getValue());
     }
 
     private String escalateWarning(PdfStructElem elem, String text) {

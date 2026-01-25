@@ -2,28 +2,25 @@ package net.boyechko.pdf.autoa11y;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Utility class for extracting text content associated with MCIDs (Marked Content IDs)
- * from PDF documents. Follows the PDF specification for marked content sequences.
+ * Utility class for extracting text content associated with MCIDs (Marked Content IDs) from PDF
+ * documents. Follows the PDF specification for marked content sequences.
  *
- * This class provides methods to:
- * - Extract text content for specific MCIDs
- * - Get text summaries for structure elements containing MCRs
- * - Handle multiple MCIDs within a single structure element
+ * <p>This class provides methods to: - Extract text content for specific MCIDs - Get text summaries
+ * for structure elements containing MCRs - Handle multiple MCIDs within a single structure element
  */
 public final class McidTextExtractor {
     private static final Logger logger = LoggerFactory.getLogger(McidTextExtractor.class);
@@ -35,8 +32,8 @@ public final class McidTextExtractor {
     /**
      * Extracts actual text content for a specific MCID from a PDF page.
      *
-     * This implementation parses the PDF content stream to find marked content sections
-     * and correlates text operations with their containing marked content IDs.
+     * <p>This implementation parses the PDF content stream to find marked content sections and
+     * correlates text operations with their containing marked content IDs.
      *
      * @param document The PDF document containing the content
      * @param mcid The Marked Content ID to extract text for
@@ -46,8 +43,10 @@ public final class McidTextExtractor {
     public static String extractTextForMcid(PdfDocument document, int mcid, int pageNumber) {
         try {
             if (pageNumber < 1 || pageNumber > document.getNumberOfPages()) {
-                logger.debug("Invalid page number {} for document with {} pages",
-                            pageNumber, document.getNumberOfPages());
+                logger.debug(
+                        "Invalid page number {} for document with {} pages",
+                        pageNumber,
+                        document.getNumberOfPages());
                 return "";
             }
 
@@ -72,15 +71,18 @@ public final class McidTextExtractor {
 
             return cleanedText;
         } catch (Exception e) {
-            logger.debug("Failed to extract text for MCID {} on page {}: {}",
-                        mcid, pageNumber, e.getMessage());
+            logger.debug(
+                    "Failed to extract text for MCID {} on page {}: {}",
+                    mcid,
+                    pageNumber,
+                    e.getMessage());
             return "";
         }
     }
 
     /**
-     * Custom event listener that tracks marked content sections and extracts text
-     * for a specific MCID.
+     * Custom event listener that tracks marked content sections and extracts text for a specific
+     * MCID.
      */
     private static class McidTextExtractionListener implements IEventListener {
         private final int targetMcid;
@@ -120,8 +122,8 @@ public final class McidTextExtractor {
     }
 
     /**
-     * Cleans extracted text by removing replacement characters and normalizing whitespace.
-     * Handles common issues from PDFs with missing or malformed font glyphs.
+     * Cleans extracted text by removing replacement characters and normalizing whitespace. Handles
+     * common issues from PDFs with missing or malformed font glyphs.
      *
      * @param text Raw text extracted from PDF content stream
      * @return Cleaned text with replacement characters removed and whitespace normalized
@@ -131,11 +133,12 @@ public final class McidTextExtractor {
             return "";
         }
 
-        String cleaned = text
-            // Remove Unicode replacement character (U+FFFD)
-            .replace("\uFFFD", "")
-            // Remove common replacement glyph
-            .replace("�", "");
+        String cleaned =
+                text
+                        // Remove Unicode replacement character (U+FFFD)
+                        .replace("\uFFFD", "")
+                        // Remove common replacement glyph
+                        .replace("�", "");
 
         // Check if text has artificial character spacing (more than 30% single-char words)
         if (hasArtificialSpacing(cleaned)) {
@@ -148,8 +151,8 @@ public final class McidTextExtractor {
     }
 
     /**
-     * Detects if text has artificial character-by-character spacing.
-     * This occurs when PDFs position each character individually in the content stream.
+     * Detects if text has artificial character-by-character spacing. This occurs when PDFs position
+     * each character individually in the content stream.
      *
      * @param text Text to analyze
      * @return true if text appears to have artificial spacing between characters
@@ -161,9 +164,7 @@ public final class McidTextExtractor {
         }
 
         // Count single-character "words"
-        long singleCharWords = Arrays.stream(words)
-            .filter(w -> w.length() == 1)
-            .count();
+        long singleCharWords = Arrays.stream(words).filter(w -> w.length() == 1).count();
 
         // If more than 30% are single characters, assume artificial spacing
         double ratio = (double) singleCharWords / words.length;
@@ -171,23 +172,24 @@ public final class McidTextExtractor {
     }
 
     /**
-     * Gets a summary of text content for all MCRs within a structure element.
-     * This is useful for validation output to show what actual content is associated
-     * with structure elements.
+     * Gets a summary of text content for all MCRs within a structure element. This is useful for
+     * validation output to show what actual content is associated with structure elements.
      *
      * @param node The structure element to analyze
      * @param document The PDF document containing the element
      * @param pageNumber The page number where the element appears
      * @return A formatted string describing the MCR content, or empty string if no MCRs
      */
-    public static String getMcrContentSummary(PdfStructElem node, PdfDocument document, int pageNumber) {
+    public static String getMcrContentSummary(
+            PdfStructElem node, PdfDocument document, int pageNumber) {
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return "";
 
-        List<PdfMcrNumber> mcrKids = kids.stream()
-            .filter(k -> k instanceof PdfMcrNumber)
-            .map(k -> (PdfMcrNumber) k)
-            .toList();
+        List<PdfMcrNumber> mcrKids =
+                kids.stream()
+                        .filter(k -> k instanceof PdfMcrNumber)
+                        .map(k -> (PdfMcrNumber) k)
+                        .toList();
 
         if (mcrKids.isEmpty()) return "";
 
@@ -217,15 +219,11 @@ public final class McidTextExtractor {
         }
     }
 
-    /**
-     * Truncates text to a reasonable display length for validation output.
-     */
+    /** Truncates text to a reasonable display length for validation output. */
     private static String truncateText(String text) {
         if (text.length() <= MAX_DISPLAY_LENGTH) {
             return text;
         }
         return text.substring(0, MAX_DISPLAY_LENGTH - 1) + "…";
     }
-
-
 }

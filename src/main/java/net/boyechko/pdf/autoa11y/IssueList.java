@@ -23,20 +23,16 @@ public class IssueList extends ArrayList<Issue> {
 
     // Domain-specific convenience methods
     public IssueList getResolvedIssues() {
-        return stream()
-            .filter(Issue::isResolved)
-            .collect(Collectors.toCollection(IssueList::new));
+        return stream().filter(Issue::isResolved).collect(Collectors.toCollection(IssueList::new));
     }
 
     public IssueList getRemainingIssues() {
         return stream()
-            .filter(issue -> !issue.isResolved())
-            .collect(Collectors.toCollection(IssueList::new));
+                .filter(issue -> !issue.isResolved())
+                .collect(Collectors.toCollection(IssueList::new));
     }
 
     public IssueList getFailedFixes() {
-        return stream()
-            .filter(Issue::hasFailed)
-            .collect(Collectors.toCollection(IssueList::new));
+        return stream().filter(Issue::hasFailed).collect(Collectors.toCollection(IssueList::new));
     }
 }

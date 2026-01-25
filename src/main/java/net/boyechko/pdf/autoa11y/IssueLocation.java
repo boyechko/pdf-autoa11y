@@ -3,9 +3,9 @@ package net.boyechko.pdf.autoa11y;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
 public final class IssueLocation {
-    private final Integer page;        // null if document-level
+    private final Integer page; // null if document-level
     private final PdfStructElem element; // may be null if not applicable
-    private final String path;         // optional: struct tree path, object id, etc.
+    private final String path; // optional: struct tree path, object id, etc.
 
     public IssueLocation() {
         this(null, null, null);
@@ -33,12 +33,22 @@ public final class IssueLocation {
         this.element = element;
     }
 
-    public Integer page() { return page; }
-    public String path() { return path; }
-    public PdfStructElem element() { return element; }
+    public Integer page() {
+        return page;
+    }
+
+    public String path() {
+        return path;
+    }
+
+    public PdfStructElem element() {
+        return element;
+    }
+
     public Integer objectId() {
-        if (element != null && element.getPdfObject() != null &&
-            element.getPdfObject().getIndirectReference() != null) {
+        if (element != null
+                && element.getPdfObject() != null
+                && element.getPdfObject().getIndirectReference() != null) {
             return element.getPdfObject().getIndirectReference().getObjNumber();
         }
         return null;

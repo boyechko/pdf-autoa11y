@@ -1,13 +1,13 @@
 package net.boyechko.pdf.autoa11y;
 
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.PrintStream;
 import java.nio.file.*;
 import java.util.List;
-import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import net.boyechko.pdf.autoa11y.rules.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.boyechko.pdf.autoa11y.rules.*;
 
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
@@ -23,12 +23,14 @@ public class ProcessingService {
     private DocumentContext context;
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
-    private final int DEFAULT_PERMISSIONS = EncryptionConstants.ALLOW_PRINTING
-            | EncryptionConstants.ALLOW_FILL_IN
-            | EncryptionConstants.ALLOW_MODIFY_ANNOTATIONS
-            | EncryptionConstants.ALLOW_SCREENREADERS;
-    private final int DEFAULT_CRYPTO_MODE = EncryptionConstants.ENCRYPTION_AES_256
-            | EncryptionConstants.DO_NOT_ENCRYPT_METADATA;
+
+    private final int DEFAULT_PERMISSIONS =
+            EncryptionConstants.ALLOW_PRINTING
+                    | EncryptionConstants.ALLOW_FILL_IN
+                    | EncryptionConstants.ALLOW_MODIFY_ANNOTATIONS
+                    | EncryptionConstants.ALLOW_SCREENREADERS;
+    private final int DEFAULT_CRYPTO_MODE =
+            EncryptionConstants.ENCRYPTION_AES_256 | EncryptionConstants.DO_NOT_ENCRYPT_METADATA;
 
     public ProcessingService(Path inputPath, String password, PrintStream output) {
         this.inputPath = inputPath;
@@ -38,12 +40,13 @@ public class ProcessingService {
             this.readerProps.setPassword(password.getBytes());
         }
         this.output = output;
-        this.engine = new RuleEngine(List.of(
-            new LanguageSetRule(),
-            new TabOrderRule(),
-            new StructureTreeRule(),
-            new TaggedPdfRule()
-        ));
+        this.engine =
+                new RuleEngine(
+                        List.of(
+                                new LanguageSetRule(),
+                                new TabOrderRule(),
+                                new StructureTreeRule(),
+                                new TaggedPdfRule()));
     }
 
     public record ProcessingResult(IssueList issues, Path tempOutputFile) {}
@@ -81,16 +84,15 @@ public class ProcessingService {
 
     private EncryptionInfo analyzeEncryption() throws Exception {
         try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
-             PdfDocument testDoc = new PdfDocument(testReader)) {
+                PdfDocument testDoc = new PdfDocument(testReader)) {
             logger.debug("PDF Encryption Analysis:");
             logger.debug("  Encrypted: " + testReader.isEncrypted());
             logger.debug("  Permissions: " + testReader.getPermissions());
             logger.debug("  Crypto Mode: " + testReader.getCryptoMode());
             return new EncryptionInfo(
-                testReader.getPermissions(),
-                testReader.getCryptoMode(),
-                testReader.isEncrypted()
-            );
+                    testReader.getPermissions(),
+                    testReader.getCryptoMode(),
+                    testReader.isEncrypted());
         }
     }
 
@@ -100,19 +102,14 @@ public class ProcessingService {
 
         if (encryptionInfo.isEncrypted() && password != null) {
             writerProps.setStandardEncryption(
-                null,
-                password.getBytes(),
-                encryptionInfo.permissions(),
-                encryptionInfo.cryptoMode()
-            );
+                    null,
+                    password.getBytes(),
+                    encryptionInfo.permissions(),
+                    encryptionInfo.cryptoMode());
         } else if (password != null) {
             // Set default encryption if input not encrypted but password provided
             writerProps.setStandardEncryption(
-                null,
-                password.getBytes(),
-                DEFAULT_PERMISSIONS,
-                DEFAULT_CRYPTO_MODE
-            );
+                    null, password.getBytes(), DEFAULT_PERMISSIONS, DEFAULT_CRYPTO_MODE);
         }
 
         writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
@@ -159,7 +156,7 @@ public class ProcessingService {
 
         printSummary(tagIssues, totalAppliedFixes, remainingIssues);
         return totalAppliedFixes;
-   }
+    }
 
     private IssueList detectAndReportTagIssues() throws NoTagsException {
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
@@ -233,7 +230,8 @@ public class ProcessingService {
         }
     }
 
-    private void printSummary(IssueList originalIssues, IssueList appliedFixes, IssueList remainingIssues) {
+    private void printSummary(
+            IssueList originalIssues, IssueList appliedFixes, IssueList remainingIssues) {
         output.println();
         output.println("=== REMEDIATION SUMMARY ===");
 

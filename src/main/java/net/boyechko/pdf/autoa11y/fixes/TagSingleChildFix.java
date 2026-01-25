@@ -1,18 +1,17 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
-import java.util.List;
-import java.util.Optional;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.List;
+import java.util.Optional;
+import net.boyechko.pdf.autoa11y.DocumentContext;
+import net.boyechko.pdf.autoa11y.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.boyechko.pdf.autoa11y.DocumentContext;
-import net.boyechko.pdf.autoa11y.IssueFix;
-
 public abstract sealed class TagSingleChildFix implements IssueFix
-    permits TagSingleChildFix.WrapInLI, TagSingleChildFix.TreatLblFigureAsBullet {
+        permits TagSingleChildFix.WrapInLI, TagSingleChildFix.TreatLblFigureAsBullet {
 
     private static final Logger logger = LoggerFactory.getLogger(TagSingleChildFix.class);
 
@@ -27,7 +26,7 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
         // Try each subclass factory method
         return WrapInLI.tryCreate(kid, parent)
-            .or(() -> TreatLblFigureAsBullet.tryCreate(kid, parent));
+                .or(() -> TreatLblFigureAsBullet.tryCreate(kid, parent));
     }
 
     @Override
@@ -41,10 +40,21 @@ public abstract sealed class TagSingleChildFix implements IssueFix
     }
 
     // Getters for invalidation logic in other fixes
-    public PdfStructElem getKid() { return kid; }
-    public String getKidRole() { return kid.getRole().getValue(); }
-    public PdfStructElem getParent() { return parent; }
-    public String getParentRole() { return parent.getRole().getValue(); }
+    public PdfStructElem getKid() {
+        return kid;
+    }
+
+    public String getKidRole() {
+        return kid.getRole().getValue();
+    }
+
+    public PdfStructElem getParent() {
+        return parent;
+    }
+
+    public String getParentRole() {
+        return parent.getRole().getValue();
+    }
 
     public static final class TreatLblFigureAsBullet extends TagSingleChildFix {
         private TreatLblFigureAsBullet(PdfStructElem kid, PdfStructElem parent) {
@@ -85,16 +95,17 @@ public abstract sealed class TagSingleChildFix implements IssueFix
         @Override
         public String describe() {
             return "Replace Lbl object #"
-                   + parent.getPdfObject().getIndirectReference().getObjNumber()
-                   + " with its Figure object #"
-                   + kid.getPdfObject().getIndirectReference().getObjNumber()
-                   + " as a bullet label";
+                    + parent.getPdfObject().getIndirectReference().getObjNumber()
+                    + " with its Figure object #"
+                    + kid.getPdfObject().getIndirectReference().getObjNumber()
+                    + " as a bullet label";
+        }
         }
     }
 
     public static final class WrapInLI extends TagSingleChildFix {
         private static final List<String> validKidRoles =
-            List.of("Div", "Figure", "LBody", "P", "Span");
+                List.of("Div", "Figure", "LBody", "P", "Span");
         private String wrappedIn = "";
 
         private WrapInLI(PdfStructElem kid, PdfStructElem parent) {
@@ -131,8 +142,13 @@ public abstract sealed class TagSingleChildFix implements IssueFix
 
         @Override
         public String describe() {
-            return "Wrapped " + getKidRole() + " in " + wrappedIn + " under L object #"
-                   + parent.getPdfObject().getIndirectReference().getObjNumber();
+            return "Wrapped "
+                    + getKidRole()
+                    + " in "
+                    + wrappedIn
+                    + " under L object #"
+                    + parent.getPdfObject().getIndirectReference().getObjNumber();
+        }
         }
     }
 }

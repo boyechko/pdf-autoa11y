@@ -1,13 +1,13 @@
 package net.boyechko.pdf.autoa11y;
 
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import com.itextpdf.kernel.pdf.*;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.fixes.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.fixes.TagSingleChildFix;
 import org.slf4j.Logger;
@@ -37,34 +37,28 @@ public final class TagValidator {
     private List<Issue> issues = new ArrayList<>();
     private int globalIndex = 1;
 
-    /**
-     * Encapsulates all data needed during tag tree validation walk.
-     */
+    /** Encapsulates all data needed during tag tree validation walk. */
     private record ValidationContext(
-        PdfStructElem node,
-        String path,
-        String role,
-        TagSchema.Rule rule,
-        String parentRole,
-        List<PdfStructElem> children,
-        List<String> childRoles,
-        int level,
-        int index
-    ) {
-        static ValidationContext create(TagValidator validator, PdfStructElem node, String path, int level, int index) {
+            PdfStructElem node,
+            String path,
+            String role,
+            TagSchema.Rule rule,
+            String parentRole,
+            List<PdfStructElem> children,
+            List<String> childRoles,
+            int level,
+            int index) {
+        static ValidationContext create(
+                TagValidator validator, PdfStructElem node, String path, int level, int index) {
             String role = validator.mappedRole(node);
             TagSchema.Rule rule = validator.schema.roles.get(role);
             PdfStructElem parent = validator.parentOf(node);
             String parentRole = parent != null ? validator.mappedRole(parent) : null;
             List<PdfStructElem> children = validator.structKidsOf(node);
-            List<String> childRoles = children.stream()
-                .map(validator::mappedRole)
-                .toList();
+            List<String> childRoles = children.stream().map(validator::mappedRole).toList();
 
             return new ValidationContext(
-                node, path, role, rule, parentRole,
-                children, childRoles, level, index
-            );
+                    node, path, role, rule, parentRole, children, childRoles, level, index);
         }
     }
 
@@ -116,13 +110,13 @@ public final class TagValidator {
     private void walk(PdfStructElem node, String path, int level) {
         int currentIndex = this.globalIndex++;
 
-        ValidationContext ctx = ValidationContext.create(
-            this,
-            node,
-            path + mappedRole(node) + "[" + currentIndex + "]",
-            level,
-            currentIndex
-        );
+        ValidationContext ctx =
+                ValidationContext.create(
+                        this,
+                        node,
+                        path + mappedRole(node) + "[" + currentIndex + "]",
+                        level,
+                        currentIndex);
 
         List<String> elementIssues = new ArrayList<>();
 
@@ -143,12 +137,12 @@ public final class TagValidator {
     private void validateUnknownRole(ValidationContext ctx, List<String> elementIssues) {
         if (ctx.rule() == null) {
             String message = "unknown role";
-            issues.add(new Issue(
-                IssueType.TAG_UNKNOWN_ROLE,
-                IssueSeverity.ERROR,
-                new IssueLocation(ctx.node(), ctx.path()),
-                message
-            ));
+            issues.add(
+                    new Issue(
+                            IssueType.TAG_UNKNOWN_ROLE,
+                            IssueSeverity.ERROR,
+                            new IssueLocation(ctx.node(), ctx.path()),
+                            message));
             elementIssues.add(message);
         }
     }
@@ -158,14 +152,17 @@ public final class TagValidator {
         if (ctx.parentRole() == null) return;
 
         if (!ctx.rule().getParentMustBe().contains(ctx.parentRole())) {
-            String message = "parent must be " + formatRole(ctx.rule().getParentMustBe()) +
-                           " but is " + formatRole(ctx.parentRole());
-            issues.add(new Issue(
-                IssueType.TAG_WRONG_PARENT,
-                IssueSeverity.ERROR,
-                new IssueLocation(ctx.node(), ctx.path()),
-                message
-            ));
+            String message =
+                    "parent must be "
+                            + formatRole(ctx.rule().getParentMustBe())
+                            + " but is "
+                            + formatRole(ctx.parentRole());
+            issues.add(
+                    new Issue(
+                            IssueType.TAG_WRONG_PARENT,
+                            IssueSeverity.ERROR,
+                            new IssueLocation(ctx.node(), ctx.path()),
+                            message));
             elementIssues.add(message);
         }
     }
@@ -173,27 +170,37 @@ public final class TagValidator {
     private void validateChildCount(ValidationContext ctx, List<String> elementIssues) {
         if (ctx.rule() == null) return;
 
-        if (ctx.rule().getMinChildren() != null && ctx.childRoles().size() < ctx.rule().getMinChildren()) {
-            String message = formatRole(ctx.role()) + " has " + ctx.childRoles().size() +
-                           " kids; min is " + ctx.rule().getMinChildren();
-            issues.add(new Issue(
-                IssueType.TAG_WRONG_CHILD_COUNT,
-                IssueSeverity.ERROR,
-                new IssueLocation(ctx.node(), ctx.path()),
-                message
-            ));
+        if (ctx.rule().getMinChildren() != null
+                && ctx.childRoles().size() < ctx.rule().getMinChildren()) {
+            String message =
+                    formatRole(ctx.role())
+                            + " has "
+                            + ctx.childRoles().size()
+                            + " kids; min is "
+                            + ctx.rule().getMinChildren();
+            issues.add(
+                    new Issue(
+                            IssueType.TAG_WRONG_CHILD_COUNT,
+                            IssueSeverity.ERROR,
+                            new IssueLocation(ctx.node(), ctx.path()),
+                            message));
             elementIssues.add(message);
         }
 
-        if (ctx.rule().getMaxChildren() != null && ctx.childRoles().size() > ctx.rule().getMaxChildren()) {
-            String message = formatRole(ctx.role()) + " has " + ctx.childRoles().size() +
-                           " kids; max is " + ctx.rule().getMaxChildren();
-            issues.add(new Issue(
-                IssueType.TAG_WRONG_CHILD_COUNT,
-                IssueSeverity.ERROR,
-                new IssueLocation(ctx.node(), ctx.path()),
-                message
-            ));
+        if (ctx.rule().getMaxChildren() != null
+                && ctx.childRoles().size() > ctx.rule().getMaxChildren()) {
+            String message =
+                    formatRole(ctx.role())
+                            + " has "
+                            + ctx.childRoles().size()
+                            + " kids; max is "
+                            + ctx.rule().getMaxChildren();
+            issues.add(
+                    new Issue(
+                            IssueType.TAG_WRONG_CHILD_COUNT,
+                            IssueSeverity.ERROR,
+                            new IssueLocation(ctx.node(), ctx.path()),
+                            message));
             elementIssues.add(message);
         }
     }
@@ -209,14 +216,15 @@ public final class TagValidator {
             if (!ctx.rule().getAllowedChildren().contains(childRole)) {
                 IssueFix fix = createChildFix(ctx, i, multiFixCreated, childRole);
 
-                String message = formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
-                issues.add(new Issue(
-                    IssueType.TAG_WRONG_CHILD,
-                    IssueSeverity.ERROR,
-                    new IssueLocation(ctx.children().get(i), ctx.path()),
-                    message,
-                    fix
-                ));
+                String message =
+                        formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
+                issues.add(
+                        new Issue(
+                                IssueType.TAG_WRONG_CHILD,
+                                IssueSeverity.ERROR,
+                                new IssueLocation(ctx.children().get(i), ctx.path()),
+                                message,
+                                fix));
 
                 if (!elementIssues.contains(message)) {
                     elementIssues.add(message);
@@ -234,33 +242,45 @@ public final class TagValidator {
 
         PatternMatcher pm = PatternMatcher.compile(ctx.rule().getChildPattern());
         if (pm != null && !pm.fullMatch(ctx.childRoles())) {
-            String message = "kids " + ctx.childRoles() + " do not match pattern '" +
-                           ctx.rule().getChildPattern() + "'";
-            issues.add(new Issue(
-                IssueType.TAG_WRONG_CHILD_PATTERN,
-                IssueSeverity.ERROR,
-                new IssueLocation(ctx.node(), ctx.path()),
-                message
-            ));
+            String message =
+                    "kids "
+                            + ctx.childRoles()
+                            + " do not match pattern '"
+                            + ctx.rule().getChildPattern()
+                            + "'";
+            issues.add(
+                    new Issue(
+                            IssueType.TAG_WRONG_CHILD_PATTERN,
+                            IssueSeverity.ERROR,
+                            new IssueLocation(ctx.node(), ctx.path()),
+                            message));
             elementIssues.add(message);
         }
     }
 
-    private IssueFix createChildFix(ValidationContext ctx, int childIndex,
-                                   boolean multiFixCreated, String childRole) {
+    private IssueFix createChildFix(
+            ValidationContext ctx, int childIndex, boolean multiFixCreated, String childRole) {
         if (multiFixCreated) {
-            logger.debug("Fix already created for parent {}; no further fix for kid {}",
-                       formatRole(ctx.role()), formatRole(childRole));
+            logger.debug(
+                    "Fix already created for parent {}; no further fix for kid {}",
+                    formatRole(ctx.role()),
+                    formatRole(childRole));
             return null;
         }
 
         return TagMultipleChildrenFix.createIfApplicable(ctx.node(), ctx.children())
-            .or(() -> TagSingleChildFix.createIfApplicable(ctx.children().get(childIndex), ctx.node()))
-            .orElseGet(() -> {
-                logger.debug("No automatic fix available for kid {} under parent {}",
-                           formatRole(childRole), formatRole(ctx.role()));
-                return null;
-            });
+                .or(
+                        () ->
+                                TagSingleChildFix.createIfApplicable(
+                                        ctx.children().get(childIndex), ctx.node()))
+                .orElseGet(
+                        () -> {
+                            logger.debug(
+                                    "No automatic fix available for kid {} under parent {}",
+                                    formatRole(childRole),
+                                    formatRole(ctx.role()));
+                            return null;
+                        });
     }
 
     private void printElement(ValidationContext ctx, List<String> issues) {
@@ -270,11 +290,9 @@ public final class TagValidator {
         }
 
         // Add MCR content summary for elements with marked content
-        String mcrSummary = McidTextExtractor.getMcrContentSummary(
-            ctx.node(), 
-            root.getDocument(),
-            getPageNumber(ctx.node())
-        );
+        String mcrSummary =
+                McidTextExtractor.getMcrContentSummary(
+                        ctx.node(), root.getDocument(), getPageNumber(ctx.node()));
 
         String paddedIndex = String.format("%" + INDEX_WIDTH + "d", ctx.index());
         String elementName = INDENT.repeat(ctx.level()) + "- " + ctx.role();
@@ -324,7 +342,7 @@ public final class TagValidator {
 
     private PdfStructElem parentOf(PdfStructElem n) {
         IStructureNode p = n.getParent();
-        return (p instanceof PdfStructElem) ? (PdfStructElem)p : null;
+        return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
     }
 
     private List<PdfStructElem> structKidsOf(PdfStructElem n) {
@@ -332,7 +350,7 @@ public final class TagValidator {
         if (kids == null) return List.of();
         List<PdfStructElem> out = new ArrayList<>();
         for (IStructureNode k : kids) {
-            if (k instanceof PdfStructElem) out.add((PdfStructElem)k);
+            if (k instanceof PdfStructElem) out.add((PdfStructElem) k);
         }
         return out;
     }

@@ -122,6 +122,6 @@ roles:
 
   TOCI:
     allowed_children: [Lbl, P, Span]
-  
+
   TR:
     allowed_children: [TH, TD]

@@ -1,8 +1,9 @@
 package net.boyechko.pdf.autoa11y;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
 public class TagSchemaTest {
@@ -10,7 +11,9 @@ public class TagSchemaTest {
     public void testMinimalSchema() {
         TagSchema schema = TagSchema.minimal();
         assertTrue(schema != null);
-        assertTrue(schema.getRoles().size() == 4, "Expected 4 roles in minimal schema but got " + schema.getRoles().size());
+        assertTrue(
+                schema.getRoles().size() == 4,
+                "Expected 4 roles in minimal schema but got " + schema.getRoles().size());
     }
 
     @Test
@@ -19,15 +22,18 @@ public class TagSchemaTest {
         assertTrue(resourceStream != null);
         TagSchema schema = TagSchema.fromResource("/tagschema-PDF-UA1.yaml");
         assertTrue(schema != null);
-        assertTrue(schema.getRoles().size() == 39, "Expected 39 roles in minimal schema but got " + schema.getRoles().size());
+        assertTrue(
+                schema.getRoles().size() == 39,
+                "Expected 39 roles in minimal schema but got " + schema.getRoles().size());
     }
 
     @Test
     public void testLoadDefault() {
         TagSchema schema = TagSchema.loadDefault();
         assertTrue(schema != null);
-        assertTrue(schema.getRoles().containsKey("Document"),
-            "Default schema should contain 'Document' role");
+        assertTrue(
+                schema.getRoles().containsKey("Document"),
+                "Default schema should contain 'Document' role");
     }
 
     @Test

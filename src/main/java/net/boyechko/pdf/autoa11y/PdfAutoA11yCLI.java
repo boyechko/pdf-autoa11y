@@ -6,12 +6,7 @@ public class PdfAutoA11yCLI {
 
     // Configuration record to hold parsed CLI arguments
     public record CLIConfig(
-        Path inputPath,
-        Path outputPath,
-        String password,
-        boolean force_save,
-        boolean debug
-    ) {
+            Path inputPath, Path outputPath, String password, boolean force_save, boolean debug) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -45,9 +40,10 @@ public class PdfAutoA11yCLI {
 
     private static CLIConfig parseArguments(String[] args) throws CLIException {
         if (args.length == 0) {
-            throw new CLIException("No input file specified\n" +
-                "Usage: java PdfAutoA11yCLI [-d] [-p password] <inputpath> [<outputpath>]\n" +
-                "Example: java PdfAutoA11yCLI -p somepassword document.pdf output.pdf");
+            throw new CLIException(
+                    "No input file specified\n"
+                            + "Usage: java PdfAutoA11yCLI [-d] [-p password] <inputpath> [<outputpath>]\n"
+                            + "Example: java PdfAutoA11yCLI -p somepassword document.pdf output.pdf");
         }
 
         Path inputPath = null;
@@ -97,7 +93,8 @@ public class PdfAutoA11yCLI {
         // Generate output path
         String filename = inputPath.getFileName().toString();
         if (outputPath == null) {
-            outputPath = Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+            outputPath =
+                    Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
         }
 
         return new CLIConfig(inputPath, outputPath, password, force_save, debug);
@@ -117,11 +114,8 @@ public class PdfAutoA11yCLI {
         System.out.println();
 
         // Process using the service
-        ProcessingService service = new ProcessingService(
-            config.inputPath(),
-            config.password(),
-            System.out
-        );
+        ProcessingService service =
+                new ProcessingService(config.inputPath(), config.password(), System.out);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -136,7 +130,10 @@ public class PdfAutoA11yCLI {
                 Files.createDirectories(outputParent);
             }
 
-            Files.move(result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(
+                    result.tempOutputFile(),
+                    config.outputPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             System.out.println("✓ Output saved to: " + config.outputPath());
         } catch (Exception e) {
