@@ -138,9 +138,9 @@ public class PdfAutoA11yCLI {
 
         formatter.printHeader(config.inputPath().toString());
 
-        // Process using the service
+        CliProcessingListener listener = new CliProcessingListener(System.out, verbosity);
         ProcessingService service =
-                new ProcessingService(config.inputPath(), config.password(), System.out, verbosity);
+                new ProcessingService(config.inputPath(), config.password(), listener, verbosity);
 
         try {
             ProcessingService.ProcessingResult result = service.process();

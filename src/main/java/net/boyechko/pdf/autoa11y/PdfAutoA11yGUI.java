@@ -181,37 +181,25 @@ public class PdfAutoA11yGUI extends JFrame {
         processButton.setEnabled(false);
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
+        PrintStream textAreaStream = createTextAreaPrintStream();
+        OutputFormatter formatter = new OutputFormatter(textAreaStream, VerbosityLevel.VERBOSE);
+
         SwingWorker<ProcessingResult, String> worker =
                 new SwingWorker<ProcessingResult, String>() {
 
                     @Override
                     protected ProcessingResult doInBackground() throws Exception {
-                        // Create custom PrintStream for GUI output
-                        PrintStream guiOutput =
-                                new PrintStream(
-                                        new OutputStream() {
-                                            @Override
-                                            public void write(int b) throws IOException {
-                                                publish(String.valueOf((char) b));
-                                            }
-
-                                            @Override
-                                            public void write(byte[] b, int off, int len)
-                                                    throws IOException {
-                                                publish(new String(b, off, len));
-                                            }
-                                        });
-
                         String password =
                                 passwordField.getText().length() > 0
                                         ? passwordField.getText()
                                         : null;
 
+                        GuiProcessingListener listener = new GuiProcessingListener(formatter);
                         ProcessingService service =
                                 new ProcessingService(
                                         selectedFile.toPath(),
                                         password,
-                                        guiOutput,
+                                        listener,
                                         VerbosityLevel.VERBOSE);
 
                         ProcessingService.ProcessingResult result = service.process();
@@ -219,11 +207,7 @@ public class PdfAutoA11yGUI extends JFrame {
                     }
 
                     @Override
-                    protected void process(List<String> chunks) {
-                        for (String chunk : chunks) {
-                            outputArea.append(chunk);
-                        }
-                    }
+                    protected void process(List<String> chunks) {}
 
                     @Override
                     protected void done() {
@@ -231,18 +215,36 @@ public class PdfAutoA11yGUI extends JFrame {
                             ProcessingResult result = get();
 
                             if (result.totalIssuesResolved() == 0) {
-                                outputArea.append("✗ Nothing to save (original unchanged)\n");
+                                formatter.printNoOutput();
                             } else {
                                 showSaveDialog(result.tempOutputFile().toFile());
                             }
                         } catch (Exception e) {
-                            outputArea.append("\nError: " + e.getMessage() + "\n");
+                            formatter.printError(e.getMessage());
                         }
                         processButton.setEnabled(true);
                     }
                 };
 
         worker.execute();
+    }
+
+    private PrintStream createTextAreaPrintStream() {
+        return new PrintStream(
+                new OutputStream() {
+                    @Override
+                    public void write(int b) {
+                        SwingUtilities.invokeLater(
+                                () -> outputArea.append(String.valueOf((char) b)));
+                    }
+
+                    @Override
+                    public void write(byte[] b, int off, int len) {
+                        String text = new String(b, off, len);
+                        SwingUtilities.invokeLater(() -> outputArea.append(text));
+                    }
+                },
+                true);
     }
 
     private void showSaveDialog(File tempFile) {

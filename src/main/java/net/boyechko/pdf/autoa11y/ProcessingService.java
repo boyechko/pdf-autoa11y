@@ -32,12 +32,10 @@ public class ProcessingService {
     private final Path inputPath;
     private final String password;
     private final ReaderProperties readerProps;
-    private final PrintStream output;
     private final RuleEngine engine;
+    private final ProcessingListener listener;
     private final VerbosityLevel verbosity;
-    private final OutputFormatter formatter;
 
-    // State variables that persist through processing
     private EncryptionInfo encryptionInfo;
     private DocumentContext context;
 
@@ -52,16 +50,18 @@ public class ProcessingService {
             EncryptionConstants.ENCRYPTION_AES_256 | EncryptionConstants.DO_NOT_ENCRYPT_METADATA;
 
     public ProcessingService(
-            Path inputPath, String password, PrintStream output, VerbosityLevel verbosity) {
+            Path inputPath,
+            String password,
+            ProcessingListener listener,
+            VerbosityLevel verbosity) {
         this.inputPath = inputPath;
         this.password = password;
         this.readerProps = new ReaderProperties();
         if (password != null) {
             this.readerProps.setPassword(password.getBytes());
         }
-        this.output = output;
+        this.listener = listener;
         this.verbosity = verbosity;
-        this.formatter = new OutputFormatter(output, verbosity);
         this.engine =
                 new RuleEngine(
                         List.of(
@@ -71,8 +71,8 @@ public class ProcessingService {
                                 new TaggedPdfRule()));
     }
 
-    public ProcessingService(Path inputPath, String password, PrintStream output) {
-        this(inputPath, password, output, VerbosityLevel.NORMAL);
+    public ProcessingService(Path inputPath, String password, ProcessingListener listener) {
+        this(inputPath, password, listener, VerbosityLevel.NORMAL);
     }
 
     public record ProcessingResult(
@@ -180,21 +180,21 @@ public class ProcessingService {
     }
 
     private IssueList analyzeAndRemediate() throws Exception {
-        formatter.printPhase(1, 4, "Validating tag structure");
+        listener.onPhaseStart(1, 4, "Validating tag structure");
         IssueList originalTagIssues = detectAndReportTagIssues();
 
-        formatter.printPhase(2, 4, "Applying automatic fixes");
+        listener.onPhaseStart(2, 4, "Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
 
         IssueList remainingTagIssues;
         if (!appliedTagFixes.isEmpty()) {
-            formatter.printPhase(3, 4, "Re-validating tag structure");
+            listener.onPhaseStart(3, 4, "Re-validating tag structure");
             remainingTagIssues = detectAndReportTagIssues();
         } else {
             remainingTagIssues = originalTagIssues;
         }
 
-        formatter.printPhase(4, 4, "Checking document-level compliance");
+        listener.onPhaseStart(4, 4, "Checking document-level compliance");
         IssueList documentLevelIssues = detectAndReportRuleIssues();
         IssueList appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
 
@@ -206,7 +206,10 @@ public class ProcessingService {
         totalAppliedFixes.addAll(appliedTagFixes);
         totalAppliedFixes.addAll(appliedDocumentFixes);
 
-        printSummary(originalTagIssues, totalAppliedFixes, totalRemainingIssues);
+        int detected = originalTagIssues.size() + documentLevelIssues.size();
+        int remaining = totalRemainingIssues.size();
+        int resolved = detected - remaining;
+        listener.onSummary(detected, resolved, remaining);
 
         this.context.setProcessingResult(
                 new ProcessingResult(
@@ -228,38 +231,41 @@ public class ProcessingService {
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        // Only show tag structure in VERBOSE mode or higher
-        PrintStream tagOutput = verbosity.isAtLeast(VerbosityLevel.VERBOSE) ? output : null;
-        TagValidator validator = new TagValidator(schema, tagOutput);
+        TagValidator validator = new TagValidator(schema, getVerboseOutput());
         List<Issue> tagIssues = validator.validate(root);
 
         IssueList issueList = new IssueList();
         issueList.addAll(tagIssues);
 
         if (tagIssues.isEmpty()) {
-            formatter.printSuccess("No issues found");
+            listener.onSuccess("No issues found");
         } else {
-            formatter.printWarning("Found " + tagIssues.size() + " issue(s)");
+            listener.onWarning("Found " + tagIssues.size() + " issue(s)");
         }
 
         return issueList;
     }
 
+    private PrintStream getVerboseOutput() {
+        return verbosity.isAtLeast(VerbosityLevel.VERBOSE)
+                ? listener instanceof CliProcessingListener
+                        ? ((CliProcessingListener) listener).getOutputStream()
+                        : null
+                : null;
+    }
+
     private IssueList detectAndReportRuleIssues() {
         IssueList allRuleIssues = new IssueList();
 
-        // Run each rule individually for better output control
         for (Rule rule : engine.getRules()) {
             IssueList ruleIssues = rule.findIssues(context);
             allRuleIssues.addAll(ruleIssues);
 
-            if (formatter.shouldShow(VerbosityLevel.NORMAL)) {
-                if (ruleIssues.isEmpty()) {
-                    formatter.printSuccess(rule.name());
-                } else {
-                    for (Issue issue : ruleIssues) {
-                        formatter.printWarning(issue.message());
-                    }
+            if (ruleIssues.isEmpty()) {
+                listener.onSuccess(rule.name());
+            } else {
+                for (Issue issue : ruleIssues) {
+                    listener.onWarning(issue.message());
                 }
             }
         }
@@ -269,29 +275,17 @@ public class ProcessingService {
 
     private IssueList applyFixesAndReport(IssueList issues) {
         if (issues.isEmpty()) {
-            return new IssueList(); // No issues to fix
+            return new IssueList();
         }
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
 
-        // Report successful fixes
-        if (formatter.shouldShow(VerbosityLevel.NORMAL)) {
-            for (Issue issue : appliedFixes) {
-                if (issue.isResolved() && issue.fix() != null) {
-                    formatter.printSuccess(issue.resolutionNote());
-                }
+        for (Issue issue : appliedFixes) {
+            if (issue.isResolved() && issue.fix() != null) {
+                listener.onIssueFixed(issue.resolutionNote());
             }
         }
 
         return appliedFixes;
-    }
-
-    private void printSummary(
-            IssueList originalIssues, IssueList appliedFixes, IssueList remainingIssues) {
-        int detected = originalIssues.size();
-        int remaining = remainingIssues.size();
-        int resolved = detected - remaining;
-
-        formatter.printSummary(detected, resolved, remaining);
     }
 }

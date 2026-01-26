@@ -17,53 +17,35 @@
  */
 package net.boyechko.pdf.autoa11y;
 
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
-
 public class GuiProcessingListener implements ProcessingListener {
-    private final JTextArea outputArea;
+    private final OutputFormatter formatter;
 
-    public GuiProcessingListener(JTextArea outputArea) {
-        this.outputArea = outputArea;
+    public GuiProcessingListener(OutputFormatter formatter) {
+        this.formatter = formatter;
     }
 
     @Override
     public void onPhaseStart(int step, int total, String phaseName) {
-        appendText(String.format("\n[%d/%d] %s...\n", step, total, phaseName));
+        formatter.printPhase(step, total, phaseName);
     }
 
     @Override
     public void onSuccess(String message) {
-        appendText("  ✓ " + message + "\n");
+        formatter.printSuccess(message);
     }
 
     @Override
     public void onWarning(String message) {
-        appendText("\n  ⚠ " + message + "\n");
+        formatter.printWarning(message);
     }
 
     @Override
     public void onIssueFixed(String resolutionNote) {
-        appendText("  ✓ " + resolutionNote + "\n");
+        formatter.printSuccess(resolutionNote);
     }
 
     @Override
     public void onSummary(int detected, int resolved, int remaining) {
-        appendText("\n" + "─".repeat(50) + "\n");
-        appendText("Summary\n");
-        appendText("─".repeat(50) + "\n");
-        if (detected == 0 && resolved == 0) {
-            appendText("✓ Document is already compliant\n");
-        } else {
-            appendText("  Issues detected: " + detected + "\n");
-            appendText("  ✓ Resolved: " + resolved + "\n");
-            if (remaining > 0) {
-                appendText("  ⚠ Manual review needed: " + remaining + "\n");
-            }
-        }
-    }
-
-    private void appendText(String text) {
-        SwingUtilities.invokeLater(() -> outputArea.append(text));
+        formatter.printSummary(detected, resolved, remaining);
     }
 }

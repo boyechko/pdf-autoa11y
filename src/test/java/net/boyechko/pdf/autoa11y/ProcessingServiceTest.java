@@ -57,7 +57,8 @@ public class ProcessingServiceTest {
     @Test
     void encryptedPdfRaisesException() {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
-        ProcessingService service = new ProcessingService(inputPath, null, System.out);
+        ProcessingService service =
+                new ProcessingService(inputPath, null, new NoOpProcessingListener());
 
         try {
             service.process();
@@ -71,7 +72,8 @@ public class ProcessingServiceTest {
     @Test
     void encryptedPdfWithPasswordSucceeds() {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
-        ProcessingService service = new ProcessingService(inputPath, "password", System.out);
+        ProcessingService service =
+                new ProcessingService(inputPath, "password", new NoOpProcessingListener());
 
         try {
             service.process();
@@ -85,7 +87,8 @@ public class ProcessingServiceTest {
     @Test
     void validPdfIsProcessedSuccessfully() {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
-        ProcessingService service = new ProcessingService(inputPath, null, System.out);
+        ProcessingService service =
+                new ProcessingService(inputPath, null, new NoOpProcessingListener());
 
         try {
             service.process();
@@ -97,7 +100,8 @@ public class ProcessingServiceTest {
     @Test
     void untaggedPdfRaisesException() {
         Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
-        ProcessingService service = new ProcessingService(inputPath, null, System.out);
+        ProcessingService service =
+                new ProcessingService(inputPath, null, new NoOpProcessingListener());
 
         try {
             service.process();
@@ -113,7 +117,8 @@ public class ProcessingServiceTest {
         Path testPdf = createPdfWithDocumentIssues();
 
         ProcessingService service =
-                new ProcessingService(testPdf, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -136,7 +141,11 @@ public class ProcessingServiceTest {
         ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
         PrintStream capturedOutput = new PrintStream(outputCapture);
 
-        ProcessingService service = new ProcessingService(testPdf, null, capturedOutput);
+        ProcessingService service =
+                new ProcessingService(
+                        testPdf,
+                        null,
+                        new CliProcessingListener(capturedOutput, VerbosityLevel.NORMAL));
 
         try {
             service.process();
@@ -161,7 +170,8 @@ public class ProcessingServiceTest {
         Path testPdf = createPdfWithMultipleIssues();
 
         ProcessingService service =
-                new ProcessingService(testPdf, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -189,7 +199,8 @@ public class ProcessingServiceTest {
         Path brokenPdf = createPdfWithTagIssues();
 
         ProcessingService service =
-                new ProcessingService(brokenPdf, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        brokenPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -209,7 +220,8 @@ public class ProcessingServiceTest {
         Path testPdf = createPdfWithFixableTagIssues();
 
         ProcessingService service =
-                new ProcessingService(testPdf, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
@@ -233,7 +245,8 @@ public class ProcessingServiceTest {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
 
         ProcessingService service =
-                new ProcessingService(inputPath, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        inputPath, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
         ProcessingService.ProcessingResult result = service.process();
 
         assertNotNull(result.originalTagIssues());
@@ -252,7 +265,8 @@ public class ProcessingServiceTest {
         Path testFile = createPdfWithDocumentIssues();
 
         ProcessingService service =
-                new ProcessingService(testFile, null, System.out, VerbosityLevel.QUIET);
+                new ProcessingService(
+                        testFile, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
             ProcessingService.ProcessingResult result = service.process();
