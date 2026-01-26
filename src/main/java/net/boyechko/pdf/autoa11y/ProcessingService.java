@@ -269,7 +269,6 @@ public class ProcessingService {
 
     private IssueList applyFixesAndReport(IssueList issues) {
         if (issues.isEmpty()) {
-            formatter.printSuccess("No fixes needed");
             return new IssueList(); // No issues to fix
         }
 

@@ -19,7 +19,6 @@ package net.boyechko.pdf.autoa11y;
 
 import java.io.PrintStream;
 
-/** Provides consistent formatting for CLI output with visual hierarchy. */
 public class OutputFormatter {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
@@ -36,80 +35,75 @@ public class OutputFormatter {
         this.verbosity = verbosity;
     }
 
-    public void printHeader(String inputPath) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
+    private void printLine(
+            String message, String icon, Boolean newlineBefore, VerbosityLevel level) {
+        if (verbosity.shouldShow(level)) {
+            if (newlineBefore) output.println();
+            output.println(icon == null ? message : "  " + icon + " " + message);
         }
-        output.println();
+    }
+
+    private void printLine(String message, String icon, Boolean newlineBefore) {
+        printLine(message, icon, newlineBefore, VerbosityLevel.NORMAL);
+    }
+
+    private void printLine(String message, String icon) {
+        printLine(message, icon, false, VerbosityLevel.NORMAL);
+    }
+
+    public void printHeader(String inputPath) {
+        printLine("", null);
     }
 
     public void printPhase(int step, int total, String phaseName) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println();
-        output.printf("[%d/%d] %s...%n", step, total, phaseName);
-        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             output.println();
+            output.printf("[%d/%d] %s...%n", step, total, phaseName);
+            if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+                output.println();
+            }
         }
     }
 
     public void printSeparator() {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println(SECTION_LINE);
+        printLine(SECTION_LINE, null);
     }
 
     public void printSuccess(String message) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println("  " + SUCCESS + " " + message);
+        printLine(message, SUCCESS);
     }
 
     public void printError(String message) {
-        output.println("  " + ERROR + " " + message);
+        printLine(message, ERROR, false, VerbosityLevel.QUIET);
     }
 
     public void printWarning(String message) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println("  " + WARNING + " " + message);
+        printLine(message, WARNING);
     }
 
     public void printInfo(String message) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println("  " + INFO + " " + message);
+        printLine(message, INFO);
     }
 
     public void printDetail(String message) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
-        output.println("    " + message);
+        printLine("    " + message, null);
     }
 
     public void printSummary(int detected, int resolved, int remaining) {
-        if (!verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            return;
-        }
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            output.println();
+            output.println(SECTION_LINE);
+            output.println("Summary");
+            output.println(SECTION_LINE);
 
-        output.println();
-        output.println(SECTION_LINE);
-        output.println("Summary");
-        output.println(SECTION_LINE);
-
-        if (detected == 0 && resolved == 0) {
-            output.println(SUCCESS + " Document is already compliant");
-        } else {
-            output.println("  Issues detected: " + detected);
-            output.println("  " + SUCCESS + " Resolved: " + resolved);
-            if (remaining > 0) {
-                output.println("  " + WARNING + " Manual review needed: " + remaining);
+            if (detected == 0 && resolved == 0) {
+                printLine("No issues to fix", SUCCESS);
+            } else {
+                printLine("Issues detected: " + detected, WARNING);
+                printLine("Resolved: " + resolved, SUCCESS);
+                if (remaining > 0) {
+                    printLine("Manual review needed: " + remaining, WARNING);
+                }
             }
         }
     }
@@ -118,14 +112,12 @@ public class OutputFormatter {
         if (verbosity == VerbosityLevel.QUIET) {
             output.println(outputPath);
         } else if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println(SUCCESS + " Saved to: " + outputPath);
+            printLine("Output saved to " + outputPath, SUCCESS);
         }
     }
 
     public void printNoOutput() {
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println(INFO + " No changes made - output file not created");
-        }
+        printLine("No changes made; output file not created", INFO);
     }
 
     /** Get the underlying PrintStream for direct access when needed */
