@@ -51,7 +51,8 @@ public class CliProcessingListener implements ProcessingListener {
         formatter.printSummary(detected, resolved, remaining);
     }
 
-    public PrintStream getOutputStream() {
-        return formatter.getStream();
+    @Override
+    public void onVerboseOutput(String message) {
+        formatter.getStream().print(message);
     }
 }

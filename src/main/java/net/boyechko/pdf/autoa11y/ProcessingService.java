@@ -19,9 +19,9 @@ package net.boyechko.pdf.autoa11y;
 
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.PrintStream;
 import java.nio.file.*;
 import java.util.List;
+import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.rules.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,12 +246,8 @@ public class ProcessingService {
         return issueList;
     }
 
-    private PrintStream getVerboseOutput() {
-        return verbosity.isAtLeast(VerbosityLevel.VERBOSE)
-                ? listener instanceof CliProcessingListener
-                        ? ((CliProcessingListener) listener).getOutputStream()
-                        : null
-                : null;
+    private Consumer<String> getVerboseOutput() {
+        return verbosity.isAtLeast(VerbosityLevel.VERBOSE) ? listener::onVerboseOutput : null;
     }
 
     private IssueList detectAndReportRuleIssues() {

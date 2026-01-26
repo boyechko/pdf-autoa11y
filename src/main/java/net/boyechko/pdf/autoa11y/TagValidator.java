@@ -21,10 +21,10 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.fixes.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.fixes.TagSingleChildFix;
 import org.slf4j.Logger;
@@ -51,7 +51,7 @@ public final class TagValidator {
                     CONTENT_SUMMARY_WIDTH);
 
     private final TagSchema schema;
-    private final PrintStream output;
+    private final Consumer<String> verboseOutput;
     private PdfStructTreeRoot root;
     private List<Issue> issues = new ArrayList<>();
     private int globalIndex = 1;
@@ -81,14 +81,14 @@ public final class TagValidator {
         }
     }
 
-    TagValidator(TagSchema schema, PrintStream output) {
+    TagValidator(TagSchema schema, Consumer<String> verboseOutput) {
         this.schema = schema;
-        this.output = output;
+        this.verboseOutput = verboseOutput;
     }
 
     TagValidator(TagSchema schema) {
         this.schema = schema;
-        this.output = System.out;
+        this.verboseOutput = null;
     }
 
     public List<Issue> validate(PdfStructTreeRoot root) {
@@ -103,16 +103,19 @@ public final class TagValidator {
     }
 
     private void printHeader() {
-        if (output != null) {
-            output.printf(ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Content", "Issues");
-            output.printf(
-                    ROW_FORMAT,
-                    "-".repeat(INDEX_WIDTH),
-                    "-".repeat(ELEMENT_NAME_WIDTH),
-                    "-".repeat(PAGE_NUM_WIDTH),
-                    "-".repeat(OBJ_NUM_WIDTH),
-                    "-".repeat(CONTENT_SUMMARY_WIDTH),
-                    "-".repeat(ISSUES_WIDTH));
+        if (verboseOutput != null) {
+            verboseOutput.accept(
+                    String.format(
+                            ROW_FORMAT, "Index", "Element", "Page", "Obj#", "Content", "Issues"));
+            verboseOutput.accept(
+                    String.format(
+                            ROW_FORMAT,
+                            "-".repeat(INDEX_WIDTH),
+                            "-".repeat(ELEMENT_NAME_WIDTH),
+                            "-".repeat(PAGE_NUM_WIDTH),
+                            "-".repeat(OBJ_NUM_WIDTH),
+                            "-".repeat(CONTENT_SUMMARY_WIDTH),
+                            "-".repeat(ISSUES_WIDTH)));
         }
     }
 
@@ -304,7 +307,7 @@ public final class TagValidator {
     }
 
     private void printElement(ValidationContext ctx, List<String> issues) {
-        if (output == null) {
+        if (verboseOutput == null) {
             return;
         }
 
@@ -324,14 +327,15 @@ public final class TagValidator {
         String pageString = (pageNum == 0) ? "" : "(p. " + String.valueOf(pageNum) + ")";
         mcrSummary = (mcrSummary == null || mcrSummary.isEmpty()) ? "" : mcrSummary;
         String issuesText = issues.isEmpty() ? "" : "✗ " + String.join("; ", issues);
-        output.printf(
-                ROW_FORMAT,
-                paddedIndex,
-                elementName,
-                pageString,
-                getObjNum(ctx.node()),
-                mcrSummary,
-                issuesText);
+        verboseOutput.accept(
+                String.format(
+                        ROW_FORMAT,
+                        paddedIndex,
+                        elementName,
+                        pageString,
+                        getObjNum(ctx.node()),
+                        mcrSummary,
+                        issuesText));
     }
 
     private int getPageNumber(PdfStructElem node) {
