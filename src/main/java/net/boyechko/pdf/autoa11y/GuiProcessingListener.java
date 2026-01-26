@@ -48,4 +48,9 @@ public class GuiProcessingListener implements ProcessingListener {
     public void onSummary(int detected, int resolved, int remaining) {
         formatter.printSummary(detected, resolved, remaining);
     }
+
+    @Override
+    public void onVerboseOutput(String message) {
+        formatter.getStream().print(message);
+    }
 }

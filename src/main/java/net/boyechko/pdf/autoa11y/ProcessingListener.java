@@ -27,4 +27,6 @@ public interface ProcessingListener {
     void onIssueFixed(String resolutionNote);
 
     void onSummary(int detected, int resolved, int remaining);
+
+    default void onVerboseOutput(String message) {}
 }
