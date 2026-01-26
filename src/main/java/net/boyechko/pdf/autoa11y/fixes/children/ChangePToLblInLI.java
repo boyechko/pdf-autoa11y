@@ -1,0 +1,69 @@
+/*
+ * PDF-Auto-A11y - Automated PDF Accessibility Remediation
+ * Copyright (C) 2025 Richard Boyechko
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package net.boyechko.pdf.autoa11y.fixes.children;
+
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.List;
+import java.util.Optional;
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.IssueFix;
+
+public final class ChangePToLblInLI extends TagMultipleChildrenFix {
+    private ChangePToLblInLI(PdfStructElem parent, List<PdfStructElem> kids) {
+        super(parent, kids);
+    }
+
+    public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
+        String parentRole = parent.getRole().getValue();
+        // There should be exactly two kids, one of which is LBody and the other P
+        if ("LI".equals(parentRole) && kids.size() == 2) {
+            String kid1Role = kids.get(0).getRole().getValue();
+            String kid2Role = kids.get(1).getRole().getValue();
+
+            if (("P".equals(kid1Role) && "LBody".equals(kid2Role))
+                    || ("LBody".equals(kid1Role) && "P".equals(kid2Role))) {
+                return Optional.of(new ChangePToLblInLI(parent, kids));
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void apply(DocumentContext ctx) throws Exception {
+        for (PdfStructElem p : kids) {
+            if ("P".equals(p.getRole().getValue())) {
+                p.setRole(PdfName.Lbl);
+            }
+        }
+    }
+
+    @Override
+    public String describe() {
+        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+        return "Changed P to Lbl in LI object #" + objNum;
+    }
+
+    @Override
+    public String describe(DocumentContext ctx) {
+        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+        int pageNum = ctx.getPageNumber(objNum);
+        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+        return "Changed P to Lbl in LI object #" + objNum + pageInfo;
+    }
+}

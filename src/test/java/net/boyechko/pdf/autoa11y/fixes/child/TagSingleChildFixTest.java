@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.fixes;
+package net.boyechko.pdf.autoa11y.fixes.child;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,8 +54,7 @@ class TagSingleChildFixTest {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
-            IssueFix fix =
-                    TagSingleChildFix.TreatLblFigureAsBullet.tryCreate(figure, lbl).orElseThrow();
+            IssueFix fix = TreatLblFigureAsBullet.tryCreate(figure, lbl).orElseThrow();
             fix.apply(ctx);
 
             List<PdfStructElem> afterKids =
@@ -93,7 +92,7 @@ class TagSingleChildFixTest {
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
             // Create a WrapInLI fix
-            IssueFix fix = TagSingleChildFix.WrapInLI.tryCreate(div, l).orElseThrow();
+            IssueFix fix = WrapInLI.tryCreate(div, l).orElseThrow();
 
             // Test both describe methods
             String basicDescription = fix.describe();
