@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
