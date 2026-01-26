@@ -15,12 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.validation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

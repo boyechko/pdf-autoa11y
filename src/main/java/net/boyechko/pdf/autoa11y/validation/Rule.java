@@ -15,21 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.validation;
 
-public class NoOpProcessingListener implements ProcessingListener {
-    @Override
-    public void onPhaseStart(int step, int total, String phaseName) {}
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 
-    @Override
-    public void onSuccess(String message) {}
+public interface Rule {
+    String name();
 
-    @Override
-    public void onWarning(String message) {}
-
-    @Override
-    public void onIssueFixed(String resolutionNote) {}
-
-    @Override
-    public void onSummary(int detected, int resolved, int remaining) {}
+    IssueList findIssues(DocumentContext ctx);
 }

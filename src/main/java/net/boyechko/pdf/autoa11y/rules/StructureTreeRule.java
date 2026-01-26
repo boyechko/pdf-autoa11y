@@ -18,7 +18,9 @@
 package net.boyechko.pdf.autoa11y.rules;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import net.boyechko.pdf.autoa11y.*;
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.*;
+import net.boyechko.pdf.autoa11y.validation.Rule;
 
 public class StructureTreeRule implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase

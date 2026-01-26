@@ -15,9 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.nio.file.*;
+import net.boyechko.pdf.autoa11y.core.OutputFormatter;
+import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 
 public class PdfAutoA11yCLI {
 

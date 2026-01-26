@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.core;
 
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.*;
 import java.util.List;
 import java.util.function.Consumer;
+import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.rules.*;
+import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.RuleEngine;
+import net.boyechko.pdf.autoa11y.validation.TagSchema;
+import net.boyechko.pdf.autoa11y.validation.TagValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

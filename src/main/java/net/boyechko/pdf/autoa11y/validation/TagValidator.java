@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.validation;
 
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -25,8 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import net.boyechko.pdf.autoa11y.content.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.fixes.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.fixes.TagSingleChildFix;
+import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.issues.IssueLocation;
+import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,12 +87,12 @@ public final class TagValidator {
         }
     }
 
-    TagValidator(TagSchema schema, Consumer<String> verboseOutput) {
+    public TagValidator(TagSchema schema, Consumer<String> verboseOutput) {
         this.schema = schema;
         this.verboseOutput = verboseOutput;
     }
 
-    TagValidator(TagSchema schema) {
+    public TagValidator(TagSchema schema) {
         this.schema = schema;
         this.verboseOutput = null;
     }

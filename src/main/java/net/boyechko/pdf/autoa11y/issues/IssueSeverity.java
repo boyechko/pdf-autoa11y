@@ -15,18 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.issues;
 
-public enum IssueType {
-    LANGUAGE_NOT_SET,
-    NOT_TAGGED_PDF,
-    NO_STRUCT_TREE,
-    TAB_ORDER_NOT_SET,
-
-    // Tag Issues
-    TAG_UNKNOWN_ROLE, // Tag has a role not in the schema
-    TAG_WRONG_PARENT, // Child has wrong parent type
-    TAG_WRONG_CHILD, // Parent contains a child type it shouldn't
-    TAG_WRONG_CHILD_COUNT, // Parent has too many/few children
-    TAG_WRONG_CHILD_PATTERN // Parent's children don't match pattern
+public enum IssueSeverity {
+    INFO,
+    WARNING,
+    ERROR
 }

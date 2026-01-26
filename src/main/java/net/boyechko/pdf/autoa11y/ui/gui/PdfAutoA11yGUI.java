@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.ui.gui;
 
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -25,7 +25,10 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import net.boyechko.pdf.autoa11y.ProcessingService.ProcessingResult;
+import net.boyechko.pdf.autoa11y.core.OutputFormatter;
+import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.core.ProcessingService.ProcessingResult;
+import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 
 public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;

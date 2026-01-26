@@ -15,7 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.issues;
+
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
 
 public interface IssueFix {
     /** Lower numbers run earlier. Keep it simple: 0..100 is plenty. */

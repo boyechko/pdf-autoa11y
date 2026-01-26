@@ -26,8 +26,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.DocumentContext;
-import net.boyechko.pdf.autoa11y.IssueFix;
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.junit.jupiter.api.Test;
 
 class TagSingleChildFixTest {

@@ -15,15 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.ui.gui;
 
-import java.io.PrintStream;
+import net.boyechko.pdf.autoa11y.core.OutputFormatter;
+import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 
-public class CliProcessingListener implements ProcessingListener {
+public class GuiProcessingListener implements ProcessingListener {
     private final OutputFormatter formatter;
 
-    public CliProcessingListener(PrintStream output, VerbosityLevel verbosity) {
-        this.formatter = new OutputFormatter(output, verbosity);
+    public GuiProcessingListener(OutputFormatter formatter) {
+        this.formatter = formatter;
     }
 
     @Override

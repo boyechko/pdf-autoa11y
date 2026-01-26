@@ -22,8 +22,8 @@ import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Optional;
-import net.boyechko.pdf.autoa11y.DocumentContext;
-import net.boyechko.pdf.autoa11y.IssueFix;
+import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

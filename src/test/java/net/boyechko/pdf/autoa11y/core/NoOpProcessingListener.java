@@ -15,10 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y;
+package net.boyechko.pdf.autoa11y.core;
 
-public enum IssueSeverity {
-    INFO,
-    WARNING,
-    ERROR
+public class NoOpProcessingListener implements ProcessingListener {
+    @Override
+    public void onPhaseStart(int step, int total, String phaseName) {}
+
+    @Override
+    public void onSuccess(String message) {}
+
+    @Override
+    public void onWarning(String message) {}
+
+    @Override
+    public void onIssueFixed(String resolutionNote) {}
+
+    @Override
+    public void onSummary(int detected, int resolved, int remaining) {}
 }
