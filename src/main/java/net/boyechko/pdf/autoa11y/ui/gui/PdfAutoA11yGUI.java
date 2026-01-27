@@ -21,8 +21,8 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -49,6 +49,15 @@ public class PdfAutoA11yGUI extends JFrame {
         setTitle("PDF Auto A11y");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        addWindowListener(
+                new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        if (tempResultFile != null && tempResultFile.exists()) {
+                            tempResultFile.delete();
+                        }
+                    }
+                });
 
         // Top panel - file drop area
         JPanel dropPanel = createDropPanel();
@@ -305,7 +314,7 @@ public class PdfAutoA11yGUI extends JFrame {
 
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
-            // Move temp file to selected location
+            // Copy temp file to selected location
             if (targetFile.exists()) {
                 int response =
                         JOptionPane.showConfirmDialog(
@@ -316,28 +325,18 @@ public class PdfAutoA11yGUI extends JFrame {
                                 JOptionPane.WARNING_MESSAGE);
                 if (response != JOptionPane.YES_OPTION) {
                     // User chose not to overwrite
-                    tempResultFile.delete();
                     return;
                 }
             }
             try {
-                Files.move(
+                Files.copy(
                         tempResultFile.toPath(),
                         targetFile.toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                tempResultFile = null;
-                saveButton.setEnabled(false);
                 JOptionPane.showMessageDialog(
                         this, "File saved to: " + targetFile.getAbsolutePath());
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
-            }
-        } else {
-            // User canceled, delete temp file
-            if (tempResultFile != null && tempResultFile.exists()) {
-                tempResultFile.delete();
-                tempResultFile = null;
-                saveButton.setEnabled(false);
             }
         }
     }
@@ -362,7 +361,8 @@ public class PdfAutoA11yGUI extends JFrame {
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
             try {
-                Files.writeString(targetFile.toPath(), outputArea.getText(), StandardCharsets.UTF_8);
+                Files.writeString(
+                        targetFile.toPath(), outputArea.getText(), StandardCharsets.UTF_8);
                 JOptionPane.showMessageDialog(
                         this, "Report saved to: " + targetFile.getAbsolutePath());
             } catch (IOException e) {
