@@ -21,6 +21,7 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
@@ -34,8 +35,11 @@ public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
     private JTextArea outputArea;
     private JButton processButton;
+    private JButton saveButton;
+    private JButton saveReportButton;
     private JTextField passwordField;
     private File selectedFile;
+    private File tempResultFile;
 
     public PdfAutoA11yGUI() {
         initializeGUI();
@@ -45,6 +49,15 @@ public class PdfAutoA11yGUI extends JFrame {
         setTitle("PDF Auto A11y");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        addWindowListener(
+                new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        if (tempResultFile != null && tempResultFile.exists()) {
+                            tempResultFile.delete();
+                        }
+                    }
+                });
 
         // Top panel - file drop area
         JPanel dropPanel = createDropPanel();
@@ -53,6 +66,10 @@ public class PdfAutoA11yGUI extends JFrame {
         // Center panel - output text (gets stretched)
         JPanel outputPanel = createOutputPanel();
         add(outputPanel, BorderLayout.CENTER);
+
+        // Bottom panel - results/actions
+        JPanel resultsPanel = createResultsPanel();
+        add(resultsPanel, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null); // Center on screen
@@ -126,6 +143,31 @@ public class PdfAutoA11yGUI extends JFrame {
         return panel;
     }
 
+    private JPanel createResultsPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBorder(new TitledBorder("3. Results"));
+
+        saveButton = new JButton("Save Result");
+        saveButton.setEnabled(false);
+        saveButton.addActionListener(
+                e -> {
+                    if (tempResultFile != null && tempResultFile.exists()) {
+                        showSaveDialog();
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                PdfAutoA11yGUI.this, "No processed file available to save.");
+                    }
+                });
+
+        saveReportButton = new JButton("Save Report");
+        saveReportButton.setEnabled(false);
+        saveReportButton.addActionListener(e -> saveReport());
+
+        panel.add(saveButton);
+        panel.add(saveReportButton);
+        return panel;
+    }
+
     private class FileDropHandler extends DropTargetAdapter {
         @Override
         public void drop(DropTargetDropEvent dtde) {
@@ -177,6 +219,9 @@ public class PdfAutoA11yGUI extends JFrame {
         if (selectedFile == null) return;
 
         processButton.setEnabled(false);
+        saveButton.setEnabled(false);
+        saveReportButton.setEnabled(false);
+        tempResultFile = null;
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
         PrintStream textAreaStream = createTextAreaPrintStream();
@@ -214,9 +259,14 @@ public class PdfAutoA11yGUI extends JFrame {
 
                             if (result.totalIssuesResolved() == 0) {
                                 formatter.printNoOutput();
+                                tempResultFile = null;
+                                saveButton.setEnabled(false);
                             } else {
-                                showSaveDialog(result.tempOutputFile().toFile());
+                                tempResultFile = result.tempOutputFile().toFile();
+                                saveButton.setEnabled(true);
                             }
+                            // Report is always available after processing
+                            saveReportButton.setEnabled(true);
                         } catch (Exception e) {
                             formatter.printError(e.getMessage());
                         }
@@ -245,7 +295,11 @@ public class PdfAutoA11yGUI extends JFrame {
                 true);
     }
 
-    private void showSaveDialog(File tempFile) {
+    private void showSaveDialog() {
+        if (tempResultFile == null || !tempResultFile.exists()) {
+            JOptionPane.showMessageDialog(this, "No processed file available to save.");
+            return;
+        }
         JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(selectedFile.getParentFile());
 
@@ -260,7 +314,7 @@ public class PdfAutoA11yGUI extends JFrame {
 
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
-            // Move temp file to selected location
+            // Copy temp file to selected location
             if (targetFile.exists()) {
                 int response =
                         JOptionPane.showConfirmDialog(
@@ -271,13 +325,12 @@ public class PdfAutoA11yGUI extends JFrame {
                                 JOptionPane.WARNING_MESSAGE);
                 if (response != JOptionPane.YES_OPTION) {
                     // User chose not to overwrite
-                    tempFile.delete();
                     return;
                 }
             }
             try {
-                Files.move(
-                        tempFile.toPath(),
+                Files.copy(
+                        tempResultFile.toPath(),
                         targetFile.toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 JOptionPane.showMessageDialog(
@@ -285,10 +338,35 @@ public class PdfAutoA11yGUI extends JFrame {
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
             }
-        } else {
-            // User canceled, delete temp file
-            if (tempFile != null && tempFile.exists()) {
-                tempFile.delete();
+        }
+    }
+
+    private void saveReport() {
+        if (selectedFile == null) {
+            JOptionPane.showMessageDialog(this, "No input file selected to derive report name.");
+            return;
+        }
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(selectedFile.getParentFile());
+
+        String filename = selectedFile.getName();
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            filename = filename.substring(0, dotIndex);
+        }
+        String reportName = filename.replaceFirst("(_auto)?_a11y?$", "") + "_autoa11y.txt";
+        chooser.setSelectedFile(new File(reportName));
+
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File targetFile = chooser.getSelectedFile();
+            try {
+                Files.writeString(
+                        targetFile.toPath(), outputArea.getText(), StandardCharsets.UTF_8);
+                JOptionPane.showMessageDialog(
+                        this, "Report saved to: " + targetFile.getAbsolutePath());
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error saving report: " + e.getMessage());
             }
         }
     }
