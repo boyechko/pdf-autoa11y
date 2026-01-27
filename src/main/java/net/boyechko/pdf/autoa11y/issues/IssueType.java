@@ -28,5 +28,10 @@ public enum IssueType {
     TAG_WRONG_PARENT, // Child has wrong parent type
     TAG_WRONG_CHILD, // Parent contains a child type it shouldn't
     TAG_WRONG_CHILD_COUNT, // Parent has too many/few children
-    TAG_WRONG_CHILD_PATTERN // Parent's children don't match pattern
+    TAG_WRONG_CHILD_PATTERN, // Parent's children don't match pattern
+
+    // Structure Issues
+    MISSING_DOCUMENT_WRAPPER, // Root has no Document child
+    FIGURE_WITH_TEXT, // Figure element contains text instead of image
+    NEEDLESS_NESTING // Part/Sect adds no semantic value
 }

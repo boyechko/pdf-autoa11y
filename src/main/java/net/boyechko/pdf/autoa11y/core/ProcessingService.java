@@ -75,7 +75,10 @@ public class ProcessingService {
                                 new LanguageSetRule(),
                                 new TabOrderRule(),
                                 new StructureTreeRule(),
-                                new TaggedPdfRule()));
+                                new TaggedPdfRule(),
+                                new MissingDocumentRule(),
+                                new NeedlessNestingRule(),
+                                new FigureWithTextRule()));
     }
 
     public ProcessingService(Path inputPath, String password, ProcessingListener listener) {
