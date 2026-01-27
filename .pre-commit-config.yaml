@@ -1,0 +1,28 @@
+# Pre-commit hooks for PDF-Auto-A11y
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: spotless-apply
+        name: Format code with spotless
+        entry: mvn spotless:apply
+        language: system
+        pass_filenames: false
+        files: \.java$
+
+      - id: maven-test
+        name: Run Maven tests
+        entry: mvn test
+        language: system
+        pass_filenames: false
+        files: \.(java|xml|yaml)$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
