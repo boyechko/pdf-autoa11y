@@ -54,10 +54,6 @@ public class PdfAutoA11yGUI extends JFrame {
         JPanel outputPanel = createOutputPanel();
         add(outputPanel, BorderLayout.CENTER);
 
-        // Bottom panel - controls
-        JPanel controlPanel = createControlPanel();
-        add(controlPanel, BorderLayout.SOUTH);
-
         pack();
         setLocationRelativeTo(null); // Center on screen
         setVisible(true);
@@ -78,7 +74,7 @@ public class PdfAutoA11yGUI extends JFrame {
         dropLabel.setBackground(Color.LIGHT_GRAY);
         dropLabel.setMinimumSize(new Dimension(300, 100));
         dropLabel.setPreferredSize(new Dimension(300, 100));
-        dropLabel.setMaximumSize(new Dimension(300, 300));
+        dropLabel.setMaximumSize(new Dimension(300, 100));
 
         // Enable drag and drop
         new DropTarget(dropLabel, new FileDropHandler());
@@ -99,35 +95,33 @@ public class PdfAutoA11yGUI extends JFrame {
         passwordPanel.add(new JLabel("Password (if needed):"));
         passwordField = new JTextField(15);
         passwordPanel.add(passwordField);
+
+        // Process button
+        panel.add(Box.createVerticalStrut(10));
+        processButton = new JButton("Process PDF");
+        processButton.setEnabled(false);
+        processButton.addActionListener(e -> processPDF());
+        passwordPanel.add(processButton);
         panel.add(passwordPanel, BorderLayout.SOUTH);
+
+        // Move focus to drop panel
+        panel.setFocusable(true);
+        panel.requestFocusInWindow();
 
         return panel;
     }
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setPreferredSize(new Dimension(800, 400));
+        panel.setPreferredSize(new Dimension(1000, 400));
         panel.setBorder(new TitledBorder("2. Processing Output"));
 
-        outputArea = new JTextArea(20, 60);
+        outputArea = new JTextArea(20, 80);
         outputArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         outputArea.setEditable(false);
 
         JScrollPane scrollPane = new JScrollPane(outputArea);
         panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel createControlPanel() {
-        JPanel panel = new JPanel(new FlowLayout());
-        panel.setMinimumSize(new Dimension(100, 60));
-
-        processButton = new JButton("Process PDF");
-        processButton.setEnabled(false);
-        processButton.addActionListener(e -> processPDF());
-
-        panel.add(processButton);
 
         return panel;
     }
@@ -163,6 +157,7 @@ public class PdfAutoA11yGUI extends JFrame {
 
     private void browseForFile() {
         JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(new File("."));
         chooser.setFileFilter(
                 new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
 
@@ -253,7 +248,15 @@ public class PdfAutoA11yGUI extends JFrame {
     private void showSaveDialog(File tempFile) {
         JFileChooser chooser = new JFileChooser();
         chooser.setCurrentDirectory(selectedFile.getParentFile());
-        chooser.setSelectedFile(new File(selectedFile.getName()));
+
+        // Generate output path
+        String filename = selectedFile.getName();
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            filename = filename.substring(0, dotIndex);
+        }
+        String newname = filename.replaceFirst("(_auto)?_a11y?$", "") + "_autoa11y.pdf";
+        chooser.setSelectedFile(new File(newname));
 
         if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File targetFile = chooser.getSelectedFile();
