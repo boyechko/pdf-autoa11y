@@ -143,6 +143,18 @@ public class ProcessingService {
         }
     }
 
+    public IssueList reportTagStructure() throws Exception {
+        validateInputFile();
+        try (PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
+                PdfDocument pdfDoc = new PdfDocument(pdfReader)) {
+            this.context = new DocumentContext(pdfDoc);
+            listener.onPhaseStart(1, 1, "Validating tag structure");
+            IssueList issues = detectAndReportTagIssues();
+            listener.onSummary(issues.size(), 0, issues.size());
+            return issues;
+        }
+    }
+
     private void validateInputFile() throws Exception {
         if (!Files.exists(inputPath)) {
             throw new IllegalArgumentException("File not found: " + inputPath);

@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.ui.cli.CliProcessingListener;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -96,6 +97,16 @@ public class ProcessingServiceTest {
         } catch (Exception e) {
             assertTrue(false, "Did not expect exception for valid PDF");
         }
+    }
+
+    @Test
+    void reportOnlyValidatesTagsWithoutModification() throws Exception {
+        Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
+        ProcessingService service =
+                new ProcessingService(inputPath, null, new NoOpProcessingListener());
+
+        IssueList issues = service.reportTagStructure();
+        assertNotNull(issues, "Report-only mode should return issues list");
     }
 
     @Test
