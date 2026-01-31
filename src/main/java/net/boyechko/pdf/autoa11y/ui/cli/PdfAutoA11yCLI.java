@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.ui.cli;
 
+import java.io.PrintStream;
 import java.nio.file.*;
 import net.boyechko.pdf.autoa11y.core.OutputFormatter;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -30,12 +31,13 @@ public class PdfAutoA11yCLI {
             Path outputPath,
             String password,
             boolean force_save,
+            boolean reportOnly,
             VerbosityLevel verbosity) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (outputPath == null) {
+            if (!reportOnly && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -53,6 +55,10 @@ public class PdfAutoA11yCLI {
 
     public static void main(String[] args) {
         try {
+            if (isHelpRequested(args)) {
+                System.out.println(usageMessage());
+                return;
+            }
             CLIConfig config = parseArguments(args);
             configureLogging(config.verbosity());
             processFile(config);
@@ -67,21 +73,14 @@ public class PdfAutoA11yCLI {
 
     private static CLIConfig parseArguments(String[] args) throws CLIException {
         if (args.length == 0) {
-            throw new CLIException(
-                    "No input file specified\n"
-                            + "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] <inputpath> [<outputpath>]\n"
-                            + "  -q, --quiet    Only show errors and final status\n"
-                            + "  -v, --verbose  Show detailed tag structure\n"
-                            + "  -vv, --debug   Show all debug information\n"
-                            + "  -f, --force    Force save even if no fixes applied\n"
-                            + "  -p, --password Password for encrypted PDFs\n"
-                            + "Example: java PdfAutoA11yCLI -v document.pdf output.pdf");
+            throw new CLIException("No input file specified\n" + usageMessage());
         }
 
         Path inputPath = null;
         Path outputPath = null;
         String password = null;
         boolean force_save = false;
+        boolean reportOnly = false;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
 
         for (int i = 0; i < args.length; i++) {
@@ -97,6 +96,7 @@ public class PdfAutoA11yCLI {
                 case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
                 case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
                 case "-f", "--force" -> force_save = true;
+                case "-r", "--report" -> reportOnly = true;
                 default -> {
                     if (inputPath == null) {
                         inputPath = Paths.get(args[i]);
@@ -118,13 +118,17 @@ public class PdfAutoA11yCLI {
         }
 
         // Generate output path
-        String filename = inputPath.getFileName().toString();
-        if (outputPath == null) {
-            outputPath =
-                    Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+        if (!reportOnly) {
+            String filename = inputPath.getFileName().toString();
+            if (outputPath == null) {
+                outputPath =
+                        Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+            }
+        } else if (verbosity == VerbosityLevel.NORMAL) {
+            verbosity = VerbosityLevel.VERBOSE;
         }
 
-        return new CLIConfig(inputPath, outputPath, password, force_save, verbosity);
+        return new CLIConfig(inputPath, outputPath, password, force_save, reportOnly, verbosity);
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -136,16 +140,33 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
-        VerbosityLevel verbosity = config.verbosity();
-        OutputFormatter formatter = new OutputFormatter(System.out, verbosity);
-
-        formatter.printHeader(config.inputPath().toString());
-
-        CliProcessingListener listener = new CliProcessingListener(System.out, verbosity);
-        ProcessingService service =
-                new ProcessingService(config.inputPath(), config.password(), listener, verbosity);
+        PrintStream output = System.out;
+        boolean closeOutput = false;
 
         try {
+            if (config.reportOnly() && config.outputPath() != null) {
+                Path outputParent = config.outputPath().getParent();
+                if (outputParent != null) {
+                    Files.createDirectories(outputParent);
+                }
+                output = new PrintStream(Files.newOutputStream(config.outputPath()));
+                closeOutput = true;
+            }
+
+            VerbosityLevel verbosity = config.verbosity();
+            OutputFormatter formatter = new OutputFormatter(output, verbosity);
+
+            formatter.printHeader(config.inputPath().toString());
+
+            CliProcessingListener listener = new CliProcessingListener(output, verbosity);
+            ProcessingService service =
+                    new ProcessingService(
+                            config.inputPath(), config.password(), listener, verbosity);
+
+            if (config.reportOnly()) {
+                service.analyzeOnly();
+                return;
+            }
             ProcessingService.ProcessingResult result = service.process();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
@@ -165,16 +186,41 @@ public class PdfAutoA11yCLI {
 
             formatter.printCompletion(config.outputPath().toString());
         } catch (Exception e) {
-            if (isDevelopment() || verbosity.isAtLeast(VerbosityLevel.DEBUG)) {
+            if (isDevelopment() || config.verbosity().isAtLeast(VerbosityLevel.DEBUG)) {
                 System.err.println("✗ Processing failed:");
                 e.printStackTrace();
             } else {
-                formatter.printError("Processing failed: " + e.getMessage());
+                System.err.println("Processing failed: " + e.getMessage());
+            }
+        } finally {
+            if (closeOutput) {
+                output.close();
             }
         }
     }
 
     private static boolean isDevelopment() {
         return "true".equals(System.getProperty("debug"));
+    }
+
+    private static boolean isHelpRequested(String[] args) {
+        for (String arg : args) {
+            if ("-h".equals(arg) || "--help".equals(arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String usageMessage() {
+        return "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] [-r] <inputpath> [<outputpath>]\n"
+                + "  -h, --help     Show this help message\n"
+                + "  -q, --quiet    Only show errors and final status\n"
+                + "  -v, --verbose  Show detailed tag structure\n"
+                + "  -vv, --debug   Show all debug information\n"
+                + "  -f, --force    Force save even if no fixes applied\n"
+                + "  -p, --password Password for encrypted PDFs\n"
+                + "  -r, --report   Validate tag structure only (report defaults to verbose)\n"
+                + "Example: java PdfAutoA11yCLI -v document.pdf output.pdf";
     }
 }
