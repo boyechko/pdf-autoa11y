@@ -105,7 +105,7 @@ public class ProcessingServiceTest {
         ProcessingService service =
                 new ProcessingService(inputPath, null, new NoOpProcessingListener());
 
-        IssueList issues = service.reportTagStructure();
+        IssueList issues = service.analyzeOnly();
         assertNotNull(issues, "Report-only mode should return issues list");
     }
 

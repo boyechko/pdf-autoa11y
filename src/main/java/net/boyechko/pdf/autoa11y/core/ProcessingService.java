@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.rules.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.RuleEngine;
@@ -143,15 +144,33 @@ public class ProcessingService {
         }
     }
 
-    public IssueList reportTagStructure() throws Exception {
+    public IssueList analyzeOnly() throws Exception {
         validateInputFile();
         try (PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
                 PdfDocument pdfDoc = new PdfDocument(pdfReader)) {
             this.context = new DocumentContext(pdfDoc);
-            listener.onPhaseStart(1, 1, "Validating tag structure");
-            IssueList issues = detectAndReportTagIssues();
-            listener.onSummary(issues.size(), 0, issues.size());
-            return issues;
+
+            listener.onPhaseStart(1, 2, "Checking document-level compliance");
+            IssueList documentIssues = detectAndReportRuleIssues();
+
+            IssueList tagIssues = null;
+            boolean hasNoStructTree =
+                    documentIssues.stream()
+                            .anyMatch(issue -> issue.type() == IssueType.NO_STRUCT_TREE);
+            if (hasNoStructTree) {
+                listener.onPhaseStart(2, 2, "No tag structure to validate");
+                tagIssues = new IssueList();
+            } else {
+                listener.onPhaseStart(2, 2, "Validating tag structure");
+                tagIssues = detectAndReportTagIssues();
+            }
+
+            IssueList allIssues = new IssueList();
+            allIssues.addAll(documentIssues);
+            allIssues.addAll(tagIssues);
+
+            listener.onSummary(allIssues.size(), 0, allIssues.size());
+            return allIssues;
         }
     }
 

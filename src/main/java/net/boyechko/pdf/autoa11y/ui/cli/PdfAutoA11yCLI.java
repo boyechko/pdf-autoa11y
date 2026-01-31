@@ -164,7 +164,7 @@ public class PdfAutoA11yCLI {
                             config.inputPath(), config.password(), listener, verbosity);
 
             if (config.reportOnly()) {
-                service.reportTagStructure();
+                service.analyzeOnly();
                 return;
             }
             ProcessingService.ProcessingResult result = service.process();
