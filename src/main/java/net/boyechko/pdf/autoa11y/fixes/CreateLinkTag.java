@@ -17,15 +17,21 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import net.boyechko.pdf.autoa11y.content.McidBoundsExtractor;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -83,9 +89,14 @@ public class CreateLinkTag implements IssueFix {
             return;
         }
 
-        // Create Link structure element under the Part with /Pg set (needed for OBJR validity)
+        PdfStructElem parentElem = findBestParentForAnnotation(partElem, page, annotation);
+        if (parentElem == null) {
+            parentElem = partElem;
+        }
+
+        // Create Link structure element under the chosen parent with /Pg set
         PdfStructElem linkElem = new PdfStructElem(ctx.doc(), PdfName.Link, page);
-        partElem.addKid(linkElem);
+        parentElem.addKid(linkElem);
 
         // Create OBJR to connect the annotation to the Link structure element
         int structParentIndex = ctx.doc().getNextStructParentIndex();
@@ -136,6 +147,189 @@ public class CreateLinkTag implements IssueFix {
             }
         }
         return null;
+    }
+
+    private PdfStructElem findBestParentForAnnotation(
+            PdfStructElem partElem, PdfPage page, PdfAnnotation annotation) {
+        Rectangle annotBounds = getAnnotationBounds(annotation);
+        if (annotBounds == null) {
+            return null;
+        }
+        double annotArea = area(annotBounds);
+        if (annotArea <= 0) {
+            return null;
+        }
+
+        Map<Integer, Rectangle> mcidBounds = McidBoundsExtractor.extractBoundsForPage(page);
+        if (mcidBounds.isEmpty()) {
+            return null;
+        }
+
+        Map<PdfStructElem, Rectangle> elemBounds = new HashMap<>();
+        collectBounds(partElem, mcidBounds, elemBounds);
+        if (elemBounds.isEmpty()) {
+            return null;
+        }
+
+        PdfStructElem bestElem = null;
+        double bestScore = 0.0;
+        double bestArea = Double.MAX_VALUE;
+
+        for (Map.Entry<PdfStructElem, Rectangle> entry : elemBounds.entrySet()) {
+            PdfStructElem elem = entry.getKey();
+            if (elem == partElem) {
+                continue;
+            }
+            PdfName role = elem.getRole();
+            if (role != null) {
+                String roleValue = role.getValue();
+                if ("Link".equals(roleValue) || "Reference".equals(roleValue)) {
+                    continue;
+                }
+            }
+
+            Rectangle elemRect = entry.getValue();
+            Rectangle intersection = elemRect.getIntersection(annotBounds);
+            if (intersection == null) {
+                continue;
+            }
+            double intersectionArea = area(intersection);
+            if (intersectionArea <= 0) {
+                continue;
+            }
+
+            double score = intersectionArea / annotArea;
+            double elemArea = area(elemRect);
+            if (score > bestScore + 1e-6
+                    || (Math.abs(score - bestScore) < 1e-6 && elemArea < bestArea)) {
+                bestScore = score;
+                bestArea = elemArea;
+                bestElem = elem;
+            }
+        }
+
+        if (bestElem == null || bestScore < 0.1) {
+            return null;
+        }
+
+        return bestElem;
+    }
+
+    private Rectangle collectBounds(
+            PdfStructElem elem,
+            Map<Integer, Rectangle> mcidBounds,
+            Map<PdfStructElem, Rectangle> elemBounds) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) {
+            return null;
+        }
+
+        Rectangle bounds = null;
+        for (IStructureNode kid : kids) {
+            if (kid == null) {
+                continue;
+            }
+            if (kid instanceof PdfMcr mcr) {
+                int mcid = mcr.getMcid();
+                if (mcid >= 0) {
+                    Rectangle mcrRect = mcidBounds.get(mcid);
+                    if (mcrRect != null) {
+                        bounds = union(bounds, mcrRect);
+                    }
+                }
+            } else if (kid instanceof PdfStructElem childElem) {
+                Rectangle childBounds = collectBounds(childElem, mcidBounds, elemBounds);
+                if (childBounds != null) {
+                    bounds = union(bounds, childBounds);
+                }
+            }
+        }
+
+        if (bounds != null) {
+            elemBounds.put(elem, bounds);
+        }
+
+        return bounds;
+    }
+
+    private Rectangle getAnnotationBounds(PdfAnnotation annotation) {
+        PdfDictionary dict = annotation.getPdfObject();
+        Rectangle quadBounds = getQuadPointsBounds(dict);
+        if (quadBounds != null) {
+            return quadBounds;
+        }
+        return getRectBounds(dict);
+    }
+
+    private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
+        PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
+        if (quadPoints == null || quadPoints.size() < 8) {
+            return null;
+        }
+
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE;
+        float maxY = -Float.MAX_VALUE;
+
+        for (int i = 0; i + 1 < quadPoints.size(); i += 2) {
+            if (quadPoints.getAsNumber(i) == null || quadPoints.getAsNumber(i + 1) == null) {
+                continue;
+            }
+            float x = quadPoints.getAsNumber(i).floatValue();
+            float y = quadPoints.getAsNumber(i + 1).floatValue();
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+
+        if (minX == Float.MAX_VALUE || minY == Float.MAX_VALUE) {
+            return null;
+        }
+
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    private Rectangle getRectBounds(PdfDictionary annotDict) {
+        PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
+        if (rectArray == null || rectArray.size() < 4) {
+            return null;
+        }
+        if (rectArray.getAsNumber(0) == null
+                || rectArray.getAsNumber(1) == null
+                || rectArray.getAsNumber(2) == null
+                || rectArray.getAsNumber(3) == null) {
+            return null;
+        }
+        float llx = rectArray.getAsNumber(0).floatValue();
+        float lly = rectArray.getAsNumber(1).floatValue();
+        float urx = rectArray.getAsNumber(2).floatValue();
+        float ury = rectArray.getAsNumber(3).floatValue();
+        float minX = Math.min(llx, urx);
+        float minY = Math.min(lly, ury);
+        float maxX = Math.max(llx, urx);
+        float maxY = Math.max(lly, ury);
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    private Rectangle union(Rectangle a, Rectangle b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        return Rectangle.getCommonRectangle(a, b);
+    }
+
+    private double area(Rectangle rect) {
+        if (rect == null) {
+            return 0;
+        }
+        double width = Math.max(0.0, rect.getWidth());
+        double height = Math.max(0.0, rect.getHeight());
+        return width * height;
     }
 
     @Override
