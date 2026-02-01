@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Creates a Link structure element for a Link annotation and associates them via an OBJR. The Link
- * element is added under the Part element for the page (created by SetupDocumentStructure).
+ * element is added under the element determined by heuristics to be the most appropriate parent.
  */
 public class CreateLinkTag implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(CreateLinkTag.class);
@@ -62,19 +62,11 @@ public class CreateLinkTag implements IssueFix {
     @Override
     public void apply(DocumentContext ctx) throws Exception {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        if (root == null) {
-            logger.warn("No structure tree root, cannot create Link tag");
-            return;
-        }
-
-        // Find the Document element
         PdfStructElem documentElem = findDocumentElement(root);
         if (documentElem == null) {
-            logger.warn("No Document element found, cannot create Link tag");
-            return;
+            throw new IllegalStateException("No Document element found");
         }
 
-        // Find the annotation object on the page
         PdfPage page = ctx.doc().getPage(pageNum);
         PdfAnnotation annotation = findMatchingAnnotation(page, annotDict);
         if (annotation == null) {
@@ -82,16 +74,10 @@ public class CreateLinkTag implements IssueFix {
             return;
         }
 
-        // Find the Part element for this page (created by SetupDocumentStructure)
-        PdfStructElem partElem = SetupDocumentStructure.findPartForPage(documentElem, page);
-        if (partElem == null) {
-            logger.warn("No Part element found for page {}, cannot create Link tag", pageNum);
-            return;
-        }
-
-        PdfStructElem parentElem = findBestParentForAnnotation(ctx, partElem, page, annotation);
+        // Try to find the best parent by searching from the Document element
+        PdfStructElem parentElem = findBestParentForAnnotation(ctx, documentElem, page, annotation);
         if (parentElem == null) {
-            parentElem = partElem;
+            parentElem = documentElem;
         }
 
         // Create Link structure element under the chosen parent with /Pg set

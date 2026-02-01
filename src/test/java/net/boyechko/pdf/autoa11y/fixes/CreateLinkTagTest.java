@@ -36,41 +36,30 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import org.junit.jupiter.api.Test;
 
 class CreateLinkTagTest {
-
     @Test
     void createsLinkTagWithObjRef() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
-            // Create a Link annotation
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
+
             PdfLinkAnnotation linkAnnot =
                     new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
                             .setAction(PdfAction.createURI("https://example.com"));
+            // create annotation without having iTextPDF auto-tag it
             page.addAnnotation(-1, linkAnnot, false);
 
-            // Set up Document/Part structure first (CreateLinkTag depends on this)
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            new SetupDocumentStructure().apply(ctx);
-
-            // Apply CreateLinkTag
             CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
-            fix.apply(ctx);
+            fix.apply(new DocumentContext(pdfDoc));
 
-            // Find the Part for page 1
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
-            PdfStructElem partElem = SetupDocumentStructure.findPartForPage(docElem, page);
-            assertNotNull(partElem, "Part should exist for page");
+            assertEquals(1, documentElem.getKids().size(), "Document should have one child (Link)");
 
-            // Verify Link element was created under Part
-            List<IStructureNode> partKids = partElem.getKids();
-            assertEquals(1, partKids.size(), "Part should have one child (Link)");
+            PdfStructElem linkElem = (PdfStructElem) documentElem.getKids().get(0);
+            assertEquals(PdfName.Link, linkElem.getRole());
 
-            PdfStructElem linkElem = (PdfStructElem) partKids.get(0);
-            assertEquals("Link", linkElem.getRole().getValue());
-
-            // Verify OBJR was created as child of Link
             List<IStructureNode> linkKids = linkElem.getKids();
             assertEquals(1, linkKids.size(), "Link should have one child (OBJR)");
             assertTrue(linkKids.get(0) instanceof PdfObjRef, "Child should be OBJR");
@@ -78,13 +67,17 @@ class CreateLinkTagTest {
     }
 
     @Test
-    void createsLinkInCorrectPart() throws Exception {
+    void createsLinkTagsOnMultiplePages() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page1 = pdfDoc.addNewPage();
             PdfPage page2 = pdfDoc.addNewPage();
 
-            // Create annotations on different pages
+            // Create basic Document structure manually (no SetupDocumentStructure dependency)
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
+
             PdfLinkAnnotation linkAnnot1 =
                     new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
                             .setAction(PdfAction.createURI("https://page1.com"));
@@ -95,26 +88,25 @@ class CreateLinkTagTest {
                             .setAction(PdfAction.createURI("https://page2.com"));
             page2.addAnnotation(-1, linkAnnot2, false);
 
-            // Set up Document/Part structure
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            new SetupDocumentStructure().apply(ctx);
 
-            // Apply CreateLinkTag for each annotation
             new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
             new CreateLinkTag(linkAnnot2.getPdfObject(), 2).apply(ctx);
 
-            // Verify links are in correct Parts
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
+            assertEquals(
+                    2, documentElem.getKids().size(), "Document should have two Link children");
 
-            PdfStructElem part1 = SetupDocumentStructure.findPartForPage(docElem, page1);
-            PdfStructElem part2 = SetupDocumentStructure.findPartForPage(docElem, page2);
+            PdfStructElem link1 = (PdfStructElem) documentElem.getKids().get(0);
+            PdfStructElem link2 = (PdfStructElem) documentElem.getKids().get(1);
 
-            assertEquals(1, part1.getKids().size(), "Part1 should have one Link");
-            assertEquals(1, part2.getKids().size(), "Part2 should have one Link");
+            assertEquals(PdfName.Link, link1.getRole(), "First child should be Link");
+            assertEquals(PdfName.Link, link2.getRole(), "Second child should be Link");
 
-            assertEquals("Link", ((PdfStructElem) part1.getKids().get(0)).getRole().getValue());
-            assertEquals("Link", ((PdfStructElem) part2.getKids().get(0)).getRole().getValue());
+            assertEquals(1, link1.getKids().size(), "Link1 should have one OBJR child");
+            assertEquals(1, link2.getKids().size(), "Link2 should have one OBJR child");
+
+            assertTrue(link1.getKids().get(0) instanceof PdfObjRef, "Link1 child should be OBJR");
+            assertTrue(link2.getKids().get(0) instanceof PdfObjRef, "Link2 child should be OBJR");
         }
     }
 
@@ -129,16 +121,18 @@ class CreateLinkTagTest {
                             .setAction(PdfAction.createURI("https://example.com"));
             page.addAnnotation(-1, linkAnnot, false);
 
-            // Verify no StructParent before fix
             assertFalse(
                     linkAnnot.getPdfObject().containsKey(PdfName.StructParent),
                     "Annotation should not have StructParent before fix");
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            new SetupDocumentStructure().apply(ctx);
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
+
             new CreateLinkTag(linkAnnot.getPdfObject(), 1).apply(ctx);
 
-            // Verify StructParent was set
             assertTrue(
                     linkAnnot.getPdfObject().containsKey(PdfName.StructParent),
                     "Annotation should have StructParent after fix");
@@ -151,7 +145,10 @@ class CreateLinkTagTest {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
-            // Create multiple annotations on same page
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
+
             PdfLinkAnnotation linkAnnot1 =
                     new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
                             .setAction(PdfAction.createURI("https://link1.com"));
@@ -167,22 +164,16 @@ class CreateLinkTagTest {
             page.addAnnotation(-1, linkAnnot3, false);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            new SetupDocumentStructure().apply(ctx);
 
             new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
             new CreateLinkTag(linkAnnot2.getPdfObject(), 1).apply(ctx);
             new CreateLinkTag(linkAnnot3.getPdfObject(), 1).apply(ctx);
 
-            // Verify all three Links are in the same Part
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
-            PdfStructElem partElem = SetupDocumentStructure.findPartForPage(docElem, page);
+            assertEquals(3, documentElem.getKids().size(), "Document should have three Links");
 
-            assertEquals(3, partElem.getKids().size(), "Part should have three Links");
-
-            for (IStructureNode kid : partElem.getKids()) {
+            for (IStructureNode kid : documentElem.getKids()) {
                 PdfStructElem linkElem = (PdfStructElem) kid;
-                assertEquals("Link", linkElem.getRole().getValue());
+                assertEquals(PdfName.Link, linkElem.getRole());
                 assertEquals(1, linkElem.getKids().size(), "Each Link should have OBJR");
                 assertTrue(linkElem.getKids().get(0) instanceof PdfObjRef);
             }
@@ -190,7 +181,7 @@ class CreateLinkTagTest {
     }
 
     @Test
-    void doesNothingWithoutPart() throws Exception {
+    void throwsWhenDocumentElementMissing() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -200,14 +191,11 @@ class CreateLinkTagTest {
                             .setAction(PdfAction.createURI("https://example.com"));
             page.addAnnotation(-1, linkAnnot, false);
 
-            // Don't run SetupDocumentStructure - no Parts exist
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
-            // Should not throw, just log warning
             CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
-            assertDoesNotThrow(() -> fix.apply(ctx));
+            assertThrows(IllegalStateException.class, () -> fix.apply(ctx));
 
-            // Annotation should still not have StructParent
             assertFalse(linkAnnot.getPdfObject().containsKey(PdfName.StructParent));
         }
     }
@@ -224,9 +212,10 @@ class CreateLinkTagTest {
             page.addAnnotation(-1, linkAnnot, false);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            new SetupDocumentStructure().apply(ctx);
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
 
-            // Try to create link for page 99 (doesn't exist)
             CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 99);
             assertThrows(IndexOutOfBoundsException.class, () -> fix.apply(ctx));
         }
