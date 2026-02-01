@@ -35,5 +35,6 @@ public enum IssueType {
     FIGURE_WITH_TEXT, // Figure element contains text instead of image
     NEEDLESS_NESTING, // Part/Sect adds no semantic value
     MISTAGGED_ARTIFACT, // Tagged content that should be artifact (footer, header)
-    UNMARKED_LINK // Link annotation not associated with Link structure element
+    UNMARKED_LINK, // Link annotation not associated with Link structure element
+    EMPTY_LINK_TAG_RULE // Link has OBJR but no content MCR
 }

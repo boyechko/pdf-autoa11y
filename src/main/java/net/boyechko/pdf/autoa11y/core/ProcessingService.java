@@ -79,6 +79,7 @@ public class ProcessingService {
                                 new MissingDocumentRule(),
                                 new MistaggedArtifactRule(),
                                 new UnmarkedLinkRule(),
+                                new EmptyLinkTagRule(),
                                 new NeedlessNestingRule(),
                                 new FigureWithTextRule()));
     }
