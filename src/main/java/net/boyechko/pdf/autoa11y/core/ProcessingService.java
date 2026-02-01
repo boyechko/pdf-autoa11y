@@ -240,6 +240,10 @@ public class ProcessingService {
 
         listener.onPhaseStart(4, 4, "Checking document-level compliance");
         IssueList documentLevelIssues = detectAndReportRuleIssues();
+
+        if (!documentLevelIssues.isEmpty()) {
+            listener.onSubsection("Applying fixes...");
+        }
         IssueList appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
 
         IssueList totalRemainingIssues = new IssueList();

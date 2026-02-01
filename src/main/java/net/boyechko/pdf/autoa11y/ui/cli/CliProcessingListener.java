@@ -70,4 +70,9 @@ public class CliProcessingListener implements ProcessingListener {
     public void onFixGroup(String groupLabel, List<Issue> resolvedIssues) {
         formatter.printFixGroup(groupLabel, resolvedIssues);
     }
+
+    @Override
+    public void onSubsection(String header) {
+        formatter.printSubsection(header);
+    }
 }

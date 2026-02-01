@@ -33,6 +33,8 @@ public interface ProcessingListener {
 
     default void onVerboseOutput(String message) {}
 
+    default void onSubsection(String header) {}
+
     default void onIssueGroup(String groupLabel, List<Issue> issues) {
         for (Issue issue : issues) {
             onWarning(issue.message());

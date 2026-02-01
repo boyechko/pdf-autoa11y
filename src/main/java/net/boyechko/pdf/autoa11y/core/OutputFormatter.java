@@ -70,6 +70,13 @@ public class OutputFormatter {
         }
     }
 
+    public void printSubsection(String header) {
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            output.println();
+            output.println("  " + header);
+        }
+    }
+
     public void printSeparator() {
         printLine(SECTION_LINE, null);
     }
