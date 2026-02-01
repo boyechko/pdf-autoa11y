@@ -21,7 +21,9 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
@@ -211,7 +213,6 @@ public class ProcessingService {
                     encryptionInfo.permissions(),
                     encryptionInfo.cryptoMode());
         } else if (password != null) {
-            // Set default encryption if input not encrypted but password provided
             writerProps.setStandardEncryption(
                     null, password.getBytes(), DEFAULT_PERMISSIONS, DEFAULT_CRYPTO_MODE);
         }
@@ -303,13 +304,28 @@ public class ProcessingService {
             if (ruleIssues.isEmpty()) {
                 listener.onSuccess(rule.name());
             } else {
-                for (Issue issue : ruleIssues) {
-                    listener.onWarning(issue.message());
-                }
+                reportIssuesGrouped(ruleIssues);
             }
         }
 
         return allRuleIssues;
+    }
+
+    private void reportIssuesGrouped(IssueList issues) {
+        Map<IssueType, List<Issue>> grouped =
+                issues.stream().collect(Collectors.groupingBy(Issue::type));
+
+        for (Map.Entry<IssueType, List<Issue>> entry : grouped.entrySet()) {
+            List<Issue> groupIssues = entry.getValue();
+
+            if (groupIssues.size() >= 3) {
+                listener.onIssueGroup(entry.getKey().groupLabel(), groupIssues);
+            } else {
+                for (Issue issue : groupIssues) {
+                    listener.onWarning(issue.message());
+                }
+            }
+        }
     }
 
     private IssueList applyFixesAndReport(IssueList issues) {
@@ -319,12 +335,28 @@ public class ProcessingService {
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
 
-        for (Issue issue : appliedFixes) {
-            if (issue.isResolved() && issue.fix() != null) {
-                listener.onIssueFixed(issue.resolutionNote());
-            }
-        }
+        reportFixesGrouped(appliedFixes);
 
         return appliedFixes;
+    }
+
+    private void reportFixesGrouped(IssueList appliedFixes) {
+        Map<Class<?>, List<Issue>> grouped =
+                appliedFixes.stream()
+                        .filter(i -> i.isResolved() && i.fix() != null)
+                        .collect(Collectors.groupingBy(i -> i.fix().getClass()));
+
+        for (Map.Entry<Class<?>, List<Issue>> entry : grouped.entrySet()) {
+            List<Issue> groupFixes = entry.getValue();
+
+            if (groupFixes.size() >= 3) {
+                String groupLabel = groupFixes.get(0).fix().groupLabel();
+                listener.onFixGroup(groupLabel, groupFixes);
+            } else {
+                for (Issue issue : groupFixes) {
+                    listener.onIssueFixed(issue.resolutionNote());
+                }
+            }
+        }
     }
 }

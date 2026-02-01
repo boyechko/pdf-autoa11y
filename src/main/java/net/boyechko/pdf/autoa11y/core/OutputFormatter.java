@@ -18,6 +18,11 @@
 package net.boyechko.pdf.autoa11y.core;
 
 import java.io.PrintStream;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.issues.Issue;
 
 public class OutputFormatter {
     private final PrintStream output;
@@ -120,13 +125,83 @@ public class OutputFormatter {
         printLine("No changes made; output file not created", INFO);
     }
 
-    /** Get the underlying PrintStream for direct access when needed */
     public PrintStream getStream() {
         return output;
     }
 
-    /** Check if output should be shown at the given level */
     public boolean shouldShow(VerbosityLevel level) {
         return verbosity.shouldShow(level);
+    }
+
+    public void printIssueGroup(String groupLabel, List<Issue> issues) {
+        if (issues.isEmpty()) return;
+
+        Set<Integer> pages =
+                issues.stream()
+                        .map(i -> i.where().page())
+                        .filter(p -> p != null)
+                        .collect(Collectors.toCollection(TreeSet::new));
+
+        String summary = buildGroupSummary(groupLabel, issues.size(), pages);
+        printWarning(summary);
+
+        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+            for (Issue issue : issues) {
+                printDetail(issue.message());
+            }
+        }
+    }
+
+    public void printFixGroup(String groupLabel, List<Issue> resolvedIssues) {
+        if (resolvedIssues.isEmpty()) return;
+
+        Set<Integer> pages =
+                resolvedIssues.stream()
+                        .map(i -> i.where().page())
+                        .filter(p -> p != null)
+                        .collect(Collectors.toCollection(TreeSet::new));
+
+        String summary = buildGroupSummary(groupLabel, resolvedIssues.size(), pages);
+        printSuccess(summary);
+
+        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+            for (Issue issue : resolvedIssues) {
+                if (issue.resolutionNote() != null) {
+                    printDetail(issue.resolutionNote());
+                }
+            }
+        }
+    }
+
+    private String buildGroupSummary(String groupLabel, int count, Set<Integer> pages) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(count).append(" ").append(groupLabel);
+
+        if (!pages.isEmpty()) {
+            sb.append(" (");
+            if (pages.size() == 1) {
+                sb.append("page ").append(pages.iterator().next());
+            } else {
+                sb.append("pages ").append(formatPageRange(pages));
+            }
+            sb.append(")");
+        }
+
+        return sb.toString();
+    }
+
+    private String formatPageRange(Set<Integer> pages) {
+        if (pages.isEmpty()) return "";
+        if (pages.size() == 1) return pages.iterator().next().toString();
+
+        // In future, could detect consecutive runs for smarter ranges
+        int min = pages.stream().min(Integer::compareTo).orElse(0);
+        int max = pages.stream().max(Integer::compareTo).orElse(0);
+
+        if (max - min + 1 == pages.size()) {
+            return min + "-" + max;
+        } else {
+            return min + "-" + max + " (non-consecutive)";
+        }
     }
 }

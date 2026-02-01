@@ -18,9 +18,11 @@
 package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.io.PrintStream;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.core.OutputFormatter;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.issues.Issue;
 
 public class CliProcessingListener implements ProcessingListener {
     private final OutputFormatter formatter;
@@ -57,5 +59,15 @@ public class CliProcessingListener implements ProcessingListener {
     @Override
     public void onVerboseOutput(String message) {
         formatter.getStream().print(message);
+    }
+
+    @Override
+    public void onIssueGroup(String groupLabel, List<Issue> issues) {
+        formatter.printIssueGroup(groupLabel, issues);
+    }
+
+    @Override
+    public void onFixGroup(String groupLabel, List<Issue> resolvedIssues) {
+        formatter.printFixGroup(groupLabel, resolvedIssues);
     }
 }

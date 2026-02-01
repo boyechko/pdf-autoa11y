@@ -18,23 +18,34 @@
 package net.boyechko.pdf.autoa11y.issues;
 
 public enum IssueType {
-    LANGUAGE_NOT_SET,
-    NOT_TAGGED_PDF,
-    NO_STRUCT_TREE,
-    TAB_ORDER_NOT_SET,
+    // Document-level issues
+    LANGUAGE_NOT_SET("language not set"),
+    NOT_TAGGED_PDF("PDF not tagged"),
+    NO_STRUCT_TREE("structure tree missing"),
+    TAB_ORDER_NOT_SET("tab order not set"),
 
     // Tag Issues
-    TAG_UNKNOWN_ROLE, // Tag has a role not in the schema
-    TAG_WRONG_PARENT, // Child has wrong parent type
-    TAG_WRONG_CHILD, // Parent contains a child type it shouldn't
-    TAG_WRONG_CHILD_COUNT, // Parent has too many/few children
-    TAG_WRONG_CHILD_PATTERN, // Parent's children don't match pattern
+    TAG_UNKNOWN_ROLE("tags with unknown roles"),
+    TAG_WRONG_PARENT("tags with wrong parent"),
+    TAG_WRONG_CHILD("tags with wrong children"),
+    TAG_WRONG_CHILD_COUNT("tags with wrong child count"),
+    TAG_WRONG_CHILD_PATTERN("tags with wrong child pattern"),
 
     // Structure Issues
-    MISSING_DOCUMENT_WRAPPER, // Root has no Document child
-    FIGURE_WITH_TEXT, // Figure element contains text instead of image
-    NEEDLESS_NESTING, // Part/Sect adds no semantic value
-    MISTAGGED_ARTIFACT, // Tagged content that should be artifact (footer, header)
-    UNMARKED_LINK, // Link annotation not associated with Link structure element
-    EMPTY_LINK_TAG_RULE // Link has OBJR but no content MCR
+    MISSING_DOCUMENT_WRAPPER("structure tree root has no Document element"),
+    FIGURE_WITH_TEXT("figures containing text"),
+    NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
+    MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
+    UNMARKED_LINK("link annotations not tagged"),
+    EMPTY_LINK_TAG_RULE("empty link tags");
+
+    private final String groupLabel;
+
+    IssueType(String groupLabel) {
+        this.groupLabel = groupLabel;
+    }
+
+    public String groupLabel() {
+        return groupLabel;
+    }
 }

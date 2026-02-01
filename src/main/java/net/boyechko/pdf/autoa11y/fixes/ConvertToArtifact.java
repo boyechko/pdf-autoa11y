@@ -35,10 +35,6 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Converts a tagged element to an artifact by removing it from the structure tree. The content
- * remains visible but is no longer part of the accessibility tree.
- */
 public class ConvertToArtifact implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ConvertToArtifact.class);
     private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
@@ -62,7 +58,6 @@ public class ConvertToArtifact implements IssueFix {
             return;
         }
 
-        // First, collect and remove any associated annotations (e.g., Link annotations)
         removeAssociatedAnnotations(element, ctx);
 
         if (parent instanceof PdfStructElem parentElem) {
@@ -83,10 +78,6 @@ public class ConvertToArtifact implements IssueFix {
         }
     }
 
-    /**
-     * Removes any annotations associated with this structure element or its descendants. Link
-     * structure elements typically have OBJR (Object Reference) kids pointing to Link annotations.
-     */
     private void removeAssociatedAnnotations(PdfStructElem elem, DocumentContext ctx) {
         List<PdfObjRef> objRefs = new ArrayList<>();
         collectObjRefs(elem, objRefs);
@@ -109,7 +100,6 @@ public class ConvertToArtifact implements IssueFix {
                             : "none");
 
             if (refObj instanceof PdfDictionary annotDict) {
-                // Check if it's an annotation
                 PdfName subtype = annotDict.getAsName(PdfName.Subtype);
                 logger.debug(
                         "Dictionary /Subtype: {}, /Type: {}",
@@ -126,7 +116,6 @@ public class ConvertToArtifact implements IssueFix {
         }
     }
 
-    /** Recursively collects all OBJR (Object Reference) kids from a structure element tree. */
     private void collectObjRefs(PdfStructElem elem, List<PdfObjRef> objRefs) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) {
@@ -150,21 +139,18 @@ public class ConvertToArtifact implements IssueFix {
         }
     }
 
-    /** Removes an annotation dictionary from its containing page's /Annots array. */
     private void removeAnnotationFromPage(PdfDictionary annotDict, DocumentContext ctx) {
         int annotObjNum =
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
                         : 0;
 
-        // Get the /Rect for finding duplicates
         PdfArray targetRect = annotDict.getAsArray(PdfName.Rect);
         logger.debug(
                 "Annotation obj #{} has /Rect: {}",
                 annotObjNum,
                 targetRect != null ? targetRect : "null");
 
-        // Get the page the annotation is on
         PdfDictionary pageDict = annotDict.getAsDictionary(PdfName.P);
         logger.debug(
                 "Annotation obj #{} has /P entry: {}",
@@ -176,7 +162,6 @@ public class ConvertToArtifact implements IssueFix {
                         : "null");
 
         if (pageDict == null) {
-            // Try to find page via Pg entry
             pageDict = annotDict.getAsDictionary(new PdfName("Pg"));
             logger.debug("Annotation /Pg fallback: {}", pageDict != null ? "found" : "null");
         }
@@ -195,7 +180,6 @@ public class ConvertToArtifact implements IssueFix {
             }
         }
 
-        // Fallback: search all pages for this annotation
         logger.debug(
                 "Searching all {} pages for annotation obj #{}",
                 ctx.doc().getNumberOfPages(),
@@ -209,10 +193,6 @@ public class ConvertToArtifact implements IssueFix {
         logger.warn("Failed to find and remove annotation obj #{} on any page", annotObjNum);
     }
 
-    /**
-     * Removes an annotation and any duplicates with the same /Rect from a page. Returns the count
-     * of annotations removed.
-     */
     private int removeAnnotationAndDuplicates(
             PdfPage page, PdfDictionary annotDict, PdfArray targetRect) {
         List<PdfAnnotation> annotations = page.getAnnotations();
@@ -222,13 +202,6 @@ public class ConvertToArtifact implements IssueFix {
                         ? annotDict.getIndirectReference().getObjNumber()
                         : 0;
 
-        logger.debug(
-                "Page {} has {} annotation(s), looking for obj #{} and duplicates with same Rect",
-                pageNum,
-                annotations.size(),
-                targetObjNum);
-
-        // Collect annotations to remove (can't modify list while iterating)
         List<PdfAnnotation> toRemove = new ArrayList<>();
 
         for (PdfAnnotation annot : annotations) {
@@ -239,7 +212,6 @@ public class ConvertToArtifact implements IssueFix {
                             : 0;
             PdfName annotSubtype = annotPdfObj.getAsName(PdfName.Subtype);
 
-            // Skip non-Link annotations
             if (!PdfName.Link.equals(annotSubtype)) {
                 continue;
             }
@@ -252,7 +224,6 @@ public class ConvertToArtifact implements IssueFix {
                                     .getIndirectReference()
                                     .equals(annotPdfObj.getIndirectReference());
 
-            // Check for duplicate by matching /Rect
             PdfArray annotRect = annotPdfObj.getAsArray(PdfName.Rect);
             boolean sameRect = targetRect != null && rectsEqual(targetRect, annotRect);
 
@@ -270,7 +241,6 @@ public class ConvertToArtifact implements IssueFix {
             }
         }
 
-        // Remove collected annotations
         for (PdfAnnotation annot : toRemove) {
             page.removeAnnotation(annot);
             int objNum =
@@ -290,7 +260,6 @@ public class ConvertToArtifact implements IssueFix {
         return toRemove.size();
     }
 
-    /** Compares two PDF rectangle arrays for equality (within a small tolerance). */
     private boolean rectsEqual(PdfArray rect1, PdfArray rect2) {
         if (rect1 == null || rect2 == null) {
             return false;
@@ -373,5 +342,10 @@ public class ConvertToArtifact implements IssueFix {
 
     public PdfStructElem getElement() {
         return element;
+    }
+
+    @Override
+    public String groupLabel() {
+        return "elements converted to artifacts";
     }
 }

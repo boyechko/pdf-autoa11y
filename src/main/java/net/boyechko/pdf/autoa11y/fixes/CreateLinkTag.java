@@ -37,10 +37,6 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Creates a Link structure element for a Link annotation and associates them via an OBJR. The Link
- * element is added under the element determined by heuristics to be the most appropriate parent.
- */
 public class CreateLinkTag implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(CreateLinkTag.class);
     // After SetupDocumentStructure (10), so Parts exist
@@ -70,21 +66,18 @@ public class CreateLinkTag implements IssueFix {
         PdfPage page = ctx.doc().getPage(pageNum);
         PdfAnnotation annotation = findMatchingAnnotation(page, annotDict);
         if (annotation == null) {
-            logger.warn("Could not find annotation on page {}", pageNum);
+            logger.debug("Could not find annotation on page {}", pageNum);
             return;
         }
 
-        // Try to find the best parent by searching from the Document element
         PdfStructElem parentElem = findBestParentForAnnotation(ctx, documentElem, page, annotation);
         if (parentElem == null) {
             parentElem = documentElem;
         }
 
-        // Create Link structure element under the chosen parent with /Pg set
         PdfStructElem linkElem = new PdfStructElem(ctx.doc(), PdfName.Link, page);
         parentElem.addKid(linkElem);
 
-        // Create OBJR to connect the annotation to the Link structure element
         int structParentIndex = ctx.doc().getNextStructParentIndex();
         PdfObjRef objRef = new PdfObjRef(annotation, linkElem, structParentIndex);
         linkElem.addKid(objRef);
@@ -100,7 +93,6 @@ public class CreateLinkTag implements IssueFix {
                 structParentIndex);
     }
 
-    /** Finds the Document element in the structure tree. */
     private PdfStructElem findDocumentElement(PdfStructTreeRoot root) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return null;
@@ -116,12 +108,10 @@ public class CreateLinkTag implements IssueFix {
         return null;
     }
 
-    /** Finds the annotation on the page that matches our stored dictionary. */
     private PdfAnnotation findMatchingAnnotation(PdfPage page, PdfDictionary targetDict) {
         for (PdfAnnotation annot : page.getAnnotations()) {
             PdfDictionary annotPdfObj = annot.getPdfObject();
 
-            // Check by same instance or indirect reference
             if (annotPdfObj == targetDict) {
                 return annot;
             }
@@ -227,7 +217,7 @@ public class CreateLinkTag implements IssueFix {
             int depth) {
         PdfDictionary elemPg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (elemPg != null && !isSamePage(elemPg, targetPage)) {
-            return null; // This element is on a different page
+            return null;
         }
 
         List<IStructureNode> kids = elem.getKids();
@@ -375,5 +365,10 @@ public class CreateLinkTag implements IssueFix {
     @Override
     public String describe(DocumentContext ctx) {
         return describe();
+    }
+
+    @Override
+    public String groupLabel() {
+        return "Link tags created";
     }
 }

@@ -17,6 +17,9 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
+import java.util.List;
+import net.boyechko.pdf.autoa11y.issues.Issue;
+
 public interface ProcessingListener {
     void onPhaseStart(int step, int total, String phaseName);
 
@@ -29,4 +32,18 @@ public interface ProcessingListener {
     void onSummary(int detected, int resolved, int remaining);
 
     default void onVerboseOutput(String message) {}
+
+    default void onIssueGroup(String groupLabel, List<Issue> issues) {
+        for (Issue issue : issues) {
+            onWarning(issue.message());
+        }
+    }
+
+    default void onFixGroup(String groupLabel, List<Issue> resolvedIssues) {
+        for (Issue issue : resolvedIssues) {
+            if (issue.isResolved()) {
+                onIssueFixed(issue.resolutionNote());
+            }
+        }
+    }
 }

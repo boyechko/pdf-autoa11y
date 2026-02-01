@@ -22,10 +22,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
-/**
- * Changes the role of a Figure element to a more appropriate text role. This is typically used when
- * a Figure element is found to contain text content instead of an actual image.
- */
 public class ChangeFigureRole implements IssueFix {
     private static final int P_STRUCTURE = 20;
 
@@ -44,12 +40,9 @@ public class ChangeFigureRole implements IssueFix {
 
     @Override
     public void apply(DocumentContext ctx) throws Exception {
-        // Check current role (idempotent)
         if (!PdfName.Figure.equals(figure.getRole())) {
             return;
         }
-
-        // Change the role
         figure.setRole(newRole);
     }
 
@@ -65,5 +58,10 @@ public class ChangeFigureRole implements IssueFix {
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
         return "Changed Figure to " + newRole.getValue() + " for object #" + objNum + pageInfo;
+    }
+
+    @Override
+    public String groupLabel() {
+        return "Figure roles changed";
     }
 }
