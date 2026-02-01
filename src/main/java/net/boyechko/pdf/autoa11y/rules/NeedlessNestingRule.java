@@ -29,7 +29,11 @@ import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/** Detects and removes all Part/Sect/Art elements from the structure tree. */
+/**
+ * Detects Part/Sect/Art wrapper elements that add no semantic value. Preserves Parts with /Pg
+ * attribute, as these serve as meaningful page containers (e.g., created by
+ * SetupDocumentStructure).
+ */
 public class NeedlessNestingRule implements Rule {
 
     private static final Set<PdfName> WRAPPER_ROLES =
@@ -78,7 +82,7 @@ public class NeedlessNestingRule implements Rule {
     }
 
     private void collectWrappersRecursively(PdfStructElem elem, List<PdfStructElem> toFlatten) {
-        if (WRAPPER_ROLES.contains(elem.getRole())) {
+        if (WRAPPER_ROLES.contains(elem.getRole()) && !isPageContainer(elem)) {
             toFlatten.add(elem);
         }
 
@@ -90,5 +94,13 @@ public class NeedlessNestingRule implements Rule {
                 }
             }
         }
+    }
+
+    /** A Part with /Pg is a page container — it groups content for a specific page. */
+    private boolean isPageContainer(PdfStructElem elem) {
+        if (!PdfName.Part.equals(elem.getRole())) {
+            return false;
+        }
+        return elem.getPdfObject().containsKey(PdfName.Pg);
     }
 }
