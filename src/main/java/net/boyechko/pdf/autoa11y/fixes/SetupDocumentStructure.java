@@ -70,34 +70,28 @@ public class SetupDocumentStructure implements IssueFix {
             return;
         }
 
-        // Step 1: Ensure Document wrapper exists
         PdfStructElem documentElem = ensureDocumentWrapper(ctx, root);
         if (documentElem == null) {
             return;
         }
 
-        // Step 2: Create Parts for all pages and organize content
         organizeByPage(ctx, documentElem);
     }
 
-    /** Ensures a Document element exists, creating one if needed. Returns the Document element. */
     private PdfStructElem ensureDocumentWrapper(DocumentContext ctx, PdfStructTreeRoot root) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null || kids.isEmpty()) {
-            // Create empty Document
             return root.addKid(new PdfStructElem(ctx.doc(), PdfName.Document));
         }
 
-        // Check if already has Document wrapper
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
-                if ("Document".equals(elem.getRole().getValue())) {
+                if (elem.getRole() == PdfName.Document) {
                     return elem;
                 }
             }
         }
 
-        // Collect all existing kids that need to be moved
         List<PdfStructElem> elementsToMove = new ArrayList<>();
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
@@ -105,10 +99,8 @@ public class SetupDocumentStructure implements IssueFix {
             }
         }
 
-        // Create new Document element and add it to root
         PdfStructElem document = root.addKid(new PdfStructElem(ctx.doc(), PdfName.Document));
 
-        // Move each element under Document by manipulating the underlying PDF objects
         PdfDictionary rootDict = root.getPdfObject();
         PdfObject kObj = rootDict.get(PdfName.K);
 
@@ -127,7 +119,6 @@ public class SetupDocumentStructure implements IssueFix {
             }
         }
 
-        // Add elements to Document
         for (PdfStructElem elem : elementsToMove) {
             document.addKid(elem);
         }
@@ -140,14 +131,10 @@ public class SetupDocumentStructure implements IssueFix {
 
     /** Creates Parts for all pages and moves content to appropriate Parts. */
     private void organizeByPage(DocumentContext ctx, PdfStructElem documentElem) {
-        // Create Parts for all pages upfront
         Map<Integer, PdfStructElem> pageParts = createPartsForAllPages(ctx, documentElem);
-
-        // Move existing content to appropriate Parts
         moveContentToParts(ctx, documentElem, pageParts);
     }
 
-    /** Creates a Part element for each page in the document. */
     private Map<Integer, PdfStructElem> createPartsForAllPages(
             DocumentContext ctx, PdfStructElem documentElem) {
         Map<Integer, PdfStructElem> pageParts = new HashMap<>();
@@ -155,14 +142,17 @@ public class SetupDocumentStructure implements IssueFix {
 
         for (int pageNum = 1; pageNum <= doc.getNumberOfPages(); pageNum++) {
             PdfPage page = doc.getPage(pageNum);
-            PdfStructElem partElem = findExistingPartForPage(documentElem, page);
+            PdfStructElem partElem = findPartForPage(documentElem, page);
 
             if (partElem == null) {
                 partElem = new PdfStructElem(doc, PdfName.Part);
                 partElem.getPdfObject().put(PdfName.Pg, page.getPdfObject());
                 documentElem.addKid(partElem);
                 partsCreated++;
-                logger.debug("Created Part element for page {}", pageNum);
+                logger.debug(
+                        "Created Part element obj #{} for page {}",
+                        partElem.getPdfObject().getIndirectReference().getObjNumber(),
+                        pageNum);
             }
 
             pageParts.put(pageNum, partElem);
@@ -171,34 +161,6 @@ public class SetupDocumentStructure implements IssueFix {
         return pageParts;
     }
 
-    /** Finds an existing Part element for the given page. */
-    private PdfStructElem findExistingPartForPage(PdfStructElem documentElem, PdfPage page) {
-        PdfDictionary pageDict = page.getPdfObject();
-        List<IStructureNode> kids = documentElem.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfName role = elem.getRole();
-                if (role != null && "Part".equals(role.getValue())) {
-                    PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-                    if (pg != null) {
-                        if (pg.equals(pageDict)) {
-                            return elem;
-                        }
-                        if (pageDict.getIndirectReference() != null
-                                && pageDict.getIndirectReference()
-                                        .equals(pg.getIndirectReference())) {
-                            return elem;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /** Moves content elements to their appropriate Part based on /Pg. */
     private void moveContentToParts(
             DocumentContext ctx,
             PdfStructElem documentElem,
@@ -213,7 +175,7 @@ public class SetupDocumentStructure implements IssueFix {
             if (kid instanceof PdfStructElem elem) {
                 PdfName role = elem.getRole();
                 // Skip Part elements (they're our containers)
-                if (role != null && "Part".equals(role.getValue())) {
+                if (role == PdfName.Part) {
                     continue;
                 }
                 elementsToMove.add(elem);
@@ -237,7 +199,6 @@ public class SetupDocumentStructure implements IssueFix {
 
     /** Determines which page an element belongs to based on /Pg or descendant /Pg. */
     private int determinePageNumber(DocumentContext ctx, PdfStructElem elem) {
-        // Check element's own /Pg
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
             int pageNum = ctx.doc().getPageNumber(pg);
@@ -265,7 +226,6 @@ public class SetupDocumentStructure implements IssueFix {
         return 0;
     }
 
-    /** Moves an element from Document to a Part. */
     private void moveElementToPart(
             PdfStructElem documentElem, PdfStructElem elem, PdfStructElem targetPart) {
         PdfArray docKids = documentElem.getPdfObject().getAsArray(PdfName.K);
@@ -286,19 +246,16 @@ public class SetupDocumentStructure implements IssueFix {
         }
 
         if (removed) {
-            // Update parent reference and add to Part
+            // Update parent reference (/P) and add to Part
             elem.getPdfObject().put(PdfName.P, targetPart.getPdfObject());
             targetPart.addKid(elem);
             logger.debug(
-                    "Moved {} to Part",
-                    elem.getRole() != null ? elem.getRole().getValue() : "unknown");
+                    "Moved {} to Part obj #{}",
+                    elem.getRole() != null ? elem.getRole().getValue() : "unknown",
+                    targetPart.getPdfObject().getIndirectReference().getObjNumber());
         }
     }
 
-    /**
-     * Static utility method to find a Part for a given page. Used by other fixes like
-     * CreateLinkTag.
-     */
     public static PdfStructElem findPartForPage(PdfStructElem documentElem, PdfPage page) {
         PdfDictionary pageDict = page.getPdfObject();
         List<IStructureNode> kids = documentElem.getKids();
@@ -307,7 +264,7 @@ public class SetupDocumentStructure implements IssueFix {
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
                 PdfName role = elem.getRole();
-                if (role != null && "Part".equals(role.getValue())) {
+                if (role == PdfName.Part) {
                     PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
                     if (pg != null) {
                         if (pg.equals(pageDict)) {
