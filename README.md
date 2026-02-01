@@ -218,6 +218,12 @@ Run tests:
 mvn test
 ```
 
+Persist test PDFs for review (defaults to in-memory PDFs when not set):
+
+```bash
+mvn test -Dpdf.autoa11y.testOutputDir=/tmp/pdf-autoa11y-tests
+```
+
 Run with Maven exec plugin:
 
 ```bash

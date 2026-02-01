@@ -25,19 +25,19 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
-class MissingDocumentRuleTest {
+class MissingDocumentRuleTest extends PdfTestBase {
 
     @Test
     void detectsMissingDocument() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             // Create structure tree with Part and Figure at root (no Document)
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -59,7 +59,7 @@ class MissingDocumentRuleTest {
 
     @Test
     void noIssueWhenDocumentPresent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             // Create structure tree with Document at root
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -78,7 +78,7 @@ class MissingDocumentRuleTest {
 
     @Test
     void wrapsRootChildrenInDocument() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             // Create structure tree with Part and P at root (no Document)
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -113,7 +113,7 @@ class MissingDocumentRuleTest {
 
     @Test
     void fixIsIdempotent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem part = new PdfStructElem(pdfDoc, PdfName.Part);

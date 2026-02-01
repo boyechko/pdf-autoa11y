@@ -24,17 +24,17 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.junit.jupiter.api.Test;
 
-class TagSingleChildFixTest {
+class TagSingleChildFixTest extends PdfTestBase {
 
     @Test
     void treatLblFigureAsBullet_RemovesFigureTag() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
 
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
@@ -81,7 +81,7 @@ class TagSingleChildFixTest {
 
     @Test
     void describe_IncludesPageNumberWhenAvailable() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             // Create a simple document structure
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem l = new PdfStructElem(pdfDoc, PdfName.L);
