@@ -155,7 +155,7 @@ public class CreateLinkTag implements IssueFix {
 
         Map<PdfStructElem, Rectangle> elemBounds = new HashMap<>();
         Map<PdfStructElem, Integer> elemDepths = new HashMap<>();
-        collectBounds(partElem, mcidBounds, elemBounds, elemDepths, 0);
+        collectBounds(ctx, partElem, page, mcidBounds, elemBounds, elemDepths, 0);
         if (elemBounds.isEmpty()) {
             return null;
         }
@@ -218,11 +218,18 @@ public class CreateLinkTag implements IssueFix {
     }
 
     private Rectangle collectBounds(
+            DocumentContext ctx,
             PdfStructElem elem,
+            PdfPage targetPage,
             Map<Integer, Rectangle> mcidBounds,
             Map<PdfStructElem, Rectangle> elemBounds,
             Map<PdfStructElem, Integer> elemDepths,
             int depth) {
+        PdfDictionary elemPg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
+        if (elemPg != null && !isSamePage(elemPg, targetPage)) {
+            return null; // This element is on a different page
+        }
+
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) {
             return null;
@@ -243,7 +250,14 @@ public class CreateLinkTag implements IssueFix {
                 }
             } else if (kid instanceof PdfStructElem childElem) {
                 Rectangle childBounds =
-                        collectBounds(childElem, mcidBounds, elemBounds, elemDepths, depth + 1);
+                        collectBounds(
+                                ctx,
+                                childElem,
+                                targetPage,
+                                mcidBounds,
+                                elemBounds,
+                                elemDepths,
+                                depth + 1);
                 if (childBounds != null) {
                     bounds = union(bounds, childBounds);
                 }
@@ -256,6 +270,17 @@ public class CreateLinkTag implements IssueFix {
         }
 
         return bounds;
+    }
+
+    private boolean isSamePage(PdfDictionary pgDict, PdfPage targetPage) {
+        PdfDictionary targetDict = targetPage.getPdfObject();
+        if (pgDict.equals(targetDict)) {
+            return true;
+        }
+        if (pgDict.getIndirectReference() != null && targetDict.getIndirectReference() != null) {
+            return pgDict.getIndirectReference().equals(targetDict.getIndirectReference());
+        }
+        return false;
     }
 
     private Rectangle getAnnotationBounds(PdfAnnotation annotation) {

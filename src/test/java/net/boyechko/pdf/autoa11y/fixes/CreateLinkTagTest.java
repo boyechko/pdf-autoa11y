@@ -220,4 +220,61 @@ class CreateLinkTagTest extends PdfTestBase {
             assertThrows(IndexOutOfBoundsException.class, () -> fix.apply(ctx));
         }
     }
+
+    @Test
+    void doesNotMatchContentFromOtherPages() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page1 = pdfDoc.addNewPage();
+            PdfPage page2 = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
+
+            // Create Part elements for each page (simulating SetupDocumentStructure)
+            // Parts have /Pg attributes pointing to their respective pages
+            PdfStructElem part1 = new PdfStructElem(pdfDoc, PdfName.Part, page1);
+            PdfStructElem part2 = new PdfStructElem(pdfDoc, PdfName.Part, page2);
+            documentElem.addKid(part1);
+            documentElem.addKid(part2);
+
+            // Add a paragraph on page 1 with /Pg pointing to page1
+            // The /Pg attribute is what the fix uses to filter by page
+            PdfStructElem para1 = new PdfStructElem(pdfDoc, PdfName.P, page1);
+            part1.addKid(para1);
+
+            // Create link annotation on page 2
+            // Without page filtering in collectBounds(), para1 would be considered
+            // as a potential parent even though it's on a different page
+            PdfLinkAnnotation linkAnnot =
+                    new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
+                            .setAction(PdfAction.createURI("https://example.com"));
+            page2.addAnnotation(-1, linkAnnot, false);
+
+            DocumentContext ctx = new DocumentContext(pdfDoc);
+            new CreateLinkTag(linkAnnot.getPdfObject(), 2).apply(ctx);
+
+            // The key assertion: verify link is NOT nested under para1 from page 1
+            // The fix's page filtering in collectBounds() prevents cross-page matches
+            List<IStructureNode> para1Kids = para1.getKids();
+            boolean linkUnderPara1 =
+                    para1Kids != null
+                            && para1Kids.stream()
+                                    .anyMatch(
+                                            kid ->
+                                                    kid instanceof PdfStructElem elem
+                                                            && PdfName.Link.equals(elem.getRole()));
+
+            assertFalse(linkUnderPara1, "Link should NOT be under para1 from page 1");
+
+            // Link should go under part2 or documentElem (both valid), just not under page 1
+            // content
+            boolean linkExists =
+                    (part2.getKids() != null && !part2.getKids().isEmpty())
+                            || documentElem.getKids().size() == 3; // part1, part2, link
+
+            assertTrue(linkExists, "Link should exist somewhere in the structure tree");
+        }
+    }
 }
