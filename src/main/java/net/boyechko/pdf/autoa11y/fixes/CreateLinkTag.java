@@ -89,7 +89,7 @@ public class CreateLinkTag implements IssueFix {
             return;
         }
 
-        PdfStructElem parentElem = findBestParentForAnnotation(partElem, page, annotation);
+        PdfStructElem parentElem = findBestParentForAnnotation(ctx, partElem, page, annotation);
         if (parentElem == null) {
             parentElem = partElem;
         }
@@ -150,7 +150,7 @@ public class CreateLinkTag implements IssueFix {
     }
 
     private PdfStructElem findBestParentForAnnotation(
-            PdfStructElem partElem, PdfPage page, PdfAnnotation annotation) {
+            DocumentContext ctx, PdfStructElem partElem, PdfPage page, PdfAnnotation annotation) {
         Rectangle annotBounds = getAnnotationBounds(annotation);
         if (annotBounds == null) {
             return null;
@@ -160,19 +160,23 @@ public class CreateLinkTag implements IssueFix {
             return null;
         }
 
-        Map<Integer, Rectangle> mcidBounds = McidBoundsExtractor.extractBoundsForPage(page);
+        Map<Integer, Rectangle> mcidBounds =
+                ctx.getOrComputeMcidBounds(
+                        pageNum, () -> McidBoundsExtractor.extractBoundsForPage(page));
         if (mcidBounds.isEmpty()) {
             return null;
         }
 
         Map<PdfStructElem, Rectangle> elemBounds = new HashMap<>();
-        collectBounds(partElem, mcidBounds, elemBounds);
+        Map<PdfStructElem, Integer> elemDepths = new HashMap<>();
+        collectBounds(partElem, mcidBounds, elemBounds, elemDepths, 0);
         if (elemBounds.isEmpty()) {
             return null;
         }
 
         PdfStructElem bestElem = null;
         double bestScore = 0.0;
+        int bestDepth = -1;
         double bestArea = Double.MAX_VALUE;
 
         for (Map.Entry<PdfStructElem, Rectangle> entry : elemBounds.entrySet()) {
@@ -199,16 +203,28 @@ public class CreateLinkTag implements IssueFix {
             }
 
             double score = intersectionArea / annotArea;
+            int depth = elemDepths.getOrDefault(elem, 0);
             double elemArea = area(elemRect);
-            if (score > bestScore + 1e-6
-                    || (Math.abs(score - bestScore) < 1e-6 && elemArea < bestArea)) {
+
+            // Prefer higher score, then deeper elements, then smaller area
+            if (score > bestScore + 1e-6) {
                 bestScore = score;
+                bestDepth = depth;
                 bestArea = elemArea;
                 bestElem = elem;
+            } else if (Math.abs(score - bestScore) < 1e-6) {
+                if (depth > bestDepth) {
+                    bestDepth = depth;
+                    bestArea = elemArea;
+                    bestElem = elem;
+                } else if (depth == bestDepth && elemArea < bestArea) {
+                    bestArea = elemArea;
+                    bestElem = elem;
+                }
             }
         }
 
-        if (bestElem == null || bestScore < 0.1) {
+        if (bestElem == null || bestScore < 0.3) {
             return null;
         }
 
@@ -218,7 +234,9 @@ public class CreateLinkTag implements IssueFix {
     private Rectangle collectBounds(
             PdfStructElem elem,
             Map<Integer, Rectangle> mcidBounds,
-            Map<PdfStructElem, Rectangle> elemBounds) {
+            Map<PdfStructElem, Rectangle> elemBounds,
+            Map<PdfStructElem, Integer> elemDepths,
+            int depth) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) {
             return null;
@@ -238,7 +256,8 @@ public class CreateLinkTag implements IssueFix {
                     }
                 }
             } else if (kid instanceof PdfStructElem childElem) {
-                Rectangle childBounds = collectBounds(childElem, mcidBounds, elemBounds);
+                Rectangle childBounds =
+                        collectBounds(childElem, mcidBounds, elemBounds, elemDepths, depth + 1);
                 if (childBounds != null) {
                     bounds = union(bounds, childBounds);
                 }
@@ -247,6 +266,7 @@ public class CreateLinkTag implements IssueFix {
 
         if (bounds != null) {
             elemBounds.put(elem, bounds);
+            elemDepths.put(elem, depth);
         }
 
         return bounds;
