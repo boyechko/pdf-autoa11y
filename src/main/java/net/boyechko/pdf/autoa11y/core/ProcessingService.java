@@ -78,6 +78,7 @@ public class ProcessingService {
                                 new TaggedPdfRule(),
                                 new MissingDocumentRule(),
                                 new MistaggedArtifactRule(),
+                                new UnmarkedLinkRule(),
                                 new NeedlessNestingRule(),
                                 new FigureWithTextRule()));
     }

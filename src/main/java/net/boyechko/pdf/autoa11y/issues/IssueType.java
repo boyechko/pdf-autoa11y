@@ -34,5 +34,6 @@ public enum IssueType {
     MISSING_DOCUMENT_WRAPPER, // Root has no Document child
     FIGURE_WITH_TEXT, // Figure element contains text instead of image
     NEEDLESS_NESTING, // Part/Sect adds no semantic value
-    MISTAGGED_ARTIFACT // Tagged content that should be artifact (footer, header)
+    MISTAGGED_ARTIFACT, // Tagged content that should be artifact (footer, header)
+    UNMARKED_LINK // Link annotation not associated with Link structure element
 }
