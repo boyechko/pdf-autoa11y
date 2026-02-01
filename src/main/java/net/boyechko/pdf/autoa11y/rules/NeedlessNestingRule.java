@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.rules;
 
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
@@ -28,10 +29,11 @@ import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/** Detects and removes all Part, Sect, and Art elements from the structure tree. */
+/** Detects and removes all Part/Sect/Art elements from the structure tree. */
 public class NeedlessNestingRule implements Rule {
 
-    private static final Set<String> WRAPPER_ROLES = Set.of("Part", "Sect", "Art");
+    private static final Set<PdfName> WRAPPER_ROLES =
+            Set.of(PdfName.Part, PdfName.Sect, PdfName.Art);
 
     @Override
     public String name() {
@@ -48,8 +50,7 @@ public class NeedlessNestingRule implements Rule {
         IssueList issues = new IssueList();
         List<PdfStructElem> elementsToFlatten = new ArrayList<>();
 
-        // Find all Part/Sect/Art elements
-        walkTree(root, elementsToFlatten);
+        findWrapperElements(root, elementsToFlatten);
 
         if (!elementsToFlatten.isEmpty()) {
             IssueFix fix = new FlattenNesting(elementsToFlatten);
@@ -65,31 +66,27 @@ public class NeedlessNestingRule implements Rule {
         return issues;
     }
 
-    private void walkTree(PdfStructTreeRoot root, List<PdfStructElem> toFlatten) {
+    private void findWrapperElements(PdfStructTreeRoot root, List<PdfStructElem> toFlatten) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
 
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
-                collectWrappers(elem, toFlatten);
+                collectWrappersRecursively(elem, toFlatten);
             }
         }
     }
 
-    private void collectWrappers(PdfStructElem elem, List<PdfStructElem> toFlatten) {
-        String role = elem.getRole().getValue();
-
-        // Collect all Part/Sect/Art elements
-        if (WRAPPER_ROLES.contains(role)) {
+    private void collectWrappersRecursively(PdfStructElem elem, List<PdfStructElem> toFlatten) {
+        if (WRAPPER_ROLES.contains(elem.getRole())) {
             toFlatten.add(elem);
         }
 
-        // Recurse into children
         List<IStructureNode> kids = elem.getKids();
         if (kids != null) {
             for (IStructureNode kid : kids) {
                 if (kid instanceof PdfStructElem childElem) {
-                    collectWrappers(childElem, toFlatten);
+                    collectWrappersRecursively(childElem, toFlatten);
                 }
             }
         }

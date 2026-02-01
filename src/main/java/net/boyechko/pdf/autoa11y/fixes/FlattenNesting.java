@@ -50,7 +50,6 @@ public class FlattenNesting implements IssueFix {
     @Override
     public void apply(DocumentContext ctx) throws Exception {
         // Process in reverse order to handle nested wrappers correctly
-        // (children before parents)
         for (int i = elementsToFlatten.size() - 1; i >= 0; i--) {
             PdfStructElem wrapper = elementsToFlatten.get(i);
             flattenElement(wrapper);
@@ -179,7 +178,7 @@ public class FlattenNesting implements IssueFix {
 
     @Override
     public String describe() {
-        return "Flattened " + flattened + " unnecessary wrapper(s)";
+        return "Flattened " + flattened + " unnecessary Part/Sect/Art wrapper(s)";
     }
 
     @Override
