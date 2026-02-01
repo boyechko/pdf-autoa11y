@@ -17,21 +17,25 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
+    private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
     private ProcessingService.ProcessingResult processingResult;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
+        this.mcidBoundsCache = new HashMap<>();
     }
 
     public PdfDocument doc() {
@@ -46,20 +50,15 @@ public class DocumentContext {
         return processingResult;
     }
 
-    /**
-     * Gets the page number for a given object number.
-     *
-     * @param objectNumber The PDF object number
-     * @return The page number (1-based), or 0 if not found
-     */
     public int getPageNumber(int objectNumber) {
         return objectToPageMapping.getOrDefault(objectNumber, 0);
     }
 
-    /**
-     * Builds a mapping from object number to page number for all structure elements in the
-     * document.
-     */
+    public Map<Integer, Rectangle> getOrComputeMcidBounds(
+            int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
+        return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
+    }
+
     private Map<Integer, Integer> buildObjectToPageMapping(PdfDocument document) {
         Map<Integer, Integer> mapping = new HashMap<>();
         PdfStructTreeRoot root = document.getStructTreeRoot();
@@ -93,10 +92,6 @@ public class DocumentContext {
         }
     }
 
-    /**
-     * Gets the page number for a specific structure element. If the element doesn't have a direct
-     * page reference, checks its children recursively.
-     */
     private int getPageNumber(PdfStructElem node, PdfDocument document) {
         PdfDictionary dict = node.getPdfObject();
         PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);

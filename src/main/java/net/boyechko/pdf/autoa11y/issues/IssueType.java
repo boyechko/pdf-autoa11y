@@ -28,5 +28,13 @@ public enum IssueType {
     TAG_WRONG_PARENT, // Child has wrong parent type
     TAG_WRONG_CHILD, // Parent contains a child type it shouldn't
     TAG_WRONG_CHILD_COUNT, // Parent has too many/few children
-    TAG_WRONG_CHILD_PATTERN // Parent's children don't match pattern
+    TAG_WRONG_CHILD_PATTERN, // Parent's children don't match pattern
+
+    // Structure Issues
+    MISSING_DOCUMENT_WRAPPER, // Root has no Document child
+    FIGURE_WITH_TEXT, // Figure element contains text instead of image
+    NEEDLESS_NESTING, // Part/Sect adds no semantic value
+    MISTAGGED_ARTIFACT, // Tagged content that should be artifact (footer, header)
+    UNMARKED_LINK, // Link annotation not associated with Link structure element
+    EMPTY_LINK_TAG_RULE // Link has OBJR but no content MCR
 }
