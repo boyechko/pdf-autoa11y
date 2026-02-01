@@ -31,30 +31,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.ui.cli.CliProcessingListener;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Comprehensive test suite for ProcessingService that demonstrates PDF accessibility issue
  * detection and remediation.
  */
-public class ProcessingServiceTest {
-
-    // Use a persistent directory for examining test PDFs
-    private static final Path TEST_PDF_DIR = Path.of("/tmp/pdf-autoa11y-tests");
-
-    @TempDir Path tempDir;
-
-    static {
-        try {
-            Files.createDirectories(TEST_PDF_DIR);
-            System.out.println("Test PDFs will be created in: " + TEST_PDF_DIR.toAbsolutePath());
-        } catch (Exception e) {
-            System.err.println("Failed to create test PDF directory: " + e.getMessage());
-        }
-    }
+public class ProcessingServiceTest extends PdfTestBase {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessingServiceTest.class);
 
     @Test
     void encryptedPdfRaisesException() {
@@ -294,7 +283,7 @@ public class ProcessingServiceTest {
     }
 
     private Path createBasicPdf(String filename, PdfSetupAction setupAction) throws Exception {
-        Path testFile = TEST_PDF_DIR.resolve(filename);
+        Path testFile = testOutputPath(filename);
 
         try (PdfWriter writer = new PdfWriter(testFile.toString());
                 PdfDocument pdfDoc = new PdfDocument(writer)) {
@@ -320,7 +309,7 @@ public class ProcessingServiceTest {
             document.close();
         }
 
-        System.out.println("Created test PDF: " + testFile.toAbsolutePath());
+        logger.debug("Created test PDF: " + testFile.toAbsolutePath());
         return testFile;
     }
 
@@ -341,14 +330,14 @@ public class ProcessingServiceTest {
                     case "L_WITH_P_CHILDREN" -> createListWithParagraphChildren(root);
                     case "LI_WITH_SINGLE_P" -> createListItemWithSingleParagraph(root);
                     case "MISSING_LBODY" -> createListItemMissingLBody(root);
-                    default -> System.out.println("Unknown issue type: " + issueType);
+                    default -> logger.debug("Unknown issue type: " + issueType);
                 }
             }
         }
 
         Files.deleteIfExists(sourcePdf);
 
-        System.out.println("Created broken PDF: " + targetPdf.toAbsolutePath());
+        logger.debug("Created broken PDF: " + targetPdf.toAbsolutePath());
         return targetPdf;
     }
 
@@ -505,7 +494,7 @@ public class ProcessingServiceTest {
                             document.add(list);
                         });
 
-        Path brokenPdf = TEST_PDF_DIR.resolve("tag_issues_test.pdf");
+        Path brokenPdf = testOutputPath("tag_issues_test.pdf");
         return createBrokenTagStructure(normalPdf, brokenPdf, "L_WITH_P_CHILDREN");
     }
 
@@ -553,7 +542,7 @@ public class ProcessingServiceTest {
                             document.add(list);
                         });
 
-        Path brokenPdf = TEST_PDF_DIR.resolve("fixable_tag_issues_test.pdf");
+        Path brokenPdf = testOutputPath("fixable_tag_issues_test.pdf");
         return createBrokenTagStructure(normalPdf, brokenPdf, "LI_WITH_SINGLE_P");
     }
 }

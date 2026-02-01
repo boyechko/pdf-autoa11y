@@ -29,15 +29,15 @@ import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import org.junit.jupiter.api.Test;
 
-class ConvertToArtifactTest {
+class ConvertToArtifactTest extends PdfTestBase {
 
     @Test
     void removesElementAndAssociatedLinkAnnotation() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
@@ -75,7 +75,7 @@ class ConvertToArtifactTest {
 
     @Test
     void removesElementFromStructTreeRoot() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
@@ -94,7 +94,7 @@ class ConvertToArtifactTest {
 
     @Test
     void doesNothingWhenNoParent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
@@ -108,7 +108,7 @@ class ConvertToArtifactTest {
 
     @Test
     void invalidatesDescendantFix() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 

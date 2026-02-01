@@ -26,16 +26,16 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import org.junit.jupiter.api.Test;
 
-class SetupDocumentStructureTest {
+class SetupDocumentStructureTest extends PdfTestBase {
 
     @Test
     void createsDocumentWrapperWhenMissing() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
@@ -58,7 +58,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void createsPartForEachPage() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
             pdfDoc.addNewPage();
@@ -88,7 +88,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void movesContentToCorrectPart() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page1 = pdfDoc.addNewPage();
             PdfPage page2 = pdfDoc.addNewPage();
@@ -131,7 +131,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void isIdempotent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
@@ -165,7 +165,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void preservesExistingDocument() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
@@ -190,7 +190,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void findPartForPageReturnsCorrectPart() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page1 = pdfDoc.addNewPage();
             PdfPage page2 = pdfDoc.addNewPage();
@@ -215,7 +215,7 @@ class SetupDocumentStructureTest {
 
     @Test
     void handlesEmptyStructureTree() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 

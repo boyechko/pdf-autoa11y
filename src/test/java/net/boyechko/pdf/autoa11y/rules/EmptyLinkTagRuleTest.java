@@ -31,19 +31,19 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.Map;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
-class EmptyLinkTagRuleTest {
+class EmptyLinkTagRuleTest extends PdfTestBase {
 
     @Test
     void detectsAndMovesSiblingMcrIntoLink() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 

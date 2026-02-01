@@ -30,15 +30,15 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import org.junit.jupiter.api.Test;
 
-class CreateLinkTagTest {
+class CreateLinkTagTest extends PdfTestBase {
     @Test
     void createsLinkTagWithObjRef() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
@@ -68,7 +68,7 @@ class CreateLinkTagTest {
 
     @Test
     void createsLinkTagsOnMultiplePages() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page1 = pdfDoc.addNewPage();
             PdfPage page2 = pdfDoc.addNewPage();
@@ -112,7 +112,7 @@ class CreateLinkTagTest {
 
     @Test
     void setsStructParentOnAnnotation() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
@@ -141,7 +141,7 @@ class CreateLinkTagTest {
 
     @Test
     void handlesMultipleLinksOnSamePage() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
@@ -182,7 +182,7 @@ class CreateLinkTagTest {
 
     @Test
     void throwsWhenDocumentElementMissing() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 
@@ -202,7 +202,7 @@ class CreateLinkTagTest {
 
     @Test
     void throwsOnInvalidPageNum() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
 

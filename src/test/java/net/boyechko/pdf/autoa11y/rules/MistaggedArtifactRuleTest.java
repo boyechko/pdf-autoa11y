@@ -25,15 +25,15 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.regex.Pattern;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.junit.jupiter.api.Test;
 
-class MistaggedArtifactRuleTest {
+class MistaggedArtifactRuleTest extends PdfTestBase {
 
     // Patterns copied from MistaggedArtifactRule for testing
     private static final Pattern FOOTER_URL_TIMESTAMP =
@@ -92,7 +92,7 @@ class MistaggedArtifactRuleTest {
 
     @Test
     void noIssuesForEmptyTree() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             // Empty tree - no children added
@@ -108,7 +108,7 @@ class MistaggedArtifactRuleTest {
     @Test
     void noIssuesForStructureOnlyTree() throws Exception {
         // Tree with structure but no MCR content won't match patterns
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
@@ -126,7 +126,7 @@ class MistaggedArtifactRuleTest {
 
     @Test
     void fixRemovesElementFromParent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
@@ -152,7 +152,7 @@ class MistaggedArtifactRuleTest {
 
     @Test
     void fixIsIdempotent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
@@ -171,7 +171,7 @@ class MistaggedArtifactRuleTest {
 
     @Test
     void fixDescribeIncludesRole() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
