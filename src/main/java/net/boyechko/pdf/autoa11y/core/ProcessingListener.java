@@ -31,6 +31,10 @@ public interface ProcessingListener {
 
     void onSummary(int detected, int resolved, int remaining);
 
+    default void onError(String message) {}
+
+    default void onInfo(String message) {}
+
     default void onVerboseOutput(String message) {}
 
     default void onSubsection(String header) {}

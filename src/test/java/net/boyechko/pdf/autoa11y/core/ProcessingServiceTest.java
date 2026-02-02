@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.ui.cli.CliProcessingListener;
+import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,9 +144,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService(
-                        testPdf,
-                        null,
-                        new CliProcessingListener(capturedOutput, VerbosityLevel.NORMAL));
+                        testPdf, null, new OutputFormatter(capturedOutput, VerbosityLevel.NORMAL));
 
         try {
             service.process();
