@@ -15,16 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.core;
+package net.boyechko.pdf.autoa11y.ui;
 
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.core.ProcessingListener;
+import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 
-public class OutputFormatter {
+public class OutputFormatter implements ProcessingListener {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
 
@@ -33,7 +35,6 @@ public class OutputFormatter {
     private static final String WARNING = "▸";
     private static final String INFO = "ℹ";
 
-    private static final String SECTION_LINE = "─".repeat(50);
     private static final String INDENT = "│ ";
     private static final String SUBSECTION_MARK = "⊏";
     private static final int HEADER_WIDTH = 68;
@@ -45,7 +46,8 @@ public class OutputFormatter {
         this.verbosity = verbosity;
     }
 
-    public void printPhase(String phaseName) {
+    @Override
+    public void onPhaseStart(String phaseName) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
             printBoxHeader(phaseName);
@@ -53,18 +55,16 @@ public class OutputFormatter {
         }
     }
 
-    public void printSubsection(String header) {
+    @Override
+    public void onSubsection(String header) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             output.println();
             output.println(INDENT + SUBSECTION_MARK + " " + header);
         }
     }
 
-    public void printSeparator() {
-        printLine(SECTION_LINE, null);
-    }
-
-    public void printIssueGroup(String groupLabel, List<Issue> issues) {
+    @Override
+    public void onIssueGroup(String groupLabel, List<Issue> issues) {
         if (issues.isEmpty()) return;
 
         Set<Integer> pages =
@@ -74,7 +74,7 @@ public class OutputFormatter {
                         .collect(Collectors.toCollection(TreeSet::new));
 
         String summary = buildGroupSummary(groupLabel, issues.size(), pages);
-        printWarning(summary);
+        onWarning(summary);
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
@@ -83,7 +83,8 @@ public class OutputFormatter {
         }
     }
 
-    public void printFixGroup(String groupLabel, List<Issue> resolvedIssues) {
+    @Override
+    public void onFixGroup(String groupLabel, List<Issue> resolvedIssues) {
         if (resolvedIssues.isEmpty()) return;
 
         Set<Integer> pages =
@@ -93,7 +94,7 @@ public class OutputFormatter {
                         .collect(Collectors.toCollection(TreeSet::new));
 
         String summary = buildGroupSummary(groupLabel, resolvedIssues.size(), pages);
-        printSuccess(summary);
+        onSuccess(summary);
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : resolvedIssues) {
@@ -104,7 +105,8 @@ public class OutputFormatter {
         }
     }
 
-    public void printSummary(int detected, int resolved, int remaining) {
+    @Override
+    public void onSummary(int detected, int resolved, int remaining) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
             printBoxHeader("Summary");
@@ -122,24 +124,34 @@ public class OutputFormatter {
         }
     }
 
-    public void printSuccess(String message) {
+    @Override
+    public void onSuccess(String message) {
         printLine(message, SUCCESS);
     }
 
-    public void printError(String message) {
-        printLine(message, ERROR, false, VerbosityLevel.QUIET);
+    @Override
+    public void onIssueFixed(String resolutionNote) {
+        onSuccess(resolutionNote);
     }
 
-    public void printWarning(String message) {
+    @Override
+    public void onError(String message) {
+        printLine(message, ERROR, VerbosityLevel.QUIET);
+    }
+
+    @Override
+    public void onWarning(String message) {
         printLine(message, WARNING);
     }
 
-    public void printInfo(String message) {
+    @Override
+    public void onInfo(String message) {
         printLine(message, INFO);
     }
 
-    public void printDetail(String message) {
-        printLine(INDENT + "  " + message, null); // Extra 2 spaces for detail indentation
+    @Override
+    public void onVerboseOutput(String message) {
+        output.print(message);
     }
 
     public PrintStream getStream() {
@@ -172,15 +184,18 @@ public class OutputFormatter {
         }
     }
 
-    private void printLine(
-            String message, String icon, Boolean newlineBefore, VerbosityLevel level) {
+    private void printLine(String message, String icon, VerbosityLevel level) {
         if (verbosity.shouldShow(level)) {
             output.println(icon == null ? message : INDENT + icon + " " + message);
         }
     }
 
     private void printLine(String message, String icon) {
-        printLine(message, icon, false, VerbosityLevel.NORMAL);
+        printLine(message, icon, VerbosityLevel.NORMAL);
+    }
+
+    private void printDetail(String message) {
+        printLine(INDENT + "  " + message, null);
     }
 
     private String buildGroupSummary(String groupLabel, int count, Set<Integer> pages) {
@@ -204,7 +219,6 @@ public class OutputFormatter {
         if (pages.isEmpty()) return "";
         if (pages.size() == 1) return pages.iterator().next().toString();
 
-        // In future, could detect consecutive runs for smarter ranges
         int min = pages.stream().min(Integer::compareTo).orElse(0);
         int max = pages.stream().max(Integer::compareTo).orElse(0);
 

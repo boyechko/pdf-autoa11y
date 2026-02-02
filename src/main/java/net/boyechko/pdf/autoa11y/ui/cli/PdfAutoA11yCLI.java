@@ -19,9 +19,9 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.io.PrintStream;
 import java.nio.file.*;
-import net.boyechko.pdf.autoa11y.core.OutputFormatter;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
 
 public class PdfAutoA11yCLI {
 
@@ -156,10 +156,9 @@ public class PdfAutoA11yCLI {
             VerbosityLevel verbosity = config.verbosity();
             OutputFormatter formatter = new OutputFormatter(output, verbosity);
 
-            CliProcessingListener listener = new CliProcessingListener(output, verbosity);
             ProcessingService service =
                     new ProcessingService(
-                            config.inputPath(), config.password(), listener, verbosity);
+                            config.inputPath(), config.password(), formatter, verbosity);
 
             if (config.reportOnly()) {
                 service.analyzeOnly();
@@ -168,7 +167,7 @@ public class PdfAutoA11yCLI {
             ProcessingService.ProcessingResult result = service.process();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-                formatter.printInfo("No changes made; output file not created");
+                formatter.onInfo("No changes made; output file not created");
                 return;
             }
 
@@ -182,7 +181,7 @@ public class PdfAutoA11yCLI {
                     config.outputPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            formatter.printSuccess("Output saved to " + config.outputPath().toString());
+            formatter.onSuccess("Output saved to " + config.outputPath().toString());
         } catch (Exception e) {
             if (isDevelopment() || config.verbosity().isAtLeast(VerbosityLevel.DEBUG)) {
                 System.err.println("✗ Processing failed:");

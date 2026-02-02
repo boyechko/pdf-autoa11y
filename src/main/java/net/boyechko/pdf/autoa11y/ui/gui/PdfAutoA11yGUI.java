@@ -26,10 +26,10 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import net.boyechko.pdf.autoa11y.core.OutputFormatter;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.ProcessingService.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
 
 public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
@@ -237,12 +237,11 @@ public class PdfAutoA11yGUI extends JFrame {
                                         ? passwordField.getText()
                                         : null;
 
-                        GuiProcessingListener listener = new GuiProcessingListener(formatter);
                         ProcessingService service =
                                 new ProcessingService(
                                         selectedFile.toPath(),
                                         password,
-                                        listener,
+                                        formatter,
                                         VerbosityLevel.VERBOSE);
 
                         ProcessingService.ProcessingResult result = service.process();
@@ -258,7 +257,7 @@ public class PdfAutoA11yGUI extends JFrame {
                             ProcessingResult result = get();
 
                             if (result.totalIssuesResolved() == 0) {
-                                formatter.printInfo("No changes made; output file not created");
+                                formatter.onInfo("No changes made; output file not created");
                                 tempResultFile = null;
                                 saveButton.setEnabled(false);
                             } else {
@@ -268,7 +267,7 @@ public class PdfAutoA11yGUI extends JFrame {
                             // Report is always available after processing
                             saveReportButton.setEnabled(true);
                         } catch (Exception e) {
-                            formatter.printError(e.getMessage());
+                            formatter.onError(e.getMessage());
                         }
                         processButton.setEnabled(true);
                     }
