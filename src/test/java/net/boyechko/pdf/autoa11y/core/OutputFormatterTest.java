@@ -56,7 +56,7 @@ public class OutputFormatterTest {
         formatter.printSuccess("5 elements converted to artifacts");
 
         formatter.printSummary(42, 41, 1);
-        formatter.printCompletion("output/five_acro_autoa11y_pass1.pdf");
+        formatter.printSuccess("Output saved to output/five_acro_autoa11y_pass1.pdf");
 
         String rendered = normalize(buffer);
 

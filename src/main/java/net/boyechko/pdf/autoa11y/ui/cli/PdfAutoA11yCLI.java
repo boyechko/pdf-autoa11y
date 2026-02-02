@@ -156,8 +156,6 @@ public class PdfAutoA11yCLI {
             VerbosityLevel verbosity = config.verbosity();
             OutputFormatter formatter = new OutputFormatter(output, verbosity);
 
-            formatter.printHeader(config.inputPath().toString());
-
             CliProcessingListener listener = new CliProcessingListener(output, verbosity);
             ProcessingService service =
                     new ProcessingService(
@@ -170,7 +168,7 @@ public class PdfAutoA11yCLI {
             ProcessingService.ProcessingResult result = service.process();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-                formatter.printNoOutput();
+                formatter.printInfo("No changes made; output file not created");
                 return;
             }
 
@@ -184,7 +182,7 @@ public class PdfAutoA11yCLI {
                     config.outputPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            formatter.printCompletion(config.outputPath().toString());
+            formatter.printSuccess("Output saved to " + config.outputPath().toString());
         } catch (Exception e) {
             if (isDevelopment() || config.verbosity().isAtLeast(VerbosityLevel.DEBUG)) {
                 System.err.println("✗ Processing failed:");

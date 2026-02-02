@@ -36,8 +36,7 @@ public class OutputFormatter {
     private static final String SECTION_LINE = "─".repeat(50);
     private static final String INDENT = "│ ";
     private static final String SUBSECTION_MARK = "⊏";
-    private static final int PHASE_WIDTH = 68;
-    private static final int SUMMARY_WIDTH = PHASE_WIDTH + 2; // Align widths with phase boxes
+    private static final int HEADER_WIDTH = 68;
 
     private boolean phaseOpen = false;
 
@@ -46,14 +45,10 @@ public class OutputFormatter {
         this.verbosity = verbosity;
     }
 
-    public void printHeader(String inputPath) {}
-
     public void printPhase(String phaseName) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
-            int filler = Math.max(0, PHASE_WIDTH - phaseName.length() - 1);
-            output.println("┌─ " + phaseName + " " + "─".repeat(filler) + "┐");
-            output.println("│" + " ".repeat(PHASE_WIDTH + 2) + "│");
+            printBoxHeader(phaseName);
             phaseOpen = true;
         }
     }
@@ -112,9 +107,7 @@ public class OutputFormatter {
     public void printSummary(int detected, int resolved, int remaining) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
-            String title = "Summary";
-            int pad = Math.max(0, SUMMARY_WIDTH - ("┏━ " + title).length());
-            output.println(INDENT + "┏━ " + title + " " + "━".repeat(pad) + "┓");
+            printBoxHeader("Summary");
 
             if (detected == 0 && resolved == 0) {
                 printLine("No issues to fix", SUCCESS);
@@ -125,22 +118,8 @@ public class OutputFormatter {
                     printLine("Manual review needed: " + remaining, WARNING);
                 }
             }
-            output.println(INDENT + "┗" + "━".repeat(SUMMARY_WIDTH) + "┛");
+            printBoxFooter();
         }
-    }
-
-    public void printCompletion(String outputPath) {
-        closePhaseBoxIfOpen();
-        if (verbosity == VerbosityLevel.QUIET) {
-            output.println(outputPath);
-        } else if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            printLine("Output saved to " + outputPath, SUCCESS);
-        }
-    }
-
-    public void printNoOutput() {
-        closePhaseBoxIfOpen();
-        printLine("No changes made; output file not created", INFO);
     }
 
     public void printSuccess(String message) {
@@ -173,9 +152,23 @@ public class OutputFormatter {
 
     private void closePhaseBoxIfOpen() {
         if (phaseOpen && verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println("│" + " ".repeat(PHASE_WIDTH + 2) + "│");
-            output.println("└" + "─".repeat(PHASE_WIDTH + 2) + "┘");
+            printBoxFooter();
             phaseOpen = false;
+        }
+    }
+
+    private void printBoxHeader(String title) {
+        int filler = Math.max(0, HEADER_WIDTH - title.length() - 1);
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            output.println("┌─ " + title + " " + "─".repeat(filler) + "┐");
+            output.println("│" + " ".repeat(HEADER_WIDTH + 2) + "│");
+        }
+    }
+
+    private void printBoxFooter() {
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            output.println("│" + " ".repeat(HEADER_WIDTH + 2) + "│");
+            output.println("└" + "─".repeat(HEADER_WIDTH + 2) + "┘");
         }
     }
 
