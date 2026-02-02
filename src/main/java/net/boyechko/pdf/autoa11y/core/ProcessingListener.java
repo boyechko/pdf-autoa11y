@@ -21,7 +21,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 
 public interface ProcessingListener {
-    void onPhaseStart(int step, int total, String phaseName);
+    void onPhaseStart(String phaseName);
 
     void onSuccess(String message);
 

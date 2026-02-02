@@ -158,7 +158,7 @@ public class ProcessingService {
                 PdfDocument pdfDoc = new PdfDocument(pdfReader)) {
             this.context = new DocumentContext(pdfDoc);
 
-            listener.onPhaseStart(1, 2, "Checking document-level compliance");
+            listener.onPhaseStart("Checking document-level compliance");
             IssueList documentIssues = detectAndReportRuleIssues();
 
             IssueList tagIssues = null;
@@ -166,10 +166,10 @@ public class ProcessingService {
                     documentIssues.stream()
                             .anyMatch(issue -> issue.type() == IssueType.NO_STRUCT_TREE);
             if (hasNoStructTree) {
-                listener.onPhaseStart(2, 2, "No tag structure to validate");
+                listener.onPhaseStart("No tag structure to validate");
                 tagIssues = new IssueList();
             } else {
-                listener.onPhaseStart(2, 2, "Validating tag structure");
+                listener.onPhaseStart("Validating tag structure");
                 tagIssues = detectAndReportTagIssues();
             }
 
@@ -224,27 +224,29 @@ public class ProcessingService {
     }
 
     private IssueList analyzeAndRemediate() throws Exception {
-        listener.onPhaseStart(1, 4, "Validating tag structure");
+        listener.onPhaseStart("Validating tag structure");
         IssueList originalTagIssues = detectAndReportTagIssues();
 
-        listener.onPhaseStart(2, 4, "Applying automatic fixes");
+        listener.onPhaseStart("Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
-
-        IssueList remainingTagIssues;
-        if (!appliedTagFixes.isEmpty()) {
-            listener.onPhaseStart(3, 4, "Re-validating tag structure");
-            remainingTagIssues = detectAndReportTagIssues();
-        } else {
-            remainingTagIssues = originalTagIssues;
+        if (appliedTagFixes.isEmpty()) {
+            listener.onSuccess("Nothinng to be done");
         }
 
-        listener.onPhaseStart(4, 4, "Checking document-level compliance");
+        IssueList remainingTagIssues = originalTagIssues;
+        if (!appliedTagFixes.isEmpty()) {
+            listener.onPhaseStart("Re-validating tag structure");
+            remainingTagIssues = detectAndReportTagIssues();
+        }
+
+        listener.onPhaseStart("Checking document-level compliance");
         IssueList documentLevelIssues = detectAndReportRuleIssues();
 
+        IssueList appliedDocumentFixes = new IssueList();
         if (!documentLevelIssues.isEmpty()) {
-            listener.onSubsection("Applying fixes...");
+            listener.onPhaseStart("Applying document fixes");
+            appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
         }
-        IssueList appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
 
         IssueList totalRemainingIssues = new IssueList();
         totalRemainingIssues.addAll(remainingTagIssues);
@@ -338,7 +340,6 @@ public class ProcessingService {
         }
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
-
         reportFixesGrouped(appliedFixes);
 
         return appliedFixes;

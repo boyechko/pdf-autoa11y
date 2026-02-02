@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.core;
 
 public class NoOpProcessingListener implements ProcessingListener {
     @Override
-    public void onPhaseStart(int step, int total, String phaseName) {}
+    public void onPhaseStart(String phaseName) {}
 
     @Override
     public void onSuccess(String message) {}

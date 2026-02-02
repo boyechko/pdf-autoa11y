@@ -27,13 +27,16 @@ public class OutputFormatterTest {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         OutputFormatter formatter =
                 new OutputFormatter(new PrintStream(buffer), VerbosityLevel.NORMAL);
-
-        formatter.printPhase(1, 4, "Validating tag structure");
+        formatter.printPhase("Validating tag structure");
         formatter.printWarning("Found 1 issue(s)");
 
-        formatter.printPhase(2, 4, "Applying automatic fixes");
+        formatter.printPhase("Applying automatic fixes");
+        formatter.printSuccess("Nothing to be done");
 
-        formatter.printPhase(4, 4, "Checking document-level compliance");
+        formatter.printPhase("Re-validating tag structure");
+        formatter.printSuccess("Nothing to be done");
+
+        formatter.printPhase("Checking document-level compliance");
         formatter.printSuccess("Language Set");
         formatter.printSuccess("Tab Order");
         formatter.printSuccess("Tag Structure Present");
@@ -45,7 +48,7 @@ public class OutputFormatterTest {
         formatter.printWarning("Found 10 Part/Sect/Art wrapper(s)");
         formatter.printWarning("3 figures containing text");
 
-        formatter.printSubsection("Applying fixes...");
+        formatter.printPhase("Applying document fixes");
         formatter.printSuccess("Flattened 10 unnecessary Part/Sect/Art wrapper(s)");
         formatter.printSuccess("31 Link tags created (pages 1-5)");
         formatter.printSuccess("Set up document structure: created 5 Part(s), moved 48 element(s)");

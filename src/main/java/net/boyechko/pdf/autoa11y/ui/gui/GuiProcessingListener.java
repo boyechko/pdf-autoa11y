@@ -28,8 +28,8 @@ public class GuiProcessingListener implements ProcessingListener {
     }
 
     @Override
-    public void onPhaseStart(int step, int total, String phaseName) {
-        formatter.printPhase(step, total, phaseName);
+    public void onPhaseStart(String phaseName) {
+        formatter.printPhase(phaseName);
     }
 
     @Override
