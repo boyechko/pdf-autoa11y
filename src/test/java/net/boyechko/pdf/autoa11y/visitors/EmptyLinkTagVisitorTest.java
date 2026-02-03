@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.rules;
+package net.boyechko.pdf.autoa11y.visitors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,9 +37,11 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
+import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class EmptyLinkTagRuleTest extends PdfTestBase {
+class EmptyLinkTagVisitorTest extends PdfTestBase {
 
     @Test
     void detectsAndMovesSiblingMcrIntoLink() throws Exception {
@@ -71,12 +73,13 @@ class EmptyLinkTagRuleTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
             ctx.getOrComputeMcidBounds(1, () -> Map.of(mcr.getMcid(), mcrRect));
-            EmptyLinkTagRule rule = new EmptyLinkTagRule();
-            IssueList issues = rule.findIssues(ctx);
+            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new EmptyLinkTagVisitor());
+            IssueList issues = walker.walk(root, ctx);
 
             assertEquals(1, issues.size(), "Expected one missing-content Link issue");
             Issue issue = issues.get(0);
-            assertEquals(IssueType.EMPTY_LINK_TAG_RULE, issue.type());
+            assertEquals(IssueType.EMPTY_LINK_TAG, issue.type());
 
             issue.fix().apply(ctx);
 
