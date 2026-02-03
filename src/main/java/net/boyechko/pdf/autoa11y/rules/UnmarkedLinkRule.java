@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import net.boyechko.pdf.autoa11y.content.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issues.*;
@@ -54,7 +55,8 @@ public class UnmarkedLinkRule implements Rule {
                     String uri = getAnnotationUri(annotDict);
                     String description =
                             uri != null
-                                    ? "Link annotation not tagged: " + truncate(uri, 50)
+                                    ? "Link annotation not tagged: "
+                                            + McidTextExtractor.truncateText(uri, 50)
                                     : "Link annotation not tagged (page " + pageNum + ")";
 
                     IssueFix fix = new CreateLinkTag(annotDict, pageNum);
@@ -85,12 +87,5 @@ public class UnmarkedLinkRule implements Rule {
             }
         }
         return null;
-    }
-
-    // TODO: Move to a utility class
-    private String truncate(String text, int maxLength) {
-        if (text == null) return "";
-        if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 1) + "…";
     }
 }
