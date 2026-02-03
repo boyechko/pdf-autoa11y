@@ -104,7 +104,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
             IssueFix fix = new MoveSiblingMcrIntoLink(linkElem, mcr.getMcid(), pageNum);
             Issue issue =
                     new Issue(
-                            IssueType.EMPTY_LINK_TAG_RULE,
+                            IssueType.EMPTY_LINK_TAG,
                             IssueSeverity.WARNING,
                             new IssueLocation(pageNum, "Page " + pageNum),
                             "Link tag (after/inside "

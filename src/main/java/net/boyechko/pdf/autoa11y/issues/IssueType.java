@@ -30,14 +30,14 @@ public enum IssueType {
     TAG_WRONG_CHILD("tags with wrong children"),
     TAG_WRONG_CHILD_COUNT("tags with wrong child count"),
     TAG_WRONG_CHILD_PATTERN("tags with wrong child pattern"),
+    FIGURE_WITH_TEXT("figures containing text"),
+    EMPTY_LINK_TAG("empty link tags"),
 
     // Structure Issues
     MISSING_DOCUMENT_WRAPPER("structure tree root has no Document element"),
-    FIGURE_WITH_TEXT("figures containing text"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
-    UNMARKED_LINK("link annotations not tagged"),
-    EMPTY_LINK_TAG_RULE("empty link tags");
+    UNMARKED_LINK("link annotations not tagged");
 
     private final String groupLabel;
 
