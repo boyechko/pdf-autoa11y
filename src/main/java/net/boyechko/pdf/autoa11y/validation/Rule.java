@@ -23,5 +23,9 @@ import net.boyechko.pdf.autoa11y.issues.IssueList;
 public interface Rule {
     String name();
 
+    String passedMessage();
+
+    String failedMessage();
+
     IssueList findIssues(DocumentContext ctx);
 }

@@ -28,7 +28,17 @@ public class TaggedPdfRule implements Rule {
 
     @Override
     public String name() {
-        return "Document should be marked as tagged PDF";
+        return "Tagged PDF Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Document is marked as tagged PDF";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Document is not marked as tagged PDF";
     }
 
     @Override

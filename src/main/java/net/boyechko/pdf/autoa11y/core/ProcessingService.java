@@ -247,7 +247,7 @@ public class ProcessingService {
         listener.onPhaseStart("Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
         if (appliedTagFixes.isEmpty()) {
-            listener.onSuccess("Nothing to be done");
+            listener.onInfo("No automatic fixes applied");
         }
 
         IssueList remainingTagIssues = originalTagIssues;
@@ -325,7 +325,7 @@ public class ProcessingService {
             allRuleIssues.addAll(ruleIssues);
 
             if (ruleIssues.isEmpty()) {
-                listener.onSuccess(rule.name());
+                listener.onSuccess(rule.passedMessage());
             } else {
                 reportIssuesGrouped(ruleIssues);
             }

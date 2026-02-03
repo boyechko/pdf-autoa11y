@@ -28,7 +28,17 @@ public class StructureTreeRule implements Rule {
 
     @Override
     public String name() {
-        return "Structure tree should be present";
+        return "Structure Tree Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Structure tree root is present";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Structure tree root is missing";
     }
 
     @Override

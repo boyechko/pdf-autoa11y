@@ -31,7 +31,17 @@ public class MissingDocumentRule implements Rule {
 
     @Override
     public String name() {
-        return "Document element should be the highest-level element in the structure tree";
+        return "Missing Document Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Structure tree root has Document element";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Structure tree root missing Document element";
     }
 
     @Override

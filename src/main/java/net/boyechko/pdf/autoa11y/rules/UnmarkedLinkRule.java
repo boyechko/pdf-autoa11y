@@ -32,7 +32,17 @@ public class UnmarkedLinkRule implements Rule {
 
     @Override
     public String name() {
-        return "Link annotations should be tagged";
+        return "Unmarked Link Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "All link annotations are tagged";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Some link annotations are not tagged";
     }
 
     @Override

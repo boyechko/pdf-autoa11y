@@ -28,7 +28,17 @@ public class TabOrderRule implements Rule {
 
     @Override
     public String name() {
-        return "Document tab order should be set to follow structure tree";
+        return "Tab Order Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Document tab order is set to follow structure tree";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Document tab order is not set";
     }
 
     @Override

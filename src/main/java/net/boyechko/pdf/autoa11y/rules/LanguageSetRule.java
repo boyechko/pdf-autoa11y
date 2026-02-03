@@ -28,7 +28,17 @@ public class LanguageSetRule implements Rule {
 
     @Override
     public String name() {
-        return "Document language should be set";
+        return "Language Set Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Document language (Lang) is set";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "✗ Document language (Lang) is not set";
     }
 
     @Override
