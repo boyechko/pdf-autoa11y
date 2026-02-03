@@ -34,6 +34,7 @@ import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.validation.TagValidator;
+import net.boyechko.pdf.autoa11y.validation.visitors.EmptyLinkTagVisitor;
 import net.boyechko.pdf.autoa11y.validation.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.validation.visitors.MistaggedArtifactVisitor;
 import net.boyechko.pdf.autoa11y.validation.visitors.NeedlessNestingVisitor;
@@ -85,13 +86,13 @@ public class ProcessingService {
                         new StructureTreeRule(),
                         new TaggedPdfRule(),
                         new MissingDocumentRule(),
-                        new UnmarkedLinkRule(),
-                        new EmptyLinkTagRule());
+                        new UnmarkedLinkRule());
 
         List<StructureTreeVisitor> visitors = new ArrayList<>();
         visitors.add(new MistaggedArtifactVisitor());
         visitors.add(new NeedlessNestingVisitor());
         visitors.add(new FigureWithTextVisitor());
+        visitors.add(new EmptyLinkTagVisitor());
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
