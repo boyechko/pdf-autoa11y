@@ -47,7 +47,12 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Structure tree traversal";
+        return "Verbose Structure Tree Traversal";
+    }
+
+    @Override
+    public String description() {
+        return "Outputs a tabular listing of the structure tree during traversal";
     }
 
     @Override

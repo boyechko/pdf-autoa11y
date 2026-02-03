@@ -57,6 +57,11 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
+        return "Mistagged Artifact Check";
+    }
+
+    @Override
+    public String description() {
         return "Decorative or noisy content should be artifacted";
     }
 

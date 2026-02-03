@@ -48,6 +48,11 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
+        return "Empty Link Tag Check";
+    }
+
+    @Override
+    public String description() {
         return "Link elements should contain link description";
     }
 

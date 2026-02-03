@@ -24,6 +24,8 @@ public interface StructureTreeVisitor {
 
     String name();
 
+    String description();
+
     default boolean enterElement(VisitorContext ctx) {
         return true;
     }

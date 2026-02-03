@@ -36,7 +36,12 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Figures should not contain text content";
+        return "Figure With Text Check";
+    }
+
+    @Override
+    public String description() {
+        return "Figure elements should not contain text content";
     }
 
     @Override
