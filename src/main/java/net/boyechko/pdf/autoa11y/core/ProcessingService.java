@@ -33,11 +33,11 @@ import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
-import net.boyechko.pdf.autoa11y.validation.TagValidator;
 import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
 import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
 import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
 import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +89,10 @@ public class ProcessingService {
                         new MissingDocumentRule(),
                         new UnmarkedLinkRule());
 
+        TagSchema schema = TagSchema.loadDefault();
+
         List<StructureTreeVisitor> visitors = new ArrayList<>();
+        visitors.add(new SchemaValidationVisitor());
         visitors.add(new MistaggedArtifactVisitor());
         visitors.add(new NeedlessNestingVisitor());
         visitors.add(new FigureWithTextVisitor());
@@ -99,7 +102,6 @@ public class ProcessingService {
             visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
-        TagSchema schema = TagSchema.loadDefault();
         this.engine = new RuleEngine(rules, visitors, schema);
     }
 
@@ -297,12 +299,7 @@ public class ProcessingService {
             throw new NoTagsException("No accessibility tags found");
         }
 
-        TagSchema schema = TagSchema.loadDefault();
-        TagValidator validator = new TagValidator(schema, getVerboseOutput());
-        List<Issue> tagIssues = validator.validate(root);
-
-        IssueList issueList = new IssueList();
-        issueList.addAll(tagIssues);
+        IssueList tagIssues = engine.runVisitors(context);
 
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");
@@ -310,7 +307,7 @@ public class ProcessingService {
             listener.onWarning("Found " + tagIssues.size() + " issue(s)");
         }
 
-        return issueList;
+        return tagIssues;
     }
 
     private Consumer<String> getVerboseOutput() {
