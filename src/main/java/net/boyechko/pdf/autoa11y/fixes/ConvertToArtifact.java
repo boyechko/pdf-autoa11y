@@ -224,7 +224,7 @@ public class ConvertToArtifact implements IssueFix {
                 element.getPdfObject().getIndirectReference() != null
                         ? element.getPdfObject().getIndirectReference().getObjNumber()
                         : 0;
-        return "Converted " + role + " (object #" + objNum + ") to artifact";
+        return "Converted " + role + " obj #" + objNum + " to artifact";
     }
 
     @Override
@@ -236,7 +236,7 @@ public class ConvertToArtifact implements IssueFix {
                         : 0;
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Converted " + role + " (object #" + objNum + ")" + pageInfo + " to artifact";
+        return "Converted " + role + " obj #" + objNum + pageInfo + " to artifact";
     }
 
     @Override
