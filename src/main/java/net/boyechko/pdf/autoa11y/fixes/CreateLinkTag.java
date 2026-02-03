@@ -34,6 +34,7 @@ import java.util.Map;
 import net.boyechko.pdf.autoa11y.content.McidBoundsExtractor;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -363,11 +364,14 @@ public class CreateLinkTag implements IssueFix {
 
     @Override
     public String describe() {
-        int annotObjNum =
-                annotDict.getIndirectReference() != null
-                        ? annotDict.getIndirectReference().getObjNumber()
-                        : 0;
-        return "Created Link tag for annotation #" + annotObjNum + " on page " + pageNum;
+        String uri = UnmarkedLinkRule.getAnnotationUri(annotDict);
+        String objNumber =
+                String.valueOf(
+                        annotDict.getIndirectReference() != null
+                                ? annotDict.getIndirectReference().getObjNumber()
+                                : 0);
+        String baseDescription = UnmarkedLinkRule.buildDescription(objNumber, uri, pageNum);
+        return "Created tag for " + baseDescription;
     }
 
     @Override

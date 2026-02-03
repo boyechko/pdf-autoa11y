@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import java.util.Locale;
 import net.boyechko.pdf.autoa11y.content.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
@@ -29,6 +30,7 @@ import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects Link annotations that are not associated with Link structure elements. */
 public class UnmarkedLinkRule implements Rule {
+    private static final int MAX_OBJ_NUMBER_WIDTH = 4;
 
     @Override
     public String name() {
@@ -63,11 +65,9 @@ public class UnmarkedLinkRule implements Rule {
                     }
 
                     String uri = getAnnotationUri(annotDict);
-                    String description =
-                            uri != null
-                                    ? "Link annotation not tagged: "
-                                            + McidTextExtractor.truncateText(uri, 50)
-                                    : "Link annotation not tagged (page " + pageNum + ")";
+                    String objNumber =
+                            String.valueOf(annotDict.getIndirectReference().getObjNumber());
+                    String description = UnmarkedLinkRule.buildDescription(objNumber, uri, pageNum);
 
                     IssueFix fix = new CreateLinkTag(annotDict, pageNum);
                     Issue issue =
@@ -75,7 +75,7 @@ public class UnmarkedLinkRule implements Rule {
                                     IssueType.UNMARKED_LINK,
                                     IssueSeverity.ERROR,
                                     new IssueLocation(pageNum, "Page " + pageNum),
-                                    description,
+                                    "Untagged " + description,
                                     fix);
                     issues.add(issue);
                 }
@@ -85,7 +85,24 @@ public class UnmarkedLinkRule implements Rule {
         return issues;
     }
 
-    private String getAnnotationUri(PdfDictionary annotDict) {
+    /** Builds a description for a link annotation. */
+    public static String buildDescription(String objNumber, String uri, int pageNum) {
+        String objLabel =
+                String.format(Locale.ROOT, "%" + MAX_OBJ_NUMBER_WIDTH + "s", "#" + objNumber);
+        StringBuilder sb = new StringBuilder("Link annotation ").append(objLabel);
+
+        if (pageNum > 0) {
+            sb.append(" (p. ").append(pageNum).append(")");
+        }
+
+        if (uri != null) {
+            sb.append(" to ").append(McidTextExtractor.truncateText(uri));
+        }
+
+        return sb.toString();
+    }
+
+    public static String getAnnotationUri(PdfDictionary annotDict) {
         PdfDictionary action = annotDict.getAsDictionary(PdfName.A);
         if (action != null) {
             PdfName actionType = action.getAsName(PdfName.S);
