@@ -246,7 +246,7 @@ public class ProcessingService {
         listener.onPhaseStart("Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
         if (appliedTagFixes.isEmpty()) {
-            listener.onSuccess("Nothinng to be done");
+            listener.onSuccess("Nothing to be done");
         }
 
         IssueList remainingTagIssues = originalTagIssues;
