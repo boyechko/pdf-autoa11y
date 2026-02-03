@@ -15,67 +15,66 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.validation.visitors;
+package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
+import net.boyechko.pdf.autoa11y.content.McidTextExtractor;
+import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issues.IssueLocation;
 import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Visitor that detects Part/Sect/Art wrapper elements that add no semantic value. */
-public class NeedlessNestingVisitor implements StructureTreeVisitor {
+/** Visitor that detects Figure elements containing text content rather than actual images. */
+public class FigureWithTextVisitor implements StructureTreeVisitor {
 
-    private static final Set<String> WRAPPER_ROLES = Set.of("Part", "Sect", "Art");
-
-    private final List<PdfStructElem> wrappersToFlatten = new ArrayList<>();
+    private static final int NON_TRIVIAL_TEXT_LENGTH = 30;
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Needless Nesting Check";
+        return "Figure Elements Valid";
     }
 
     @Override
     public boolean enterElement(VisitorContext ctx) {
-        if (WRAPPER_ROLES.contains(ctx.role()) && !isPageContainer(ctx.node())) {
-            wrappersToFlatten.add(ctx.node());
+        if (!ctx.hasRole("Figure")) {
+            return true;
         }
-        return true;
-    }
 
-    @Override
-    public void afterTraversal() {
-        if (!wrappersToFlatten.isEmpty()) {
-            IssueFix fix = new FlattenNesting(wrappersToFlatten);
+        int pageNumber = ctx.getPageNumber();
+        if (pageNumber == 0) {
+            return true;
+        }
+
+        String textContent =
+                McidTextExtractor.getMcrContentSummary(ctx.node(), ctx.doc(), pageNumber);
+
+        if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
+            IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);
+            String truncated =
+                    textContent.length() > NON_TRIVIAL_TEXT_LENGTH
+                            ? textContent.substring(0, NON_TRIVIAL_TEXT_LENGTH) + "..."
+                            : textContent;
             Issue issue =
                     new Issue(
-                            IssueType.NEEDLESS_NESTING,
+                            IssueType.FIGURE_WITH_TEXT,
                             IssueSeverity.WARNING,
-                            "Found " + wrappersToFlatten.size() + " Part/Sect/Art wrapper(s)",
+                            new IssueLocation(ctx.node()),
+                            "Figure contains text: \"" + truncated + "\"",
                             fix);
             issues.add(issue);
         }
+
+        return true;
     }
 
     @Override
     public IssueList getIssues() {
         return issues;
-    }
-
-    private boolean isPageContainer(PdfStructElem elem) {
-        // Part with /Pg is a page-level container.
-        if (!PdfName.Part.equals(elem.getRole())) {
-            return false;
-        }
-        return elem.getPdfObject().containsKey(PdfName.Pg);
     }
 }

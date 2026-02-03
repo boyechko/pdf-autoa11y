@@ -34,11 +34,11 @@ import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.validation.TagValidator;
-import net.boyechko.pdf.autoa11y.validation.visitors.EmptyLinkTagVisitor;
-import net.boyechko.pdf.autoa11y.validation.visitors.FigureWithTextVisitor;
-import net.boyechko.pdf.autoa11y.validation.visitors.MistaggedArtifactVisitor;
-import net.boyechko.pdf.autoa11y.validation.visitors.NeedlessNestingVisitor;
-import net.boyechko.pdf.autoa11y.validation.visitors.VerboseOutputVisitor;
+import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
+import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
+import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
+import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
