@@ -27,7 +27,12 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +43,8 @@ public final class McidTextExtractor {
     private static final int MAX_DISPLAY_LENGTH = 30;
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
-    private static final Map<String, String> mcidTextCache = new ConcurrentHashMap<>();
+    private static final Map<PdfDocument, Map<String, String>> mcidTextCache =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     /** Extracts actual text content for a specific MCID from a PDF page. */
     public static String extractTextForMcid(PdfDocument document, int mcid, int pageNumber) {
@@ -51,9 +57,16 @@ public final class McidTextExtractor {
                 return "";
             }
 
+            Map<String, String> docCache;
+            synchronized (mcidTextCache) {
+                docCache =
+                        mcidTextCache.computeIfAbsent(document, doc -> new ConcurrentHashMap<>());
+            }
+
             String cacheKey = pageNumber + ":" + mcid;
-            if (mcidTextCache.containsKey(cacheKey)) {
-                return mcidTextCache.get(cacheKey);
+            String cached = docCache.get(cacheKey);
+            if (cached != null) {
+                return cached;
             }
 
             PdfPage page = document.getPage(pageNumber);
@@ -65,7 +78,7 @@ public final class McidTextExtractor {
             String rawText = listener.getExtractedText();
             String cleanedText = cleanExtractedText(rawText);
 
-            mcidTextCache.put(cacheKey, cleanedText);
+            docCache.put(cacheKey, cleanedText);
 
             return cleanedText;
         } catch (Exception e) {
