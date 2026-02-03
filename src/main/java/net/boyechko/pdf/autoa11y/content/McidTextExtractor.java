@@ -32,31 +32,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Utility class for extracting text content associated with MCIDs (Marked Content IDs) from PDF
- * documents. Follows the PDF specification for marked content sequences.
- *
- * <p>This class provides methods to: - Extract text content for specific MCIDs - Get text summaries
- * for structure elements containing MCRs - Handle multiple MCIDs within a single structure element
- */
+/** Extracts text content associated with MCIDs (Marked Content IDs) from PDF documents. */
 public final class McidTextExtractor {
     private static final Logger logger = LoggerFactory.getLogger(McidTextExtractor.class);
     private static final int MAX_DISPLAY_LENGTH = 30;
+    private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
-    // Cache for MCID text extraction results
     private static final Map<String, String> mcidTextCache = new ConcurrentHashMap<>();
 
-    /**
-     * Extracts actual text content for a specific MCID from a PDF page.
-     *
-     * <p>This implementation parses the PDF content stream to find marked content sections and
-     * correlates text operations with their containing marked content IDs.
-     *
-     * @param document The PDF document containing the content
-     * @param mcid The Marked Content ID to extract text for
-     * @param pageNumber The page number (1-based) containing the MCID
-     * @return The actual text content associated with the MCID, or empty string if not found
-     */
+    /** Extracts actual text content for a specific MCID from a PDF page. */
     public static String extractTextForMcid(PdfDocument document, int mcid, int pageNumber) {
         try {
             if (pageNumber < 1 || pageNumber > document.getNumberOfPages()) {
@@ -67,7 +51,6 @@ public final class McidTextExtractor {
                 return "";
             }
 
-            // Create cache key
             String cacheKey = pageNumber + ":" + mcid;
             if (mcidTextCache.containsKey(cacheKey)) {
                 return mcidTextCache.get(cacheKey);
@@ -76,14 +59,12 @@ public final class McidTextExtractor {
             PdfPage page = document.getPage(pageNumber);
             McidTextExtractionListener listener = new McidTextExtractionListener(mcid);
 
-            // Parse the content stream with our custom listener
             PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
             processor.processPageContent(page);
 
             String rawText = listener.getExtractedText();
             String cleanedText = cleanExtractedText(rawText);
 
-            // Cache the result
             mcidTextCache.put(cacheKey, cleanedText);
 
             return cleanedText;
@@ -97,10 +78,7 @@ public final class McidTextExtractor {
         }
     }
 
-    /**
-     * Custom event listener that tracks marked content sections and extracts text for a specific
-     * MCID.
-     */
+    /** Tracks marked content sections and extracts text for a specific MCID. */
     private static class McidTextExtractionListener implements IEventListener {
         private final int targetMcid;
         private final StringBuilder extractedText = new StringBuilder();
@@ -138,13 +116,7 @@ public final class McidTextExtractor {
         }
     }
 
-    /**
-     * Cleans extracted text by removing replacement characters and normalizing whitespace. Handles
-     * common issues from PDFs with missing or malformed font glyphs.
-     *
-     * @param text Raw text extracted from PDF content stream
-     * @return Cleaned text with replacement characters removed and whitespace normalized
-     */
+    /** Cleans extracted text by removing replacement characters and normalizing whitespace. */
     private static String cleanExtractedText(String text) {
         if (text == null || text.isEmpty()) {
             return "";
@@ -167,13 +139,7 @@ public final class McidTextExtractor {
         return cleaned.replaceAll("\\s+", " ").trim();
     }
 
-    /**
-     * Detects if text has artificial character-by-character spacing. This occurs when PDFs position
-     * each character individually in the content stream.
-     *
-     * @param text Text to analyze
-     * @return true if text appears to have artificial spacing between characters
-     */
+    /** Detects if text has artificial character-by-character spacing. */
     private static boolean hasArtificialSpacing(String text) {
         String[] words = text.split("\\s+");
         if (words.length < 2) {
@@ -185,18 +151,10 @@ public final class McidTextExtractor {
 
         // If more than 30% are single characters, assume artificial spacing
         double ratio = (double) singleCharWords / words.length;
-        return ratio > 0.3;
+        return ratio > ARTIFICIAL_SPACING_RATIO;
     }
 
-    /**
-     * Gets a summary of text content for all MCRs within a structure element. This is useful for
-     * validation output to show what actual content is associated with structure elements.
-     *
-     * @param node The structure element to analyze
-     * @param document The PDF document containing the element
-     * @param pageNumber The page number where the element appears
-     * @return A formatted string describing the MCR content, or empty string if no MCRs
-     */
+    /** Gets a summary of text content for all MCRs within a structure element. */
     public static String getMcrContentSummary(
             PdfStructElem node, PdfDocument document, int pageNumber) {
         List<IStructureNode> kids = node.getKids();
@@ -211,7 +169,6 @@ public final class McidTextExtractor {
         if (mcrKids.isEmpty()) return "";
 
         if (mcrKids.size() == 1) {
-            // Single MCR
             PdfMcrNumber mcr = mcrKids.get(0);
             int mcid = mcr.getMcid();
             String textContent = extractTextForMcid(document, mcid, pageNumber);
@@ -222,7 +179,6 @@ public final class McidTextExtractor {
                 return truncateText(textContent);
             }
         } else {
-            // Multiple MCRs
             StringBuilder combinedText = new StringBuilder();
             for (PdfMcrNumber mcr : mcrKids) {
                 String text = extractTextForMcid(document, mcr.getMcid(), pageNumber);
@@ -237,10 +193,14 @@ public final class McidTextExtractor {
     }
 
     /** Truncates text to a reasonable display length for validation output. */
-    private static String truncateText(String text) {
-        if (text.length() <= MAX_DISPLAY_LENGTH) {
+    public static String truncateText(String text, int maxLength) {
+        if (text.length() <= maxLength) {
             return text;
         }
-        return text.substring(0, MAX_DISPLAY_LENGTH - 1) + "…";
+        return text.substring(0, maxLength - 1) + "…";
+    }
+
+    public static String truncateText(String text) {
+        return truncateText(text, MAX_DISPLAY_LENGTH);
     }
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+/** Represents a list of accessibility issues found in a PDF document. */
 public class IssueList extends ArrayList<Issue> {
 
     public IssueList() {

@@ -37,6 +37,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Creates a Link tag for an annotation. */
 public class CreateLinkTag implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(CreateLinkTag.class);
     // After SetupDocumentStructure (10), so Parts exist
@@ -207,6 +208,7 @@ public class CreateLinkTag implements IssueFix {
         return bestElem;
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle collectBounds(
             DocumentContext ctx,
             PdfStructElem elem,
@@ -262,6 +264,7 @@ public class CreateLinkTag implements IssueFix {
         return bounds;
     }
 
+    // TODO: Move to a utility class
     private boolean isSamePage(PdfDictionary pgDict, PdfPage targetPage) {
         PdfDictionary targetDict = targetPage.getPdfObject();
         if (pgDict.equals(targetDict)) {
@@ -273,6 +276,7 @@ public class CreateLinkTag implements IssueFix {
         return false;
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getAnnotationBounds(PdfAnnotation annotation) {
         PdfDictionary dict = annotation.getPdfObject();
         Rectangle quadBounds = getQuadPointsBounds(dict);
@@ -282,6 +286,7 @@ public class CreateLinkTag implements IssueFix {
         return getRectBounds(dict);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
         PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
         if (quadPoints == null || quadPoints.size() < 8) {
@@ -312,6 +317,7 @@ public class CreateLinkTag implements IssueFix {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getRectBounds(PdfDictionary annotDict) {
         PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
         if (rectArray == null || rectArray.size() < 4) {
@@ -334,6 +340,7 @@ public class CreateLinkTag implements IssueFix {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class
     private Rectangle union(Rectangle a, Rectangle b) {
         if (a == null) {
             return b;
@@ -344,6 +351,7 @@ public class CreateLinkTag implements IssueFix {
         return Rectangle.getCommonRectangle(a, b);
     }
 
+    // TODO: Move to a utility class
     private double area(Rectangle rect) {
         if (rect == null) {
             return 0;

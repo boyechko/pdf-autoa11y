@@ -34,10 +34,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/**
- * Visitor that detects tagged content that should be artifacts, such as footers containing URLs and
- * timestamps that are decorative rather than semantic content.
- */
+/** Visitor that detects tagged content that should be artifacts. */
 public class MistaggedArtifactVisitor implements StructureTreeVisitor {
 
     private static final Pattern FOOTER_URL_TIMESTAMP =
@@ -60,7 +57,7 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Mistagged Artifacts Check";
+        return "Decorative or noisy content should be artifacted";
     }
 
     @Override

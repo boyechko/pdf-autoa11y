@@ -29,19 +29,19 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Visitor that detects Figure elements containing text content rather than actual images. */
+/** Detects Figure elements containing text content rather than actual images. */
 public class FigureWithTextVisitor implements StructureTreeVisitor {
-    private static final int NON_TRIVIAL_TEXT_LENGTH = 30;
+    private static final int MAX_DISPLAY_LENGTH = 30;
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Figure Element with Text Check";
+        return "Figures should not contain text content";
     }
 
     @Override
     public boolean enterElement(VisitorContext ctx) {
-        if (!ctx.hasRole("Figure")) {
+        if (!PdfName.Figure.equals(ctx.node().getRole())) {
             return true;
         }
 
@@ -55,9 +55,10 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);
+            // TODO: Use @McidTextExtractor.truncateText()
             String truncated =
-                    textContent.length() > NON_TRIVIAL_TEXT_LENGTH
-                            ? textContent.substring(0, NON_TRIVIAL_TEXT_LENGTH) + "..."
+                    textContent.length() > MAX_DISPLAY_LENGTH
+                            ? textContent.substring(0, MAX_DISPLAY_LENGTH) + "…"
                             : textContent;
             Issue issue =
                     new Issue(

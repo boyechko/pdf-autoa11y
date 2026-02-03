@@ -38,7 +38,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Visitor that detects empty Link tags that should contain marked content from a sibling MCR. */
+/** Detects Link tags that are missing link description. */
 public class EmptyLinkTagVisitor implements StructureTreeVisitor {
 
     private static final double AREA_RATIO_MIN = 0.5;
@@ -48,7 +48,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Empty Link Tag Check";
+        return "Link elements should contain link description";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!isLinkRole(linkElem) || linkHasMcr(linkElem)) {
+            if (!linkElem.getRole().equals(PdfName.Link) || linkHasMcr(linkElem)) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
@@ -107,9 +107,9 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
                             IssueType.EMPTY_LINK_TAG,
                             IssueSeverity.WARNING,
                             new IssueLocation(pageNum, "Page " + pageNum),
-                            "Link tag (after/inside "
+                            "Link element (after/inside "
                                     + prev.getRole().getValue()
-                                    + ") is missing content",
+                                    + ") is missing link description",
                             fix);
             issues.add(issue);
         }
@@ -122,11 +122,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return issues;
     }
 
-    private boolean isLinkRole(PdfStructElem elem) {
-        PdfName role = elem.getRole();
-        return role != null && "Link".equals(role.getValue());
-    }
-
+    // TODO: Move to a utility class
     private boolean linkHasMcr(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -140,6 +136,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return false;
     }
 
+    // TODO: Move to a utility class
     private PdfObjRef findObjRef(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -153,6 +150,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return null;
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getAnnotationBounds(PdfDictionary annotDict) {
         Rectangle quadBounds = getQuadPointsBounds(annotDict);
         if (quadBounds != null) {
@@ -161,6 +159,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return getRectBounds(annotDict);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
         PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
         if (quadPoints == null || quadPoints.size() < 8) {
@@ -191,6 +190,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getRectBounds(PdfDictionary annotDict) {
         PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
         if (rectArray == null || rectArray.size() < 4) {
@@ -213,6 +213,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private boolean boundsSimilar(Rectangle mcrRect, Rectangle annotRect) {
         if (mcrRect == null || annotRect == null) {
             return false;
@@ -230,6 +231,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return ratio >= AREA_RATIO_MIN && ratio <= AREA_RATIO_MAX;
     }
 
+    // TODO: Move to a utility class
     private double area(Rectangle rect) {
         double width = Math.max(0.0, rect.getWidth());
         double height = Math.max(0.0, rect.getHeight());

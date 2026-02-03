@@ -115,9 +115,9 @@ public class RuleEngine {
                     appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
 
             if (isInvalidated) {
-                i.markResolved("Skipped - resolved by higher priority fix");
+                i.markResolved("Skipped: resolved by higher priority fix");
                 logger.debug(
-                        "Skipping fix {} - invalidated by higher priority fix", fx.describe(ctx));
+                        "Skipping fix {}: invalidated by higher priority fix", fx.describe(ctx));
                 continue;
             }
 

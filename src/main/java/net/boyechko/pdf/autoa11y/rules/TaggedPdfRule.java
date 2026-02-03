@@ -22,12 +22,13 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
+/** Detects if the document is marked as tagged PDF. */
 public class TaggedPdfRule implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Tagged PDF";
+        return "Document should be marked as tagged PDF";
     }
 
     @Override
@@ -40,7 +41,6 @@ public class TaggedPdfRule implements Rule {
                         && Boolean.TRUE.equals(pb.getValue());
 
         if (marked) {
-            // Document is already marked as tagged PDF
             return new IssueList();
         }
 
@@ -53,7 +53,7 @@ public class TaggedPdfRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set /MarkInfo /Marked true";
+                        return "Set Marked flag to true in MarkInfo dictionary";
                     }
 
                     @Override
@@ -72,7 +72,7 @@ public class TaggedPdfRule implements Rule {
                 new Issue(
                         IssueType.NOT_TAGGED_PDF,
                         IssueSeverity.ERROR,
-                        "✗ Document is not marked as tagged PDF",
+                        "Document is not marked as tagged PDF (Marked flag not set in MarkInfo dictionary)",
                         fix);
         return new IssueList(issue);
     }

@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Optional;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
+/** Base class for fixes that involve a single child element. */
 public abstract class TagSingleChildFix implements IssueFix {
 
     protected final PdfStructElem kid;
@@ -47,7 +48,6 @@ public abstract class TagSingleChildFix implements IssueFix {
         return "Fix a single child, " + getKidRole() + ", under its parent " + getParentRole();
     }
 
-    // Getters for invalidation logic in other fixes
     public PdfStructElem getKid() {
         return kid;
     }

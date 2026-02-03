@@ -39,13 +39,14 @@ import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
+/** Detects Link elements that are missing link description. */
 public class EmptyLinkTagRule implements Rule {
     private static final double AREA_RATIO_MIN = 0.5;
     private static final double AREA_RATIO_MAX = 2.0;
 
     @Override
     public String name() {
-        return "Empty Link Tag Check";
+        return "Link elements should contain link description";
     }
 
     @Override

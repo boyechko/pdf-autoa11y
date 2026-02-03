@@ -42,6 +42,7 @@ import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 
@@ -246,7 +247,7 @@ public class ProcessingService {
         listener.onPhaseStart("Applying automatic fixes");
         IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
         if (appliedTagFixes.isEmpty()) {
-            listener.onSuccess("Nothinng to be done");
+            listener.onSuccess("Nothing to be done");
         }
 
         IssueList remainingTagIssues = originalTagIssues;

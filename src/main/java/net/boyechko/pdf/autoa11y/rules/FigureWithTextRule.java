@@ -36,7 +36,7 @@ public class FigureWithTextRule implements Rule {
 
     @Override
     public String name() {
-        return "Figure Elements Valid";
+        return "Figures should not contain text content";
     }
 
     @Override
@@ -104,6 +104,7 @@ public class FigureWithTextRule implements Rule {
         }
     }
 
+    // TODO: How is this different from @DocumentContext.getPageNumber()?
     private int getPageNumber(PdfStructElem elem, DocumentContext ctx) {
         PdfDictionary dict = elem.getPdfObject();
         PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);
