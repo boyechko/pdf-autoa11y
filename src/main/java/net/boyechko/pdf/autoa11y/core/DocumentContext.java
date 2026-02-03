@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+/** Provides access to the document and its structure. */
 public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;

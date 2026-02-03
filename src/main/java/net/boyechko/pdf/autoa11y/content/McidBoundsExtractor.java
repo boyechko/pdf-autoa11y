@@ -34,6 +34,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Extracts the bounds of MCIDs (Marked Content IDs) from PDF pages. */
 public final class McidBoundsExtractor {
     private static final Logger logger = LoggerFactory.getLogger(McidBoundsExtractor.class);
 

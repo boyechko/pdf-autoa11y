@@ -26,15 +26,12 @@ import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/**
- * Detects when the structure tree root has no Document child element. Per PDF/UA-1, the root should
- * contain a Document element that wraps all content.
- */
+/** Detects if the Document element is the highest-level element in the structure tree. */
 public class MissingDocumentRule implements Rule {
 
     @Override
     public String name() {
-        return "Document Element Present";
+        return "Document element should be the highest-level element in the structure tree";
     }
 
     @Override
@@ -49,7 +46,6 @@ public class MissingDocumentRule implements Rule {
             return new IssueList();
         }
 
-        // Check if any root child is a Document element
         boolean hasDocument = false;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
@@ -65,11 +61,10 @@ public class MissingDocumentRule implements Rule {
             return new IssueList();
         }
 
-        // No Document wrapper found - create issue with fix
         IssueFix fix = new SetupDocumentStructure();
         Issue issue =
                 new Issue(
-                        IssueType.MISSING_DOCUMENT_WRAPPER,
+                        IssueType.MISSING_DOCUMENT_ELEMENT,
                         IssueSeverity.ERROR,
                         "Structure tree root has no Document element",
                         fix);

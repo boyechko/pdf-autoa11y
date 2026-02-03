@@ -33,19 +33,17 @@ import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/**
- * Detects tagged content that should be artifacts, such as footers containing URLs and timestamps
- * that are decorative rather than semantic content.
- */
+/** Detects tagged content that should be artifacted. */
 public class MistaggedArtifactRule implements Rule {
 
-    // Pattern: URL followed by timestamp like "[11/15/2024 11:37:19 AM]"
+    // Pattern: URL followed by timestamp like "https://example.com/path/to/page [1/5/2024 9:00:00
+    // PM]"
     private static final Pattern FOOTER_URL_TIMESTAMP =
             Pattern.compile(
                     "https?://[^\\s]+.*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]",
                     Pattern.CASE_INSENSITIVE);
 
-    // Pattern: Just a timestamp in brackets (common footer pattern)
+    // Pattern: Just a timestamp in brackets like "[11/15/2024 11:37:19 AM]"
     private static final Pattern TIMESTAMP_ONLY =
             Pattern.compile(
                     "^\\s*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]\\s*$",
@@ -57,7 +55,7 @@ public class MistaggedArtifactRule implements Rule {
 
     @Override
     public String name() {
-        return "Mistagged Artifacts Check";
+        return "Decorative or noisy content should be artifacted";
     }
 
     @Override
@@ -101,16 +99,15 @@ public class MistaggedArtifactRule implements Rule {
         }
     }
 
-    // Only check these element types for artifact patterns (not containers)
-    private static final Set<String> CHECKABLE_ROLES =
+    // Only check these element roles for artifact patterns
+    private static final Set<String> ROLES_TO_CHECK =
             Set.of("P", "Link", "Span", "Figure", "Lbl", "LBody");
 
     private void checkElement(
             PdfStructElem elem, DocumentContext ctx, List<PdfStructElem> toArtifact) {
         String role = elem.getRole() != null ? elem.getRole().getValue() : "";
 
-        // Only check content elements, not structural containers
-        if (CHECKABLE_ROLES.contains(role) && matchesArtifactPattern(elem, ctx)) {
+        if (ROLES_TO_CHECK.contains(role) && matchesArtifactPattern(elem, ctx)) {
             toArtifact.add(elem);
             return;
         }
@@ -147,9 +144,9 @@ public class MistaggedArtifactRule implements Rule {
         return text.toString().trim();
     }
 
+    /** Gets full text from MCRs (not truncated summary). */
     private void collectText(
             PdfStructElem elem, DocumentContext ctx, int pageNumber, StringBuilder text) {
-        // Get full text from MCRs (not truncated summary)
         List<IStructureNode> kids = elem.getKids();
         if (kids != null) {
             for (IStructureNode kid : kids) {
@@ -168,6 +165,7 @@ public class MistaggedArtifactRule implements Rule {
         }
     }
 
+    // TODO: Move to a utility class
     private int getPageNumber(PdfStructElem elem, DocumentContext ctx) {
         PdfDictionary dict = elem.getPdfObject();
         PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);
@@ -184,6 +182,7 @@ public class MistaggedArtifactRule implements Rule {
         return 0;
     }
 
+    // TODO: Move to a utility class
     private String truncate(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;

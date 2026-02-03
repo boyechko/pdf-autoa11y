@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.issues;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
+/** Represents the location of an accessibility issue found in a PDF document. */
 public final class IssueLocation {
     private final Integer page; // null if document-level
     private final PdfStructElem element; // may be null if not applicable

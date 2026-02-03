@@ -56,6 +56,7 @@ public class FlattenNesting implements IssueFix {
         }
     }
 
+    // TODO: Split into smaller methods
     private void flattenElement(PdfStructElem wrapper) {
         IStructureNode parentNode = wrapper.getParent();
 
@@ -162,6 +163,7 @@ public class FlattenNesting implements IssueFix {
         }
     }
 
+    // TODO: Move to a utility class
     private void removeFromParent(PdfStructElem elem, IStructureNode parentNode) {
         if (parentNode instanceof PdfStructElem parent) {
             parent.removeKid(elem);

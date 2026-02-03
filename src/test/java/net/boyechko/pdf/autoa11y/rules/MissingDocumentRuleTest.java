@@ -52,7 +52,7 @@ class MissingDocumentRuleTest extends PdfTestBase {
 
             assertEquals(1, issues.size(), "Should detect missing Document wrapper");
             Issue issue = issues.get(0);
-            assertEquals(IssueType.MISSING_DOCUMENT_WRAPPER, issue.type());
+            assertEquals(IssueType.MISSING_DOCUMENT_ELEMENT, issue.type());
             assertNotNull(issue.fix(), "Should provide a fix");
         }
     }

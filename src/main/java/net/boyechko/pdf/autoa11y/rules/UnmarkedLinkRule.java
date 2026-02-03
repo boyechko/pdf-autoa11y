@@ -26,15 +26,12 @@ import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/**
- * Detects Link annotations that are not associated with Link structure elements. These unmarked
- * links need to have Link tags created and connected via OBJRs.
- */
+/** Detects Link annotations that are not associated with Link structure elements. */
 public class UnmarkedLinkRule implements Rule {
 
     @Override
     public String name() {
-        return "Unmarked Link Check";
+        return "Link annotations should be tagged";
     }
 
     @Override
@@ -76,7 +73,6 @@ public class UnmarkedLinkRule implements Rule {
         return issues;
     }
 
-    /** Extracts the URI from a Link annotation if present. */
     private String getAnnotationUri(PdfDictionary annotDict) {
         PdfDictionary action = annotDict.getAsDictionary(PdfName.A);
         if (action != null) {
@@ -91,9 +87,10 @@ public class UnmarkedLinkRule implements Rule {
         return null;
     }
 
+    // TODO: Move to a utility class
     private String truncate(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength - 1) + "...";
+        return text.substring(0, maxLength - 1) + "…";
     }
 }

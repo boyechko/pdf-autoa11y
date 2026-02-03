@@ -17,18 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
-/**
- * Defines the verbosity levels for output control.
- *
- * <p>Levels (from least to most verbose):
- *
- * <ul>
- *   <li>QUIET - Only errors and final status
- *   <li>NORMAL - Summary information (default)
- *   <li>VERBOSE - Detailed tag structure and processing steps
- *   <li>DEBUG - All information including debug logs
- * </ul>
- */
+/** Defines the verbosity levels for output control. */
 public enum VerbosityLevel {
     /** Only show errors and final status */
     QUIET(0),
@@ -52,22 +41,10 @@ public enum VerbosityLevel {
         return level;
     }
 
-    /**
-     * Check if this verbosity level is at least as verbose as the specified level.
-     *
-     * @param other the level to compare against
-     * @return true if this level is at least as verbose as other
-     */
     public boolean isAtLeast(VerbosityLevel other) {
         return this.level >= other.level;
     }
 
-    /**
-     * Check if output should be shown for the specified level.
-     *
-     * @param requiredLevel the minimum level required to show the output
-     * @return true if output should be shown
-     */
     public boolean shouldShow(VerbosityLevel requiredLevel) {
         return this.level >= requiredLevel.level;
     }

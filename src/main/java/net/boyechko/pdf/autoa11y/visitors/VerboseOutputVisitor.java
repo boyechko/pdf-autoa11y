@@ -23,7 +23,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Visitor that outputs a tabular listing of the structure tree during traversal. */
+/** Outputs a tabular listing of the structure tree during traversal. */
 public class VerboseOutputVisitor implements StructureTreeVisitor {
 
     private static final String INDENT = "  ";
@@ -47,7 +47,7 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Verbose Output";
+        return "Structure tree traversal";
     }
 
     @Override

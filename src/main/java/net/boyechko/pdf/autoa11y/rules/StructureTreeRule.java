@@ -22,12 +22,13 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
+/** Detects if the structure tree root is present. */
 public class StructureTreeRule implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Tag Structure Present";
+        return "Structure tree should be present";
     }
 
     @Override
@@ -38,11 +39,10 @@ public class StructureTreeRule implements Rule {
                     new Issue(
                             IssueType.NO_STRUCT_TREE,
                             IssueSeverity.ERROR,
-                            "✗ Document has no structure tree",
+                            "Document has no structure tree (StructTreeRoot is null)",
                             null);
             return new IssueList(issue);
         }
-        // Further structure checks would go here
 
         return new IssueList();
     }

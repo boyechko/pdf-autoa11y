@@ -31,36 +31,36 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Visitor that detects Part/Sect/Art wrapper elements that add no semantic value. */
+/** Detects Part/Sect/Art wrapper elements that add no semantic value. */
 public class NeedlessNestingVisitor implements StructureTreeVisitor {
 
-    private static final Set<String> WRAPPER_ROLES = Set.of("Part", "Sect", "Art");
+    private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art");
 
-    private final List<PdfStructElem> wrappersToFlatten = new ArrayList<>();
+    private final List<PdfStructElem> groupingElementsToFlatten = new ArrayList<>();
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Needless Nesting Check";
+        return "Grouping elements should not be overused";
     }
 
     @Override
     public boolean enterElement(VisitorContext ctx) {
-        if (WRAPPER_ROLES.contains(ctx.role()) && !isPageContainer(ctx.node())) {
-            wrappersToFlatten.add(ctx.node());
+        if (GROUPING_ROLES.contains(ctx.role()) && !isPageContainer(ctx.node())) {
+            groupingElementsToFlatten.add(ctx.node());
         }
         return true;
     }
 
     @Override
     public void afterTraversal() {
-        if (!wrappersToFlatten.isEmpty()) {
-            IssueFix fix = new FlattenNesting(wrappersToFlatten);
+        if (!groupingElementsToFlatten.isEmpty()) {
+            IssueFix fix = new FlattenNesting(groupingElementsToFlatten);
             Issue issue =
                     new Issue(
                             IssueType.NEEDLESS_NESTING,
                             IssueSeverity.WARNING,
-                            "Found " + wrappersToFlatten.size() + " Part/Sect/Art wrapper(s)",
+                            "Found " + groupingElementsToFlatten.size() + " grouping elements",
                             fix);
             issues.add(issue);
         }

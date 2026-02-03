@@ -42,6 +42,7 @@ import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 

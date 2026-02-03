@@ -29,19 +29,15 @@ import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/**
- * Detects Part/Sect/Art wrapper elements that add no semantic value. Preserves Parts with /Pg
- * attribute, as these serve as meaningful page containers (e.g., created by
- * SetupDocumentStructure).
- */
+/** Detects grouping elements that add no semantic value. */
 public class NeedlessNestingRule implements Rule {
 
-    private static final Set<PdfName> WRAPPER_ROLES =
+    private static final Set<PdfName> GROUPING_ROLES =
             Set.of(PdfName.Part, PdfName.Sect, PdfName.Art);
 
     @Override
     public String name() {
-        return "Needless Nesting Check";
+        return "Grouping elements should not be overused";
     }
 
     @Override
@@ -54,7 +50,7 @@ public class NeedlessNestingRule implements Rule {
         IssueList issues = new IssueList();
         List<PdfStructElem> elementsToFlatten = new ArrayList<>();
 
-        findWrapperElements(root, elementsToFlatten);
+        findGroupingElements(root, elementsToFlatten);
 
         if (!elementsToFlatten.isEmpty()) {
             IssueFix fix = new FlattenNesting(elementsToFlatten);
@@ -62,7 +58,7 @@ public class NeedlessNestingRule implements Rule {
                     new Issue(
                             IssueType.NEEDLESS_NESTING,
                             IssueSeverity.WARNING,
-                            "Found " + elementsToFlatten.size() + " Part/Sect/Art wrapper(s)",
+                            "Found " + elementsToFlatten.size() + " grouping elements",
                             fix);
             issues.add(issue);
         }
@@ -70,19 +66,20 @@ public class NeedlessNestingRule implements Rule {
         return issues;
     }
 
-    private void findWrapperElements(PdfStructTreeRoot root, List<PdfStructElem> toFlatten) {
+    private void findGroupingElements(PdfStructTreeRoot root, List<PdfStructElem> toFlatten) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
 
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
-                collectWrappersRecursively(elem, toFlatten);
+                collectGroupingElementsRecursively(elem, toFlatten);
             }
         }
     }
 
-    private void collectWrappersRecursively(PdfStructElem elem, List<PdfStructElem> toFlatten) {
-        if (WRAPPER_ROLES.contains(elem.getRole()) && !isPageContainer(elem)) {
+    private void collectGroupingElementsRecursively(
+            PdfStructElem elem, List<PdfStructElem> toFlatten) {
+        if (GROUPING_ROLES.contains(elem.getRole()) && !isPageContainer(elem)) {
             toFlatten.add(elem);
         }
 
@@ -90,7 +87,7 @@ public class NeedlessNestingRule implements Rule {
         if (kids != null) {
             for (IStructureNode kid : kids) {
                 if (kid instanceof PdfStructElem childElem) {
-                    collectWrappersRecursively(childElem, toFlatten);
+                    collectGroupingElementsRecursively(childElem, toFlatten);
                 }
             }
         }

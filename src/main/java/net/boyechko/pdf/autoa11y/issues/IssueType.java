@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.issues;
 
+/** Represents the type of an accessibility issue found in a PDF document. */
 public enum IssueType {
     // Document-level issues
     LANGUAGE_NOT_SET("language not set"),
@@ -34,7 +35,7 @@ public enum IssueType {
     EMPTY_LINK_TAG("empty link tags"),
 
     // Structure Issues
-    MISSING_DOCUMENT_WRAPPER("structure tree root has no Document element"),
+    MISSING_DOCUMENT_ELEMENT("structure tree root has no Document element"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("link annotations not tagged");
