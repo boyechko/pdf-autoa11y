@@ -124,6 +124,11 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.2.5</version>
+          <configuration>
+            <systemPropertyVariables>
+              <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y-pdfs/</pdf.autoa11y.testOutputDir>
+            </systemPropertyVariables>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

@@ -17,12 +17,17 @@
  */
 package net.boyechko.pdf.autoa11y;
 
-import java.io.ByteArrayOutputStream;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,9 +57,6 @@ public abstract class PdfTestBase {
     }
 
     protected final OutputStream testOutputStream(String filename) {
-        if (!isPersistentOutputEnabled()) {
-            return new ByteArrayOutputStream();
-        }
         Path outputPath = testOutputPath(filename);
         try {
             return Files.newOutputStream(outputPath);
@@ -63,6 +65,11 @@ public abstract class PdfTestBase {
         }
     }
 
+    protected final Path testOutputPath(String filename) {
+        return testOutputDir().resolve(filename);
+    }
+
+    /** Returns either the configured directory or the temporary directory. */
     protected final Path testOutputDir() {
         if (outputDir != null) {
             return outputDir;
@@ -83,10 +90,6 @@ public abstract class PdfTestBase {
         return outputDir;
     }
 
-    protected final Path testOutputPath(String filename) {
-        return testOutputDir().resolve(filename);
-    }
-
     private boolean isPersistentOutputEnabled() {
         String configured = configuredOutputDir();
         return configured != null && !configured.isBlank();
@@ -97,5 +100,29 @@ public abstract class PdfTestBase {
             configuredOutputDir = System.getProperty("pdf.autoa11y.testOutputDir");
         }
         return configuredOutputDir;
+    }
+
+    protected final PdfStructElem findNthByRole(PdfStructTreeRoot root, PdfName role, int index) {
+        List<PdfStructElem> matches = new ArrayList<>();
+        for (IStructureNode kid : root.getKids()) {
+            if (kid instanceof PdfStructElem elem) {
+                collectByRole(elem, role, matches);
+            }
+        }
+        return matches.get(index);
+    }
+
+    /** Recursively collects all elements with the given role into the output list. */
+    private void collectByRole(PdfStructElem elem, PdfName role, List<PdfStructElem> out) {
+        if (role.equals(elem.getRole())) {
+            out.add(elem);
+        }
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem child) {
+                collectByRole(child, role, out);
+            }
+        }
     }
 }
