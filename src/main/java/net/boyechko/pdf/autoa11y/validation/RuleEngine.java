@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -28,48 +29,75 @@ import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Orchestrates validation using both structure tree visitors and document-level rules.
+ *
+ * <p>The engine supports two types of checks:
+ *
+ * <ul>
+ *   <li><b>Visitors</b> ({@link StructureTreeVisitor}): Run during a single traversal of the
+ *       structure tree via {@link StructureTreeWalker}. Use for checks that examine tag structure.
+ *   <li><b>Rules</b> ({@link Rule}): Run independently after the tree walk. Use for document-level
+ *       checks (metadata, annotations, pages) that don't need tree traversal.
+ * </ul>
+ */
 public class RuleEngine {
-    private final List<Rule> rules;
     private static final Logger logger = LoggerFactory.getLogger(RuleEngine.class);
 
+    private final List<Rule> rules;
+    private final List<StructureTreeVisitor> visitors;
+    private final TagSchema schema;
+
     public RuleEngine(List<Rule> rules) {
-        this.rules = List.copyOf(rules);
+        this(rules, List.of(), null);
     }
 
-    /**
-     * Get the list of rules managed by this engine.
-     *
-     * @return Immutable list of rules
-     */
+    public RuleEngine(List<Rule> rules, List<StructureTreeVisitor> visitors, TagSchema schema) {
+        this.rules = List.copyOf(rules);
+        this.visitors = List.copyOf(visitors);
+        this.schema = schema;
+    }
+
     public List<Rule> getRules() {
         return rules;
     }
 
-    /**
-     * Detect issues in the document using the defined rules.
-     *
-     * @param ctx Processing context
-     * @return IssueList of detected issues
-     */
+    public List<StructureTreeVisitor> getVisitors() {
+        return visitors;
+    }
+
     public IssueList detectIssues(DocumentContext ctx) {
         IssueList all = new IssueList();
+
+        if (!visitors.isEmpty()) {
+            IssueList visitorIssues = runVisitors(ctx);
+            all.addAll(visitorIssues);
+        }
+
         for (Rule r : rules) {
             IssueList found = r.findIssues(ctx);
             all.addAll(found);
         }
+
         return all;
     }
 
-    /**
-     * Apply fixes to the given issues in order of their IssueFix.priority(). If a fix invalidates
-     * another fix, the invalidated fix is skipped.
-     *
-     * @param ctx Processing context
-     * @param issuesToFix IssueList of issues to attempt to fix
-     * @return IssueList of issues that were successfully fixed
-     */
+    private IssueList runVisitors(DocumentContext ctx) {
+        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            logger.debug("No structure tree found, skipping visitor checks");
+            return new IssueList();
+        }
+
+        StructureTreeWalker walker = new StructureTreeWalker(schema);
+        for (StructureTreeVisitor visitor : visitors) {
+            walker.addVisitor(visitor);
+        }
+
+        return walker.walk(root, ctx);
+    }
+
     public IssueList applyFixes(DocumentContext ctx, IssueList issuesToFix) {
-        // sort by IssueFix.priority(), stable for deterministic order
         List<Map.Entry<Issue, IssueFix>> ordered =
                 issuesToFix.stream()
                         .filter(i -> i.fix() != null) // filter nulls first
@@ -77,15 +105,12 @@ public class RuleEngine {
                         .sorted(Comparator.comparingInt(e -> e.getValue().priority()))
                         .toList();
 
-        // Track applied fixes to check for invalidation
         List<IssueFix> appliedFixes = new ArrayList<>();
 
-        // iterate using the cached IssueFix
         for (Map.Entry<Issue, IssueFix> e : ordered) {
             Issue i = e.getKey();
             IssueFix fx = e.getValue();
 
-            // Check if this fix has been invalidated by any previously applied fix
             boolean isInvalidated =
                     appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
 
@@ -97,8 +122,8 @@ public class RuleEngine {
             }
 
             try {
-                fx.apply(ctx); // idempotent by contract
-                appliedFixes.add(fx); // Track this fix as applied
+                fx.apply(ctx);
+                appliedFixes.add(fx);
                 i.markResolved(fx.describe(ctx));
             } catch (Exception ex) {
                 i.markFailed(fx.describe(ctx) + " failed: " + ex.getMessage());

@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.core;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -30,8 +31,13 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.rules.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.RuleEngine;
+import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.validation.TagValidator;
+import net.boyechko.pdf.autoa11y.validation.visitors.FigureWithTextVisitor;
+import net.boyechko.pdf.autoa11y.validation.visitors.MistaggedArtifactVisitor;
+import net.boyechko.pdf.autoa11y.validation.visitors.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.validation.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,19 +77,28 @@ public class ProcessingService {
         }
         this.listener = listener;
         this.verbosity = verbosity;
-        this.engine =
-                new RuleEngine(
-                        List.of(
-                                new LanguageSetRule(),
-                                new TabOrderRule(),
-                                new StructureTreeRule(),
-                                new TaggedPdfRule(),
-                                new MissingDocumentRule(),
-                                new MistaggedArtifactRule(),
-                                new UnmarkedLinkRule(),
-                                new EmptyLinkTagRule(),
-                                new NeedlessNestingRule(),
-                                new FigureWithTextRule()));
+
+        List<Rule> rules =
+                List.of(
+                        new LanguageSetRule(),
+                        new TabOrderRule(),
+                        new StructureTreeRule(),
+                        new TaggedPdfRule(),
+                        new MissingDocumentRule(),
+                        new UnmarkedLinkRule(),
+                        new EmptyLinkTagRule());
+
+        List<StructureTreeVisitor> visitors = new ArrayList<>();
+        visitors.add(new MistaggedArtifactVisitor());
+        visitors.add(new NeedlessNestingVisitor());
+        visitors.add(new FigureWithTextVisitor());
+
+        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+            visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
+        }
+
+        TagSchema schema = TagSchema.loadDefault();
+        this.engine = new RuleEngine(rules, visitors, schema);
     }
 
     public ProcessingService(Path inputPath, String password, ProcessingListener listener) {
