@@ -20,10 +20,12 @@ package net.boyechko.pdf.autoa11y.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class OutputFormatterTest {
     @Test
+    @Tag("visual")
     void rendersMockRunForVisualTuning() {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         OutputFormatter formatter =
