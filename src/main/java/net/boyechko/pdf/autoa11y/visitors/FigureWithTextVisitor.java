@@ -31,13 +31,12 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /** Visitor that detects Figure elements containing text content rather than actual images. */
 public class FigureWithTextVisitor implements StructureTreeVisitor {
-
     private static final int NON_TRIVIAL_TEXT_LENGTH = 30;
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Figure Elements Valid";
+        return "Figure Element with Text Check";
     }
 
     @Override
