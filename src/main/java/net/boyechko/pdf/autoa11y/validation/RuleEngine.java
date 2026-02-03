@@ -82,7 +82,7 @@ public class RuleEngine {
         return all;
     }
 
-    private IssueList runVisitors(DocumentContext ctx) {
+    public IssueList runVisitors(DocumentContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping visitor checks");
