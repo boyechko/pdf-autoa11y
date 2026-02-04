@@ -31,6 +31,7 @@ import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
+import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,10 @@ public class ProcessingService {
         this.listener = listener;
 
         List<Rule> rules = ProcessingDefaults.rules();
-        List<StructureTreeVisitor> visitors = ProcessingDefaults.visitors(listener, verbosity);
+        List<StructureTreeVisitor> visitors = ProcessingDefaults.visitors();
+        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+            visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
+        }
 
         TagSchema schema = TagSchema.loadDefault();
         this.engine = new RuleEngine(rules, visitors, schema);

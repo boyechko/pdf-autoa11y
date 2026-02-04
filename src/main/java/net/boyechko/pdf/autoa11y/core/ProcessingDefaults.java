@@ -17,7 +17,6 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
-import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
@@ -32,7 +31,6 @@ import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
 import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
 import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
-import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
@@ -47,19 +45,12 @@ public final class ProcessingDefaults {
                 new UnmarkedLinkRule());
     }
 
-    public static List<StructureTreeVisitor> visitors(
-            ProcessingListener listener, VerbosityLevel verbosity) {
-        List<StructureTreeVisitor> visitors = new ArrayList<>();
-        visitors.add(new SchemaValidationVisitor());
-        visitors.add(new MistaggedArtifactVisitor());
-        visitors.add(new NeedlessNestingVisitor());
-        visitors.add(new FigureWithTextVisitor());
-        visitors.add(new EmptyLinkTagVisitor());
-
-        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
-            visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
-        }
-
-        return visitors;
+    public static List<StructureTreeVisitor> visitors() {
+        return List.of(
+                new SchemaValidationVisitor(),
+                new MistaggedArtifactVisitor(),
+                new NeedlessNestingVisitor(),
+                new FigureWithTextVisitor(),
+                new EmptyLinkTagVisitor());
     }
 }
