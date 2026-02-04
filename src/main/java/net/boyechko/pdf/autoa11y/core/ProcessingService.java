@@ -67,118 +67,91 @@ public class ProcessingService {
         this(inputPath, password, listener, VerbosityLevel.NORMAL);
     }
 
-    public class NoTagsException extends Exception {
-        public NoTagsException(String message) {
-            super(message);
-        }
+    public ProcessingService(Path inputPath, ProcessingListener listener) {
+        this(inputPath, null, listener, VerbosityLevel.NORMAL);
     }
 
-    public ProcessingResult process() throws Exception {
+    public ProcessingResult remediate() throws Exception {
         Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
 
         try (PdfDocument pdfDoc = pdfFactory.openForModification(tempOutputFile)) {
-            this.context = new DocumentContext(pdfDoc);
-
-            analyzeAndRemediate();
-
-            ProcessingResult result = this.context.getProcessingResult();
-            return new ProcessingResult(
-                    result.originalTagIssues(),
-                    result.appliedTagFixes(),
-                    result.remainingTagIssues(),
-                    result.originalDocumentIssues(),
-                    result.appliedDocumentFixes(),
-                    result.remainingDocumentIssues(),
-                    tempOutputFile);
+            return remediatePdfDoc(pdfDoc);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
             throw e;
         }
     }
 
-    public IssueList analyzeOnly() throws Exception {
-        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
-            this.context = new DocumentContext(pdfDoc);
+    private ProcessingResult remediatePdfDoc(PdfDocument pdfDoc) throws Exception {
+        this.context = new DocumentContext(pdfDoc);
 
-            listener.onPhaseStart("Checking document-level compliance");
-            IssueList documentIssues = detectAndReportRuleIssues();
+        // Phase 1: Detect document issues
+        IssueList docIssues = phaseDetectDocumentIssues();
 
-            IssueList tagIssues = null;
-            boolean hasNoStructTree =
-                    documentIssues.stream()
-                            .anyMatch(issue -> issue.type() == IssueType.NO_STRUCT_TREE);
-            if (hasNoStructTree) {
-                listener.onPhaseStart("No tag structure to validate");
-                tagIssues = new IssueList();
-            } else {
-                listener.onPhaseStart("Validating tag structure");
-                tagIssues = detectAndReportTagIssues();
-            }
+        // Phase 2: Detect tag issues
+        IssueList tagIssues = phaseDetectTagIssues();
 
-            IssueList allIssues = new IssueList();
-            allIssues.addAll(documentIssues);
-            allIssues.addAll(tagIssues);
+        // Phase 3: Apply available fixes
+        IssueList appliedTagFixes = phaseApplyFixes(tagIssues, "structure tree");
+        IssueList appliedDocFixes = phaseApplyFixes(docIssues, "document");
 
-            listener.onSummary(allIssues.size(), 0, allIssues.size());
-            return allIssues;
-        }
-    }
-
-    private IssueList analyzeAndRemediate() throws Exception {
-        listener.onPhaseStart("Validating tag structure");
-        IssueList originalTagIssues = detectAndReportTagIssues();
-
-        listener.onPhaseStart("Applying automatic fixes");
-        IssueList appliedTagFixes = applyFixesAndReport(originalTagIssues);
-        if (appliedTagFixes.isEmpty()) {
-            listener.onInfo("No automatic fixes applied");
+        // Phase 4: Re-detect tag issues
+        IssueList remainingTagIssues = tagIssues;
+        if (appliedTagFixes.size() > 0) {
+            remainingTagIssues = phaseDetectTagIssues();
         }
 
-        IssueList remainingTagIssues = originalTagIssues;
-        if (!appliedTagFixes.isEmpty()) {
-            listener.onPhaseStart("Re-validating tag structure");
-            remainingTagIssues = detectAndReportTagIssues();
-        }
-
-        listener.onPhaseStart("Checking document-level compliance");
-        IssueList documentLevelIssues = detectAndReportRuleIssues();
-
-        IssueList appliedDocumentFixes = new IssueList();
-        if (!documentLevelIssues.isEmpty()) {
-            listener.onPhaseStart("Applying document fixes");
-            appliedDocumentFixes = applyFixesAndReport(documentLevelIssues);
-        }
-
+        // Phase 5: Generate summary
         IssueList totalRemainingIssues = new IssueList();
         totalRemainingIssues.addAll(remainingTagIssues);
-        totalRemainingIssues.addAll(documentLevelIssues.getRemainingIssues());
+        totalRemainingIssues.addAll(docIssues.getRemainingIssues());
 
         IssueList totalAppliedFixes = new IssueList();
         totalAppliedFixes.addAll(appliedTagFixes);
-        totalAppliedFixes.addAll(appliedDocumentFixes);
+        totalAppliedFixes.addAll(appliedDocFixes);
 
-        int detected = originalTagIssues.size() + documentLevelIssues.size();
+        int detected = tagIssues.size() + docIssues.size();
         int remaining = totalRemainingIssues.size();
         int resolved = detected - remaining;
         listener.onSummary(detected, resolved, remaining);
 
-        this.context.setProcessingResult(
+        ProcessingResult result =
                 new ProcessingResult(
-                        originalTagIssues,
+                        tagIssues,
                         appliedTagFixes,
                         remainingTagIssues,
-                        documentLevelIssues,
-                        appliedDocumentFixes,
+                        docIssues,
+                        appliedDocFixes,
                         totalRemainingIssues,
-                        null));
-
-        return totalAppliedFixes;
+                        null);
+        return result;
     }
 
-    private IssueList detectAndReportTagIssues() throws NoTagsException {
+    private IssueList phaseDetectDocumentIssues() {
+        listener.onPhaseStart("Detecting document-level issues");
+        IssueList allDocIssues = new IssueList();
+
+        for (Rule rule : engine.getRules()) {
+            IssueList ruleIssues = rule.findIssues(context);
+            allDocIssues.addAll(ruleIssues);
+
+            if (ruleIssues.isEmpty()) {
+                listener.onSuccess(rule.passedMessage());
+            } else {
+                reportIssuesGrouped(ruleIssues);
+            }
+        }
+        listener.onInfo("Found " + allDocIssues.size() + " issues");
+
+        return allDocIssues;
+    }
+
+    private IssueList phaseDetectTagIssues() {
+        listener.onPhaseStart("Detecting structure tree issues");
+
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
-            throw new NoTagsException("No accessibility tags found");
+            listener.onError("No structure tree");
         }
 
         IssueList tagIssues = engine.runVisitors(context);
@@ -192,21 +165,30 @@ public class ProcessingService {
         return tagIssues;
     }
 
-    private IssueList detectAndReportRuleIssues() {
-        IssueList allRuleIssues = new IssueList();
-
-        for (Rule rule : engine.getRules()) {
-            IssueList ruleIssues = rule.findIssues(context);
-            allRuleIssues.addAll(ruleIssues);
-
-            if (ruleIssues.isEmpty()) {
-                listener.onSuccess(rule.passedMessage());
-            } else {
-                reportIssuesGrouped(ruleIssues);
-            }
+    private IssueList phaseApplyFixes(IssueList issues, String issueType) {
+        listener.onPhaseStart("Applying " + issueType + " fixes");
+        if (issues.isEmpty()) {
+            listener.onInfo("No " + issueType + " issues to fix");
+            return new IssueList();
         }
 
-        return allRuleIssues;
+        IssueList appliedFixes = engine.applyFixes(context, issues);
+        reportFixesGrouped(appliedFixes);
+        return appliedFixes;
+    }
+
+    public IssueList analyze() throws Exception {
+        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
+            this.context = new DocumentContext(pdfDoc);
+
+            IssueList documentIssues = phaseDetectDocumentIssues();
+            IssueList tagIssues = phaseDetectTagIssues();
+            IssueList totalIssues = new IssueList();
+            totalIssues.addAll(documentIssues);
+            totalIssues.addAll(tagIssues);
+
+            return totalIssues;
+        }
     }
 
     private void reportIssuesGrouped(IssueList issues) {
@@ -226,17 +208,7 @@ public class ProcessingService {
         }
     }
 
-    private IssueList applyFixesAndReport(IssueList issues) {
-        if (issues.isEmpty()) {
-            return new IssueList();
-        }
-
-        IssueList appliedFixes = engine.applyFixes(context, issues);
-        reportFixesGrouped(appliedFixes);
-
-        return appliedFixes;
-    }
-
+    /** Given a list of fixes, report them grouped by the fix type. */
     private void reportFixesGrouped(IssueList appliedFixes) {
         Map<Class<?>, List<Issue>> grouped =
                 appliedFixes.stream()

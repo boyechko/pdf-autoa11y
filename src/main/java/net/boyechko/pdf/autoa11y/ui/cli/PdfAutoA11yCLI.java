@@ -162,10 +162,10 @@ public class PdfAutoA11yCLI {
                             config.inputPath(), config.password(), formatter, verbosity);
 
             if (config.reportOnly()) {
-                service.analyzeOnly();
+                service.analyze();
                 return;
             }
-            ProcessingResult result = service.process();
+            ProcessingResult result = service.remediate();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
                 formatter.onInfo("No changes made; output file not created");

@@ -244,7 +244,7 @@ public class PdfAutoA11yGUI extends JFrame {
                                         formatter,
                                         VerbosityLevel.VERBOSE);
 
-                        ProcessingResult result = service.process();
+                        ProcessingResult result = service.remediate();
                         return result;
                     }
 
