@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.io.PrintStream;
 import java.nio.file.*;
+import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
@@ -164,7 +165,7 @@ public class PdfAutoA11yCLI {
                 service.analyzeOnly();
                 return;
             }
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
                 formatter.onInfo("No changes made; output file not created");
