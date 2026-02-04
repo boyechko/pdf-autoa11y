@@ -22,7 +22,7 @@ import java.nio.file.*;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
-import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
+import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 
 public class PdfAutoA11yCLI {
 
@@ -152,7 +152,7 @@ public class PdfAutoA11yCLI {
             }
 
             VerbosityLevel verbosity = config.verbosity();
-            OutputFormatter formatter = new OutputFormatter(output, verbosity);
+            ProcessingReporter formatter = new ProcessingReporter(output, verbosity);
 
             ProcessingService service =
                     new ProcessingService(
