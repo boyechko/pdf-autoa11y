@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.issues;
 
+/** Represents the severity of an accessibility issue found in a PDF document. */
 public enum IssueSeverity {
     INFO,
     WARNING,

@@ -154,10 +154,6 @@ public class OutputFormatter implements ProcessingListener {
         output.print(message);
     }
 
-    public PrintStream getStream() {
-        return output;
-    }
-
     public boolean shouldShow(VerbosityLevel level) {
         return verbosity.shouldShow(level);
     }
@@ -172,15 +168,15 @@ public class OutputFormatter implements ProcessingListener {
     private void printBoxHeader(String title) {
         int filler = Math.max(0, HEADER_WIDTH - title.length() - 1);
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println("┌─ " + title + " " + "─".repeat(filler) + "┐");
-            output.println("│" + " ".repeat(HEADER_WIDTH + 2) + "│");
+            output.println("┌─ " + title + " " + "─".repeat(filler) + "─╮");
+            output.println("│");
         }
     }
 
     private void printBoxFooter() {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println("│" + " ".repeat(HEADER_WIDTH + 2) + "│");
-            output.println("└" + "─".repeat(HEADER_WIDTH + 2) + "┘");
+            output.println("│");
+            output.println("└─╯");
         }
     }
 
@@ -195,7 +191,7 @@ public class OutputFormatter implements ProcessingListener {
     }
 
     private void printDetail(String message) {
-        printLine(INDENT + "  " + message, null);
+        printLine(INDENT + "  • " + message, null);
     }
 
     private String buildGroupSummary(String groupLabel, int count, Set<Integer> pages) {

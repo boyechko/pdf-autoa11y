@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.rules;
+package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfArray;
@@ -25,11 +25,9 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.content.McidBoundsExtractor;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -37,11 +35,16 @@ import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueLocation;
 import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-public class EmptyLinkTagRule implements Rule {
+/** Detects Link tags that are missing link description. */
+public class EmptyLinkTagVisitor implements StructureTreeVisitor {
+
     private static final double AREA_RATIO_MIN = 0.5;
     private static final double AREA_RATIO_MAX = 2.0;
+
+    private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
@@ -49,38 +52,27 @@ public class EmptyLinkTagRule implements Rule {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        if (root == null) {
-            return new IssueList();
-        }
-
-        IssueList issues = new IssueList();
-        List<IStructureNode> kids = root.getKids();
-        if (kids == null) {
-            return issues;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                checkElement(elem, ctx, issues);
-            }
-        }
-        return issues;
+    public String description() {
+        return "Link elements should contain link description";
     }
 
-    private void checkElement(PdfStructElem elem, DocumentContext ctx, IssueList issues) {
-        List<IStructureNode> kids = elem.getKids();
+    @Override
+    public boolean enterElement(VisitorContext ctx) {
+        // Get the raw IStructureNode children (includes MCRs, not just PdfStructElems)
+        List<IStructureNode> kids = ctx.node().getKids();
         if (kids == null || kids.isEmpty()) {
-            return;
+            return true;
         }
 
+        // Look for empty Link elements that follow MCRs
         for (int i = 1; i < kids.size(); i++) {
             IStructureNode prev = kids.get(i - 1);
             IStructureNode curr = kids.get(i);
+
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!isLinkRole(linkElem) || linkHasMcr(linkElem)) {
+            if (!linkElem.getRole().equals(PdfName.Link) || linkHasMcr(linkElem)) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
@@ -96,17 +88,18 @@ public class EmptyLinkTagRule implements Rule {
                 continue;
             }
 
-            int pageNum = getPageNumber(linkElem, ctx);
+            int pageNum = ctx.getPageNumber();
             if (pageNum <= 0) {
                 continue;
             }
 
             Map<Integer, Rectangle> mcidBounds =
-                    ctx.getOrComputeMcidBounds(
-                            pageNum,
-                            () ->
-                                    McidBoundsExtractor.extractBoundsForPage(
-                                            ctx.doc().getPage(pageNum)));
+                    ctx.docCtx()
+                            .getOrComputeMcidBounds(
+                                    pageNum,
+                                    () ->
+                                            McidBoundsExtractor.extractBoundsForPage(
+                                                    ctx.doc().getPage(pageNum)));
             Rectangle mcrRect = mcidBounds.get(mcr.getMcid());
             Rectangle annotRect = getAnnotationBounds(annotDict);
             if (!boundsSimilar(mcrRect, annotRect)) {
@@ -116,28 +109,25 @@ public class EmptyLinkTagRule implements Rule {
             IssueFix fix = new MoveSiblingMcrIntoLink(linkElem, mcr.getMcid(), pageNum);
             Issue issue =
                     new Issue(
-                            IssueType.EMPTY_LINK_TAG_RULE,
+                            IssueType.EMPTY_LINK_TAG,
                             IssueSeverity.WARNING,
                             new IssueLocation(pageNum, "Page " + pageNum),
-                            "Link tag (after/inside "
+                            "Link element (after/inside "
                                     + prev.getRole().getValue()
-                                    + ") is missing content",
+                                    + ") is missing link description",
                             fix);
             issues.add(issue);
         }
 
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem childElem) {
-                checkElement(childElem, ctx, issues);
-            }
-        }
+        return true;
     }
 
-    private boolean isLinkRole(PdfStructElem elem) {
-        PdfName role = elem.getRole();
-        return role != null && "Link".equals(role.getValue());
+    @Override
+    public IssueList getIssues() {
+        return issues;
     }
 
+    // TODO: Move to a utility class
     private boolean linkHasMcr(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -151,6 +141,7 @@ public class EmptyLinkTagRule implements Rule {
         return false;
     }
 
+    // TODO: Move to a utility class
     private PdfObjRef findObjRef(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -164,18 +155,7 @@ public class EmptyLinkTagRule implements Rule {
         return null;
     }
 
-    private int getPageNumber(PdfStructElem elem, DocumentContext ctx) {
-        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (pg != null) {
-            return ctx.doc().getPageNumber(pg);
-        }
-        if (elem.getPdfObject().getIndirectReference() != null) {
-            int objNum = elem.getPdfObject().getIndirectReference().getObjNumber();
-            return ctx.getPageNumber(objNum);
-        }
-        return 0;
-    }
-
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getAnnotationBounds(PdfDictionary annotDict) {
         Rectangle quadBounds = getQuadPointsBounds(annotDict);
         if (quadBounds != null) {
@@ -184,6 +164,7 @@ public class EmptyLinkTagRule implements Rule {
         return getRectBounds(annotDict);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
         PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
         if (quadPoints == null || quadPoints.size() < 8) {
@@ -214,6 +195,7 @@ public class EmptyLinkTagRule implements Rule {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private Rectangle getRectBounds(PdfDictionary annotDict) {
         PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
         if (rectArray == null || rectArray.size() < 4) {
@@ -236,6 +218,7 @@ public class EmptyLinkTagRule implements Rule {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class or @McidBoundsExtractor
     private boolean boundsSimilar(Rectangle mcrRect, Rectangle annotRect) {
         if (mcrRect == null || annotRect == null) {
             return false;
@@ -253,6 +236,7 @@ public class EmptyLinkTagRule implements Rule {
         return ratio >= AREA_RATIO_MIN && ratio <= AREA_RATIO_MAX;
     }
 
+    // TODO: Move to a utility class
     private double area(Rectangle rect) {
         double width = Math.max(0.0, rect.getWidth());
         double height = Math.max(0.0, rect.getHeight());

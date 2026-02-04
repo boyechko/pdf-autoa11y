@@ -35,6 +35,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Moves a sibling MCR into a Link tag. */
 public class MoveSiblingMcrIntoLink implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(MoveSiblingMcrIntoLink.class);
     private static final int P_MOVE_LINK_CONTENT = 24;
@@ -130,6 +131,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         }
     }
 
+    // TODO: Move to a utility class
     private PdfStructElem findStructElemByObjNum(PdfStructTreeRoot root, int objNum) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null) {
@@ -146,6 +148,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return null;
     }
 
+    // TODO: Move to a utility class
     private PdfStructElem findStructElemByObjNum(PdfStructElem elem, int objNum) {
         if (elem.getPdfObject().getIndirectReference() != null
                 && elem.getPdfObject().getIndirectReference().getObjNumber() == objNum) {
@@ -166,6 +169,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return null;
     }
 
+    // TODO: Move to a utility class
     private boolean linkHasMcr(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -179,6 +183,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return false;
     }
 
+    // TODO: Move to a utility class
     private PdfObjRef findObjRef(PdfStructElem linkElem) {
         List<IStructureNode> kids = linkElem.getKids();
         if (kids == null) {
@@ -202,6 +207,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return -1;
     }
 
+    // TODO: Move to a utility class (same as @isSameStructElem in @ConvertToArtifact?)
     private boolean sameStructElem(PdfStructElem a, PdfStructElem b) {
         if (a == b) {
             return true;
@@ -215,6 +221,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
                 && aDict.getIndirectReference().equals(bDict.getIndirectReference());
     }
 
+    // TODO: Move to a utility class (same as @getPageNumber in @DocumentContext?)
     private int getPageNumber(PdfStructElem elem, DocumentContext ctx) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
@@ -227,6 +234,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return 0;
     }
 
+    // TODO: Move to a utility class (same as @getAnnotationBounds in @EmptyLinkTagVisitor?)
     private Rectangle getAnnotationBounds(PdfDictionary annotDict) {
         Rectangle quadBounds = getQuadPointsBounds(annotDict);
         if (quadBounds != null) {
@@ -235,6 +243,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return getRectBounds(annotDict);
     }
 
+    // TODO: Move to a utility class (same as @getQuadPointsBounds in @EmptyLinkTagVisitor?)
     private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
         PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
         if (quadPoints == null || quadPoints.size() < 8) {
@@ -265,6 +274,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class (same as @getRectBounds in @EmptyLinkTagVisitor?)
     private Rectangle getRectBounds(PdfDictionary annotDict) {
         PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
         if (rectArray == null || rectArray.size() < 4) {
@@ -287,6 +297,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
+    // TODO: Move to a utility class (same as @boundsSimilar in @EmptyLinkTagVisitor?)
     private boolean boundsSimilar(Rectangle mcrRect, Rectangle annotRect) {
         if (mcrRect == null || annotRect == null) {
             return false;
@@ -303,6 +314,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         return mcrRect.getIntersection(annotRect) != null;
     }
 
+    // TODO: Move to a utility class (same as @area in @EmptyLinkTagVisitor?)
     private double area(Rectangle rect) {
         double width = Math.max(0.0, rect.getWidth());
         double height = Math.max(0.0, rect.getHeight());

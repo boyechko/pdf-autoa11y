@@ -15,37 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.core;
+package net.boyechko.pdf.autoa11y.validation;
 
-/** Defines the verbosity levels for output control. */
-public enum VerbosityLevel {
-    /** Only show errors and final status */
-    QUIET(0),
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 
-    /** Show summary information (default) */
-    NORMAL(1),
+/** Visitor interface for PDF structure tree traversal. */
+public interface StructureTreeVisitor {
 
-    /** Show detailed tag structure and processing steps */
-    VERBOSE(2),
+    String name();
 
-    /** Show all information including debug logs */
-    DEBUG(3);
+    String description();
 
-    private final int level;
-
-    VerbosityLevel(int level) {
-        this.level = level;
+    default boolean enterElement(VisitorContext ctx) {
+        return true;
     }
 
-    public int getLevel() {
-        return level;
-    }
+    default void leaveElement(VisitorContext ctx) {}
 
-    public boolean isAtLeast(VerbosityLevel other) {
-        return this.level >= other.level;
-    }
+    default void beforeTraversal(VisitorContext ctx) {}
 
-    public boolean shouldShow(VerbosityLevel requiredLevel) {
-        return this.level >= requiredLevel.level;
-    }
+    default void afterTraversal() {}
+
+    IssueList getIssues();
 }

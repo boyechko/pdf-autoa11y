@@ -35,6 +35,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Converts a tagged element to an artifact. */
 public class ConvertToArtifact implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ConvertToArtifact.class);
     private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
@@ -92,25 +93,10 @@ public class ConvertToArtifact implements IssueFix {
 
         for (PdfObjRef objRef : objRefs) {
             PdfObject refObj = objRef.getReferencedObject();
-            logger.debug(
-                    "OBJR references object type: {}, indirect ref: {}",
-                    refObj != null ? refObj.getClass().getSimpleName() : "null",
-                    refObj != null && refObj.getIndirectReference() != null
-                            ? refObj.getIndirectReference().getObjNumber()
-                            : "none");
-
             if (refObj instanceof PdfDictionary annotDict) {
                 PdfName subtype = annotDict.getAsName(PdfName.Subtype);
-                logger.debug(
-                        "Dictionary /Subtype: {}, /Type: {}",
-                        subtype,
-                        annotDict.getAsName(PdfName.Type));
-
                 if (subtype != null && PdfName.Link.equals(subtype)) {
-                    logger.debug("Attempting to remove Link annotation");
                     removeAnnotationFromPage(annotDict, ctx);
-                } else {
-                    logger.debug("Not a Link annotation, skipping (subtype={})", subtype);
                 }
             }
         }
@@ -119,20 +105,12 @@ public class ConvertToArtifact implements IssueFix {
     private void collectObjRefs(PdfStructElem elem, List<PdfObjRef> objRefs) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) {
-            logger.debug("Element has null kids list");
             return;
         }
 
-        logger.debug(
-                "Collecting OBJRs from {} with {} kid(s)",
-                elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                kids.size());
-
         for (IStructureNode kid : kids) {
-            logger.debug("  Kid type: {}", kid.getClass().getSimpleName());
             if (kid instanceof PdfObjRef objRef) {
                 objRefs.add(objRef);
-                logger.debug("    Found OBJR");
             } else if (kid instanceof PdfStructElem childElem) {
                 collectObjRefs(childElem, objRefs);
             }
@@ -146,29 +124,15 @@ public class ConvertToArtifact implements IssueFix {
                         : 0;
 
         PdfArray targetRect = annotDict.getAsArray(PdfName.Rect);
-        logger.debug(
-                "Annotation obj #{} has /Rect: {}",
-                annotObjNum,
-                targetRect != null ? targetRect : "null");
 
         PdfDictionary pageDict = annotDict.getAsDictionary(PdfName.P);
-        logger.debug(
-                "Annotation obj #{} has /P entry: {}",
-                annotObjNum,
-                pageDict != null
-                        ? (pageDict.getIndirectReference() != null
-                                ? "obj #" + pageDict.getIndirectReference().getObjNumber()
-                                : "direct dict")
-                        : "null");
 
         if (pageDict == null) {
             pageDict = annotDict.getAsDictionary(new PdfName("Pg"));
-            logger.debug("Annotation /Pg fallback: {}", pageDict != null ? "found" : "null");
         }
 
         if (pageDict != null) {
             int pageNum = ctx.doc().getPageNumber(pageDict);
-            logger.debug("Page dict resolved to page number: {}", pageNum);
             if (pageNum > 0) {
                 PdfPage page = ctx.doc().getPage(pageNum);
                 int removed = removeAnnotationAndDuplicates(page, annotDict, targetRect);
@@ -180,10 +144,6 @@ public class ConvertToArtifact implements IssueFix {
             }
         }
 
-        logger.debug(
-                "Searching all {} pages for annotation obj #{}",
-                ctx.doc().getNumberOfPages(),
-                annotObjNum);
         for (int i = 1; i <= ctx.doc().getNumberOfPages(); i++) {
             PdfPage page = ctx.doc().getPage(i);
             if (removeAnnotationAndDuplicates(page, annotDict, targetRect) > 0) {
@@ -197,19 +157,11 @@ public class ConvertToArtifact implements IssueFix {
             PdfPage page, PdfDictionary annotDict, PdfArray targetRect) {
         List<PdfAnnotation> annotations = page.getAnnotations();
         int pageNum = page.getDocument().getPageNumber(page);
-        int targetObjNum =
-                annotDict.getIndirectReference() != null
-                        ? annotDict.getIndirectReference().getObjNumber()
-                        : 0;
 
         List<PdfAnnotation> toRemove = new ArrayList<>();
 
         for (PdfAnnotation annot : annotations) {
             PdfDictionary annotPdfObj = annot.getPdfObject();
-            int annotObjNum =
-                    annotPdfObj.getIndirectReference() != null
-                            ? annotPdfObj.getIndirectReference().getObjNumber()
-                            : 0;
             PdfName annotSubtype = annotPdfObj.getAsName(PdfName.Subtype);
 
             if (!PdfName.Link.equals(annotSubtype)) {
@@ -227,17 +179,8 @@ public class ConvertToArtifact implements IssueFix {
             PdfArray annotRect = annotPdfObj.getAsArray(PdfName.Rect);
             boolean sameRect = targetRect != null && rectsEqual(targetRect, annotRect);
 
-            logger.debug(
-                    "  Checking Link annotation obj #{}: sameInstance={}, equalObjects={}, sameIndirectRef={}, sameRect={}",
-                    annotObjNum,
-                    sameInstance,
-                    equalObjects,
-                    sameIndirectRef,
-                    sameRect);
-
             if (sameInstance || equalObjects || sameIndirectRef || sameRect) {
                 toRemove.add(annot);
-                logger.debug("    Will remove annotation obj #{}", annotObjNum);
             }
         }
 
@@ -250,16 +193,10 @@ public class ConvertToArtifact implements IssueFix {
             logger.debug("Removed Link annotation obj #{} from page {}", objNum, pageNum);
         }
 
-        if (toRemove.size() > 1) {
-            logger.debug(
-                    "Removed {} annotations (including duplicates) from page {}",
-                    toRemove.size(),
-                    pageNum);
-        }
-
         return toRemove.size();
     }
 
+    // TODO: Move to a utility class
     private boolean rectsEqual(PdfArray rect1, PdfArray rect2) {
         if (rect1 == null || rect2 == null) {
             return false;
@@ -287,7 +224,7 @@ public class ConvertToArtifact implements IssueFix {
                 element.getPdfObject().getIndirectReference() != null
                         ? element.getPdfObject().getIndirectReference().getObjNumber()
                         : 0;
-        return "Converted " + role + " (object #" + objNum + ") to artifact";
+        return "Converted " + role + " obj #" + objNum + " to artifact";
     }
 
     @Override
@@ -299,7 +236,7 @@ public class ConvertToArtifact implements IssueFix {
                         : 0;
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Converted " + role + " (object #" + objNum + ")" + pageInfo + " to artifact";
+        return "Converted " + role + " obj #" + objNum + pageInfo + " to artifact";
     }
 
     @Override
@@ -310,6 +247,7 @@ public class ConvertToArtifact implements IssueFix {
         return false;
     }
 
+    // TODO: Move to a utility class
     private boolean isDescendantOf(PdfStructElem candidate, PdfStructElem ancestor) {
         IStructureNode parent = candidate.getParent();
         while (parent != null) {
@@ -326,6 +264,7 @@ public class ConvertToArtifact implements IssueFix {
         return false;
     }
 
+    // TODO: Move to a utility class
     private boolean isSameStructElem(PdfStructElem a, PdfStructElem b) {
         if (a == b) {
             return true;

@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.issues;
 
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 
+/** Represents a fix for an accessibility issue found in a PDF document. */
 public interface IssueFix {
     int priority();
 

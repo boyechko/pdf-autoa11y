@@ -36,18 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Sets up proper document structure: creates Document wrapper if missing, then organizes content
- * into Part-per-page layout. This ensures the structure tree follows the pattern:
- *
- * <pre>
- * StructTreeRoot
- * └── Document
- *     ├── Part (page 1)
- *     │   └── content...
- *     ├── Part (page 2)
- *     │   └── content...
- *     └── ...
- * </pre>
+ * Wraps everything in a Document wrapper if missing, then organizes content into Part-per-page
+ * layout.
  */
 public class SetupDocumentStructure implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(SetupDocumentStructure.class);
@@ -197,7 +187,7 @@ public class SetupDocumentStructure implements IssueFix {
         }
     }
 
-    /** Determines which page an element belongs to based on /Pg or descendant /Pg. */
+    // TODO: Move to a utility class (same as @getPageNumber in @DocumentContext?)
     private int determinePageNumber(DocumentContext ctx, PdfStructElem elem) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
@@ -226,6 +216,7 @@ public class SetupDocumentStructure implements IssueFix {
         return 0;
     }
 
+    // TODO: Same as @moveElementToPart in @CreateLinkTag?
     private void moveElementToPart(
             PdfStructElem documentElem, PdfStructElem elem, PdfStructElem targetPart) {
         PdfArray docKids = documentElem.getPdfObject().getAsArray(PdfName.K);
@@ -282,6 +273,7 @@ public class SetupDocumentStructure implements IssueFix {
         return null;
     }
 
+    // TODO: It would be nice if this could use onDetail()
     @Override
     public String describe() {
         StringBuilder sb = new StringBuilder("Set up document structure");

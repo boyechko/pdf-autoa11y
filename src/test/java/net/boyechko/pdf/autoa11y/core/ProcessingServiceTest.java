@@ -38,10 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Comprehensive test suite for ProcessingService that demonstrates PDF accessibility issue
- * detection and remediation.
- */
+/** Test suite for ProcessingService. */
 public class ProcessingServiceTest extends PdfTestBase {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingServiceTest.class);
 

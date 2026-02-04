@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.issues;
 
+/** Represents an accessibility issue found in a PDF document. */
 public final class Issue {
     private final IssueType type;
     private final IssueSeverity severity;

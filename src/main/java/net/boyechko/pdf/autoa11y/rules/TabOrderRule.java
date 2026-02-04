@@ -22,12 +22,23 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
+/** Detects if the document tab order is set to follow the structure tree order. */
 public class TabOrderRule implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Tab Order";
+        return "Tab Order Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Document tab order is set to follow structure tree";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "Document tab order is not set";
     }
 
     @Override
@@ -45,7 +56,7 @@ public class TabOrderRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set document tab order";
+                        return "Set document tab order to follow structure tree";
                     }
 
                     @Override
@@ -61,7 +72,7 @@ public class TabOrderRule implements Rule {
                 new Issue(
                         IssueType.TAB_ORDER_NOT_SET,
                         IssueSeverity.ERROR,
-                        "✗ Document tab order is not set",
+                        "Document tab order is not set to follow structure tree",
                         fix);
         return new IssueList(issue);
     }

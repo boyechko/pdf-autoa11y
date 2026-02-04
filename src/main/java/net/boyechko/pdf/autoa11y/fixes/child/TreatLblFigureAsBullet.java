@@ -24,6 +24,7 @@ import java.util.Optional;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
+/** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */
 public final class TreatLblFigureAsBullet extends TagSingleChildFix {
     private TreatLblFigureAsBullet(PdfStructElem kid, PdfStructElem parent) {
         super(kid, parent);

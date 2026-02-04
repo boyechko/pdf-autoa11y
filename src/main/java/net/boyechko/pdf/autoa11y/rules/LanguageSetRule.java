@@ -22,12 +22,23 @@ import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
+/** Detects if the document language is set. */
 public class LanguageSetRule implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Language Set";
+        return "Language Set Rule";
+    }
+
+    @Override
+    public String passedMessage() {
+        return "Document language (Lang) is set";
+    }
+
+    @Override
+    public String failedMessage() {
+        return "✗ Document language (Lang) is not set";
     }
 
     @Override

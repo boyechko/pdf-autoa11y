@@ -25,6 +25,7 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Base class for fixes that involve multiple child elements. */
 public abstract class TagMultipleChildrenFix implements IssueFix {
 
     protected static final Logger logger = LoggerFactory.getLogger(TagMultipleChildrenFix.class);
@@ -50,7 +51,6 @@ public abstract class TagMultipleChildrenFix implements IssueFix {
         return 20; // Structure fix - higher priority than single child fixes
     }
 
-    // Getters for invalidation logic in other fixes
     public PdfStructElem getParent() {
         return parent;
     }

@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
+/** Changes the role of a Figure element to a specified role. */
 public class ChangeFigureRole implements IssueFix {
     private static final int P_STRUCTURE = 20;
 
