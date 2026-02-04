@@ -66,6 +66,7 @@ public final class Issue {
         return message;
     }
 
+    /** Returns IssueFix if an automatic fix exists; null otherwise. */
     public IssueFix fix() {
         return fix;
     }

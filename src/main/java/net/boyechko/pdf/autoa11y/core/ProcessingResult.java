@@ -3,7 +3,17 @@ package net.boyechko.pdf.autoa11y.core;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 
-/** Result of the processing of a PDF document. */
+/**
+ * Summary of the processing of a PDF document.
+ *
+ * @param originalTagIssues Structure-tree-level issues found before processing.
+ * @param appliedTagFixes Structure-tree-level issues that were resolved.
+ * @param remainingTagIssues Structure-tree-level issues that were not resolved.
+ * @param originalDocumentIssues Document-level issues found before processing.
+ * @param appliedDocumentFixes Document-level issues that were resolved.
+ * @param remainingDocumentIssues Document-level issues that were not resolved.
+ * @param tempOutputFile The path to the temporary output file.
+ */
 public record ProcessingResult(
         IssueList originalTagIssues,
         IssueList appliedTagFixes,
