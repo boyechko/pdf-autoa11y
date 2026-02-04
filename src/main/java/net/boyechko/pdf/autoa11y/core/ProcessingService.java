@@ -43,8 +43,6 @@ public class ProcessingService {
     private final RuleEngine engine;
     private final ProcessingListener listener;
 
-    private DocumentContext context;
-
     public ProcessingService(
             Path inputPath,
             String password,
@@ -82,23 +80,37 @@ public class ProcessingService {
         }
     }
 
+    public IssueList analyze() throws Exception {
+        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
+            DocumentContext context = new DocumentContext(pdfDoc);
+
+            IssueList documentIssues = detectDocumentIssuesPhase(context);
+            IssueList tagIssues = detectTagIssuesPhase(context);
+            IssueList totalIssues = new IssueList();
+            totalIssues.addAll(documentIssues);
+            totalIssues.addAll(tagIssues);
+
+            return totalIssues;
+        }
+    }
+
     private ProcessingResult remediatePdfDoc(PdfDocument pdfDoc) throws Exception {
-        this.context = new DocumentContext(pdfDoc);
+        DocumentContext context = new DocumentContext(pdfDoc);
 
         // Phase 1: Detect document issues
-        IssueList docIssues = phaseDetectDocumentIssues();
+        IssueList docIssues = detectDocumentIssuesPhase(context);
 
         // Phase 2: Detect tag issues
-        IssueList tagIssues = phaseDetectTagIssues();
+        IssueList tagIssues = detectTagIssuesPhase(context);
 
         // Phase 3: Apply available fixes
-        IssueList appliedTagFixes = phaseApplyFixes(tagIssues, "structure tree");
-        IssueList appliedDocFixes = phaseApplyFixes(docIssues, "document");
+        IssueList appliedTagFixes = applyFixesPhase(context, tagIssues, "structure tree");
+        IssueList appliedDocFixes = applyFixesPhase(context, docIssues, "document");
 
         // Phase 4: Re-detect tag issues
         IssueList remainingTagIssues = tagIssues;
         if (appliedTagFixes.size() > 0) {
-            remainingTagIssues = phaseDetectTagIssues();
+            remainingTagIssues = detectTagIssuesPhase(context);
         }
 
         // Phase 5: Generate summary
@@ -127,7 +139,7 @@ public class ProcessingService {
         return result;
     }
 
-    private IssueList phaseDetectDocumentIssues() {
+    private IssueList detectDocumentIssuesPhase(DocumentContext context) {
         listener.onPhaseStart("Detecting document-level issues");
         IssueList allDocIssues = new IssueList();
 
@@ -146,7 +158,7 @@ public class ProcessingService {
         return allDocIssues;
     }
 
-    private IssueList phaseDetectTagIssues() {
+    private IssueList detectTagIssuesPhase(DocumentContext context) {
         listener.onPhaseStart("Detecting structure tree issues");
 
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
@@ -165,30 +177,17 @@ public class ProcessingService {
         return tagIssues;
     }
 
-    private IssueList phaseApplyFixes(IssueList issues, String issueType) {
-        listener.onPhaseStart("Applying " + issueType + " fixes");
+    private IssueList applyFixesPhase(
+            DocumentContext context, IssueList issues, String issuesCategory) {
+        listener.onPhaseStart("Applying " + issuesCategory + " fixes");
         if (issues.isEmpty()) {
-            listener.onInfo("No " + issueType + " issues to fix");
+            listener.onInfo("No " + issuesCategory + " issues to fix");
             return new IssueList();
         }
 
         IssueList appliedFixes = engine.applyFixes(context, issues);
         reportFixesGrouped(appliedFixes);
         return appliedFixes;
-    }
-
-    public IssueList analyze() throws Exception {
-        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
-            this.context = new DocumentContext(pdfDoc);
-
-            IssueList documentIssues = phaseDetectDocumentIssues();
-            IssueList tagIssues = phaseDetectTagIssues();
-            IssueList totalIssues = new IssueList();
-            totalIssues.addAll(documentIssues);
-            totalIssues.addAll(tagIssues);
-
-            return totalIssues;
-        }
     }
 
     private void reportIssuesGrouped(IssueList issues) {
