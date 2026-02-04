@@ -20,25 +20,16 @@ package net.boyechko.pdf.autoa11y.core;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
-import net.boyechko.pdf.autoa11y.rules.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
-import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
-import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
-import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
-import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
-import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
-import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,28 +71,10 @@ public class ProcessingService {
         this.listener = listener;
         this.verbosity = verbosity;
 
-        List<Rule> rules =
-                List.of(
-                        new LanguageSetRule(),
-                        new TabOrderRule(),
-                        new StructureTreeRule(),
-                        new TaggedPdfRule(),
-                        new MissingDocumentRule(),
-                        new UnmarkedLinkRule());
+        List<Rule> rules = ProcessingDefaults.rules();
+        List<StructureTreeVisitor> visitors = ProcessingDefaults.visitors(listener, verbosity);
 
         TagSchema schema = TagSchema.loadDefault();
-
-        List<StructureTreeVisitor> visitors = new ArrayList<>();
-        visitors.add(new SchemaValidationVisitor());
-        visitors.add(new MistaggedArtifactVisitor());
-        visitors.add(new NeedlessNestingVisitor());
-        visitors.add(new FigureWithTextVisitor());
-        visitors.add(new EmptyLinkTagVisitor());
-
-        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
-            visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
-        }
-
         this.engine = new RuleEngine(rules, visitors, schema);
     }
 
@@ -308,10 +281,6 @@ public class ProcessingService {
         }
 
         return tagIssues;
-    }
-
-    private Consumer<String> getVerboseOutput() {
-        return verbosity.isAtLeast(VerbosityLevel.VERBOSE) ? listener::onVerboseOutput : null;
     }
 
     private IssueList detectAndReportRuleIssues() {
