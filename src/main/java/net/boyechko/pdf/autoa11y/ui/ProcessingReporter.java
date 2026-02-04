@@ -27,7 +27,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 
-public class OutputFormatter implements ProcessingListener {
+public class ProcessingReporter implements ProcessingListener {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
 
@@ -42,7 +42,7 @@ public class OutputFormatter implements ProcessingListener {
 
     private boolean phaseOpen = false;
 
-    public OutputFormatter(PrintStream output, VerbosityLevel verbosity) {
+    public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
         this.output = output;
         this.verbosity = verbosity;
     }

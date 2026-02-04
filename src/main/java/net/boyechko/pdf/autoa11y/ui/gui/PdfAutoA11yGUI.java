@@ -29,7 +29,7 @@ import javax.swing.border.TitledBorder;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
-import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
+import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 
 public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
@@ -225,7 +225,8 @@ public class PdfAutoA11yGUI extends JFrame {
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
         PrintStream textAreaStream = createTextAreaPrintStream();
-        OutputFormatter formatter = new OutputFormatter(textAreaStream, VerbosityLevel.VERBOSE);
+        ProcessingReporter reporter =
+                new ProcessingReporter(textAreaStream, VerbosityLevel.VERBOSE);
 
         SwingWorker<ProcessingResult, String> worker =
                 new SwingWorker<ProcessingResult, String>() {
@@ -241,7 +242,7 @@ public class PdfAutoA11yGUI extends JFrame {
                                 new ProcessingService(
                                         selectedFile.toPath(),
                                         password,
-                                        formatter,
+                                        reporter,
                                         VerbosityLevel.VERBOSE);
 
                         ProcessingResult result = service.remediate();
@@ -257,7 +258,7 @@ public class PdfAutoA11yGUI extends JFrame {
                             ProcessingResult result = get();
 
                             if (result.totalIssuesResolved() == 0) {
-                                formatter.onInfo("No changes made; output file not created");
+                                reporter.onInfo("No changes made; output file not created");
                                 tempResultFile = null;
                                 saveButton.setEnabled(false);
                             } else {
@@ -267,7 +268,7 @@ public class PdfAutoA11yGUI extends JFrame {
                             // Report is always available after processing
                             saveReportButton.setEnabled(true);
                         } catch (Exception e) {
-                            formatter.onError(e.getMessage());
+                            reporter.onError(e.getMessage());
                         }
                         processButton.setEnabled(true);
                     }
