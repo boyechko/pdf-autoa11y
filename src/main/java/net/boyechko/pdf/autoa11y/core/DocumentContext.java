@@ -31,7 +31,7 @@ public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
-    private ProcessingService.ProcessingResult processingResult;
+    private ProcessingResult processingResult;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
@@ -43,11 +43,11 @@ public class DocumentContext {
         return doc;
     }
 
-    public void setProcessingResult(ProcessingService.ProcessingResult result) {
+    public void setProcessingResult(ProcessingResult result) {
         this.processingResult = result;
     }
 
-    public ProcessingService.ProcessingResult getProcessingResult() {
+    public ProcessingResult getProcessingResult() {
         return processingResult;
     }
 

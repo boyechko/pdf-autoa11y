@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 
-    private final Path inputPath;
     private final PdfDocumentFactory pdfFactory;
     private final RuleEngine engine;
     private final ProcessingListener listener;
@@ -50,7 +49,6 @@ public class ProcessingService {
             String password,
             ProcessingListener listener,
             VerbosityLevel verbosity) {
-        this.inputPath = inputPath;
         this.pdfFactory = new PdfDocumentFactory(inputPath, password);
         this.listener = listener;
 
@@ -63,36 +61,6 @@ public class ProcessingService {
 
     public ProcessingService(Path inputPath, String password, ProcessingListener listener) {
         this(inputPath, password, listener, VerbosityLevel.NORMAL);
-    }
-
-    public record ProcessingResult(
-            IssueList originalTagIssues,
-            IssueList appliedTagFixes,
-            IssueList remainingTagIssues,
-            IssueList documentLevelIssues,
-            IssueList appliedDocumentFixes,
-            IssueList totalRemainingIssues,
-            Path tempOutputFile) {
-
-        public int totalIssuesDetected() {
-            return originalTagIssues.size() + documentLevelIssues.size();
-        }
-
-        public int totalIssuesResolved() {
-            return appliedTagFixes.size() + appliedDocumentFixes.size();
-        }
-
-        public int totalIssuesRemaining() {
-            return totalRemainingIssues.size();
-        }
-
-        public boolean hasTagIssues() {
-            return !originalTagIssues.isEmpty();
-        }
-
-        public boolean hasDocumentIssues() {
-            return !documentLevelIssues.isEmpty();
-        }
     }
 
     public class NoTagsException extends Exception {
@@ -114,9 +82,9 @@ public class ProcessingService {
                     result.originalTagIssues(),
                     result.appliedTagFixes(),
                     result.remainingTagIssues(),
-                    result.documentLevelIssues(),
+                    result.originalDocumentIssues(),
                     result.appliedDocumentFixes(),
-                    result.totalRemainingIssues(),
+                    result.remainingDocumentIssues(),
                     tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);

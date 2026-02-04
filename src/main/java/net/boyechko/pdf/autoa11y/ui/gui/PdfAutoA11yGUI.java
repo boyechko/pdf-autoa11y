@@ -26,8 +26,8 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
-import net.boyechko.pdf.autoa11y.core.ProcessingService.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.ui.OutputFormatter;
 
@@ -244,7 +244,7 @@ public class PdfAutoA11yGUI extends JFrame {
                                         formatter,
                                         VerbosityLevel.VERBOSE);
 
-                        ProcessingService.ProcessingResult result = service.process();
+                        ProcessingResult result = service.process();
                         return result;
                     }
 

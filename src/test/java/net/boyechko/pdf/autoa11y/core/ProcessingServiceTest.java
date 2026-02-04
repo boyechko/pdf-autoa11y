@@ -119,11 +119,11 @@ public class ProcessingServiceTest extends PdfTestBase {
                         testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
             assertNotNull(result, "Should return a result");
             assertNotNull(result.originalTagIssues(), "Should have original tag issues");
-            assertNotNull(result.documentLevelIssues(), "Should have document level issues");
+            assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (ProcessingService.NoTagsException e) {
@@ -170,14 +170,14 @@ public class ProcessingServiceTest extends PdfTestBase {
                         testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
             assertNotNull(result.originalTagIssues(), "Should have original tag issues");
             assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
             assertNotNull(result.remainingTagIssues(), "Should have remaining tag issues");
-            assertNotNull(result.documentLevelIssues(), "Should have document level issues");
+            assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
             assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
-            assertNotNull(result.totalRemainingIssues(), "Should have total remaining issues");
+            assertNotNull(result.remainingDocumentIssues(), "Should have total remaining issues");
 
             assertTrue(
                     result.totalIssuesResolved() >= 0, "Should have resolved zero or more issues");
@@ -199,7 +199,7 @@ public class ProcessingServiceTest extends PdfTestBase {
                         brokenPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
             assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
             assertTrue(
@@ -220,7 +220,7 @@ public class ProcessingServiceTest extends PdfTestBase {
                         testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
             assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
             assertTrue(
@@ -243,10 +243,10 @@ public class ProcessingServiceTest extends PdfTestBase {
         ProcessingService service =
                 new ProcessingService(
                         inputPath, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
-        ProcessingService.ProcessingResult result = service.process();
+        ProcessingResult result = service.process();
 
         assertNotNull(result.originalTagIssues());
-        assertNotNull(result.documentLevelIssues());
+        assertNotNull(result.originalDocumentIssues());
 
         assertTrue(result.totalIssuesDetected() >= 0, "Should detect zero or more issues in total");
         assertTrue(
@@ -265,11 +265,13 @@ public class ProcessingServiceTest extends PdfTestBase {
                         testFile, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
 
         try {
-            ProcessingService.ProcessingResult result = service.process();
+            ProcessingResult result = service.process();
 
-            assertNotNull(result.documentLevelIssues(), "Should check for document-level issues");
+            assertNotNull(
+                    result.originalDocumentIssues(), "Should check for document-level issues");
             assertTrue(
-                    result.hasDocumentIssues() || result.appliedDocumentFixes().size() >= 0,
+                    result.originalDocumentIssues().size() > 0
+                            || result.appliedDocumentFixes().size() > 0,
                     "Should detect or fix document-level issues");
 
             Files.deleteIfExists(result.tempOutputFile());
