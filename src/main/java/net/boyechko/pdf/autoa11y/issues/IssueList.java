@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-/** Represents a list of accessibility issues found in a PDF document. */
+/** List of accessibility issues found in a PDF document. */
 public class IssueList extends ArrayList<Issue> {
 
     public IssueList() {
@@ -39,17 +39,21 @@ public class IssueList extends ArrayList<Issue> {
         }
     }
 
-    // Domain-specific convenience methods
+    /** Returns a subset of this list that contains only the issues that have been resolved. */
     public IssueList getResolvedIssues() {
         return stream().filter(Issue::isResolved).collect(Collectors.toCollection(IssueList::new));
     }
 
+    /** Returns a subset of this list that contains only the issues that have not been resolved. */
     public IssueList getRemainingIssues() {
         return stream()
                 .filter(issue -> !issue.isResolved())
                 .collect(Collectors.toCollection(IssueList::new));
     }
 
+    /**
+     * Returns a subset of this list that contains only the issues that have failed to be resolved.
+     */
     public IssueList getFailedFixes() {
         return stream().filter(Issue::hasFailed).collect(Collectors.toCollection(IssueList::new));
     }
