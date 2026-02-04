@@ -17,9 +17,10 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,24 +39,11 @@ public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 
     private final Path inputPath;
-    private final String password;
-    private final ReaderProperties readerProps;
+    private final PdfDocumentFactory pdfFactory;
     private final RuleEngine engine;
     private final ProcessingListener listener;
-    private final VerbosityLevel verbosity;
 
-    private EncryptionInfo encryptionInfo;
     private DocumentContext context;
-
-    private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
-
-    private final int DEFAULT_PERMISSIONS =
-            EncryptionConstants.ALLOW_PRINTING
-                    | EncryptionConstants.ALLOW_FILL_IN
-                    | EncryptionConstants.ALLOW_MODIFY_ANNOTATIONS
-                    | EncryptionConstants.ALLOW_SCREENREADERS;
-    private final int DEFAULT_CRYPTO_MODE =
-            EncryptionConstants.ENCRYPTION_AES_256 | EncryptionConstants.DO_NOT_ENCRYPT_METADATA;
 
     public ProcessingService(
             Path inputPath,
@@ -63,13 +51,8 @@ public class ProcessingService {
             ProcessingListener listener,
             VerbosityLevel verbosity) {
         this.inputPath = inputPath;
-        this.password = password;
-        this.readerProps = new ReaderProperties();
-        if (password != null) {
-            this.readerProps.setPassword(password.getBytes());
-        }
+        this.pdfFactory = new PdfDocumentFactory(inputPath, password);
         this.listener = listener;
-        this.verbosity = verbosity;
 
         List<Rule> rules = ProcessingDefaults.rules();
         List<StructureTreeVisitor> visitors = ProcessingDefaults.visitors(listener, verbosity);
@@ -119,12 +102,9 @@ public class ProcessingService {
     }
 
     public ProcessingResult process() throws Exception {
-        validateInputFile();
         Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
 
-        this.encryptionInfo = analyzeEncryption();
-
-        try (PdfDocument pdfDoc = openForModification(tempOutputFile)) {
+        try (PdfDocument pdfDoc = pdfFactory.openForModification(tempOutputFile)) {
             this.context = new DocumentContext(pdfDoc);
 
             analyzeAndRemediate();
@@ -145,9 +125,7 @@ public class ProcessingService {
     }
 
     public IssueList analyzeOnly() throws Exception {
-        validateInputFile();
-        try (PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
-                PdfDocument pdfDoc = new PdfDocument(pdfReader)) {
+        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
             this.context = new DocumentContext(pdfDoc);
 
             listener.onPhaseStart("Checking document-level compliance");
@@ -172,47 +150,6 @@ public class ProcessingService {
             listener.onSummary(allIssues.size(), 0, allIssues.size());
             return allIssues;
         }
-    }
-
-    private void validateInputFile() throws Exception {
-        if (!Files.exists(inputPath)) {
-            throw new IllegalArgumentException("File not found: " + inputPath);
-        }
-    }
-
-    private EncryptionInfo analyzeEncryption() throws Exception {
-        try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
-                PdfDocument testDoc = new PdfDocument(testReader)) {
-            logger.debug("PDF Encryption Analysis:");
-            logger.debug("  Encrypted: " + testReader.isEncrypted());
-            logger.debug("  Permissions: " + testReader.getPermissions());
-            logger.debug("  Crypto Mode: " + testReader.getCryptoMode());
-            return new EncryptionInfo(
-                    testReader.getPermissions(),
-                    testReader.getCryptoMode(),
-                    testReader.isEncrypted());
-        }
-    }
-
-    private PdfDocument openForModification(Path outputPath) throws Exception {
-        PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
-        WriterProperties writerProps = new WriterProperties();
-
-        if (encryptionInfo.isEncrypted() && password != null) {
-            writerProps.setStandardEncryption(
-                    null,
-                    password.getBytes(),
-                    encryptionInfo.permissions(),
-                    encryptionInfo.cryptoMode());
-        } else if (password != null) {
-            writerProps.setStandardEncryption(
-                    null, password.getBytes(), DEFAULT_PERMISSIONS, DEFAULT_CRYPTO_MODE);
-        }
-
-        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
-        PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
-
-        return new PdfDocument(pdfReader, pdfWriter);
     }
 
     private IssueList analyzeAndRemediate() throws Exception {
