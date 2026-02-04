@@ -66,9 +66,6 @@ public class PdfAutoA11yCLI {
         } catch (CLIException e) {
             System.err.println("Error: " + e.getMessage());
             System.exit(1);
-        } catch (Exception e) {
-            System.err.println("Processing error: " + e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -184,12 +181,9 @@ public class PdfAutoA11yCLI {
 
             formatter.onSuccess("Output saved to " + config.outputPath().toString());
         } catch (Exception e) {
-            if (isDevelopment() || config.verbosity().isAtLeast(VerbosityLevel.DEBUG)) {
-                System.err.println("✗ Processing failed:");
-                e.printStackTrace();
-            } else {
-                System.err.println("Processing failed: " + e.getMessage());
-            }
+            System.err.println("✗ Processing failed due to an exception:");
+            System.err.println();
+            e.printStackTrace();
         } finally {
             if (closeOutput) {
                 output.close();
