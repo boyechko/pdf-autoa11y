@@ -12,9 +12,14 @@
   <url>https://github.com/boyechko/pdf-autoa11y</url>
 
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <itext.version>9.3.0</itext.version>
+    <junit-jupiter.version>6.0.2</junit-jupiter.version>
+    <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+    <slf4j-simple.version>2.0.17</slf4j-simple.version>
+    <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -27,7 +32,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.10.0</version>
+      <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- add all iText modules -->
@@ -46,16 +51,25 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>2.0.9</version>
+      <version>${slf4j-simple.version}</version>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y-pdfs/</pdf.autoa11y.testOutputDir>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>${exec-maven-plugin.version}</version>
         <configuration>
           <mainClass>net.boyechko.pdf.autoa11y.PdfAutoA11yCLI</mainClass>
           <arguments>
@@ -66,7 +80,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.43.0</version>
+        <version>${spotless-maven-plugin.version}</version>
         <configuration>
           <java>
             <removeUnusedImports />
@@ -115,12 +129,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
-          <configuration>
-            <systemPropertyVariables>
-              <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y-pdfs/</pdf.autoa11y.testOutputDir>
-            </systemPropertyVariables>
-          </configuration>
+          <version>${maven-surefire-plugin.version}</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
