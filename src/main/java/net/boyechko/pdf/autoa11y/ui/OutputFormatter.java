@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
@@ -112,7 +113,16 @@ public class OutputFormatter implements ProcessingListener {
             printBoxHeader("Summary");
 
             if (detected == 0 && resolved == 0) {
-                printLine("No issues to fix", SUCCESS);
+                printLine(
+                        "Checked "
+                                + ProcessingDefaults.rules().size()
+                                + " document-level rules and found no issues",
+                        SUCCESS);
+                printLine(
+                        "Checked "
+                                + ProcessingDefaults.visitors().size()
+                                + " structure tree rules and found no issues",
+                        SUCCESS);
             } else {
                 printLine("Issues detected: " + detected, WARNING);
                 printLine("Resolved: " + resolved, SUCCESS);
