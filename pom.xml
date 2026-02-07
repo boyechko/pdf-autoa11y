@@ -16,10 +16,10 @@
     <maven.compiler.release>21</maven.compiler.release>
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <itext.version>9.3.0</itext.version>
-    <junit-jupiter.version>6.0.2</junit-jupiter.version>
+    <junit-jupiter.version>5.10.2</junit-jupiter.version>
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
-    <maven-surefire-plugin.groups></maven-surefire-plugin.groups>
     <maven-surefire-plugin.excludedGroups>visual</maven-surefire-plugin.excludedGroups>
+    <pdf.autoa11y.testOutputDir>${java.io.tmpdir}/pdf-autoa11y-pdfs</pdf.autoa11y.testOutputDir>
     <slf4j-simple.version>2.0.17</slf4j-simple.version>
     <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
   </properties>
@@ -61,12 +61,10 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven-surefire-plugin.version}</version>
         <configuration>
-          <groups>${maven-surefire-plugin.groups}</groups>
           <excludedGroups>${maven-surefire-plugin.excludedGroups}</excludedGroups>
           <systemPropertyVariables>
-            <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y-pdfs/</pdf.autoa11y.testOutputDir>
+            <pdf.autoa11y.testOutputDir>${pdf.autoa11y.testOutputDir}</pdf.autoa11y.testOutputDir>
           </systemPropertyVariables>
         </configuration>
       </plugin>
