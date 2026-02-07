@@ -44,7 +44,11 @@ public class ProcessingServiceTest extends PdfTestBase {
     void encryptedPdfRaisesException() {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
         ProcessingService service =
-                new ProcessingService(inputPath, null, new NoOpProcessingListener());
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             service.remediate();
@@ -59,7 +63,11 @@ public class ProcessingServiceTest extends PdfTestBase {
     void encryptedPdfWithPasswordSucceeds() {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
         ProcessingService service =
-                new ProcessingService(inputPath, "password", new NoOpProcessingListener());
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, "password"))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             service.remediate();
@@ -72,7 +80,11 @@ public class ProcessingServiceTest extends PdfTestBase {
     void validPdfIsProcessedSuccessfully() {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
         ProcessingService service =
-                new ProcessingService(inputPath, null, new NoOpProcessingListener());
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             service.remediate();
@@ -85,7 +97,11 @@ public class ProcessingServiceTest extends PdfTestBase {
     void reportOnlyValidatesTagsWithoutModification() throws Exception {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
         ProcessingService service =
-                new ProcessingService(inputPath, null, new NoOpProcessingListener());
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         IssueList issues = service.analyze();
         assertNotNull(issues, "Report-only mode should return issues list");
@@ -95,7 +111,11 @@ public class ProcessingServiceTest extends PdfTestBase {
     void untaggedPdfRaisesException() {
         Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
         ProcessingService service =
-                new ProcessingService(inputPath, null, new NoOpProcessingListener());
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             IssueList issues = service.analyze();
@@ -113,8 +133,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path testPdf = createPdfWithDocumentIssues();
 
         ProcessingService service =
-                new ProcessingService(
-                        testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             ProcessingResult result = service.remediate();
@@ -136,7 +159,12 @@ public class ProcessingServiceTest extends PdfTestBase {
     void tagStructureIssuesAreDetected() throws Exception {
         Path testPdf = createPdfWithTagIssues();
 
-        ProcessingService service = new ProcessingService(testPdf, new NoOpProcessingListener());
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
         IssueList issues = service.analyze();
         assertNotNull(issues, "Should return issues list");
         assertTrue(issues.size() > 0, "Should have at least one issue");
@@ -146,7 +174,12 @@ public class ProcessingServiceTest extends PdfTestBase {
     void completeIssueResolutionWorkflow() throws Exception {
         Path testPdf = createPdfWithMultipleIssues();
 
-        ProcessingService service = new ProcessingService(testPdf, new NoOpProcessingListener());
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
         try {
             ProcessingResult result = service.remediate();
 
@@ -174,7 +207,12 @@ public class ProcessingServiceTest extends PdfTestBase {
     void brokenTagStructureIsDetectedAndFixed() throws Exception {
         Path brokenPdf = createPdfWithTagIssues();
 
-        ProcessingService service = new ProcessingService(brokenPdf, new NoOpProcessingListener());
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(brokenPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
         try {
             ProcessingResult result = service.remediate();
 
@@ -195,8 +233,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path testPdf = createPdfWithFixableTagIssues();
 
         ProcessingService service =
-                new ProcessingService(
-                        testPdf, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             ProcessingResult result = service.remediate();
@@ -217,8 +258,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
 
         ProcessingService service =
-                new ProcessingService(
-                        inputPath, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
         try {
             ProcessingResult result = service.remediate();
             assertNotNull(result.originalTagIssues());
@@ -241,8 +285,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path testFile = createPdfWithDocumentIssues();
 
         ProcessingService service =
-                new ProcessingService(
-                        testFile, null, new NoOpProcessingListener(), VerbosityLevel.QUIET);
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfDocumentFactory(new PdfDocumentFactory(testFile, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withVerbosityLevel(VerbosityLevel.QUIET)
+                        .build();
 
         try {
             ProcessingResult result = service.remediate();
