@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PdfAutoA11yCLI {
+    private static final String DEFAULT_OUTPUT_SUFFIX = "_autoa11y.pdf";
 
     private static Logger logger;
 
@@ -67,6 +68,10 @@ public class PdfAutoA11yCLI {
             }
             CLIConfig config = parseArguments(args);
             configureLogging(config.verbosity());
+            logger().info(
+                            "Starting processing of {} with verbosity level {}",
+                            config.inputPath(),
+                            config.verbosity());
             processFile(config);
         } catch (CLIException e) {
             System.err.println("Error: " + e.getMessage());
@@ -124,9 +129,11 @@ public class PdfAutoA11yCLI {
         if (!reportOnly) {
             String inputBaseName =
                     inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
-            String outputFilename = inputBaseName + "_autoa11y.pdf";
+            String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX;
             if (outputPath == null) {
-                outputPath = Paths.get(inputPath.getParent().toString(), outputFilename);
+                Path parent = inputPath.getParent();
+                outputPath =
+                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
             }
         } else if (verbosity == VerbosityLevel.NORMAL) {
             verbosity = VerbosityLevel.VERBOSE;
@@ -160,6 +167,7 @@ public class PdfAutoA11yCLI {
                 if (outputParent != null) {
                     Files.createDirectories(outputParent);
                 }
+                logger().info("Generating report to {}", config.outputPath());
                 output = new PrintStream(Files.newOutputStream(config.outputPath()));
                 closeOutput = true;
             }
@@ -178,9 +186,11 @@ public class PdfAutoA11yCLI {
                             .build();
 
             if (config.reportOnly()) {
+                logger().info("Analyzing document");
                 service.analyze();
                 return;
             }
+            logger().info("Remediating document");
             ProcessingResult result = service.remediate();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
@@ -193,6 +203,10 @@ public class PdfAutoA11yCLI {
                 Files.createDirectories(outputParent);
             }
 
+            logger().info(
+                            "Moving temporary output file {} to {}",
+                            result.tempOutputFile(),
+                            config.outputPath());
             Files.move(
                     result.tempOutputFile(),
                     config.outputPath(),
@@ -204,14 +218,11 @@ public class PdfAutoA11yCLI {
             System.err.println();
             e.printStackTrace();
         } finally {
+            logger().info("Closing output stream");
             if (closeOutput) {
                 output.close();
             }
         }
-    }
-
-    private static boolean isDevelopment() {
-        return "true".equals(System.getProperty("debug"));
     }
 
     private static boolean isHelpRequested(String[] args) {
