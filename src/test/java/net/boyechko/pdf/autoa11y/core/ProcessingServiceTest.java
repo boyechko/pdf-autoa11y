@@ -149,7 +149,7 @@ public class ProcessingServiceTest extends PdfTestBase {
             Files.deleteIfExists(result.tempOutputFile());
         } catch (Exception e) {
             // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
+            fail("Should not throw exception", e);
         }
 
         Files.deleteIfExists(testPdf);
@@ -199,7 +199,7 @@ public class ProcessingServiceTest extends PdfTestBase {
             Files.deleteIfExists(result.tempOutputFile());
         } catch (Exception e) {
             // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
+            fail("Should not throw exception", e);
         }
     }
 
@@ -244,12 +244,14 @@ public class ProcessingServiceTest extends PdfTestBase {
 
             assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
             // TODO: Remove this once we have a proper test for this
-            assertTrue(result.appliedTagFixes().size() >= 0, "Should fix tag structure issues");
+            assertTrue(
+                    result.appliedTagFixes().size() > 0,
+                    "Should apply fixes to tag structure issues");
 
             Files.deleteIfExists(result.tempOutputFile());
         } catch (Exception e) {
             // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
+            fail("Should not throw exception", e);
         }
     }
 
