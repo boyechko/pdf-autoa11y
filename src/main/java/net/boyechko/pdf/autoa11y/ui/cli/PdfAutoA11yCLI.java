@@ -19,12 +19,17 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.io.PrintStream;
 import java.nio.file.*;
+import net.boyechko.pdf.autoa11y.core.PdfDocumentFactory;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PdfAutoA11yCLI {
+
+    private static Logger logger;
 
     // Configuration record to hold parsed CLI arguments
     public record CLIConfig(
@@ -117,10 +122,11 @@ public class PdfAutoA11yCLI {
 
         // Generate output path
         if (!reportOnly) {
-            String filename = inputPath.getFileName().toString();
+            String inputBaseName =
+                    inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
+            String outputFilename = inputBaseName + "_autoa11y.pdf";
             if (outputPath == null) {
-                outputPath =
-                        Paths.get(filename.replaceFirst("(_a11y)*[.][^.]+$", "") + "_autoa11y.pdf");
+                outputPath = Paths.get(inputPath.getParent().toString(), outputFilename);
             }
         } else if (verbosity == VerbosityLevel.NORMAL) {
             verbosity = VerbosityLevel.VERBOSE;
@@ -135,6 +141,13 @@ public class PdfAutoA11yCLI {
         } else {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         }
+    }
+
+    private static Logger logger() {
+        if (logger == null) {
+            logger = LoggerFactory.getLogger(PdfAutoA11yCLI.class);
+        }
+        return logger;
     }
 
     private static void processFile(CLIConfig config) {
@@ -152,11 +165,18 @@ public class PdfAutoA11yCLI {
             }
 
             VerbosityLevel verbosity = config.verbosity();
-            ProcessingReporter formatter = new ProcessingReporter(output, verbosity);
+            ProcessingReporter reporter = new ProcessingReporter(output, verbosity);
+            PdfDocumentFactory docFactory =
+                    new PdfDocumentFactory(config.inputPath(), config.password());
+            ProcessingReporter listener = new ProcessingReporter(output, verbosity);
+            VerbosityLevel verbosityLevel = verbosity;
 
             ProcessingService service =
-                    new ProcessingService(
-                            config.inputPath(), config.password(), formatter, verbosity);
+                    new ProcessingService.ProcessingServiceBuilder()
+                            .withPdfDocumentFactory(docFactory)
+                            .withListener(listener)
+                            .withVerbosityLevel(verbosityLevel)
+                            .build();
 
             if (config.reportOnly()) {
                 service.analyze();
@@ -165,7 +185,7 @@ public class PdfAutoA11yCLI {
             ProcessingResult result = service.remediate();
 
             if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-                formatter.onInfo("No changes made; output file not created");
+                reporter.onInfo("No changes made; output file not created");
                 return;
             }
 
@@ -179,7 +199,7 @@ public class PdfAutoA11yCLI {
                     config.outputPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            formatter.onSuccess("Output saved to " + config.outputPath().toString());
+            reporter.onSuccess("Output saved to " + config.outputPath().toString());
         } catch (Exception e) {
             System.err.println("✗ Processing failed due to an exception:");
             System.err.println();

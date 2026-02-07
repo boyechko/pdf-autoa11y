@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,48 +33,60 @@ import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
-    private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
-
-    private final PdfDocumentFactory pdfFactory;
-    private final RuleEngine engine;
+    private final PdfDocumentFactory pdfDocumentFactory;
+    private final RuleEngine ruleEngine;
     private final ProcessingListener listener;
+    private final VerbosityLevel verbosityLevel;
 
-    public ProcessingService(
-            Path inputPath,
-            String password,
-            ProcessingListener listener,
-            VerbosityLevel verbosity) {
-        this.pdfFactory = new PdfDocumentFactory(inputPath, password);
-        this.listener = listener;
+    public static class ProcessingServiceBuilder {
+        private PdfDocumentFactory pdfDocumentFactory;
+        private ProcessingListener listener;
+        private VerbosityLevel verbosityLevel;
+
+        public ProcessingServiceBuilder withPdfDocumentFactory(
+                PdfDocumentFactory pdfDocumentFactory) {
+            this.pdfDocumentFactory = pdfDocumentFactory;
+            return this;
+        }
+
+        public ProcessingServiceBuilder withListener(ProcessingListener listener) {
+            this.listener = listener;
+            return this;
+        }
+
+        public ProcessingServiceBuilder withVerbosityLevel(VerbosityLevel verbosityLevel) {
+            this.verbosityLevel = verbosityLevel;
+            return this;
+        }
+
+        public ProcessingService build() {
+            return new ProcessingService(this);
+        }
+    }
+
+    private ProcessingService(ProcessingServiceBuilder builder) {
+        this.pdfDocumentFactory = builder.pdfDocumentFactory;
+        this.listener = builder.listener;
+        this.verbosityLevel = builder.verbosityLevel;
 
         List<Rule> rules = ProcessingDefaults.rules();
-        List<StructureTreeVisitor> visitors = ProcessingDefaults.visitors();
-        if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
+        List<StructureTreeVisitor> visitors = new ArrayList<>(ProcessingDefaults.visitors());
+        if (verbosityLevel.isAtLeast(VerbosityLevel.VERBOSE)) {
             visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        this.engine = new RuleEngine(rules, visitors, schema);
-    }
-
-    public ProcessingService(Path inputPath, String password, ProcessingListener listener) {
-        this(inputPath, password, listener, VerbosityLevel.NORMAL);
-    }
-
-    public ProcessingService(Path inputPath, ProcessingListener listener) {
-        this(inputPath, null, listener, VerbosityLevel.NORMAL);
+        this.ruleEngine = new RuleEngine(rules, visitors, schema);
     }
 
     public ProcessingResult remediate() throws Exception {
         Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
 
-        try (PdfDocument pdfDoc = pdfFactory.openForModification(tempOutputFile)) {
-            return remediatePdfDoc(pdfDoc);
+        try (PdfDocument pdfDoc = pdfDocumentFactory.openForModification(tempOutputFile)) {
+            return remediatePdfDoc(pdfDoc, tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
             throw e;
@@ -81,7 +94,7 @@ public class ProcessingService {
     }
 
     public IssueList analyze() throws Exception {
-        try (PdfDocument pdfDoc = pdfFactory.openForReading()) {
+        try (PdfDocument pdfDoc = pdfDocumentFactory.openForReading()) {
             DocumentContext context = new DocumentContext(pdfDoc);
 
             IssueList documentIssues = detectDocumentIssuesPhase(context);
@@ -94,7 +107,8 @@ public class ProcessingService {
         }
     }
 
-    private ProcessingResult remediatePdfDoc(PdfDocument pdfDoc) throws Exception {
+    private ProcessingResult remediatePdfDoc(PdfDocument pdfDoc, Path tempOutputFile)
+            throws Exception {
         DocumentContext context = new DocumentContext(pdfDoc);
 
         // Phase 1: Detect document issues
@@ -135,7 +149,7 @@ public class ProcessingService {
                         docIssues,
                         appliedDocFixes,
                         totalRemainingIssues,
-                        null);
+                        tempOutputFile);
         return result;
     }
 
@@ -143,7 +157,7 @@ public class ProcessingService {
         listener.onPhaseStart("Detecting document-level issues");
         IssueList allDocIssues = new IssueList();
 
-        for (Rule rule : engine.getRules()) {
+        for (Rule rule : ruleEngine.getRules()) {
             IssueList ruleIssues = rule.findIssues(context);
             allDocIssues.addAll(ruleIssues);
 
@@ -166,7 +180,7 @@ public class ProcessingService {
             listener.onError("No structure tree");
         }
 
-        IssueList tagIssues = engine.runVisitors(context);
+        IssueList tagIssues = ruleEngine.runVisitors(context);
 
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");
@@ -185,7 +199,7 @@ public class ProcessingService {
             return new IssueList();
         }
 
-        IssueList appliedFixes = engine.applyFixes(context, issues);
+        IssueList appliedFixes = ruleEngine.applyFixes(context, issues);
         reportFixesGrouped(appliedFixes);
         return appliedFixes;
     }
