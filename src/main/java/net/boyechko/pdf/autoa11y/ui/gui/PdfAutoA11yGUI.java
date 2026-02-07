@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import net.boyechko.pdf.autoa11y.core.PdfDocumentFactory;
+import net.boyechko.pdf.autoa11y.core.PdfCustodian;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
@@ -239,11 +239,10 @@ public class PdfAutoA11yGUI extends JFrame {
                                         ? passwordField.getText()
                                         : null;
 
-                        PdfDocumentFactory docFactory =
-                                new PdfDocumentFactory(selectedFile.toPath(), password);
+                        PdfCustodian docFactory = new PdfCustodian(selectedFile.toPath(), password);
                         ProcessingService service =
                                 new ProcessingService.ProcessingServiceBuilder()
-                                        .withPdfDocumentFactory(docFactory)
+                                        .withPdfCustodian(docFactory)
                                         .withListener(reporter)
                                         .withVerbosityLevel(VerbosityLevel.VERBOSE)
                                         .build();

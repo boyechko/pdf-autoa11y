@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 
 import java.io.PrintStream;
 import java.nio.file.*;
-import net.boyechko.pdf.autoa11y.core.PdfDocumentFactory;
+import net.boyechko.pdf.autoa11y.core.PdfCustodian;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
@@ -166,14 +166,13 @@ public class PdfAutoA11yCLI {
 
             VerbosityLevel verbosity = config.verbosity();
             ProcessingReporter reporter = new ProcessingReporter(output, verbosity);
-            PdfDocumentFactory docFactory =
-                    new PdfDocumentFactory(config.inputPath(), config.password());
+            PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
             ProcessingReporter listener = new ProcessingReporter(output, verbosity);
             VerbosityLevel verbosityLevel = verbosity;
 
             ProcessingService service =
                     new ProcessingService.ProcessingServiceBuilder()
-                            .withPdfDocumentFactory(docFactory)
+                            .withPdfCustodian(docFactory)
                             .withListener(listener)
                             .withVerbosityLevel(verbosityLevel)
                             .build();

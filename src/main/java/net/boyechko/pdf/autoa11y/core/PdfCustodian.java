@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Factory for opening PDF documents with appropriate encryption and metadata settings. */
-public final class PdfDocumentFactory {
-    private static final Logger logger = LoggerFactory.getLogger(PdfDocumentFactory.class);
+public final class PdfCustodian {
+    private static final Logger logger = LoggerFactory.getLogger(PdfCustodian.class);
 
     private static final int DEFAULT_PERMISSIONS =
             EncryptionConstants.ALLOW_PRINTING
@@ -49,7 +49,7 @@ public final class PdfDocumentFactory {
 
     private record EncryptionInfo(int permissions, int cryptoMode, boolean isEncrypted) {}
 
-    public PdfDocumentFactory(Path inputPath, String password) {
+    public PdfCustodian(Path inputPath, String password) {
         this.inputPath = inputPath;
         this.password = password;
         this.readerProps = new ReaderProperties();
@@ -58,7 +58,7 @@ public final class PdfDocumentFactory {
         }
     }
 
-    public PdfDocumentFactory(Path inputPath) {
+    public PdfCustodian(Path inputPath) {
         this(inputPath, null);
     }
 
