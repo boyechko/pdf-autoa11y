@@ -60,6 +60,11 @@ class StructureTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
+                    public String description() {
+                        return "Tracks visited roles";
+                    }
+
+                    @Override
                     public boolean enterElement(VisitorContext ctx) {
                         visitedRoles.add(ctx.role());
                         return true;
@@ -95,6 +100,11 @@ class StructureTreeWalkerTest extends PdfTestBase {
                     @Override
                     public String name() {
                         return "Path Visitor";
+                    }
+
+                    @Override
+                    public String description() {
+                        return "Tracks visited paths";
                     }
 
                     @Override
@@ -139,6 +149,11 @@ class StructureTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
+                    public String description() {
+                        return "Tracks visited indices for visitor 1";
+                    }
+
+                    @Override
                     public boolean enterElement(VisitorContext ctx) {
                         visitor1Indices.add(ctx.globalIndex());
                         return true;
@@ -157,6 +172,11 @@ class StructureTreeWalkerTest extends PdfTestBase {
                     @Override
                     public String name() {
                         return "Visitor 2";
+                    }
+
+                    @Override
+                    public String description() {
+                        return "Tracks visited indices for visitor 2";
                     }
 
                     @Override
@@ -194,6 +214,11 @@ class StructureTreeWalkerTest extends PdfTestBase {
                     @Override
                     public String name() {
                         return "Child Role Visitor";
+                    }
+
+                    @Override
+                    public String description() {
+                        return "Tracks visited child roles";
                     }
 
                     @Override
