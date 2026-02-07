@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.fixes.children;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
@@ -30,7 +29,7 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
         super(parent, kids);
     }
 
-    public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
+    public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
         String parentRole = parent.getRole().getValue();
 
         // Check if parent is L and we have alternating Lbl/P pattern
@@ -41,12 +40,12 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
                 String pRole = kids.get(i + 1).getRole().getValue();
 
                 if (!"Lbl".equals(lblRole) || !"P".equals(pRole)) {
-                    return Optional.empty();
+                    return null;
                 }
             }
-            return Optional.of(new WrapPairsOfLblPInLI(parent, kids));
+            return new WrapPairsOfLblPInLI(parent, kids);
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

@@ -19,7 +19,6 @@ package net.boyechko.pdf.autoa11y.fixes.children;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.fixes.child.TagSingleChildFix;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -38,12 +37,17 @@ public abstract class TagMultipleChildrenFix implements IssueFix {
         this.kids = kids != null ? List.copyOf(kids) : List.of();
     }
 
-    public static Optional<IssueFix> createIfApplicable(
-            PdfStructElem parent, List<PdfStructElem> kids) {
-        // Try each subclass factory method
-        return WrapPairsOfLblPInLI.tryCreate(parent, kids)
-                .or(() -> WrapPairsOfLblLBodyInLI.tryCreate(parent, kids))
-                .or(() -> ChangePToLblInLI.tryCreate(parent, kids));
+    public static IssueFix createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
+        IssueFix fix = WrapPairsOfLblPInLI.tryCreate(parent, kids);
+        if (fix != null) return fix;
+
+        fix = WrapPairsOfLblLBodyInLI.tryCreate(parent, kids);
+        if (fix != null) return fix;
+
+        fix = ChangePToLblInLI.tryCreate(parent, kids);
+        if (fix != null) return fix;
+
+        return null;
     }
 
     @Override

@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
@@ -34,13 +33,13 @@ public final class WrapInLI extends TagSingleChildFix {
         super(kid, parent);
     }
 
-    public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
+    public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
         if ("L".equals(parentRole) && validKidRoles.contains(kidRole)) {
-            return Optional.of(new WrapInLI(kid, parent));
+            return new WrapInLI(kid, parent);
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

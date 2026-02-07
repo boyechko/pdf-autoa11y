@@ -54,7 +54,8 @@ class TagSingleChildFixTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
-            IssueFix fix = TreatLblFigureAsBullet.tryCreate(figure, lbl).orElseThrow();
+            IssueFix fix = TreatLblFigureAsBullet.tryCreate(figure, lbl);
+            assertNotNull(fix, "Fix should be created for Lbl[Figure] pattern");
             fix.apply(ctx);
 
             List<PdfStructElem> afterKids =
@@ -92,7 +93,8 @@ class TagSingleChildFixTest extends PdfTestBase {
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
             // Create a WrapInLI fix
-            IssueFix fix = WrapInLI.tryCreate(div, l).orElseThrow();
+            IssueFix fix = WrapInLI.tryCreate(div, l);
+            assertNotNull(fix, "Fix should be created for L[Div] pattern");
 
             // Test both describe methods
             String basicDescription = fix.describe();
