@@ -36,19 +36,18 @@ import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 
 /** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
-    private final PdfDocumentFactory pdfDocumentFactory;
+    private final PdfCustodian custodian;
     private final RuleEngine ruleEngine;
     private final ProcessingListener listener;
     private final VerbosityLevel verbosityLevel;
 
     public static class ProcessingServiceBuilder {
-        private PdfDocumentFactory pdfDocumentFactory;
+        private PdfCustodian custodian;
         private ProcessingListener listener;
         private VerbosityLevel verbosityLevel;
 
-        public ProcessingServiceBuilder withPdfDocumentFactory(
-                PdfDocumentFactory pdfDocumentFactory) {
-            this.pdfDocumentFactory = pdfDocumentFactory;
+        public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
+            this.custodian = custodian;
             return this;
         }
 
@@ -63,12 +62,19 @@ public class ProcessingService {
         }
 
         public ProcessingService build() {
+            if (custodian == null) {
+                throw new IllegalStateException(
+                        "PdfCustodian must be provided via withPdfCustodian(...) before building ProcessingService");
+            }
+            if (verbosityLevel == null) {
+                verbosityLevel = VerbosityLevel.NORMAL;
+            }
             return new ProcessingService(this);
         }
     }
 
     private ProcessingService(ProcessingServiceBuilder builder) {
-        this.pdfDocumentFactory = builder.pdfDocumentFactory;
+        this.custodian = builder.custodian;
         this.listener = builder.listener;
         this.verbosityLevel = builder.verbosityLevel;
 
@@ -85,7 +91,7 @@ public class ProcessingService {
     public ProcessingResult remediate() throws Exception {
         Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
 
-        try (PdfDocument pdfDoc = pdfDocumentFactory.openForModification(tempOutputFile)) {
+        try (PdfDocument pdfDoc = custodian.openForModification(tempOutputFile)) {
             return remediatePdfDoc(pdfDoc, tempOutputFile);
         } catch (Exception e) {
             Files.deleteIfExists(tempOutputFile);
@@ -94,7 +100,7 @@ public class ProcessingService {
     }
 
     public IssueList analyze() throws Exception {
-        try (PdfDocument pdfDoc = pdfDocumentFactory.openForReading()) {
+        try (PdfDocument pdfDoc = custodian.openForReading()) {
             DocumentContext context = new DocumentContext(pdfDoc);
 
             IssueList documentIssues = detectDocumentIssuesPhase(context);
@@ -148,7 +154,7 @@ public class ProcessingService {
                         remainingTagIssues,
                         docIssues,
                         appliedDocFixes,
-                        totalRemainingIssues,
+                        docIssues.getRemainingIssues(),
                         tempOutputFile);
         return result;
     }
@@ -178,6 +184,7 @@ public class ProcessingService {
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             listener.onError("No structure tree");
+            return new IssueList();
         }
 
         IssueList tagIssues = ruleEngine.runVisitors(context);

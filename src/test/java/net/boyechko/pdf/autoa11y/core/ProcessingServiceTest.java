@@ -45,7 +45,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -64,7 +64,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, "password"))
+                        .withPdfCustodian(new PdfCustodian(inputPath, "password"))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -81,7 +81,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -98,7 +98,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -112,7 +112,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -134,7 +134,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withPdfCustodian(new PdfCustodian(testPdf, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -161,7 +161,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withPdfCustodian(new PdfCustodian(testPdf, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -176,7 +176,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withPdfCustodian(new PdfCustodian(testPdf, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -209,7 +209,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(brokenPdf, null))
+                        .withPdfCustodian(new PdfCustodian(brokenPdf, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -234,7 +234,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(testPdf, null))
+                        .withPdfCustodian(new PdfCustodian(testPdf, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -259,7 +259,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(inputPath, null))
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
@@ -286,7 +286,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfDocumentFactory(new PdfDocumentFactory(testFile, null))
+                        .withPdfCustodian(new PdfCustodian(testFile, null))
                         .withListener(new NoOpProcessingListener())
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
