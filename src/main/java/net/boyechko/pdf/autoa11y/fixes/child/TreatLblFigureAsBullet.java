@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
@@ -30,13 +29,13 @@ public final class TreatLblFigureAsBullet extends TagSingleChildFix {
         super(kid, parent);
     }
 
-    public static Optional<IssueFix> tryCreate(PdfStructElem kid, PdfStructElem parent) {
+    public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
         if ("Lbl".equals(parentRole) && "Figure".equals(kidRole)) {
-            return Optional.of(new TreatLblFigureAsBullet(kid, parent));
+            return new TreatLblFigureAsBullet(kid, parent);
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

@@ -207,16 +207,17 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
 
         PdfStructElem childNode = ctx.children().get(childIndex);
 
-        return TagMultipleChildrenFix.createIfApplicable(ctx.node(), ctx.children())
-                .or(() -> TagSingleChildFix.createIfApplicable(childNode, ctx.node()))
-                .orElseGet(
-                        () -> {
-                            logger.debug(
-                                    "No automatic fix available for kid {} under parent {}",
-                                    formatRole(childRole),
-                                    formatRole(ctx.role()));
-                            return null;
-                        });
+        IssueFix multi = TagMultipleChildrenFix.createIfApplicable(ctx.node(), ctx.children());
+        if (multi != null) return multi;
+
+        IssueFix single = TagSingleChildFix.createIfApplicable(childNode, ctx.node());
+        if (single != null) return single;
+
+        logger.debug(
+                "No automatic fix available for kid {} under parent {}",
+                formatRole(childRole),
+                formatRole(ctx.role()));
+        return null;
     }
 
     private String formatRole(String role) {

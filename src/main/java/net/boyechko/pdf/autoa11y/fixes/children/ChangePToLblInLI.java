@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.fixes.children;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
@@ -30,7 +29,7 @@ public final class ChangePToLblInLI extends TagMultipleChildrenFix {
         super(parent, kids);
     }
 
-    public static Optional<IssueFix> tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
+    public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
         String parentRole = parent.getRole().getValue();
         // There should be exactly two kids, one of which is LBody and the other P
         if ("LI".equals(parentRole) && kids.size() == 2) {
@@ -39,10 +38,10 @@ public final class ChangePToLblInLI extends TagMultipleChildrenFix {
 
             if (("P".equals(kid1Role) && "LBody".equals(kid2Role))
                     || ("LBody".equals(kid1Role) && "P".equals(kid2Role))) {
-                return Optional.of(new ChangePToLblInLI(parent, kids));
+                return new ChangePToLblInLI(parent, kids);
             }
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

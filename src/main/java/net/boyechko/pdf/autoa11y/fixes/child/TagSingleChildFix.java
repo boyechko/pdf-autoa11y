@@ -18,7 +18,6 @@
 package net.boyechko.pdf.autoa11y.fixes.child;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.Optional;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Base class for fixes that involve a single child element. */
@@ -32,10 +31,14 @@ public abstract class TagSingleChildFix implements IssueFix {
         this.parent = parent;
     }
 
-    public static Optional<IssueFix> createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
-        // Try each subclass factory method
-        return WrapInLI.tryCreate(kid, parent)
-                .or(() -> TreatLblFigureAsBullet.tryCreate(kid, parent));
+    public static IssueFix createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
+        IssueFix fix = WrapInLI.tryCreate(kid, parent);
+        if (fix != null) return fix;
+
+        fix = TreatLblFigureAsBullet.tryCreate(kid, parent);
+        if (fix != null) return fix;
+
+        return null;
     }
 
     @Override
