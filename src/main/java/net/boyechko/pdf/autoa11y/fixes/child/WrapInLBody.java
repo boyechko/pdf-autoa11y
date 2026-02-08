@@ -23,60 +23,44 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.core.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
-/** Wraps a single child element in an LI structure. */
-public final class WrapInLI extends TagSingleChildFix {
-    private static final List<String> validKidRoles =
-            List.of("Div", "Figure", "LBody", "P", "Span");
-    private String wrappedIn = "";
+/** Wraps a single child element under LI in a LBody structure. */
+public final class WrapInLBody extends TagSingleChildFix {
+    private static final List<String> validKidRoles = List.of("Div", "Figure", "P", "Span");
 
-    private WrapInLI(PdfStructElem kid, PdfStructElem parent) {
+    private WrapInLBody(PdfStructElem kid, PdfStructElem parent) {
         super(kid, parent);
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
-        if ("L".equals(parentRole) && validKidRoles.contains(kidRole)) {
-            return new WrapInLI(kid, parent);
+        if ("LI".equals(parentRole) && validKidRoles.contains(kidRole)) {
+            return new WrapInLBody(kid, parent);
         }
         return null;
     }
 
     @Override
     public void apply(DocumentContext ctx) throws Exception {
-        PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
-        parent.addKid(newLI);
-
-        if (getKidRole().equals("LBody")) {
-            newLI.addKid(kid);
-            parent.removeKid(kid);
-            wrappedIn = "LI";
-            return;
-        }
         PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        newLI.addKid(newLBody);
-
+        parent.addKid(newLBody);
         parent.removeKid(kid);
         newLBody.addKid(kid);
-        wrappedIn = "LI->LBody";
     }
 
     @Override
     public String describe() {
         return "Wrapped "
                 + getKidRole()
-                + " in "
-                + wrappedIn
-                + " under L obj #"
+                + " in LBody under LI object #"
                 + parent.getPdfObject().getIndirectReference().getObjNumber();
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        String basic = describe();
-        return basic
-                + " (p. "
-                + ctx.getPageNumber(parent.getPdfObject().getIndirectReference().getObjNumber())
-                + ")";
+        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+        int pageNum = ctx.getPageNumber(objNum);
+        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
+        return "Wrapped " + getKidRole() + " in LBody under LI object #" + objNum + pageInfo;
     }
 }

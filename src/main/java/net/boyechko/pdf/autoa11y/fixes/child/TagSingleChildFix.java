@@ -35,6 +35,9 @@ public abstract class TagSingleChildFix implements IssueFix {
         IssueFix fix = WrapInLI.tryCreate(kid, parent);
         if (fix != null) return fix;
 
+        fix = WrapInLBody.tryCreate(kid, parent);
+        if (fix != null) return fix;
+
         fix = TreatLblFigureAsBullet.tryCreate(kid, parent);
         if (fix != null) return fix;
 
