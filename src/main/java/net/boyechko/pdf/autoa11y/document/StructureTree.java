@@ -279,4 +279,23 @@ public final class StructureTree {
             }
         }
     }
+
+    /** Recursively collects all MCR descendants of an element (including OBJR entries). */
+    public static List<PdfMcr> collectMcrs(PdfStructElem elem) {
+        List<PdfMcr> result = new ArrayList<>();
+        collectMcrs(elem, result);
+        return result;
+    }
+
+    private static void collectMcrs(PdfStructElem elem, List<PdfMcr> result) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfMcr mcr) {
+                result.add(mcr);
+            } else if (kid instanceof PdfStructElem childElem) {
+                collectMcrs(childElem, result);
+            }
+        }
+    }
 }
