@@ -26,10 +26,10 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import net.boyechko.pdf.autoa11y.core.PdfCustodian;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 
 public class PdfAutoA11yGUI extends JFrame {
