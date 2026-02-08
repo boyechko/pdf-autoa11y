@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.ContentExtractor;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
@@ -111,9 +111,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         Map<Integer, Rectangle> mcidBounds =
                 ctx.getOrComputeMcidBounds(
                         resolvedPageNum,
-                        () ->
-                                ContentExtractor.extractBoundsForPage(
-                                        ctx.doc().getPage(resolvedPageNum)));
+                        () -> Content.extractBoundsForPage(ctx.doc().getPage(resolvedPageNum)));
         Rectangle mcrRect = mcidBounds.get(mcid);
         Rectangle annotRect = Geometry.getAnnotationBounds(annotDict);
         if (!Geometry.boundsSimilar(mcrRect, annotRect)) {

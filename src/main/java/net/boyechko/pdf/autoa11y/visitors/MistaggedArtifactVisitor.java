@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.visitors;
 
 import java.util.Set;
 import java.util.regex.Pattern;
-import net.boyechko.pdf.autoa11y.document.ContentExtractor;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -107,6 +107,6 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
         if (pageNumber == 0) {
             return "";
         }
-        return ContentExtractor.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+        return Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
     }
 }

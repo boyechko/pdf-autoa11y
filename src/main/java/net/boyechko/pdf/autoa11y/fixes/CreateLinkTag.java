@@ -30,7 +30,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.ContentExtractor;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
@@ -121,8 +121,7 @@ public class CreateLinkTag implements IssueFix {
         }
 
         Map<Integer, Rectangle> mcidBounds =
-                ctx.getOrComputeMcidBounds(
-                        pageNum, () -> ContentExtractor.extractBoundsForPage(page));
+                ctx.getOrComputeMcidBounds(pageNum, () -> Content.extractBoundsForPage(page));
         if (mcidBounds.isEmpty()) {
             return null;
         }
@@ -191,7 +190,7 @@ public class CreateLinkTag implements IssueFix {
         return bestElem;
     }
 
-    // TODO: Move to a utility class or @ContentExtractor
+    // TODO: Move to a utility class or @Content
     private Rectangle collectBounds(
             DocumentContext ctx,
             PdfStructElem elem,
