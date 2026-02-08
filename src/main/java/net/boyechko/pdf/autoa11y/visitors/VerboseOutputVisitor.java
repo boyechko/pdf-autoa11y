@@ -101,7 +101,7 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
         int pageNum = ctx.getPageNumber();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
-        String mcrText = ContentExtractor.getTextForElement(ctx.node(), ctx.doc(), pageNum);
+        String mcrText = ContentExtractor.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
         mcrText = (mcrText == null || mcrText.isEmpty()) ? "" : mcrText;
         String truncated = mcrText.length() > 40 ? mcrText.substring(0, 39) + "…" : mcrText;
 

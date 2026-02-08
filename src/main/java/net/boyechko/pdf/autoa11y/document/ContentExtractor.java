@@ -21,7 +21,6 @@ import com.itextpdf.kernel.geom.LineSegment;
 import com.itextpdf.kernel.geom.Matrix;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Vector;
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -33,13 +32,10 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,119 +44,78 @@ public final class ContentExtractor {
     private static final Logger logger = LoggerFactory.getLogger(ContentExtractor.class);
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
-    private static final Map<PdfDocument, Map<String, String>> mcidTextCache =
-            Collections.synchronizedMap(new WeakHashMap<>());
-
     private ContentExtractor() {}
 
     // ── Text extraction ─────────────────────────────────────────────────
 
-    /** Extracts actual text content for a specific MCID from a PDF page. */
-    public static String extractTextForMcid(PdfDocument document, int mcid, int pageNumber) {
+    /** Extracts text for all MCIDs on a page in a single content-stream pass. */
+    public static Map<Integer, String> extractTextForPage(PdfPage page) {
+        Map<Integer, String> result = new HashMap<>();
+        if (page == null) {
+            return result;
+        }
+
         try {
-            if (pageNumber < 1 || pageNumber > document.getNumberOfPages()) {
-                logger.debug(
-                        "Invalid page number {} for document with {} pages",
-                        pageNumber,
-                        document.getNumberOfPages());
-                return "";
-            }
-
-            Map<String, String> docCache;
-            synchronized (mcidTextCache) {
-                docCache =
-                        mcidTextCache.computeIfAbsent(document, doc -> new ConcurrentHashMap<>());
-            }
-
-            String cacheKey = pageNumber + ":" + mcid;
-            String cached = docCache.get(cacheKey);
-            if (cached != null) {
-                return cached;
-            }
-
-            PdfPage page = document.getPage(pageNumber);
-            McidTextExtractionListener listener = new McidTextExtractionListener(mcid);
-
+            McidTextListener listener = new McidTextListener();
             PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
             processor.processPageContent(page);
 
-            String rawText = listener.getExtractedText();
-            String cleanedText = cleanExtractedText(rawText);
-
-            docCache.put(cacheKey, cleanedText);
-
-            return cleanedText;
+            for (Map.Entry<Integer, StringBuilder> entry : listener.textByMcid.entrySet()) {
+                String cleaned = cleanExtractedText(entry.getValue().toString());
+                if (!cleaned.isEmpty()) {
+                    result.put(entry.getKey(), cleaned);
+                }
+            }
         } catch (Exception e) {
-            logger.debug(
-                    "Failed to extract text for MCID {} on page {}: {}",
-                    mcid,
-                    pageNumber,
-                    e.getMessage());
-            return "";
+            int pageNum = page.getDocument().getPageNumber(page);
+            logger.debug("Failed to extract MCID text for page {}: {}", pageNum, e.getMessage());
         }
+
+        return result;
     }
 
     /** Gets the text content for all MCRs within a structure element. */
-    public static String getTextForElement(
-            PdfStructElem node, PdfDocument document, int pageNumber) {
+    public static String getTextForElement(PdfStructElem node, DocumentContext ctx, int pageNum) {
+        return getTextForElement(node, ctx.getMcidText(pageNum));
+    }
+
+    /** Gets the text content for all MCRs within a structure element. */
+    public static String getTextForElement(PdfStructElem node, Map<Integer, String> mcidText) {
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return "";
 
-        List<PdfMcrNumber> mcrKids =
-                kids.stream()
-                        .filter(k -> k instanceof PdfMcrNumber)
-                        .map(k -> (PdfMcrNumber) k)
-                        .toList();
-
-        if (mcrKids.isEmpty()) return "";
-
-        if (mcrKids.size() == 1) {
-            PdfMcrNumber mcr = mcrKids.get(0);
-            int mcid = mcr.getMcid();
-            String textContent = extractTextForMcid(document, mcid, pageNumber);
-
-            if (textContent.isEmpty()) {
-                return "";
-            } else {
-                return textContent;
-            }
-        } else {
-            StringBuilder combinedText = new StringBuilder();
-            for (PdfMcrNumber mcr : mcrKids) {
-                String text = extractTextForMcid(document, mcr.getMcid(), pageNumber);
+        StringBuilder combinedText = new StringBuilder();
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfMcrNumber mcr) {
+                String text = mcidText.getOrDefault(mcr.getMcid(), "");
                 if (!text.isEmpty()) {
                     if (combinedText.length() > 0) combinedText.append(" ");
                     combinedText.append(text);
                 }
             }
-
-            return combinedText.toString();
         }
+
+        return combinedText.toString();
     }
 
-    /** Tracks marked content sections and extracts text for a specific MCID. */
-    private static class McidTextExtractionListener implements IEventListener {
-        private final int targetMcid;
-        private final StringBuilder extractedText = new StringBuilder();
-
-        public McidTextExtractionListener(int targetMcid) {
-            this.targetMcid = targetMcid;
-        }
+    /** Collects text for every MCID encountered on a page. */
+    private static class McidTextListener implements IEventListener {
+        private final Map<Integer, StringBuilder> textByMcid = new HashMap<>();
 
         @Override
         public void eventOccurred(IEventData data, EventType type) {
             if (type == EventType.RENDER_TEXT) {
                 TextRenderInfo textInfo = (TextRenderInfo) data;
-
-                // Get the current MCID from the graphics state
                 Integer mcid = textInfo.getMcid();
-                if (mcid != null && mcid == targetMcid) {
+                if (mcid != null && mcid >= 0) {
                     String text = textInfo.getText();
                     if (text != null && !text.trim().isEmpty()) {
-                        if (extractedText.length() > 0) {
-                            extractedText.append(" ");
+                        StringBuilder sb =
+                                textByMcid.computeIfAbsent(mcid, k -> new StringBuilder());
+                        if (sb.length() > 0) {
+                            sb.append(" ");
                         }
-                        extractedText.append(text);
+                        sb.append(text);
                     }
                 }
             }
@@ -169,10 +124,6 @@ public final class ContentExtractor {
         @Override
         public Set<EventType> getSupportedEvents() {
             return Set.of(EventType.RENDER_TEXT);
-        }
-
-        public String getExtractedText() {
-            return extractedText.toString();
         }
     }
 

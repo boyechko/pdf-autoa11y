@@ -143,7 +143,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public String describe(DocumentContext ctx) {
-        String text = ContentExtractor.extractTextForMcid(ctx.doc(), mcid, pageNum);
+        String text = ctx.getMcidText(pageNum, mcid);
         if (text.isEmpty()) {
             return describe();
         }
