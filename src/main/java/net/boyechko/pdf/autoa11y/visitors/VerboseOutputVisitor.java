@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.visitors;
 
 import java.util.function.Consumer;
-import net.boyechko.pdf.autoa11y.content.McidTextExtractor;
+import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
