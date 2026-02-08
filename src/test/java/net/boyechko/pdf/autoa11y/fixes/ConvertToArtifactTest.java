@@ -19,14 +19,21 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.nio.charset.StandardCharsets;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import org.junit.jupiter.api.Test;
@@ -121,5 +128,81 @@ class ConvertToArtifactTest extends PdfTestBase {
                             childFix.invalidates(parentFix),
                             "Descendant fix should not invalidate ancestor fix");
                 });
+    }
+
+    @Test
+    void rewritesDirectMcidMarkedContentAsArtifact() throws Exception {
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+                    document.addKid(figure);
+
+                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+                    figure.addKid(mcr);
+                    addMarkedText(
+                            firstPage, PdfName.Figure, mcr.getMcid(), "Decorative figure text");
+
+                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    new ConvertToArtifact(figure).apply(ctx);
+
+                    assertTrue(
+                            document.getKids() == null || document.getKids().isEmpty(),
+                            "Figure should be removed from Document");
+
+                    String pageContent =
+                            new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
+                    assertTrue(
+                            pageContent.contains("/Artifact BMC"),
+                            "Marked content should be rewritten as artifact");
+                    assertFalse(
+                            pageContent.contains("/MCID " + mcr.getMcid()),
+                            "Original MCID should be removed from content stream");
+                });
+    }
+
+    @Test
+    void rewritesDescendantMcidMarkedContentAsArtifact() throws Exception {
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem parent = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
+                    PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+                    document.addKid(parent);
+                    parent.addKid(child);
+
+                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, child);
+                    child.addKid(mcr);
+                    addMarkedText(firstPage, PdfName.P, mcr.getMcid(), "Decorative paragraph text");
+
+                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    new ConvertToArtifact(parent).apply(ctx);
+
+                    assertTrue(
+                            document.getKids() == null || document.getKids().isEmpty(),
+                            "Parent subtree should be removed from Document");
+
+                    String pageContent =
+                            new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
+                    assertTrue(
+                            pageContent.contains("/Artifact BMC"),
+                            "Descendant marked content should be rewritten as artifact");
+                    assertFalse(
+                            pageContent.contains("/MCID " + mcr.getMcid()),
+                            "Descendant MCID should be removed from content stream");
+                });
+    }
+
+    private static void addMarkedText(PdfPage page, PdfName tag, int mcid, String text)
+            throws Exception {
+        PdfDictionary props = new PdfDictionary();
+        props.put(PdfName.MCID, new PdfNumber(mcid));
+
+        PdfCanvas canvas = new PdfCanvas(page);
+        canvas.beginMarkedContent(tag, props);
+        canvas.beginText();
+        canvas.setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 11);
+        canvas.moveText(72, 700);
+        canvas.showText(text);
+        canvas.endText();
+        canvas.endMarkedContent();
     }
 }

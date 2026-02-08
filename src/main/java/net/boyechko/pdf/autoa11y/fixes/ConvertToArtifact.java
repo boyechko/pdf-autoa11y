@@ -17,17 +17,33 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
+import com.itextpdf.io.source.PdfTokenizer;
+import com.itextpdf.io.source.RandomAccessFileOrArray;
+import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfLiteral;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfResources;
+import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.canvas.parser.util.PdfCanvasParser;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
@@ -39,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public class ConvertToArtifact implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ConvertToArtifact.class);
     private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
+    private static final byte[] ARTIFACT_BMC = "/Artifact BMC".getBytes(StandardCharsets.US_ASCII);
 
     private final PdfStructElem element;
 
@@ -57,10 +74,14 @@ public class ConvertToArtifact implements IssueFix {
     }
 
     /** Artifacts the element. */
-    private void artifactElement(PdfStructElem element, DocumentContext ctx) {
+    private void artifactElement(PdfStructElem element, DocumentContext ctx) throws IOException {
         IStructureNode parent = element.getParent();
         if (parent == null) {
             logger.debug("Element already has no parent, skipping");
+            return;
+        }
+        if (!isAttachedToParent(element, parent)) {
+            logger.debug("Element is already detached from parent, skipping");
             return;
         }
 
@@ -69,15 +90,195 @@ public class ConvertToArtifact implements IssueFix {
                 element.getRole().getValue(),
                 StructureTree.objNumber(element));
 
-        removeAnnotionsForElement(element, ctx);
+        Map<PdfPage, Set<Integer>> mcidsByPage = collectMcidsByPage(element, ctx);
+        removeAnnotationsForElement(element, ctx);
+        rewriteMcidsAsArtifacts(mcidsByPage);
         StructureTree.removeFromParent(element, parent);
+    }
+
+    private boolean isAttachedToParent(PdfStructElem elem, IStructureNode parent) {
+        List<IStructureNode> parentKids = parent.getKids();
+        if (parentKids == null || parentKids.isEmpty()) {
+            return false;
+        }
+        for (IStructureNode kid : parentKids) {
+            if (kid instanceof PdfStructElem kidElem
+                    && StructureTree.isSameElement(kidElem, elem)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocumentContext ctx) {
+        Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
+        List<PdfMcr> mcrs = StructureTree.collectMcrs(elem);
+        for (PdfMcr mcr : mcrs) {
+            int mcid = mcr.getMcid();
+            if (mcid < 0) {
+                continue;
+            }
+            PdfDictionary pageDict = mcr.getPageObject();
+            if (pageDict == null) {
+                logger.debug("Skipping MCID {} with no page dictionary", mcid);
+                continue;
+            }
+            int pageNum = ctx.doc().getPageNumber(pageDict);
+            if (pageNum <= 0) {
+                logger.debug("Skipping MCID {} with unresolved page dictionary", mcid);
+                continue;
+            }
+            PdfPage page = ctx.doc().getPage(pageNum);
+            result.computeIfAbsent(page, ignored -> new LinkedHashSet<>()).add(mcid);
+        }
+        return result;
+    }
+
+    private void rewriteMcidsAsArtifacts(Map<PdfPage, Set<Integer>> mcidsByPage)
+            throws IOException {
+        for (Map.Entry<PdfPage, Set<Integer>> entry : mcidsByPage.entrySet()) {
+            PdfPage page = entry.getKey();
+            Set<Integer> targetMcids = entry.getValue();
+            if (targetMcids.isEmpty()) {
+                continue;
+            }
+
+            Set<Integer> rewrittenMcids = new LinkedHashSet<>();
+            for (int streamIndex = 0; streamIndex < page.getContentStreamCount(); streamIndex++) {
+                PdfStream stream = page.getContentStream(streamIndex);
+                StreamRewriteResult result =
+                        rewriteTargetedBdcOperators(stream.getBytes(), page, targetMcids);
+                if (!result.rewrittenMcids().isEmpty()) {
+                    stream.setData(result.rewrittenBytes());
+                    rewrittenMcids.addAll(result.rewrittenMcids());
+                }
+            }
+
+            if (!rewrittenMcids.containsAll(targetMcids)) {
+                Set<Integer> missing = new LinkedHashSet<>(targetMcids);
+                missing.removeAll(rewrittenMcids);
+                int pageNum = page.getDocument().getPageNumber(page);
+                throw new IllegalStateException(
+                        "Failed to artifact MCIDs " + missing + " on page " + pageNum);
+            }
+        }
+    }
+
+    private StreamRewriteResult rewriteTargetedBdcOperators(
+            byte[] contentBytes, PdfPage page, Set<Integer> targetMcids) throws IOException {
+        if (contentBytes == null || contentBytes.length == 0) {
+            return StreamRewriteResult.unchanged();
+        }
+
+        PdfResources resources = page.getResources();
+        RandomAccessFileOrArray source =
+                new RandomAccessFileOrArray(
+                        new RandomAccessSourceFactory().createSource(contentBytes));
+        try (PdfTokenizer tokenizer = new PdfTokenizer(source)) {
+            PdfCanvasParser parser = new PdfCanvasParser(tokenizer, resources);
+            List<PdfObject> operands = new ArrayList<>();
+            ByteArrayOutputStream rewritten = new ByteArrayOutputStream(contentBytes.length);
+            Set<Integer> rewrittenMcids = new LinkedHashSet<>();
+            int lastCopied = 0;
+
+            while (true) {
+                int opStart = (int) tokenizer.getPosition();
+                parser.parse(operands);
+                if (operands.isEmpty()) {
+                    break;
+                }
+                int opEnd = (int) tokenizer.getPosition();
+
+                Integer mcid = targetedMcidForOperation(operands, resources, page, targetMcids);
+                if (mcid == null) {
+                    continue;
+                }
+
+                rewritten.write(contentBytes, lastCopied, opStart - lastCopied);
+                rewritten.write(ARTIFACT_BMC);
+                rewrittenMcids.add(mcid);
+                lastCopied = opEnd;
+            }
+
+            if (rewrittenMcids.isEmpty()) {
+                return StreamRewriteResult.unchanged();
+            }
+
+            rewritten.write(contentBytes, lastCopied, contentBytes.length - lastCopied);
+            return new StreamRewriteResult(rewritten.toByteArray(), rewrittenMcids);
+        } finally {
+            source.close();
+        }
+    }
+
+    private Integer targetedMcidForOperation(
+            List<PdfObject> operands,
+            PdfResources resources,
+            PdfPage page,
+            Set<Integer> targetMcids) {
+        if (!isOperator(operands, "BDC") || operands.size() < 3) {
+            return null;
+        }
+        PdfObject propertiesOperand = resolvePropertiesOperand(operands, page);
+        Integer mcid = resolveMcid(propertiesOperand, resources);
+        if (mcid == null || !targetMcids.contains(mcid)) {
+            return null;
+        }
+        return mcid;
+    }
+
+    private PdfObject resolvePropertiesOperand(List<PdfObject> operands, PdfPage page) {
+        // BDC uses tag + properties + operator.
+        if (operands.size() == 3) {
+            return operands.get(1);
+        }
+
+        // Some producers emit an indirect reference: /Tag objNum genNum R BDC
+        if (operands.size() == 5
+                && operands.get(1) instanceof PdfNumber objNum
+                && operands.get(2) instanceof PdfNumber
+                && isLiteral(operands.get(3), "R")) {
+            return page.getDocument().getPdfObject(objNum.intValue());
+        }
+
+        return null;
+    }
+
+    private static boolean isOperator(List<PdfObject> operands, String op) {
+        if (operands.isEmpty()) {
+            return false;
+        }
+        return isLiteral(operands.get(operands.size() - 1), op);
+    }
+
+    private static boolean isLiteral(PdfObject object, String literalText) {
+        return object instanceof PdfLiteral literal && literalText.equals(literal.toString());
+    }
+
+    private Integer resolveMcid(PdfObject propertiesOperand, PdfResources resources) {
+        if (propertiesOperand instanceof PdfDictionary dict) {
+            return dict.getAsInt(PdfName.MCID);
+        }
+        if (propertiesOperand instanceof PdfName name && resources != null) {
+            PdfObject propertiesObj = resources.getProperties(name);
+            if (propertiesObj instanceof PdfDictionary propertiesDict) {
+                return propertiesDict.getAsInt(PdfName.MCID);
+            }
+        }
+        return null;
+    }
+
+    private record StreamRewriteResult(byte[] rewrittenBytes, Set<Integer> rewrittenMcids) {
+        private static StreamRewriteResult unchanged() {
+            return new StreamRewriteResult(new byte[0], Set.of());
+        }
     }
 
     /**
      * Walks the structure element's subtree, collects all PdfObjRef children, filters to Link
      * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
      */
-    private void removeAnnotionsForElement(PdfStructElem elem, DocumentContext ctx) {
+    private void removeAnnotationsForElement(PdfStructElem elem, DocumentContext ctx) {
         List<PdfObjRef> objRefs = StructureTree.collectObjRefs(elem);
 
         logger.trace(
