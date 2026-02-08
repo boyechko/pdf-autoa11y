@@ -121,7 +121,7 @@ public class FlattenNesting implements IssueFix {
 
     @Override
     public String describe() {
-        return "Flattened " + flattened + " unnecessary Part/Sect/Art wrapper(s)";
+        return "Flattened " + flattened + " grouping element(s)";
     }
 
     @Override
