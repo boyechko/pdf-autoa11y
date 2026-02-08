@@ -31,6 +31,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -177,7 +178,7 @@ public class ConvertToArtifact implements IssueFix {
                                     .equals(annotPdfObj.getIndirectReference());
 
             PdfArray annotRect = annotPdfObj.getAsArray(PdfName.Rect);
-            boolean sameRect = targetRect != null && rectsEqual(targetRect, annotRect);
+            boolean sameRect = targetRect != null && Geometry.rectsEqual(targetRect, annotRect);
 
             if (sameInstance || equalObjects || sameIndirectRef || sameRect) {
                 toRemove.add(annot);
@@ -194,27 +195,6 @@ public class ConvertToArtifact implements IssueFix {
         }
 
         return toRemove.size();
-    }
-
-    // TODO: Move to a utility class
-    private boolean rectsEqual(PdfArray rect1, PdfArray rect2) {
-        if (rect1 == null || rect2 == null) {
-            return false;
-        }
-        if (rect1.size() != 4 || rect2.size() != 4) {
-            return false;
-        }
-
-        // Compare with small tolerance for floating point differences
-        double tolerance = 0.5;
-        for (int i = 0; i < 4; i++) {
-            double v1 = rect1.getAsNumber(i).doubleValue();
-            double v2 = rect2.getAsNumber(i).doubleValue();
-            if (Math.abs(v1 - v2) > tolerance) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override

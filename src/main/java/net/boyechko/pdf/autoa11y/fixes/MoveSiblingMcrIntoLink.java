@@ -18,7 +18,6 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -39,8 +39,6 @@ import org.slf4j.LoggerFactory;
 public class MoveSiblingMcrIntoLink implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(MoveSiblingMcrIntoLink.class);
     private static final int P_MOVE_LINK_CONTENT = 24;
-    private static final double AREA_RATIO_MIN = 0.5;
-    private static final double AREA_RATIO_MAX = 2.0;
 
     private final int linkObjNum;
     private final int mcid;
@@ -117,8 +115,8 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
                                 ContentExtractor.extractBoundsForPage(
                                         ctx.doc().getPage(resolvedPageNum)));
         Rectangle mcrRect = mcidBounds.get(mcid);
-        Rectangle annotRect = getAnnotationBounds(annotDict);
-        if (!boundsSimilar(mcrRect, annotRect)) {
+        Rectangle annotRect = Geometry.getAnnotationBounds(annotDict);
+        if (!Geometry.boundsSimilar(mcrRect, annotRect)) {
             return;
         }
 
@@ -228,93 +226,6 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             return ctx.getPageNumber(objNum);
         }
         return 0;
-    }
-
-    // TODO: Move to a utility class (same as @getAnnotationBounds in @EmptyLinkTagVisitor?)
-    private Rectangle getAnnotationBounds(PdfDictionary annotDict) {
-        Rectangle quadBounds = getQuadPointsBounds(annotDict);
-        if (quadBounds != null) {
-            return quadBounds;
-        }
-        return getRectBounds(annotDict);
-    }
-
-    // TODO: Move to a utility class (same as @getQuadPointsBounds in @EmptyLinkTagVisitor?)
-    private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
-        PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
-        if (quadPoints == null || quadPoints.size() < 8) {
-            return null;
-        }
-
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        float maxX = -Float.MAX_VALUE;
-        float maxY = -Float.MAX_VALUE;
-
-        for (int i = 0; i + 1 < quadPoints.size(); i += 2) {
-            if (quadPoints.getAsNumber(i) == null || quadPoints.getAsNumber(i + 1) == null) {
-                continue;
-            }
-            float x = quadPoints.getAsNumber(i).floatValue();
-            float y = quadPoints.getAsNumber(i + 1).floatValue();
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        }
-
-        if (minX == Float.MAX_VALUE || minY == Float.MAX_VALUE) {
-            return null;
-        }
-
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }
-
-    // TODO: Move to a utility class (same as @getRectBounds in @EmptyLinkTagVisitor?)
-    private Rectangle getRectBounds(PdfDictionary annotDict) {
-        PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
-        if (rectArray == null || rectArray.size() < 4) {
-            return null;
-        }
-        if (rectArray.getAsNumber(0) == null
-                || rectArray.getAsNumber(1) == null
-                || rectArray.getAsNumber(2) == null
-                || rectArray.getAsNumber(3) == null) {
-            return null;
-        }
-        float llx = rectArray.getAsNumber(0).floatValue();
-        float lly = rectArray.getAsNumber(1).floatValue();
-        float urx = rectArray.getAsNumber(2).floatValue();
-        float ury = rectArray.getAsNumber(3).floatValue();
-        float minX = Math.min(llx, urx);
-        float minY = Math.min(lly, ury);
-        float maxX = Math.max(llx, urx);
-        float maxY = Math.max(lly, ury);
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }
-
-    // TODO: Move to a utility class (same as @boundsSimilar in @EmptyLinkTagVisitor?)
-    private boolean boundsSimilar(Rectangle mcrRect, Rectangle annotRect) {
-        if (mcrRect == null || annotRect == null) {
-            return false;
-        }
-        double mcrArea = area(mcrRect);
-        double annotArea = area(annotRect);
-        if (mcrArea <= 0 || annotArea <= 0) {
-            return false;
-        }
-        double ratio = mcrArea / annotArea;
-        if (ratio < AREA_RATIO_MIN || ratio > AREA_RATIO_MAX) {
-            return false;
-        }
-        return mcrRect.getIntersection(annotRect) != null;
-    }
-
-    // TODO: Move to a utility class (same as @area in @EmptyLinkTagVisitor?)
-    private double area(Rectangle rect) {
-        double width = Math.max(0.0, rect.getWidth());
-        double height = Math.max(0.0, rect.getHeight());
-        return width * height;
     }
 
     @Override
