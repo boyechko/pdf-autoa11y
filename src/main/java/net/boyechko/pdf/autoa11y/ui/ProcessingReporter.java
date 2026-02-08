@@ -120,7 +120,7 @@ public class ProcessingReporter implements ProcessingListener {
                         SUCCESS);
                 printLine(
                         "Checked "
-                                + ProcessingDefaults.visitors().size()
+                                + ProcessingDefaults.visitorSuppliers().size()
                                 + " structure tree rules and found no issues",
                         SUCCESS);
             } else {

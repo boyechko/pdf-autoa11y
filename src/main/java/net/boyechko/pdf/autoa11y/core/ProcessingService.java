@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
@@ -81,13 +82,14 @@ public class ProcessingService {
         this.verbosityLevel = builder.verbosityLevel;
 
         List<Rule> rules = ProcessingDefaults.rules();
-        List<StructureTreeVisitor> visitors = new ArrayList<>(ProcessingDefaults.visitors());
+        List<Supplier<StructureTreeVisitor>> visitorSuppliers =
+                new ArrayList<>(ProcessingDefaults.visitorSuppliers());
         if (verbosityLevel.isAtLeast(VerbosityLevel.VERBOSE)) {
-            visitors.add(new VerboseOutputVisitor(listener::onVerboseOutput));
+            visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        this.ruleEngine = new RuleEngine(rules, visitors, schema);
+        this.ruleEngine = new RuleEngine(rules, visitorSuppliers, schema);
     }
 
     public ProcessingResult remediate() throws Exception {
