@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;

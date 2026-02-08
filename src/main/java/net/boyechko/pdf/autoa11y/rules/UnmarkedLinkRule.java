@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import java.util.Locale;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issues.*;

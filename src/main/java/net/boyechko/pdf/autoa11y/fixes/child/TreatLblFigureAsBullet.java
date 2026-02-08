@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */

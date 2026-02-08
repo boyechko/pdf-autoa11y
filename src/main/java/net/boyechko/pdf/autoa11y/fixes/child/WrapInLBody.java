@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Wraps a single child element under LI in a LBody structure. */
