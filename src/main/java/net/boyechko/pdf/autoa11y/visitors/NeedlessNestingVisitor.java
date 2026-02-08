@@ -41,7 +41,7 @@ public class NeedlessNestingVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Needless Nesting Check";
+        return "Needless Nesting Visitor";
     }
 
     @Override

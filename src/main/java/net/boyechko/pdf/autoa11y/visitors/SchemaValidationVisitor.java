@@ -53,7 +53,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Schema Validation Check";
+        return "Schema Validation Visitor";
     }
 
     @Override
