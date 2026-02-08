@@ -27,7 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.McidBoundsExtractor;
+import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -98,7 +98,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
                             .getOrComputeMcidBounds(
                                     pageNum,
                                     () ->
-                                            McidBoundsExtractor.extractBoundsForPage(
+                                            ContentExtractor.extractBoundsForPage(
                                                     ctx.doc().getPage(pageNum)));
             Rectangle mcrRect = mcidBounds.get(mcr.getMcid());
             Rectangle annotRect = getAnnotationBounds(annotDict);
@@ -155,7 +155,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return null;
     }
 
-    // TODO: Move to a utility class or @McidBoundsExtractor
+    // TODO: Move to a utility class or @ContentExtractor
     private Rectangle getAnnotationBounds(PdfDictionary annotDict) {
         Rectangle quadBounds = getQuadPointsBounds(annotDict);
         if (quadBounds != null) {
@@ -164,7 +164,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return getRectBounds(annotDict);
     }
 
-    // TODO: Move to a utility class or @McidBoundsExtractor
+    // TODO: Move to a utility class or @ContentExtractor
     private Rectangle getQuadPointsBounds(PdfDictionary annotDict) {
         PdfArray quadPoints = annotDict.getAsArray(PdfName.QuadPoints);
         if (quadPoints == null || quadPoints.size() < 8) {
@@ -195,7 +195,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
-    // TODO: Move to a utility class or @McidBoundsExtractor
+    // TODO: Move to a utility class or @ContentExtractor
     private Rectangle getRectBounds(PdfDictionary annotDict) {
         PdfArray rectArray = annotDict.getAsArray(PdfName.Rect);
         if (rectArray == null || rectArray.size() < 4) {
@@ -218,7 +218,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
-    // TODO: Move to a utility class or @McidBoundsExtractor
+    // TODO: Move to a utility class or @ContentExtractor
     private boolean boundsSimilar(Rectangle mcrRect, Rectangle annotRect) {
         if (mcrRect == null || annotRect == null) {
             return false;

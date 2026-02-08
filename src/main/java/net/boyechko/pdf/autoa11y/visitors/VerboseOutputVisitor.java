@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.visitors;
 
 import java.util.function.Consumer;
-import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
+import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -101,7 +101,7 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
         int pageNum = ctx.getPageNumber();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
-        String mcrSummary = McidTextExtractor.getMcrContent(ctx.node(), ctx.doc(), pageNum);
+        String mcrSummary = ContentExtractor.getMcrContent(ctx.node(), ctx.doc(), pageNum);
         mcrSummary = (mcrSummary == null || mcrSummary.isEmpty()) ? "" : mcrSummary;
 
         output.accept(
