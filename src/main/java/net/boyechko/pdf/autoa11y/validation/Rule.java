@@ -17,7 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 
 public interface Rule {

@@ -37,7 +37,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;

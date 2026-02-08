@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.rules;
 
 import com.itextpdf.kernel.pdf.*;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 

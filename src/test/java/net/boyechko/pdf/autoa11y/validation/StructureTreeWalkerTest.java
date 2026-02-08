@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.junit.jupiter.api.Test;
 

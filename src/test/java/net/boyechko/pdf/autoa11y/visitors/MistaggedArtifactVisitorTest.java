@@ -28,7 +28,7 @@ import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.core.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;

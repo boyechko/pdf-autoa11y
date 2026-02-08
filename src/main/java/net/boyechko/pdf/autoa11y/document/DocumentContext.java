@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.core;
+package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.*;
@@ -31,7 +31,6 @@ public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
-    private ProcessingResult processingResult;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
@@ -41,14 +40,6 @@ public class DocumentContext {
 
     public PdfDocument doc() {
         return doc;
-    }
-
-    public void setProcessingResult(ProcessingResult result) {
-        this.processingResult = result;
-    }
-
-    public ProcessingResult getProcessingResult() {
-        return processingResult;
     }
 
     public int getPageNumber(int objectNumber) {
