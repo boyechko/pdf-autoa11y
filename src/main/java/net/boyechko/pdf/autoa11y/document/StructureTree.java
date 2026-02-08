@@ -24,6 +24,7 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,5 +126,58 @@ public final class StructureTree {
         }
 
         return removed;
+    }
+
+    /** Removes an element from its parent (works with both PdfStructElem and PdfStructTreeRoot). */
+    public static void removeFromParent(PdfStructElem elem, IStructureNode parent) {
+        if (parent instanceof PdfStructElem parentElem) {
+            parentElem.removeKid(elem);
+        } else if (parent instanceof PdfStructTreeRoot root) {
+            PdfObject kObj = root.getPdfObject().get(PdfName.K);
+            if (kObj instanceof PdfArray kArray) {
+                kArray.remove(elem.getPdfObject());
+                if (elem.getPdfObject().getIndirectReference() != null) {
+                    kArray.remove(elem.getPdfObject().getIndirectReference());
+                }
+            }
+        }
+    }
+
+    /* The PDF spec allows /K to be either a single object or an array. iText
+     * follows this: when a structure element has one child, it stores /K as a
+     * direct dictionary reference. Only with 2+ children does it upgrade to a
+     * PdfArray. This means getAsArray(PdfName.K) returns null for single-child
+     * elements. */
+
+    /** Gets the /K array from any structure node's underlying dictionary. */
+    public static PdfArray getKArray(IStructureNode node) {
+        if (node instanceof PdfStructElem elem) {
+            return elem.getPdfObject().getAsArray(PdfName.K);
+        } else if (node instanceof PdfStructTreeRoot root) {
+            return root.getPdfObject().getAsArray(PdfName.K);
+        }
+        return null;
+    }
+
+    /** Finds the index of an element in a /K array. Returns -1 if not found. */
+    public static int findIndexInKArray(PdfArray kArray, PdfStructElem elem) {
+        PdfObject elemObj = elem.getPdfObject();
+        for (int i = 0; i < kArray.size(); i++) {
+            PdfObject obj = kArray.get(i);
+            if (obj == elemObj || obj.equals(elemObj.getIndirectReference())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Gets the underlying PdfDictionary for any structure node. */
+    public static PdfDictionary getPdfObject(IStructureNode node) {
+        if (node instanceof PdfStructElem elem) {
+            return elem.getPdfObject();
+        } else if (node instanceof PdfStructTreeRoot root) {
+            return root.getPdfObject();
+        }
+        return null;
     }
 }

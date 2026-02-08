@@ -18,14 +18,14 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,125 +56,66 @@ public class FlattenNesting implements IssueFix {
         }
     }
 
-    // TODO: Split into smaller methods
     private void flattenElement(PdfStructElem wrapper) {
         IStructureNode parentNode = wrapper.getParent();
 
-        List<IStructureNode> wrapperKids = wrapper.getKids();
-        if (wrapperKids == null || wrapperKids.isEmpty()) {
-            removeFromParent(wrapper, parentNode);
+        List<PdfStructElem> childrenToMove = collectStructElemChildren(wrapper);
+        if (childrenToMove.isEmpty()) {
+            StructureTree.removeFromParent(wrapper, parentNode);
             flattened++;
             return;
         }
 
-        List<PdfStructElem> childrenToMove = new ArrayList<>();
-        for (IStructureNode kid : wrapperKids) {
-            if (kid instanceof PdfStructElem childElem) {
-                childrenToMove.add(childElem);
-            }
+        PdfArray kArray = StructureTree.getKArray(parentNode);
+        if (kArray == null) {
+            logger.debug("Parent K array is null, cannot flatten");
+            return;
         }
 
-        if (parentNode instanceof PdfStructElem parent) {
-            // Find wrapper's position in parent's children to maintain order
-            PdfArray kArray = parent.getPdfObject().getAsArray(PdfName.K);
-            if (kArray == null) {
-                logger.debug("Parent K array is null, cannot flatten");
-                return;
-            }
-
-            int wrapperIndex = -1;
-            PdfObject wrapperObj = wrapper.getPdfObject();
-            for (int i = 0; i < kArray.size(); i++) {
-                PdfObject obj = kArray.get(i);
-                if (obj == wrapperObj || obj.equals(wrapperObj.getIndirectReference())) {
-                    wrapperIndex = i;
-                    break;
-                }
-            }
-
-            if (wrapperIndex < 0) {
-                logger.debug("Could not find wrapper in parent K array");
-                return;
-            }
-
-            // Insert children at wrapper's position (before removing wrapper)
-            for (int i = 0; i < childrenToMove.size(); i++) {
-                PdfStructElem child = childrenToMove.get(i);
-                wrapper.removeKid(child);
-                child.getPdfObject().put(PdfName.P, parent.getPdfObject());
-                // Insert at position (each insertion shifts subsequent items)
-                kArray.add(wrapperIndex + i, child.getPdfObject());
-            }
-
-            // Now remove the wrapper
-            kArray.remove(wrapperIndex + childrenToMove.size());
-
-            flattened++;
-            logger.debug(
-                    "Flattened {} with {} children into parent {} at position {}",
-                    wrapper.getRole().getValue(),
-                    childrenToMove.size(),
-                    parent.getRole().getValue(),
-                    wrapperIndex);
-        } else if (parentNode instanceof PdfStructTreeRoot root) {
-            PdfArray kArray = root.getPdfObject().getAsArray(PdfName.K);
-            if (kArray == null) {
-                logger.debug("Root K array is null, cannot flatten");
-                return;
-            }
-
-            int wrapperIndex = -1;
-            PdfObject wrapperObj = wrapper.getPdfObject();
-            for (int i = 0; i < kArray.size(); i++) {
-                PdfObject obj = kArray.get(i);
-                if (obj == wrapperObj || obj.equals(wrapperObj.getIndirectReference())) {
-                    wrapperIndex = i;
-                    break;
-                }
-            }
-
-            if (wrapperIndex < 0) {
-                logger.debug("Could not find wrapper in root K array");
-                return;
-            }
-
-            // Insert children at wrapper's position (before removing wrapper)
-            for (int i = 0; i < childrenToMove.size(); i++) {
-                PdfStructElem child = childrenToMove.get(i);
-                wrapper.removeKid(child);
-                child.getPdfObject().put(PdfName.P, root.getPdfObject());
-                kArray.add(wrapperIndex + i, child.getPdfObject());
-            }
-
-            // Now remove the wrapper
-            kArray.remove(wrapperIndex + childrenToMove.size());
-
-            flattened++;
-            logger.debug(
-                    "Flattened {} with {} children into root at position {}",
-                    wrapper.getRole().getValue(),
-                    childrenToMove.size(),
-                    wrapperIndex);
-        } else {
-            logger.debug(
-                    "Cannot flatten {} - parent type {} not supported",
-                    wrapper.getRole().getValue(),
-                    parentNode.getClass().getSimpleName());
+        int wrapperIndex = StructureTree.findIndexInKArray(kArray, wrapper);
+        if (wrapperIndex < 0) {
+            logger.debug("Could not find wrapper in parent K array");
+            return;
         }
+
+        promoteChildren(wrapper, childrenToMove, kArray, wrapperIndex, parentNode);
+
+        // Remove the wrapper (now shifted past the inserted children)
+        kArray.remove(wrapperIndex + childrenToMove.size());
+
+        flattened++;
+        logger.debug(
+                "Flattened {} with {} children at position {}",
+                wrapper.getRole().getValue(),
+                childrenToMove.size(),
+                wrapperIndex);
     }
 
-    // TODO: Move to a utility class
-    private void removeFromParent(PdfStructElem elem, IStructureNode parentNode) {
-        if (parentNode instanceof PdfStructElem parent) {
-            parent.removeKid(elem);
-        } else if (parentNode instanceof PdfStructTreeRoot root) {
-            PdfObject kObj = root.getPdfObject().get(PdfName.K);
-            if (kObj instanceof PdfArray kArray) {
-                kArray.remove(elem.getPdfObject());
-                if (elem.getPdfObject().getIndirectReference() != null) {
-                    kArray.remove(elem.getPdfObject().getIndirectReference());
-                }
+    private List<PdfStructElem> collectStructElemChildren(PdfStructElem elem) {
+        List<PdfStructElem> children = new ArrayList<>();
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return children;
+
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem childElem) {
+                children.add(childElem);
             }
+        }
+        return children;
+    }
+
+    private void promoteChildren(
+            PdfStructElem wrapper,
+            List<PdfStructElem> children,
+            PdfArray kArray,
+            int wrapperIndex,
+            IStructureNode newParent) {
+        PdfDictionary newParentDict = StructureTree.getPdfObject(newParent);
+        for (int i = 0; i < children.size(); i++) {
+            PdfStructElem child = children.get(i);
+            wrapper.removeKid(child);
+            child.getPdfObject().put(PdfName.P, newParentDict);
+            kArray.add(wrapperIndex + i, child.getPdfObject());
         }
     }
 
