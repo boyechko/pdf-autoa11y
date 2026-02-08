@@ -94,7 +94,7 @@ Basic usage:
 With options:
 
 ```bash
-./pdf-autoa11y [-q|-v|-vv] [-f] [-p password] <input.pdf> [output.pdf]
+./pdf-autoa11y [-q|-v|-vv] [-f] [-p password] [-r[=report]] <input.pdf> [output.pdf]
 ```
 
 Options:
@@ -103,6 +103,11 @@ Options:
 - `-vv, --debug` - Show all debug information including logs
 - `-f, --force` - Force save even if no fixes were applied
 - `-p, --password` - Password for encrypted PDFs
+- `-r, --report` - Save output to a report file (auto-named from input).
+  Use `-r=<file>` or `--report=<file>` to specify a custom path.
+
+If the output path or report path is an existing directory, the tool
+generates the filename automatically inside that directory.
 
 **Verbosity Levels:**
 - **Quiet** (`-q`): Minimal output - only errors and the output file path
@@ -118,6 +123,18 @@ Examples:
 
 # Specify output path
 ./pdf-autoa11y input.pdf output/fixed.pdf
+
+# Output to a directory (produces output/document_autoa11y.pdf)
+./pdf-autoa11y document.pdf output/
+
+# Generate a report file (produces document_autoa11y.txt alongside the PDF)
+./pdf-autoa11y -r document.pdf
+
+# Generate a report in a specific directory
+./pdf-autoa11y -r document.pdf output/
+
+# Specify a custom report path
+./pdf-autoa11y --report=my_report.txt document.pdf
 
 # Quiet mode for scripting
 ./pdf-autoa11y -q document.pdf
