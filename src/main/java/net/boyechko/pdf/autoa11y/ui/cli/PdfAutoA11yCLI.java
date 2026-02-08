@@ -40,13 +40,14 @@ public class PdfAutoA11yCLI {
             Path outputPath,
             String password,
             boolean force_save,
+            boolean analyzeOnly,
             Path reportPath,
             VerbosityLevel verbosity) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (outputPath == null) {
+            if (!analyzeOnly && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -90,6 +91,7 @@ public class PdfAutoA11yCLI {
         Path outputPath = null;
         String password = null;
         boolean force_save = false;
+        boolean analyzeOnly = false;
         boolean generateReport = false;
         Path reportPath = null;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
@@ -114,6 +116,7 @@ public class PdfAutoA11yCLI {
                     case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
                     case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
                     case "-f", "--force" -> force_save = true;
+                    case "-a", "--analyze" -> analyzeOnly = true;
                     case "-r", "--report" -> generateReport = true;
                     default -> {
                         if (inputPath == null) {
@@ -141,23 +144,28 @@ public class PdfAutoA11yCLI {
                 inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
 
         // Generate output path
-        if (outputPath == null) {
-            String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
-            Path parent = inputPath.getParent();
-            outputPath =
-                    parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
-        } else if (Files.isDirectory(outputPath)) {
-            outputPath = outputPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
+        if (!analyzeOnly) {
+            if (outputPath == null) {
+                String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
+                Path parent = inputPath.getParent();
+                outputPath =
+                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
+            } else if (Files.isDirectory(outputPath)) {
+                outputPath = outputPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
+            }
         }
 
         // Resolve report path
+        String reportFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
         if (generateReport && reportPath == null) {
-            reportPath = outputPath.resolveSibling(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt");
+            Path reportSibling = analyzeOnly ? inputPath : outputPath;
+            reportPath = reportSibling.resolveSibling(reportFilename);
         } else if (reportPath != null && Files.isDirectory(reportPath)) {
-            reportPath = reportPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt");
+            reportPath = reportPath.resolve(reportFilename);
         }
 
-        return new CLIConfig(inputPath, outputPath, password, force_save, reportPath, verbosity);
+        return new CLIConfig(
+                inputPath, outputPath, password, force_save, analyzeOnly, reportPath, verbosity);
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -204,29 +212,34 @@ public class PdfAutoA11yCLI {
                             .withVerbosityLevel(verbosity)
                             .build();
 
-            logger().info("Remediating document");
-            ProcessingResult result = service.remediate();
+            if (config.analyzeOnly()) {
+                logger().info("Analyzing document");
+                service.analyze();
+            } else {
+                logger().info("Remediating document");
+                ProcessingResult result = service.remediate();
 
-            if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-                reporter.onInfo("No changes made; output file not created");
-                return;
+                if (result.totalIssuesResolved() == 0 && !config.force_save()) {
+                    reporter.onInfo("No changes made; output file not created");
+                    return;
+                }
+
+                Path outputParent = config.outputPath().getParent();
+                if (outputParent != null) {
+                    Files.createDirectories(outputParent);
+                }
+
+                logger().info(
+                                "Moving temporary output file {} to {}",
+                                result.tempOutputFile(),
+                                config.outputPath());
+                Files.move(
+                        result.tempOutputFile(),
+                        config.outputPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+
+                reporter.onSuccess("Output saved to " + config.outputPath().toString());
             }
-
-            Path outputParent = config.outputPath().getParent();
-            if (outputParent != null) {
-                Files.createDirectories(outputParent);
-            }
-
-            logger().info(
-                            "Moving temporary output file {} to {}",
-                            result.tempOutputFile(),
-                            config.outputPath());
-            Files.move(
-                    result.tempOutputFile(),
-                    config.outputPath(),
-                    StandardCopyOption.REPLACE_EXISTING);
-
-            reporter.onSuccess("Output saved to " + config.outputPath().toString());
         } catch (Exception e) {
             System.err.println("✗ Processing failed due to an exception:");
             System.err.println();
@@ -283,8 +296,9 @@ public class PdfAutoA11yCLI {
     }
 
     private static String usageMessage() {
-        return "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
+        return "Usage: java PdfAutoA11yCLI [-a] [-q|-v|-vv] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
                 + "  -h, --help      Show this help message\n"
+                + "  -a, --analyze   Analyze only (no remediation or output PDF)\n"
                 + "  -q, --quiet     Only show errors and final status\n"
                 + "  -v, --verbose   Show detailed tag structure\n"
                 + "  -vv, --debug    Show all debug information\n"
@@ -293,6 +307,7 @@ public class PdfAutoA11yCLI {
                 + "  -r, --report    Save output to report file (auto-named from input)\n"
                 + "                  Use -r=<file> or --report=<file> for a custom path\n"
                 + "Examples:\n"
+                + "  java PdfAutoA11yCLI -a -v document.pdf\n"
                 + "  java PdfAutoA11yCLI -r -v document.pdf\n"
                 + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf";
     }
