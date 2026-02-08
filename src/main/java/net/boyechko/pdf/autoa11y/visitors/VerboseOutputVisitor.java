@@ -101,8 +101,9 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
         int pageNum = ctx.getPageNumber();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
-        String mcrSummary = ContentExtractor.getMcrContent(ctx.node(), ctx.doc(), pageNum);
-        mcrSummary = (mcrSummary == null || mcrSummary.isEmpty()) ? "" : mcrSummary;
+        String mcrText = ContentExtractor.getTextForElement(ctx.node(), ctx.doc(), pageNum);
+        mcrText = (mcrText == null || mcrText.isEmpty()) ? "" : mcrText;
+        String truncated = mcrText.length() > 40 ? mcrText.substring(0, 39) + "…" : mcrText;
 
         output.accept(
                 String.format(
@@ -111,6 +112,6 @@ public class VerboseOutputVisitor implements StructureTreeVisitor {
                         elementName,
                         pageString,
                         ctx.getObjNum(),
-                        mcrSummary));
+                        truncated));
     }
 }
