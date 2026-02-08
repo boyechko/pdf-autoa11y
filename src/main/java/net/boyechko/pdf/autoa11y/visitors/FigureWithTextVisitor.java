@@ -36,7 +36,7 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Figure With Text Check";
+        return "Figure With Text Visitor";
     }
 
     @Override

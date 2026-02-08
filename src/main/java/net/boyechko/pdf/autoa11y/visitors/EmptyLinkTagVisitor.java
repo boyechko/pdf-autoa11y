@@ -46,7 +46,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Empty Link Tag Check";
+        return "Empty Link Tag Visitor";
     }
 
     @Override
