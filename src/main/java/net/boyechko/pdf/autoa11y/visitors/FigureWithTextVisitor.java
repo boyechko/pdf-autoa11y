@@ -55,8 +55,7 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
             return true;
         }
 
-        String textContent =
-                McidTextExtractor.getMcrContentSummary(ctx.node(), ctx.doc(), pageNumber);
+        String textContent = McidTextExtractor.getMcrContent(ctx.node(), ctx.doc(), pageNumber);
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);

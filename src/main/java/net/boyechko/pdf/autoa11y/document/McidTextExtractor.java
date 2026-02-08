@@ -167,9 +167,8 @@ public final class McidTextExtractor {
         return ratio > ARTIFICIAL_SPACING_RATIO;
     }
 
-    /** Gets a summary of text content for all MCRs within a structure element. */
-    public static String getMcrContentSummary(
-            PdfStructElem node, PdfDocument document, int pageNumber) {
+    /** Gets the text content for all MCRs within a structure element. */
+    public static String getMcrContent(PdfStructElem node, PdfDocument document, int pageNumber) {
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return "";
 
@@ -189,7 +188,7 @@ public final class McidTextExtractor {
             if (textContent.isEmpty()) {
                 return "";
             } else {
-                return truncateText(textContent);
+                return textContent;
             }
         } else {
             StringBuilder combinedText = new StringBuilder();
@@ -201,7 +200,7 @@ public final class McidTextExtractor {
                 }
             }
 
-            return truncateText(combinedText.toString());
+            return combinedText.toString();
         }
     }
 
