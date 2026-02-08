@@ -60,15 +60,15 @@ public class ConvertToArtifact implements IssueFix {
             return;
         }
 
+        logger.trace(
+                "Artifacting {} (obj # {})",
+                element.getRole().getValue(),
+                StructureTree.objNumber(element));
+
         removeAssociatedAnnotations(element, ctx);
 
         if (parent instanceof PdfStructElem parentElem) {
             parentElem.removeKid(element);
-            logger.debug(
-                    "Removed {} from parent {} obj # {}",
-                    element.getRole().getValue(),
-                    parentElem.getRole().getValue(),
-                    StructureTree.objNumber(parentElem));
         } else if (parent instanceof PdfStructTreeRoot root) {
             PdfObject kObj = root.getPdfObject().get(PdfName.K);
             if (kObj instanceof PdfArray kArray) {
@@ -76,17 +76,17 @@ public class ConvertToArtifact implements IssueFix {
                 if (element.getPdfObject().getIndirectReference() != null) {
                     kArray.remove(element.getPdfObject().getIndirectReference());
                 }
-                logger.debug("Removed {} from structure tree root", element.getRole().getValue());
             }
         }
     }
 
+    /** Removes any annotations associated with the element. */
     private void removeAssociatedAnnotations(PdfStructElem elem, DocumentContext ctx) {
         List<PdfObjRef> objRefs = new ArrayList<>();
         collectObjRefs(elem, objRefs);
 
-        logger.debug(
-                "Found {} OBJR(s) in element {} (obj #{})",
+        logger.trace(
+                "Found {} object ref(s) in {} (obj #{})",
                 objRefs.size(),
                 elem.getRole() != null ? elem.getRole().getValue() : "unknown",
                 StructureTree.objNumber(elem));
@@ -102,6 +102,7 @@ public class ConvertToArtifact implements IssueFix {
         }
     }
 
+    /** Collects all the PdfObjRef objects in the element and its children. */
     private void collectObjRefs(PdfStructElem elem, List<PdfObjRef> objRefs) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) {
@@ -117,6 +118,7 @@ public class ConvertToArtifact implements IssueFix {
         }
     }
 
+    /** Removes the annotation object from the page. */
     private void removeAnnotationFromPage(PdfDictionary annotDict, DocumentContext ctx) {
         int annotObjNum =
                 annotDict.getIndirectReference() != null
@@ -153,6 +155,7 @@ public class ConvertToArtifact implements IssueFix {
         logger.warn("Failed to find and remove annotation obj #{} on any page", annotObjNum);
     }
 
+    /** Removes the annotation from the page and any duplicates. */
     private int removeAnnotationAndDuplicates(
             PdfPage page, PdfDictionary annotDict, PdfArray targetRect) {
         List<PdfAnnotation> annotations = page.getAnnotations();
