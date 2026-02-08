@@ -91,9 +91,9 @@ public class ProcessingServiceTest extends PdfTestBase {
     void documentLevelIssuesAreDetectedAndFixed() throws Exception {
         Path testPdf =
                 createTestPdf(
-                        (pdfDoc, document) -> {
-                            document.add(new Paragraph("Document Issues Test").setFontSize(18));
-                            document.add(
+                        (pdfDoc, layoutDoc) -> {
+                            layoutDoc.add(new Paragraph("Document Issues Test").setFontSize(18));
+                            layoutDoc.add(
                                     new Paragraph(
                                             "This PDF has content but may be missing "
                                                     + "document-level accessibility properties."));
@@ -120,10 +120,10 @@ public class ProcessingServiceTest extends PdfTestBase {
     void completeIssueResolutionWorkflow() throws Exception {
         Path testPdf =
                 createTestPdf(
-                        (pdfDoc, document) -> {
-                            document.add(
+                        (pdfDoc, layoutDoc) -> {
+                            layoutDoc.add(
                                     new Paragraph("Multiple Issues Test Document").setFontSize(16));
-                            document.add(
+                            layoutDoc.add(
                                     new Paragraph(
                                             "This document contains various elements that may "
                                                     + "have accessibility issues."));
@@ -135,16 +135,16 @@ public class ProcessingServiceTest extends PdfTestBase {
                             table.addCell("Value A");
                             table.addCell("Value B");
                             table.addCell("Value C");
-                            document.add(table);
+                            layoutDoc.add(table);
 
                             com.itextpdf.layout.element.List list =
                                     new com.itextpdf.layout.element.List();
                             list.add(new ListItem("First item"));
                             list.add(new ListItem("Second item"));
                             list.add(new ListItem("Third item"));
-                            document.add(list);
+                            layoutDoc.add(list);
 
-                            document.add(
+                            layoutDoc.add(
                                     new Paragraph(
                                             "Additional content to test various accessibility "
                                                     + "rules."));
@@ -241,26 +241,26 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     /** Reusable content: a tagged PDF with a two-item list (suitable for L breakages). */
-    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document document)
+    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc)
             throws Exception {
-        document.add(new Paragraph("Tag Structure Test").setFontSize(18));
-        document.add(new Paragraph("This PDF will have tag structure issues."));
+        layoutDoc.add(new Paragraph("Tag Structure Test").setFontSize(18));
+        layoutDoc.add(new Paragraph("This PDF will have tag structure issues."));
 
         com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
         list.add(new ListItem("Item 1"));
         list.add(new ListItem("Item 2"));
-        document.add(list);
+        layoutDoc.add(list);
     }
 
     /** Reusable content: a tagged PDF with a two-item list (suitable for LI breakages). */
     private static void fixableListContent(
-            PdfDocument pdfDoc, com.itextpdf.layout.Document document) throws Exception {
-        document.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
+            PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) throws Exception {
+        layoutDoc.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
 
         com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
         list.add(new ListItem("Item that will be broken"));
         list.add(new ListItem("Another item"));
-        document.add(list);
+        layoutDoc.add(list);
     }
 
     /** Creates a PDF with a Figure element containing text (low-level structure API). */
