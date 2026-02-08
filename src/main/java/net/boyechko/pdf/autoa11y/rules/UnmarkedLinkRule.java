@@ -23,7 +23,6 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import java.util.Locale;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
@@ -96,7 +95,8 @@ public class UnmarkedLinkRule implements Rule {
         }
 
         if (uri != null) {
-            sb.append(" to ").append(McidTextExtractor.truncateText(uri));
+            String displayUri = uri.length() > 30 ? uri.substring(0, 29) + "…" : uri;
+            sb.append(" to ").append(displayUri);
         }
 
         return sb.toString();
