@@ -34,7 +34,7 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 /** Detects Part/Sect/Art wrapper elements that add no semantic value. */
 public class NeedlessNestingVisitor implements StructureTreeVisitor {
 
-    private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art");
+    private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art", "Div");
 
     private final List<PdfStructElem> groupingElementsToFlatten = new ArrayList<>();
     private final IssueList issues = new IssueList();

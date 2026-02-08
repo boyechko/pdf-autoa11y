@@ -26,7 +26,7 @@ roles:
     allowed_children:
 
   Div:
-    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table, TOC]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table, TOC]
 
   Document:
     allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, Index, L, Note, P, Part, Sect, Table, TOC]
@@ -75,7 +75,7 @@ roles:
     allowed_children: [Lbl, LBody]
 
   Link:
-    allowed_children: [Figure, Lbl, Span]
+    allowed_children: [Figure, Lbl, P, Span]
 
   Note:
     allowed_children: [L, Lbl, P, Figure, Caption]
@@ -97,7 +97,7 @@ roles:
     allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
 
   Span:
-    allowed_children: [Span]
+    allowed_children: [Link, Span]
 
   Table:
     allowed_children: [Caption, TR, THead, TBody, TFoot]
