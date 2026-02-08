@@ -107,25 +107,30 @@ public final class StructureTree {
      */
     public static boolean moveElement(
             PdfStructElem fromParent, PdfStructElem elem, PdfStructElem toParent) {
-        PdfArray parentKids = fromParent.getPdfObject().getAsArray(PdfName.K);
-        if (parentKids == null) return false;
+        PdfDictionary fromDict = fromParent.getPdfObject();
+        PdfObject kObj = fromDict.get(PdfName.K);
+        if (kObj == null) return false;
 
-        // Remove from parent's K array
         PdfObject elemObj = elem.getPdfObject();
         boolean removed = false;
-        for (int i = 0; i < parentKids.size(); i++) {
-            PdfObject obj = parentKids.get(i);
-            if (obj == elemObj
-                    || (elemObj.getIndirectReference() != null
-                            && elemObj.getIndirectReference().equals(obj))) {
-                parentKids.remove(i);
-                removed = true;
-                break;
+
+        if (kObj instanceof PdfArray parentKids) {
+            // Multiple children: find and remove from array
+            for (int i = 0; i < parentKids.size(); i++) {
+                PdfObject obj = parentKids.get(i);
+                if (sameObject(elemObj, obj)) {
+                    parentKids.remove(i);
+                    removed = true;
+                    break;
+                }
             }
+        } else if (sameObject(elemObj, kObj)) {
+            // Single child stored as direct /K reference
+            fromDict.remove(PdfName.K);
+            removed = true;
         }
 
         if (removed) {
-            // Update parent reference (/P) and add to new parent
             elem.getPdfObject().put(PdfName.P, toParent.getPdfObject());
             toParent.addKid(elem);
             logger.debug(
@@ -135,6 +140,10 @@ public final class StructureTree {
         }
 
         return removed;
+    }
+
+    private static boolean sameObject(PdfObject a, PdfObject b) {
+        return a == b || (a.getIndirectReference() != null && a.getIndirectReference().equals(b));
     }
 
     /** Removes an element from its parent (works with both PdfStructElem and PdfStructTreeRoot). */
