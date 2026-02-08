@@ -203,6 +203,32 @@ class StructureTreeTest extends PdfTestBase {
     }
 
     @Test
+    void moveElementWorkWithSingleChild() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            // document has exactly one child — /K is a direct reference, not an array
+            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            document.addKid(p);
+            PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
+            root.addKid(part);
+
+            assertNull(document.getPdfObject().getAsArray(PdfName.K), "/K should not be an array");
+
+            boolean moved = StructureTree.moveElement(document, p, part);
+
+            assertTrue(moved);
+            List<IStructureNode> partKids = part.getKids();
+            assertEquals(1, partKids.size());
+            assertSame(p.getPdfObject(), ((PdfStructElem) partKids.get(0)).getPdfObject());
+        }
+    }
+
+    @Test
     void moveElementReturnsFalseWhenNotFound() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
