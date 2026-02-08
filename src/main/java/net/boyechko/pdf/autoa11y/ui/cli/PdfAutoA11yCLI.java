@@ -143,11 +143,14 @@ public class PdfAutoA11yCLI {
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
-        if (verbosity.isAtLeast(VerbosityLevel.DEBUG)) {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
-        } else {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-        }
+        String level =
+                switch (verbosity) {
+                    case QUIET -> "error";
+                    case NORMAL -> "warn";
+                    case VERBOSE -> "info";
+                    case DEBUG -> "debug";
+                };
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
     }
 
     private static Logger logger() {
