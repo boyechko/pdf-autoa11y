@@ -28,6 +28,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -258,5 +259,24 @@ public final class StructureTree {
             }
         }
         return null;
+    }
+
+    /** Recursively collects all OBJR (object reference) descendants of an element. */
+    public static List<PdfObjRef> collectObjRefs(PdfStructElem elem) {
+        List<PdfObjRef> result = new ArrayList<>();
+        collectObjRefs(elem, result);
+        return result;
+    }
+
+    private static void collectObjRefs(PdfStructElem elem, List<PdfObjRef> result) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfObjRef objRef) {
+                result.add(objRef);
+            } else if (kid instanceof PdfStructElem childElem) {
+                collectObjRefs(childElem, result);
+            }
+        }
     }
 }

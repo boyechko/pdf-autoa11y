@@ -26,7 +26,6 @@ import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
@@ -66,24 +65,12 @@ public class ConvertToArtifact implements IssueFix {
                 StructureTree.objNumber(element));
 
         removeAssociatedAnnotations(element, ctx);
-
-        if (parent instanceof PdfStructElem parentElem) {
-            parentElem.removeKid(element);
-        } else if (parent instanceof PdfStructTreeRoot root) {
-            PdfObject kObj = root.getPdfObject().get(PdfName.K);
-            if (kObj instanceof PdfArray kArray) {
-                kArray.remove(element.getPdfObject());
-                if (element.getPdfObject().getIndirectReference() != null) {
-                    kArray.remove(element.getPdfObject().getIndirectReference());
-                }
-            }
-        }
+        StructureTree.removeFromParent(element, parent);
     }
 
     /** Removes any annotations associated with the element. */
     private void removeAssociatedAnnotations(PdfStructElem elem, DocumentContext ctx) {
-        List<PdfObjRef> objRefs = new ArrayList<>();
-        collectObjRefs(elem, objRefs);
+        List<PdfObjRef> objRefs = StructureTree.collectObjRefs(elem);
 
         logger.trace(
                 "Found {} object ref(s) in {} (obj #{})",
@@ -96,30 +83,14 @@ public class ConvertToArtifact implements IssueFix {
             if (refObj instanceof PdfDictionary annotDict) {
                 PdfName subtype = annotDict.getAsName(PdfName.Subtype);
                 if (subtype != null && PdfName.Link.equals(subtype)) {
-                    removeAnnotationFromPage(annotDict, ctx);
+                    removeAnnotationFromDocument(annotDict, ctx);
                 }
             }
         }
     }
 
-    /** Collects all the PdfObjRef objects in the element and its children. */
-    private void collectObjRefs(PdfStructElem elem, List<PdfObjRef> objRefs) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) {
-            return;
-        }
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfObjRef objRef) {
-                objRefs.add(objRef);
-            } else if (kid instanceof PdfStructElem childElem) {
-                collectObjRefs(childElem, objRefs);
-            }
-        }
-    }
-
-    /** Removes the annotation object from the page. */
-    private void removeAnnotationFromPage(PdfDictionary annotDict, DocumentContext ctx) {
+    /** Removes the annotation from the document, searching the expected page first. */
+    private void removeAnnotationFromDocument(PdfDictionary annotDict, DocumentContext ctx) {
         int annotObjNum =
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
@@ -137,7 +108,7 @@ public class ConvertToArtifact implements IssueFix {
             int pageNum = ctx.doc().getPageNumber(pageDict);
             if (pageNum > 0) {
                 PdfPage page = ctx.doc().getPage(pageNum);
-                int removed = removeAnnotationAndDuplicates(page, annotDict, targetRect);
+                int removed = removeMatchingAnnotations(page, annotDict, targetRect);
                 if (removed > 0) {
                     return;
                 }
@@ -148,15 +119,15 @@ public class ConvertToArtifact implements IssueFix {
 
         for (int i = 1; i <= ctx.doc().getNumberOfPages(); i++) {
             PdfPage page = ctx.doc().getPage(i);
-            if (removeAnnotationAndDuplicates(page, annotDict, targetRect) > 0) {
+            if (removeMatchingAnnotations(page, annotDict, targetRect) > 0) {
                 return;
             }
         }
         logger.warn("Failed to find and remove annotation obj #{} on any page", annotObjNum);
     }
 
-    /** Removes the annotation from the page and any duplicates. */
-    private int removeAnnotationAndDuplicates(
+    /** Removes all Link annotations on a page that match the target by identity or rect. */
+    private int removeMatchingAnnotations(
             PdfPage page, PdfDictionary annotDict, PdfArray targetRect) {
         List<PdfAnnotation> annotations = page.getAnnotations();
         int pageNum = page.getDocument().getPageNumber(page);
