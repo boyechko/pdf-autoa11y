@@ -28,9 +28,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import java.util.Map;
+import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.McidBoundsExtractor;
-import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +116,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
                 ctx.getOrComputeMcidBounds(
                         resolvedPageNum,
                         () ->
-                                McidBoundsExtractor.extractBoundsForPage(
+                                ContentExtractor.extractBoundsForPage(
                                         ctx.doc().getPage(resolvedPageNum)));
         Rectangle mcrRect = mcidBounds.get(mcid);
         Rectangle annotRect = getAnnotationBounds(annotDict);
@@ -328,7 +327,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public String describe(DocumentContext ctx) {
-        String text = McidTextExtractor.extractTextForMcid(ctx.doc(), mcid, pageNum);
+        String text = ContentExtractor.extractTextForMcid(ctx.doc(), mcid, pageNum);
         if (text.isEmpty()) {
             return describe();
         }

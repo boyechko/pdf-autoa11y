@@ -23,7 +23,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import net.boyechko.pdf.autoa11y.document.McidTextExtractor;
+import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -124,7 +124,7 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
             for (IStructureNode kid : kids) {
                 if (kid instanceof PdfMcrNumber mcr) {
                     String content =
-                            McidTextExtractor.extractTextForMcid(
+                            ContentExtractor.extractTextForMcid(
                                     ctx.doc(), mcr.getMcid(), pageNumber);
                     if (content != null && !content.isEmpty()) {
                         if (text.length() > 0) text.append(" ");
