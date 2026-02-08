@@ -27,7 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.content.McidBoundsExtractor;
+import net.boyechko.pdf.autoa11y.document.McidBoundsExtractor;
 import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
