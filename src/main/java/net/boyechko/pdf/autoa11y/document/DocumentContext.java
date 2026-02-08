@@ -31,11 +31,13 @@ public class DocumentContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
+    private final Map<Integer, Map<Integer, String>> mcidTextCache;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
+        this.mcidTextCache = new HashMap<>();
     }
 
     public PdfDocument doc() {
@@ -49,6 +51,17 @@ public class DocumentContext {
     public Map<Integer, Rectangle> getOrComputeMcidBounds(
             int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
         return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
+    }
+
+    /** Returns all MCID text for a page, extracting on first access. */
+    public Map<Integer, String> getMcidText(int pageNum) {
+        return mcidTextCache.computeIfAbsent(
+                pageNum, k -> ContentExtractor.extractTextForPage(doc.getPage(pageNum)));
+    }
+
+    /** Returns the text for a specific MCID, extracting the page on first access. */
+    public String getMcidText(int pageNum, int mcid) {
+        return getMcidText(pageNum).getOrDefault(mcid, "");
     }
 
     private Map<Integer, Integer> buildObjectToPageMapping(PdfDocument document) {
