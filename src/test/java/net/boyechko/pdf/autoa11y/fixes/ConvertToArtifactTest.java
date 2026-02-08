@@ -20,10 +20,8 @@ package net.boyechko.pdf.autoa11y.fixes;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
@@ -37,99 +35,91 @@ class ConvertToArtifactTest extends PdfTestBase {
 
     @Test
     void removesElementAndAssociatedLinkAnnotation() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfPage page = pdfDoc.addNewPage();
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, structTreeRoot, document) -> {
+                    PdfPage page = firstPage;
 
-            PdfLinkAnnotation linkAnnot =
-                    new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
-                            .setAction(PdfAction.createURI("https://example.com"));
-            page.addAnnotation(-1, linkAnnot, false);
+                    PdfLinkAnnotation linkAnnot =
+                            new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
+                                    .setAction(PdfAction.createURI("https://example.com"));
+                    page.addAnnotation(-1, linkAnnot, false);
 
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(document);
+                    PdfStructElem linkElem = new PdfStructElem(pdfDoc, PdfName.Link, page);
+                    document.addKid(linkElem);
 
-            PdfStructElem linkElem = new PdfStructElem(pdfDoc, PdfName.Link, page);
-            document.addKid(linkElem);
+                    int structParentIndex = pdfDoc.getNextStructParentIndex();
+                    PdfObjRef objRef = new PdfObjRef(linkAnnot, linkElem, structParentIndex);
+                    linkElem.addKid(objRef);
 
-            int structParentIndex = pdfDoc.getNextStructParentIndex();
-            PdfObjRef objRef = new PdfObjRef(linkAnnot, linkElem, structParentIndex);
-            linkElem.addKid(objRef);
+                    assertEquals(
+                            1,
+                            document.getKids().size(),
+                            "Document should have Link child before fix");
+                    assertEquals(
+                            1,
+                            page.getAnnotations().size(),
+                            "Page should have Link annotation before fix");
 
-            assertEquals(
-                    1, document.getKids().size(), "Document should have Link child before fix");
-            assertEquals(
-                    1, page.getAnnotations().size(), "Page should have Link annotation before fix");
+                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    new ConvertToArtifact(linkElem).apply(ctx);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            new ConvertToArtifact(linkElem).apply(ctx);
-
-            assertTrue(
-                    document.getKids() == null || document.getKids().isEmpty(),
-                    "Link should be removed from Document");
-            assertTrue(
-                    page.getAnnotations().isEmpty(), "Link annotation should be removed from page");
-        }
+                    assertTrue(
+                            document.getKids() == null || document.getKids().isEmpty(),
+                            "Link should be removed from Document");
+                    assertTrue(
+                            page.getAnnotations().isEmpty(),
+                            "Link annotation should be removed from page");
+                });
     }
 
     @Test
     void removesElementFromStructTreeRoot() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
+        createTestPdf(
+                (pdfDoc, layoutDoc) -> {
+                    pdfDoc.addNewPage();
+                    PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+                    PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+                    root.addKid(p);
 
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-            root.addKid(p);
+                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    new ConvertToArtifact(p).apply(ctx);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            new ConvertToArtifact(p).apply(ctx);
-
-            assertTrue(
-                    root.getKids() == null || root.getKids().isEmpty(),
-                    "Root should have no kids after removal");
-        }
+                    assertTrue(
+                            root.getKids() == null || root.getKids().isEmpty(),
+                            "Root should have no kids after removal");
+                });
     }
 
     @Test
     void doesNothingWhenNoParent() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+                    DocumentContext ctx = new DocumentContext(pdfDoc);
 
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-
-            ConvertToArtifact fix = new ConvertToArtifact(p);
-            assertDoesNotThrow(() -> fix.apply(ctx));
-        }
+                    ConvertToArtifact fix = new ConvertToArtifact(p);
+                    assertDoesNotThrow(() -> fix.apply(ctx));
+                });
     }
 
     @Test
     void invalidatesDescendantFix() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem parent = new PdfStructElem(pdfDoc, new PdfName("Sect"));
+                    PdfStructElem child = new PdfStructElem(pdfDoc, new PdfName("P"));
+                    document.addKid(parent);
+                    parent.addKid(child);
 
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(document);
+                    ConvertToArtifact parentFix = new ConvertToArtifact(parent);
+                    ConvertToArtifact childFix = new ConvertToArtifact(child);
 
-            PdfStructElem parent = new PdfStructElem(pdfDoc, new PdfName("Sect"));
-            PdfStructElem child = new PdfStructElem(pdfDoc, new PdfName("P"));
-            document.addKid(parent);
-            parent.addKid(child);
-
-            ConvertToArtifact parentFix = new ConvertToArtifact(parent);
-            ConvertToArtifact childFix = new ConvertToArtifact(child);
-
-            assertTrue(
-                    parentFix.invalidates(childFix),
-                    "Ancestor fix should invalidate descendant fix");
-            assertFalse(
-                    childFix.invalidates(parentFix),
-                    "Descendant fix should not invalidate ancestor fix");
-        }
+                    assertTrue(
+                            parentFix.invalidates(childFix),
+                            "Ancestor fix should invalidate descendant fix");
+                    assertFalse(
+                            childFix.invalidates(parentFix),
+                            "Descendant fix should not invalidate ancestor fix");
+                });
     }
 }
