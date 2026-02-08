@@ -53,6 +53,11 @@ public class ConvertToArtifact implements IssueFix {
 
     @Override
     public void apply(DocumentContext ctx) throws Exception {
+        artifactElement(element, ctx);
+    }
+
+    /** Artifacts the element. */
+    private void artifactElement(PdfStructElem element, DocumentContext ctx) {
         IStructureNode parent = element.getParent();
         if (parent == null) {
             logger.debug("Element already has no parent, skipping");
@@ -64,12 +69,15 @@ public class ConvertToArtifact implements IssueFix {
                 element.getRole().getValue(),
                 StructureTree.objNumber(element));
 
-        removeAssociatedAnnotations(element, ctx);
+        removeAnnotionsForElement(element, ctx);
         StructureTree.removeFromParent(element, parent);
     }
 
-    /** Removes any annotations associated with the element. */
-    private void removeAssociatedAnnotations(PdfStructElem elem, DocumentContext ctx) {
+    /**
+     * Walks the structure element's subtree, collects all PdfObjRef children, filters to Link
+     * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
+     */
+    private void removeAnnotionsForElement(PdfStructElem elem, DocumentContext ctx) {
         List<PdfObjRef> objRefs = StructureTree.collectObjRefs(elem);
 
         logger.trace(
@@ -83,14 +91,18 @@ public class ConvertToArtifact implements IssueFix {
             if (refObj instanceof PdfDictionary annotDict) {
                 PdfName subtype = annotDict.getAsName(PdfName.Subtype);
                 if (subtype != null && PdfName.Link.equals(subtype)) {
-                    removeAnnotationFromDocument(annotDict, ctx);
+                    findAndRemoveAnnotation(annotDict, ctx);
                 }
             }
         }
     }
 
-    /** Removes the annotation from the document, searching the expected page first. */
-    private void removeAnnotationFromDocument(PdfDictionary annotDict, DocumentContext ctx) {
+    /**
+     * Given a single annotation dictionary, resolves which page it lives on (via /P or /Pg), then
+     * falls back to a full-document scan. Delegates actual removal to {@link
+     * #removeMatchingAnnotationsFromPage}.
+     */
+    private void findAndRemoveAnnotation(PdfDictionary annotDict, DocumentContext ctx) {
         int annotObjNum =
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
@@ -108,7 +120,7 @@ public class ConvertToArtifact implements IssueFix {
             int pageNum = ctx.doc().getPageNumber(pageDict);
             if (pageNum > 0) {
                 PdfPage page = ctx.doc().getPage(pageNum);
-                int removed = removeMatchingAnnotations(page, annotDict, targetRect);
+                int removed = removeMatchingAnnotationsFromPage(page, annotDict, targetRect);
                 if (removed > 0) {
                     return;
                 }
@@ -119,15 +131,19 @@ public class ConvertToArtifact implements IssueFix {
 
         for (int i = 1; i <= ctx.doc().getNumberOfPages(); i++) {
             PdfPage page = ctx.doc().getPage(i);
-            if (removeMatchingAnnotations(page, annotDict, targetRect) > 0) {
+            if (removeMatchingAnnotationsFromPage(page, annotDict, targetRect) > 0) {
                 return;
             }
         }
         logger.warn("Failed to find and remove annotation obj #{} on any page", annotObjNum);
     }
 
-    /** Removes all Link annotations on a page that match the target by identity or rect. */
-    private int removeMatchingAnnotations(
+    /**
+     * Iterates annotations on a single page, matches by identity / equality / indirect-ref / rect,
+     * removes them, and returns how many were removed (so the caller knows whether to keep
+     * searching).
+     */
+    private int removeMatchingAnnotationsFromPage(
             PdfPage page, PdfDictionary annotDict, PdfArray targetRect) {
         List<PdfAnnotation> annotations = page.getAnnotations();
         int pageNum = page.getDocument().getPageNumber(page);
