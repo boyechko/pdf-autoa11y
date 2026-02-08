@@ -265,7 +265,7 @@ public final class ContentExtractor {
             return;
         }
         Rectangle existing = bounds.get(mcid);
-        bounds.put(mcid, union(existing, rect));
+        bounds.put(mcid, Geometry.union(existing, rect));
     }
 
     private static Rectangle rectFromText(TextRenderInfo info) {
@@ -316,20 +316,6 @@ public final class ContentExtractor {
             return null;
         }
 
-        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }
-
-    private static Rectangle union(Rectangle a, Rectangle b) {
-        if (a == null) {
-            return b;
-        }
-        if (b == null) {
-            return a;
-        }
-        float minX = Math.min(a.getX(), b.getX());
-        float minY = Math.min(a.getY(), b.getY());
-        float maxX = Math.max(a.getRight(), b.getRight());
-        float maxY = Math.max(a.getTop(), b.getTop());
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 }
