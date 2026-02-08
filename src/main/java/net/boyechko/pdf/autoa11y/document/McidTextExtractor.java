@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 /** Extracts text content associated with MCIDs (Marked Content IDs) from PDF documents. */
 public final class McidTextExtractor {
     private static final Logger logger = LoggerFactory.getLogger(McidTextExtractor.class);
-    private static final int MAX_DISPLAY_LENGTH = 30;
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
     private static final Map<PdfDocument, Map<String, String>> mcidTextCache =
@@ -202,17 +201,5 @@ public final class McidTextExtractor {
 
             return combinedText.toString();
         }
-    }
-
-    /** Truncates text to a reasonable display length for validation output. */
-    public static String truncateText(String text, int maxLength) {
-        if (text.length() <= maxLength) {
-            return text;
-        }
-        return text.substring(0, maxLength - 1) + "…";
-    }
-
-    public static String truncateText(String text) {
-        return truncateText(text, MAX_DISPLAY_LENGTH);
     }
 }

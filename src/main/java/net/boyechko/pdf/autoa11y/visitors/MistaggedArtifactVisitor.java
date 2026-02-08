@@ -73,7 +73,8 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
 
         if (matchesArtifactPattern(ctx)) {
             String textContent = getTextContent(ctx);
-            String truncated = McidTextExtractor.truncateText(textContent, 40);
+            String truncated =
+                    textContent.length() > 40 ? textContent.substring(0, 39) + "…" : textContent;
             IssueFix fix = new ConvertToArtifact(ctx.node());
             Issue issue =
                     new Issue(

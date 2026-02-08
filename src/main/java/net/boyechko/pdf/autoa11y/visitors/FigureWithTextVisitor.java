@@ -59,7 +59,6 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);
-            // TODO: Use @McidTextExtractor.truncateText()
             String truncated =
                     textContent.length() > MAX_DISPLAY_LENGTH
                             ? textContent.substring(0, MAX_DISPLAY_LENGTH) + "…"
