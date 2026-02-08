@@ -142,7 +142,7 @@ public class SetupDocumentStructure implements IssueFix {
                 partsCreated++;
                 logger.debug(
                         "Created Part element obj #{} for page {}",
-                        partElem.getPdfObject().getIndirectReference().getObjNumber(),
+                        StructureTree.objNumber(partElem),
                         pageNum);
             }
 

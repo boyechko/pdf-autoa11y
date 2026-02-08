@@ -89,11 +89,7 @@ public class CreateLinkTag implements IssueFix {
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
                         : 0;
-        logger.debug(
-                "Created Link tag for annotation obj #{} on page {} with StructParent {}",
-                annotObjNum,
-                pageNum,
-                structParentIndex);
+        logger.debug("Created Link tag for annotation obj #{} (p. {})", annotObjNum, pageNum);
     }
 
     private PdfAnnotation findMatchingAnnotation(PdfPage page, PdfDictionary targetDict) {

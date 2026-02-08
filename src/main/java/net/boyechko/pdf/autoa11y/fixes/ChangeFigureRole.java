@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Changes the role of a Figure element to a specified role. */
@@ -49,16 +50,16 @@ public class ChangeFigureRole implements IssueFix {
 
     @Override
     public String describe() {
-        int objNum = figure.getPdfObject().getIndirectReference().getObjNumber();
-        return "Changed Figure to " + newRole.getValue() + " for object #" + objNum;
+        int objNum = StructureTree.objNumber(figure);
+        return "Changed Figure to " + newRole.getValue() + " for obj #" + objNum;
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = figure.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = StructureTree.objNumber(figure);
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Changed Figure to " + newRole.getValue() + " for object #" + objNum + pageInfo;
+        return "Changed Figure to " + newRole.getValue() + " for obj #" + objNum + pageInfo;
     }
 
     @Override

@@ -18,6 +18,7 @@
 package net.boyechko.pdf.autoa11y.issues;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
 public final class IssueLocation {
@@ -64,12 +65,11 @@ public final class IssueLocation {
     }
 
     public Integer objectId() {
-        if (element != null
-                && element.getPdfObject() != null
-                && element.getPdfObject().getIndirectReference() != null) {
-            return element.getPdfObject().getIndirectReference().getObjNumber();
+        if (element == null || element.getPdfObject() == null) {
+            return null;
         }
-        return null;
+        int objNum = StructureTree.objNumber(element);
+        return objNum >= 0 ? objNum : null;
     }
 
     public String toString() {
@@ -79,10 +79,10 @@ public final class IssueLocation {
         String output = "";
 
         if (objId != null) {
-            output += "object #" + objId;
+            output += "obj #" + objId;
         }
         if (page != null) {
-            output += " on page " + page;
+            output += " (p. " + page + ")";
         }
         if (path != null) {
             output += " (" + path + ")";

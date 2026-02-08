@@ -74,7 +74,9 @@ public class FlattenNesting implements IssueFix {
 
         int wrapperIndex = StructureTree.findIndexInKArray(kArray, wrapper);
         if (wrapperIndex < 0) {
-            logger.debug("Could not find wrapper in parent K array");
+            logger.debug(
+                    "Could not find wrapper (obj # {}) in parent K array",
+                    StructureTree.objNumber(wrapper));
             return;
         }
 
@@ -85,8 +87,9 @@ public class FlattenNesting implements IssueFix {
 
         flattened++;
         logger.debug(
-                "Flattened {} with {} children at position {}",
+                "Flattened {} (obj # {}) with {} children at position {}",
                 wrapper.getRole().getValue(),
+                StructureTree.objNumber(wrapper),
                 childrenToMove.size(),
                 wrapperIndex);
     }
@@ -116,6 +119,12 @@ public class FlattenNesting implements IssueFix {
             wrapper.removeKid(child);
             child.getPdfObject().put(PdfName.P, newParentDict);
             kArray.add(wrapperIndex + i, child.getPdfObject());
+            logger.trace(
+                    "Promoted {} (obj # {}) to parent {} (obj # {})",
+                    child.getRole().getValue(),
+                    StructureTree.objNumber(child),
+                    newParent.getRole().getValue(),
+                    StructureTree.objNumber((PdfStructElem) newParent));
         }
     }
 

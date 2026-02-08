@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Wraps pairs of Lbl,P elements in an LI structure. */
@@ -51,11 +52,9 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
     @Override
     public void apply(DocumentContext ctx) throws Exception {
         logger.debug(
-                "Applying WrapPairsOfLblPInLI to L object #"
-                        + parent.getPdfObject().getIndirectReference().getObjNumber()
-                        + " with "
-                        + kids.size()
-                        + " kids");
+                "Applying WrapPairsOfLblPInLI to L obj #{} (p. {}) with {} kids",
+                StructureTree.objNumber(parent),
+                kids.size());
         for (int i = 0; i < kids.size(); i += 2) {
             PdfStructElem lbl = kids.get(i);
             PdfStructElem p = kids.get(i + 1);
@@ -77,15 +76,15 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
-        return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum;
+        int objNum = StructureTree.objNumber(parent);
+        return "Wrapped pairs of Lbl/P in LI elements for L obj #" + objNum;
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = StructureTree.objNumber(parent);
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Wrapped pairs of Lbl/P in LI elements for L object #" + objNum + pageInfo;
+        return "Wrapped pairs of Lbl/P in LI elements for L obj #" + objNum + pageInfo;
     }
 }

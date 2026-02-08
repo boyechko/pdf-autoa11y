@@ -23,6 +23,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 
 /**
  * Immutable context passed to visitors during structure tree traversal. Contains pre-computed
@@ -55,8 +56,8 @@ public record VisitorContext(
             return doc().getPageNumber(pg);
         }
 
-        if (node.getPdfObject().getIndirectReference() != null) {
-            int objNum = node.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = StructureTree.objNumber(node);
+        if (objNum >= 0) {
             return docCtx.getPageNumber(objNum);
         }
 
@@ -64,7 +65,7 @@ public record VisitorContext(
     }
 
     public int getObjNum() {
-        return node.getPdfObject().getIndirectReference().getObjNumber();
+        return StructureTree.objNumber(node);
     }
 
     public boolean hasRole(String roleName) {

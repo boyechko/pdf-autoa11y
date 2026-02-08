@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +47,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     private final int pageNum;
 
     public MoveSiblingMcrIntoLink(PdfStructElem linkElem, int mcid, int pageNum) {
-        this.linkObjNum =
-                linkElem.getPdfObject().getIndirectReference() != null
-                        ? linkElem.getPdfObject().getIndirectReference().getObjNumber()
-                        : 0;
+        this.linkObjNum = StructureTree.objNumber(linkElem);
         this.mcid = mcid;
         this.pageNum = pageNum;
     }
@@ -61,7 +59,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public void apply(DocumentContext ctx) throws Exception {
-        if (linkObjNum == 0 || mcid < 0) {
+        if (linkObjNum <= 0 || mcid < 0) {
             return;
         }
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
@@ -149,8 +147,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     // TODO: Move to a utility class
     private PdfStructElem findStructElemByObjNum(PdfStructElem elem, int objNum) {
-        if (elem.getPdfObject().getIndirectReference() != null
-                && elem.getPdfObject().getIndirectReference().getObjNumber() == objNum) {
+        if (StructureTree.objNumber(elem) == objNum) {
             return elem;
         }
         List<IStructureNode> kids = elem.getKids();
@@ -226,8 +223,8 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         if (pg != null) {
             return ctx.doc().getPageNumber(pg);
         }
-        if (elem.getPdfObject().getIndirectReference() != null) {
-            int objNum = elem.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = StructureTree.objNumber(elem);
+        if (objNum >= 0) {
             return ctx.getPageNumber(objNum);
         }
         return 0;

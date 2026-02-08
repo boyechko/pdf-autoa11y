@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Wraps pairs of Lbl,LBody elements in an LI structure. */
@@ -51,8 +52,8 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
     @Override
     public void apply(DocumentContext ctx) throws Exception {
         logger.debug(
-                "Applying WrapPairsOfLblLBodyInLI to L object #"
-                        + parent.getPdfObject().getIndirectReference().getObjNumber()
+                "Applying WrapPairsOfLblLBodyInLI to L obj #"
+                        + StructureTree.objNumber(parent)
                         + " with "
                         + kids.size()
                         + " kids");
@@ -73,15 +74,15 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
-        return "Wrapped pairs of Lbl/LBody in LI elements for L object #" + objNum;
+        int objNum = StructureTree.objNumber(parent);
+        return "Wrapped pairs of Lbl/LBody in LI elements for L obj #" + objNum;
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = parent.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = StructureTree.objNumber(parent);
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Wrapped pairs of Lbl/LBody in LI elements for L object #" + objNum + pageInfo;
+        return "Wrapped pairs of Lbl/LBody in LI elements for L obj #" + objNum + pageInfo;
     }
 }
