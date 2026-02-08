@@ -79,7 +79,7 @@ public final class ContentExtractor {
         return getTextForElement(node, ctx.getMcidText(pageNum));
     }
 
-    /** Gets the text content for all MCRs within a structure element. */
+    /** Gets the text content for all MCRs within a structure element, recursing into children. */
     public static String getTextForElement(PdfStructElem node, Map<Integer, String> mcidText) {
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return "";
@@ -91,6 +91,12 @@ public final class ContentExtractor {
                 if (!text.isEmpty()) {
                     if (combinedText.length() > 0) combinedText.append(" ");
                     combinedText.append(text);
+                }
+            } else if (kid instanceof PdfStructElem childElem) {
+                String childText = getTextForElement(childElem, mcidText);
+                if (!childText.isEmpty()) {
+                    if (combinedText.length() > 0) combinedText.append(" ");
+                    combinedText.append(childText);
                 }
             }
         }

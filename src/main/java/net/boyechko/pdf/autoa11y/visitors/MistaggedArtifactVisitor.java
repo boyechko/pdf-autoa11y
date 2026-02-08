@@ -17,13 +17,9 @@
  */
 package net.boyechko.pdf.autoa11y.visitors;
 
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -111,28 +107,6 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
         if (pageNumber == 0) {
             return "";
         }
-
-        Map<Integer, String> mcidText = ctx.docCtx().getMcidText(pageNumber);
-        StringBuilder text = new StringBuilder();
-        collectText(ctx.node(), mcidText, text);
-        return text.toString().trim();
-    }
-
-    private void collectText(
-            PdfStructElem elem, Map<Integer, String> mcidText, StringBuilder text) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids != null) {
-            for (IStructureNode kid : kids) {
-                if (kid instanceof PdfMcrNumber mcr) {
-                    String content = mcidText.getOrDefault(mcr.getMcid(), "");
-                    if (!content.isEmpty()) {
-                        if (text.length() > 0) text.append(" ");
-                        text.append(content);
-                    }
-                } else if (kid instanceof PdfStructElem childElem) {
-                    collectText(childElem, mcidText, text);
-                }
-            }
-        }
+        return ContentExtractor.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
     }
 }
