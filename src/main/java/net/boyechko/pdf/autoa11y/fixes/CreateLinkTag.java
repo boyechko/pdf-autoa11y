@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ public class CreateLinkTag implements IssueFix {
     @Override
     public void apply(DocumentContext ctx) throws Exception {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        PdfStructElem documentElem = findDocumentElement(root);
+        PdfStructElem documentElem = StructureTree.findFirstChild(root, PdfName.Document);
         if (documentElem == null) {
             throw new IllegalStateException("No Document element found");
         }
@@ -93,21 +94,6 @@ public class CreateLinkTag implements IssueFix {
                 annotObjNum,
                 pageNum,
                 structParentIndex);
-    }
-
-    private PdfStructElem findDocumentElement(PdfStructTreeRoot root) {
-        List<IStructureNode> kids = root.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfName role = elem.getRole();
-                if (role != null && "Document".equals(role.getValue())) {
-                    return elem;
-                }
-            }
-        }
-        return null;
     }
 
     private PdfAnnotation findMatchingAnnotation(PdfPage page, PdfDictionary targetDict) {
@@ -219,7 +205,7 @@ public class CreateLinkTag implements IssueFix {
             Map<PdfStructElem, Integer> elemDepths,
             int depth) {
         PdfDictionary elemPg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (elemPg != null && !isSamePage(elemPg, targetPage)) {
+        if (elemPg != null && !StructureTree.isSamePage(elemPg, targetPage)) {
             return null;
         }
 
@@ -263,18 +249,6 @@ public class CreateLinkTag implements IssueFix {
         }
 
         return bounds;
-    }
-
-    // TODO: Move to a utility class
-    private boolean isSamePage(PdfDictionary pgDict, PdfPage targetPage) {
-        PdfDictionary targetDict = targetPage.getPdfObject();
-        if (pgDict.equals(targetDict)) {
-            return true;
-        }
-        if (pgDict.getIndirectReference() != null && targetDict.getIndirectReference() != null) {
-            return pgDict.getIndirectReference().equals(targetDict.getIndirectReference());
-        }
-        return false;
     }
 
     // TODO: Move to a utility class or @ContentExtractor
