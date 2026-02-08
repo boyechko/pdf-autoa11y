@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -121,11 +120,10 @@ public abstract class PdfTestBase {
     /** Creates a tagged PDF at the specified path with the given content. */
     protected final Path createTestPdf(Path outputPath, TestPdfContent content) throws Exception {
         try (PdfWriter writer = new PdfWriter(outputPath.toString());
-                PdfDocument pdfDoc = new PdfDocument(writer)) {
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document document = new Document(pdfDoc)) {
             pdfDoc.setTagged();
-            Document document = new Document(pdfDoc);
             content.addTo(pdfDoc, document);
-            document.close();
         }
         return outputPath;
     }
@@ -144,19 +142,40 @@ public abstract class PdfTestBase {
         MISSING_LBODY(PdfName.LI, PdfTestBase::breakListItemMissingLBody);
 
         private final PdfName targetRole;
-        private final Consumer<PdfStructElem> modifier;
+        private final BreakageModifier modifier;
 
-        TagBreakage(PdfName targetRole, Consumer<PdfStructElem> modifier) {
+        TagBreakage(PdfName targetRole, BreakageModifier modifier) {
             this.targetRole = targetRole;
             this.modifier = modifier;
         }
 
-        void applyTo(PdfStructTreeRoot root) {
+        boolean applyTo(PdfStructTreeRoot root) {
             PdfStructElem target = findFirstByRole(root, targetRole);
-            if (target != null) {
-                modifier.accept(target);
+            if (target == null) {
+                return false;
             }
+            return modifier.apply(target);
         }
+    }
+
+    @FunctionalInterface
+    private interface BreakageModifier {
+        boolean apply(PdfStructElem target);
+    }
+
+    private static boolean applyBreakageOrThrow(PdfStructTreeRoot root, TagBreakage breakage) {
+        if (root == null) {
+            throw new IllegalStateException(
+                    "Cannot apply breakage " + breakage + ": structure tree root is null");
+        }
+        boolean applied = breakage.applyTo(root);
+        if (!applied) {
+            throw new IllegalStateException(
+                    "Failed to apply breakage "
+                            + breakage
+                            + ": target role was not found or no structural change was made");
+        }
+        return true;
     }
 
     /**
@@ -176,10 +195,7 @@ public abstract class PdfTestBase {
         try (PdfReader reader = new PdfReader(original.toString());
                 PdfWriter writer = new PdfWriter(broken.toString());
                 PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            if (root != null) {
-                breakage.applyTo(root);
-            }
+            applyBreakageOrThrow(pdfDoc.getStructTreeRoot(), breakage);
         }
         return broken;
     }
@@ -201,17 +217,43 @@ public abstract class PdfTestBase {
     // ── Structure tree helpers ──────────────────────────────────────
 
     protected final PdfStructElem findNthByRole(PdfStructTreeRoot root, PdfName role, int index) {
+        if (root == null) {
+            throw new IllegalArgumentException("Structure tree root must not be null");
+        }
+        if (index < 0) {
+            throw new IllegalArgumentException("Index must be >= 0, but was " + index);
+        }
+
         List<PdfStructElem> matches = new ArrayList<>();
-        for (IStructureNode kid : root.getKids()) {
+        List<IStructureNode> rootKids = root.getKids();
+        if (rootKids == null || rootKids.isEmpty()) {
+            throw new IllegalArgumentException("Structure tree root has no children");
+        }
+
+        for (IStructureNode kid : rootKids) {
             if (kid instanceof PdfStructElem elem) {
                 collectByRole(elem, role, matches);
             }
+        }
+        if (index >= matches.size()) {
+            throw new IllegalArgumentException(
+                    "Requested index "
+                            + index
+                            + " for role "
+                            + role.getValue()
+                            + " but only found "
+                            + matches.size()
+                            + " match(es)");
         }
         return matches.get(index);
     }
 
     private static PdfStructElem findFirstByRole(PdfStructTreeRoot root, PdfName targetRole) {
-        for (Object kid : root.getKids()) {
+        if (root == null) return null;
+        List<IStructureNode> kids = root.getKids();
+        if (kids == null) return null;
+
+        for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
                 PdfStructElem found = findByRole(elem, targetRole);
                 if (found != null) return found;
@@ -221,8 +263,12 @@ public abstract class PdfTestBase {
     }
 
     private static PdfStructElem findByRole(PdfStructElem elem, PdfName targetRole) {
+        if (elem == null) return null;
         if (targetRole.equals(elem.getRole())) return elem;
-        for (Object kid : elem.getKids()) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return null;
+
+        for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem child) {
                 PdfStructElem found = findByRole(child, targetRole);
                 if (found != null) return found;
@@ -232,7 +278,11 @@ public abstract class PdfTestBase {
     }
 
     private static PdfStructElem findFirstChild(PdfStructElem parent, PdfName targetRole) {
-        for (Object kid : parent.getKids()) {
+        if (parent == null) return null;
+        List<IStructureNode> kids = parent.getKids();
+        if (kids == null) return null;
+
+        for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem kidElem) {
                 if (targetRole.equals(kidElem.getRole())) return kidElem;
             }
@@ -256,47 +306,84 @@ public abstract class PdfTestBase {
     // ── Breakage implementations ────────────────────────────────────
 
     /** Moves P children out of LI/LBody and directly under L. */
-    private static void breakListWithParagraphChildren(PdfStructElem listElem) {
-        List<IStructureNode> kids = new ArrayList<>(listElem.getKids());
+    private static boolean breakListWithParagraphChildren(PdfStructElem listElem) {
+        List<IStructureNode> originalKids = listElem.getKids();
+        if (originalKids == null || originalKids.isEmpty()) {
+            return false;
+        }
+
+        boolean changed = false;
+        List<IStructureNode> kids = new ArrayList<>(originalKids);
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem kidElem && PdfName.LI.equals(kidElem.getRole())) {
                 PdfStructElem pElem = findParagraphInListItem(kidElem);
                 if (pElem != null) {
                     listElem.removeKid(kidElem);
                     listElem.addKid(pElem);
+                    changed = true;
                 }
             }
         }
+        return changed;
     }
 
     /** Strips LBody/Lbl from LI, leaving a bare P child. */
-    private static void breakListItemWithSingleParagraph(PdfStructElem liElem) {
-        List<IStructureNode> kids = new ArrayList<>(liElem.getKids());
+    private static boolean breakListItemWithSingleParagraph(PdfStructElem liElem) {
+        List<IStructureNode> originalKids = liElem.getKids();
+        if (originalKids == null || originalKids.isEmpty()) {
+            return false;
+        }
+
+        List<IStructureNode> kids = new ArrayList<>(originalKids);
         PdfStructElem pElem = null;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem kidElem) {
                 if (PdfName.LBody.equals(kidElem.getRole())) {
                     pElem = findFirstChild(kidElem, PdfName.P);
-                    if (pElem != null) kidElem.removeKid(pElem);
+                    if (pElem != null) {
+                        kidElem.removeKid(pElem);
+                        break;
+                    }
                 }
+            }
+        }
+
+        if (pElem == null) {
+            return false;
+        }
+
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem kidElem) {
                 liElem.removeKid(kidElem);
             }
         }
-        if (pElem != null) liElem.addKid(pElem);
+        liElem.addKid(pElem);
+        return true;
     }
 
     /** Removes LBody from LI, keeping only Lbl. */
-    private static void breakListItemMissingLBody(PdfStructElem liElem) {
-        List<IStructureNode> kids = new ArrayList<>(liElem.getKids());
+    private static boolean breakListItemMissingLBody(PdfStructElem liElem) {
+        List<IStructureNode> originalKids = liElem.getKids();
+        if (originalKids == null || originalKids.isEmpty()) {
+            return false;
+        }
+
+        boolean changed = false;
+        List<IStructureNode> kids = new ArrayList<>(originalKids);
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem kidElem && PdfName.LBody.equals(kidElem.getRole())) {
                 liElem.removeKid(kidElem);
+                changed = true;
             }
         }
+        return changed;
     }
 
     private static PdfStructElem findParagraphInListItem(PdfStructElem liElem) {
-        for (Object kid : liElem.getKids()) {
+        List<IStructureNode> kids = liElem.getKids();
+        if (kids == null) return null;
+
+        for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem kidElem && PdfName.LBody.equals(kidElem.getRole())) {
                 return findFirstChild(kidElem, PdfName.P);
             }
