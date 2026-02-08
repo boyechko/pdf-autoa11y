@@ -18,6 +18,7 @@
 package net.boyechko.pdf.autoa11y.core;
 
 import java.util.List;
+import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.StructureTreeRule;
@@ -45,12 +46,12 @@ public final class ProcessingDefaults {
                 new UnmarkedLinkRule());
     }
 
-    public static List<StructureTreeVisitor> visitors() {
+    public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {
         return List.of(
-                new SchemaValidationVisitor(),
-                new MistaggedArtifactVisitor(),
-                new NeedlessNestingVisitor(),
-                new FigureWithTextVisitor(),
-                new EmptyLinkTagVisitor());
+                NeedlessNestingVisitor::new,
+                MistaggedArtifactVisitor::new,
+                FigureWithTextVisitor::new,
+                EmptyLinkTagVisitor::new,
+                SchemaValidationVisitor::new);
     }
 }

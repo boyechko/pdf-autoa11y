@@ -157,6 +157,25 @@ public class ProcessingServiceTest extends PdfTestBase {
                 "Moby Dick PDF should be compliant with no remaining issues");
     }
 
+    @Test
+    void remediatedFigureWithTextIssueIsNotReportedAsRemaining() throws Exception {
+        Path inputPath = createFigureWithTextPdf();
+        ProcessingResult result = createProcessingService(inputPath).remediate();
+
+        assertTrue(
+                result.originalTagIssues().stream()
+                        .anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
+                "Original tag issues should include FIGURE_WITH_TEXT");
+        assertTrue(
+                result.appliedTagFixes().stream()
+                        .anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
+                "Applied fixes should include FIGURE_WITH_TEXT");
+        assertTrue(
+                result.remainingTagIssues().stream()
+                        .noneMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
+                "Remaining tag issues should not include FIGURE_WITH_TEXT");
+    }
+
     private ProcessingService createProcessingService(Path testPdf) {
         return new ProcessingService.ProcessingServiceBuilder()
                 .withPdfCustodian(new PdfCustodian(testPdf, null))

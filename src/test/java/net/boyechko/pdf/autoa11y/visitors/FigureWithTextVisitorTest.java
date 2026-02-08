@@ -36,10 +36,12 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
@@ -90,6 +92,35 @@ public class FigureWithTextVisitorTest extends PdfTestBase {
             assertTrue(
                     issues.stream().anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
                     "Should create an issue for Figure with text");
+        }
+    }
+
+    @Test
+    void ruleEngineRunVisitorsDoesNotAccumulateIssuesAcrossRuns() throws Exception {
+        Path pdfFile = createTestPdf();
+        assertTrue(Files.exists(pdfFile), "PDF file should exist");
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            DocumentContext context = new DocumentContext(pdfDoc);
+            RuleEngine engine =
+                    new RuleEngine(
+                            List.of(),
+                            List.of(FigureWithTextVisitor::new),
+                            TagSchema.loadDefault());
+
+            IssueList firstRun = engine.runVisitors(context);
+            IssueList secondRun = engine.runVisitors(context);
+
+            long firstFigureIssues =
+                    firstRun.stream().filter(i -> i.type() == IssueType.FIGURE_WITH_TEXT).count();
+            long secondFigureIssues =
+                    secondRun.stream().filter(i -> i.type() == IssueType.FIGURE_WITH_TEXT).count();
+
+            assertEquals(firstRun.size(), secondRun.size(), "Issue count should stay stable");
+            assertEquals(
+                    firstFigureIssues,
+                    secondFigureIssues,
+                    "FIGURE_WITH_TEXT issues should not accumulate across runs");
         }
     }
 }

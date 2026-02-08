@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -45,16 +46,19 @@ public class RuleEngine {
     private static final Logger logger = LoggerFactory.getLogger(RuleEngine.class);
 
     private final List<Rule> rules;
-    private final List<StructureTreeVisitor> visitors;
+    private final List<Supplier<StructureTreeVisitor>> visitorSuppliers;
     private final TagSchema schema;
 
     public RuleEngine(List<Rule> rules) {
         this(rules, List.of(), null);
     }
 
-    public RuleEngine(List<Rule> rules, List<StructureTreeVisitor> visitors, TagSchema schema) {
+    public RuleEngine(
+            List<Rule> rules,
+            List<Supplier<StructureTreeVisitor>> visitorSuppliers,
+            TagSchema schema) {
         this.rules = List.copyOf(rules);
-        this.visitors = List.copyOf(visitors);
+        this.visitorSuppliers = List.copyOf(visitorSuppliers);
         this.schema = schema;
     }
 
@@ -62,14 +66,14 @@ public class RuleEngine {
         return rules;
     }
 
-    public List<StructureTreeVisitor> getVisitors() {
-        return visitors;
+    public List<Supplier<StructureTreeVisitor>> getVisitorSuppliers() {
+        return visitorSuppliers;
     }
 
     public IssueList detectIssues(DocumentContext ctx) {
         IssueList all = new IssueList();
 
-        if (!visitors.isEmpty()) {
+        if (!visitorSuppliers.isEmpty()) {
             IssueList visitorIssues = runVisitors(ctx);
             all.addAll(visitorIssues);
         }
@@ -89,12 +93,25 @@ public class RuleEngine {
             return new IssueList();
         }
 
+        List<StructureTreeVisitor> visitors = instantiateVisitors();
         StructureTreeWalker walker = new StructureTreeWalker(schema);
         for (StructureTreeVisitor visitor : visitors) {
             walker.addVisitor(visitor);
         }
 
         return walker.walk(root, ctx);
+    }
+
+    private List<StructureTreeVisitor> instantiateVisitors() {
+        List<StructureTreeVisitor> visitors = new ArrayList<>(visitorSuppliers.size());
+        for (Supplier<StructureTreeVisitor> visitorSupplier : visitorSuppliers) {
+            StructureTreeVisitor visitor = visitorSupplier.get();
+            if (visitor == null) {
+                throw new IllegalStateException("Visitor supplier returned null");
+            }
+            visitors.add(visitor);
+        }
+        return visitors;
     }
 
     public IssueList applyFixes(DocumentContext ctx, IssueList issuesToFix) {
