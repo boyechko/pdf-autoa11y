@@ -94,10 +94,11 @@ Basic usage:
 With options:
 
 ```bash
-./pdf-autoa11y [-q|-v|-vv] [-f] [-p password] [-r[=report]] <input.pdf> [output.pdf]
+./pdf-autoa11y [-a] [-q|-v|-vv] [-f] [-p password] [-r[=report]] <input.pdf> [output.pdf]
 ```
 
 Options:
+- `-a, --analyze` - Analyze only (no remediation or output PDF)
 - `-q, --quiet` - Only show errors and final status
 - `-v, --verbose` - Show detailed tag structure during validation
 - `-vv, --debug` - Show all debug information including logs
@@ -135,6 +136,12 @@ Examples:
 
 # Specify a custom report path
 ./pdf-autoa11y --report=my_report.txt document.pdf
+
+# Analyze only - detect issues without remediating
+./pdf-autoa11y -a -v document.pdf
+
+# Analyze and save the analysis to a report file
+./pdf-autoa11y -a -r document.pdf
 
 # Quiet mode for scripting
 ./pdf-autoa11y -q document.pdf
