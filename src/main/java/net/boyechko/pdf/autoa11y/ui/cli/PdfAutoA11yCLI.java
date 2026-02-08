@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.ui.cli;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.*;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
@@ -28,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PdfAutoA11yCLI {
-    private static final String DEFAULT_OUTPUT_SUFFIX = "_autoa11y.pdf";
+    private static final String DEFAULT_OUTPUT_SUFFIX = "_autoa11y";
 
     private static Logger logger;
 
@@ -38,13 +40,13 @@ public class PdfAutoA11yCLI {
             Path outputPath,
             String password,
             boolean force_save,
-            boolean reportOnly,
+            Path reportPath,
             VerbosityLevel verbosity) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (!reportOnly && outputPath == null) {
+            if (outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -88,30 +90,39 @@ public class PdfAutoA11yCLI {
         Path outputPath = null;
         String password = null;
         boolean force_save = false;
-        boolean reportOnly = false;
+        boolean generateReport = false;
+        Path reportPath = null;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
 
         for (int i = 0; i < args.length; i++) {
-            switch (args[i]) {
-                case "-p", "--password" -> {
-                    if (i + 1 < args.length) {
-                        password = args[++i];
-                    } else {
-                        throw new CLIException("Password not specified after -p");
+            if (args[i].startsWith("--report=")) {
+                reportPath = Paths.get(args[i].substring("--report=".length()));
+                generateReport = true;
+            } else if (args[i].startsWith("-r=")) {
+                reportPath = Paths.get(args[i].substring("-r=".length()));
+                generateReport = true;
+            } else {
+                switch (args[i]) {
+                    case "-p", "--password" -> {
+                        if (i + 1 < args.length) {
+                            password = args[++i];
+                        } else {
+                            throw new CLIException("Password not specified after -p");
+                        }
                     }
-                }
-                case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
-                case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
-                case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
-                case "-f", "--force" -> force_save = true;
-                case "-r", "--report" -> reportOnly = true;
-                default -> {
-                    if (inputPath == null) {
-                        inputPath = Paths.get(args[i]);
-                    } else if (outputPath == null) {
-                        outputPath = Paths.get(args[i]);
-                    } else {
-                        throw new CLIException("Multiple input files specified");
+                    case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
+                    case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
+                    case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
+                    case "-f", "--force" -> force_save = true;
+                    case "-r", "--report" -> generateReport = true;
+                    default -> {
+                        if (inputPath == null) {
+                            inputPath = Paths.get(args[i]);
+                        } else if (outputPath == null) {
+                            outputPath = Paths.get(args[i]);
+                        } else {
+                            throw new CLIException("Multiple input files specified");
+                        }
                     }
                 }
             }
@@ -125,21 +136,28 @@ public class PdfAutoA11yCLI {
             throw new CLIException("File not found: " + inputPath);
         }
 
+        // Compute base name for auto-generated filenames
+        String inputBaseName =
+                inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
+
         // Generate output path
-        if (!reportOnly) {
-            String inputBaseName =
-                    inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
-            String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX;
-            if (outputPath == null) {
-                Path parent = inputPath.getParent();
-                outputPath =
-                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
-            }
-        } else if (verbosity == VerbosityLevel.NORMAL) {
-            verbosity = VerbosityLevel.VERBOSE;
+        if (outputPath == null) {
+            String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
+            Path parent = inputPath.getParent();
+            outputPath =
+                    parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
+        } else if (Files.isDirectory(outputPath)) {
+            outputPath = outputPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
         }
 
-        return new CLIConfig(inputPath, outputPath, password, force_save, reportOnly, verbosity);
+        // Resolve report path
+        if (generateReport && reportPath == null) {
+            reportPath = outputPath.resolveSibling(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt");
+        } else if (reportPath != null && Files.isDirectory(reportPath)) {
+            reportPath = reportPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt");
+        }
+
+        return new CLIConfig(inputPath, outputPath, password, force_save, reportPath, verbosity);
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -162,37 +180,30 @@ public class PdfAutoA11yCLI {
 
     private static void processFile(CLIConfig config) {
         PrintStream output = System.out;
-        boolean closeOutput = false;
+        OutputStream reportFile = null;
 
         try {
-            if (config.reportOnly() && config.outputPath() != null) {
-                Path outputParent = config.outputPath().getParent();
-                if (outputParent != null) {
-                    Files.createDirectories(outputParent);
+            if (config.reportPath() != null) {
+                Path reportParent = config.reportPath().getParent();
+                if (reportParent != null) {
+                    Files.createDirectories(reportParent);
                 }
-                logger().info("Generating report to {}", config.outputPath());
-                output = new PrintStream(Files.newOutputStream(config.outputPath()));
-                closeOutput = true;
+                logger().info("Saving report to {}", config.reportPath());
+                reportFile = Files.newOutputStream(config.reportPath());
+                output = new PrintStream(new TeeOutputStream(System.out, reportFile));
             }
 
             VerbosityLevel verbosity = config.verbosity();
             ProcessingReporter reporter = new ProcessingReporter(output, verbosity);
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
-            ProcessingReporter listener = new ProcessingReporter(output, verbosity);
-            VerbosityLevel verbosityLevel = verbosity;
 
             ProcessingService service =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
-                            .withListener(listener)
-                            .withVerbosityLevel(verbosityLevel)
+                            .withListener(reporter)
+                            .withVerbosityLevel(verbosity)
                             .build();
 
-            if (config.reportOnly()) {
-                logger().info("Analyzing document");
-                service.analyze();
-                return;
-            }
             logger().info("Remediating document");
             ProcessingResult result = service.remediate();
 
@@ -222,9 +233,43 @@ public class PdfAutoA11yCLI {
             e.printStackTrace();
         } finally {
             logger().info("Closing output stream");
-            if (closeOutput) {
-                output.close();
+            if (reportFile != null) {
+                output.flush();
+                try {
+                    reportFile.close();
+                } catch (IOException e) {
+                    logger().warn("Failed to close report file", e);
+                }
             }
+        }
+    }
+
+    /** Writes to two output streams simultaneously, like the Unix tee command. */
+    private static class TeeOutputStream extends OutputStream {
+        private final OutputStream out1;
+        private final OutputStream out2;
+
+        TeeOutputStream(OutputStream out1, OutputStream out2) {
+            this.out1 = out1;
+            this.out2 = out2;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            out1.write(b);
+            out2.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            out1.write(b, off, len);
+            out2.write(b, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            out1.flush();
+            out2.flush();
         }
     }
 
@@ -238,14 +283,17 @@ public class PdfAutoA11yCLI {
     }
 
     private static String usageMessage() {
-        return "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] [-r] <inputpath> [<outputpath>]\n"
-                + "  -h, --help     Show this help message\n"
-                + "  -q, --quiet    Only show errors and final status\n"
-                + "  -v, --verbose  Show detailed tag structure\n"
-                + "  -vv, --debug   Show all debug information\n"
-                + "  -f, --force    Force save even if no fixes applied\n"
-                + "  -p, --password Password for encrypted PDFs\n"
-                + "  -r, --report   Validate tag structure only (report defaults to verbose)\n"
-                + "Example: java PdfAutoA11yCLI -v document.pdf output.pdf";
+        return "Usage: java PdfAutoA11yCLI [-q|-v|-vv] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
+                + "  -h, --help      Show this help message\n"
+                + "  -q, --quiet     Only show errors and final status\n"
+                + "  -v, --verbose   Show detailed tag structure\n"
+                + "  -vv, --debug    Show all debug information\n"
+                + "  -f, --force     Force save even if no fixes applied\n"
+                + "  -p, --password  Password for encrypted PDFs\n"
+                + "  -r, --report    Save output to report file (auto-named from input)\n"
+                + "                  Use -r=<file> or --report=<file> for a custom path\n"
+                + "Examples:\n"
+                + "  java PdfAutoA11yCLI -r -v document.pdf\n"
+                + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf";
     }
 }
