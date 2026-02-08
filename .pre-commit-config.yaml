@@ -11,6 +11,7 @@ repos:
         language: system
         pass_filenames: false
         files: \.java$
+        fail_fast: true
 
       - id: maven-test
         name: Run Maven tests
