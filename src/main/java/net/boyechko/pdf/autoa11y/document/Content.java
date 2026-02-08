@@ -40,11 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Extracts text and bounds from PDF content streams, keyed by MCID. */
-public final class ContentExtractor {
-    private static final Logger logger = LoggerFactory.getLogger(ContentExtractor.class);
+public final class Content {
+    private static final Logger logger = LoggerFactory.getLogger(Content.class);
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
-    private ContentExtractor() {}
+    private Content() {}
 
     // ── Text extraction ─────────────────────────────────────────────────
 

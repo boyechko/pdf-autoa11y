@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import net.boyechko.pdf.autoa11y.document.ContentExtractor;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -55,8 +55,7 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
             return true;
         }
 
-        String textContent =
-                ContentExtractor.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+        String textContent = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);

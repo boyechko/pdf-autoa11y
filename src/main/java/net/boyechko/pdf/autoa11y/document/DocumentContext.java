@@ -56,7 +56,7 @@ public class DocumentContext {
     /** Returns all MCID text for a page, extracting on first access. */
     public Map<Integer, String> getMcidText(int pageNum) {
         return mcidTextCache.computeIfAbsent(
-                pageNum, k -> ContentExtractor.extractTextForPage(doc.getPage(pageNum)));
+                pageNum, k -> Content.extractTextForPage(doc.getPage(pageNum)));
     }
 
     /** Returns the text for a specific MCID, extracting the page on first access. */
