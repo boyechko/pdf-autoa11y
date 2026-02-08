@@ -19,10 +19,13 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
@@ -183,6 +186,67 @@ public final class StructureTree {
             return elem.getPdfObject();
         } else if (node instanceof PdfStructTreeRoot root) {
             return root.getPdfObject();
+        }
+        return null;
+    }
+
+    /** Checks whether two structure elements refer to the same PDF object. */
+    public static boolean isSameElement(PdfStructElem a, PdfStructElem b) {
+        if (a == b) return true;
+        PdfDictionary aDict = a.getPdfObject();
+        PdfDictionary bDict = b.getPdfObject();
+        if (aDict == bDict) return true;
+        PdfIndirectReference aRef = aDict.getIndirectReference();
+        PdfIndirectReference bRef = bDict.getIndirectReference();
+        return aRef != null && aRef.equals(bRef);
+    }
+
+    /** Checks whether a candidate element is a descendant of an ancestor element. */
+    public static boolean isDescendantOf(PdfStructElem candidate, PdfStructElem ancestor) {
+        IStructureNode parent = candidate.getParent();
+        while (parent instanceof PdfStructElem parentElem) {
+            if (isSameElement(parentElem, ancestor)) {
+                return true;
+            }
+            parent = parentElem.getParent();
+        }
+        return false;
+    }
+
+    /** Finds a structure element by its PDF object number, searching recursively. */
+    public static PdfStructElem findByObjNumber(IStructureNode parent, int objNum) {
+        List<IStructureNode> kids = parent.getKids();
+        if (kids == null) return null;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem elem) {
+                if (objNumber(elem) == objNum) return elem;
+                PdfStructElem found = findByObjNumber(elem, objNum);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    /** Checks whether an element contains any MCR (marked content reference) children. */
+    public static boolean hasMcr(PdfStructElem elem) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return false;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Finds the first OBJR (object reference) child of an element. */
+    public static PdfObjRef findFirstObjRef(PdfStructElem elem) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return null;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfObjRef objRef) {
+                return objRef;
+            }
         }
         return null;
     }

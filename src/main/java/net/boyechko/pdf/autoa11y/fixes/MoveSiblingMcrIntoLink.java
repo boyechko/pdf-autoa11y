@@ -19,7 +19,6 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
@@ -65,16 +64,16 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             return;
         }
 
-        PdfStructElem linkElem = findStructElemByObjNum(root, linkObjNum);
+        PdfStructElem linkElem = StructureTree.findByObjNumber(root, linkObjNum);
         if (linkElem == null) {
             logger.debug("Link element not found for obj #{}", linkObjNum);
             return;
         }
-        if (linkHasMcr(linkElem)) {
+        if (StructureTree.hasMcr(linkElem)) {
             return;
         }
 
-        PdfObjRef objRef = findObjRef(linkElem);
+        PdfObjRef objRef = StructureTree.findFirstObjRef(linkElem);
         if (objRef == null) {
             return;
         }
@@ -103,7 +102,8 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             return;
         }
 
-        int resolvedPageNum = pageNum > 0 ? pageNum : getPageNumber(linkElem, ctx);
+        int resolvedPageNum =
+                pageNum > 0 ? pageNum : StructureTree.determinePageNumber(ctx, linkElem);
         if (resolvedPageNum <= 0 || resolvedPageNum > ctx.doc().getNumberOfPages()) {
             return;
         }
@@ -126,106 +126,14 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         }
     }
 
-    // TODO: Move to a utility class
-    private PdfStructElem findStructElemByObjNum(PdfStructTreeRoot root, int objNum) {
-        List<IStructureNode> kids = root.getKids();
-        if (kids == null) {
-            return null;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfStructElem found = findStructElemByObjNum(elem, objNum);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-
-    // TODO: Move to a utility class
-    private PdfStructElem findStructElemByObjNum(PdfStructElem elem, int objNum) {
-        if (StructureTree.objNumber(elem) == objNum) {
-            return elem;
-        }
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) {
-            return null;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem child) {
-                PdfStructElem found = findStructElemByObjNum(child, objNum);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-
-    // TODO: Move to a utility class
-    private boolean linkHasMcr(PdfStructElem linkElem) {
-        List<IStructureNode> kids = linkElem.getKids();
-        if (kids == null) {
-            return false;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // TODO: Move to a utility class
-    private PdfObjRef findObjRef(PdfStructElem linkElem) {
-        List<IStructureNode> kids = linkElem.getKids();
-        if (kids == null) {
-            return null;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfObjRef objRef) {
-                return objRef;
-            }
-        }
-        return null;
-    }
-
     private int findIndex(List<IStructureNode> kids, PdfStructElem target) {
         for (int i = 0; i < kids.size(); i++) {
             IStructureNode kid = kids.get(i);
-            if (kid instanceof PdfStructElem elem && sameStructElem(elem, target)) {
+            if (kid instanceof PdfStructElem elem && StructureTree.isSameElement(elem, target)) {
                 return i;
             }
         }
         return -1;
-    }
-
-    // TODO: Move to a utility class (same as @isSameStructElem in @ConvertToArtifact?)
-    private boolean sameStructElem(PdfStructElem a, PdfStructElem b) {
-        if (a == b) {
-            return true;
-        }
-        PdfDictionary aDict = a.getPdfObject();
-        PdfDictionary bDict = b.getPdfObject();
-        if (aDict == bDict) {
-            return true;
-        }
-        return aDict.getIndirectReference() != null
-                && aDict.getIndirectReference().equals(bDict.getIndirectReference());
-    }
-
-    // TODO: Move to a utility class (same as @getPageNumber in @DocumentContext?)
-    private int getPageNumber(PdfStructElem elem, DocumentContext ctx) {
-        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (pg != null) {
-            return ctx.doc().getPageNumber(pg);
-        }
-        int objNum = StructureTree.objNumber(elem);
-        if (objNum >= 0) {
-            return ctx.getPageNumber(objNum);
-        }
-        return 0;
     }
 
     @Override
