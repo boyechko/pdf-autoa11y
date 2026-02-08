@@ -22,29 +22,27 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
-import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.tagging.*;
-import com.itextpdf.layout.Document;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Test suite for ProcessingService. */
 public class ProcessingServiceTest extends PdfTestBase {
-    private static final Logger logger = LoggerFactory.getLogger(ProcessingServiceTest.class);
 
     @Test
     void encryptedPdfRaisesException() {
@@ -91,7 +89,15 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void documentLevelIssuesAreDetectedAndFixed() throws Exception {
-        Path testPdf = createPdfWithDocumentIssues();
+        Path testPdf =
+                createTestPdf(
+                        (pdfDoc, document) -> {
+                            document.add(new Paragraph("Document Issues Test").setFontSize(18));
+                            document.add(
+                                    new Paragraph(
+                                            "This PDF has content but may be missing "
+                                                    + "document-level accessibility properties."));
+                        });
         ProcessingResult result = createProcessingService(testPdf).remediate();
 
         assertNotNull(result, "Should return a result");
@@ -101,7 +107,8 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void tagStructureIssuesAreDetected() throws Exception {
-        Path testPdf = createPdfWithTagIssues();
+        Path testPdf =
+                breakTestPdf(ProcessingServiceTest::listContent, TagBreakage.L_WITH_P_CHILDREN);
         IssueList issues = createProcessingService(testPdf).analyze();
         assertNotNull(issues, "Should return issues list");
         assertFalse(issues.isEmpty(), "Should have at least one issue");
@@ -109,8 +116,39 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void completeIssueResolutionWorkflow() throws Exception {
-        Path testPdf = createPdfWithMultipleIssues();
+        Path testPdf =
+                createTestPdf(
+                        (pdfDoc, document) -> {
+                            document.add(
+                                    new Paragraph("Multiple Issues Test Document").setFontSize(16));
+                            document.add(
+                                    new Paragraph(
+                                            "This document contains various elements that may "
+                                                    + "have accessibility issues."));
+
+                            Table table = new Table(3);
+                            table.addCell("Column 1");
+                            table.addCell("Column 2");
+                            table.addCell("Column 3");
+                            table.addCell("Value A");
+                            table.addCell("Value B");
+                            table.addCell("Value C");
+                            document.add(table);
+
+                            com.itextpdf.layout.element.List list =
+                                    new com.itextpdf.layout.element.List();
+                            list.add(new ListItem("First item"));
+                            list.add(new ListItem("Second item"));
+                            list.add(new ListItem("Third item"));
+                            document.add(list);
+
+                            document.add(
+                                    new Paragraph(
+                                            "Additional content to test various accessibility "
+                                                    + "rules."));
+                        });
         ProcessingResult result = createProcessingService(testPdf).remediate();
+        saveRemediatedPdf(result);
 
         assertNotNull(result.originalTagIssues(), "Should have original tag issues");
         assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
@@ -126,8 +164,10 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void brokenTagStructureIsDetectedAndFixed() throws Exception {
-        Path brokenPdf = createPdfWithTagIssues();
+        Path brokenPdf =
+                breakTestPdf(ProcessingServiceTest::listContent, TagBreakage.L_WITH_P_CHILDREN);
         ProcessingResult result = createProcessingService(brokenPdf).remediate();
+        saveRemediatedPdf(result);
 
         assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
         assertFalse(
@@ -136,8 +176,11 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void tagStructureIssuesCanBeFixed() throws Exception {
-        Path testPdf = createPdfWithFixableTagIssues();
+        Path testPdf =
+                breakTestPdf(
+                        ProcessingServiceTest::fixableListContent, TagBreakage.LI_WITH_SINGLE_P);
         ProcessingResult result = createProcessingService(testPdf).remediate();
+        saveRemediatedPdf(result);
 
         assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
         assertFalse(
@@ -161,6 +204,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     void remediatedFigureWithTextIssueIsNotReportedAsRemaining() throws Exception {
         Path inputPath = createFigureWithTextPdf();
         ProcessingResult result = createProcessingService(inputPath).remediate();
+        saveRemediatedPdf(result);
 
         assertTrue(
                 result.originalTagIssues().stream()
@@ -176,6 +220,8 @@ public class ProcessingServiceTest extends PdfTestBase {
                 "Remaining tag issues should not include FIGURE_WITH_TEXT");
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────
+
     private ProcessingService createProcessingService(Path testPdf) {
         return new ProcessingService.ProcessingServiceBuilder()
                 .withPdfCustodian(new PdfCustodian(testPdf, null))
@@ -184,279 +230,42 @@ public class ProcessingServiceTest extends PdfTestBase {
                 .build();
     }
 
-    private Path createBasicPdf(PdfSetupAction setupAction) throws Exception {
-        return createBasicPdf(testOutputPath(), setupAction);
-    }
-
-    private Path createBasicPdf(Path testFile, PdfSetupAction setupAction) throws Exception {
-        try (PdfWriter writer = new PdfWriter(testFile.toString());
-                PdfDocument pdfDoc = new PdfDocument(writer)) {
-
-            pdfDoc.setTagged();
-
-            Document document = new Document(pdfDoc);
-
-            Paragraph title = new Paragraph("Test PDF Document").setFontSize(18);
-            document.add(title);
-
-            Paragraph content =
-                    new Paragraph(
-                                    "This is a test PDF created for accessibility testing. "
-                                            + "It contains basic content to demonstrate tag structure validation.")
-                            .setFontSize(12);
-            document.add(content);
-
-            if (setupAction != null) {
-                setupAction.setup(pdfDoc, document);
-            }
-
-            document.close();
-        }
-
-        logger.debug("Created test PDF: " + testFile.toAbsolutePath());
-        return testFile;
-    }
-
-    @FunctionalInterface
-    private interface PdfSetupAction {
-        void setup(PdfDocument doc, Document document) throws Exception;
-    }
-
-    private Path createBrokenTagStructure(Path sourcePdf, Path targetPdf, String issueType)
+    /** Reusable content: a tagged PDF with a two-item list (suitable for L breakages). */
+    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document document)
             throws Exception {
-        try (PdfReader reader = new PdfReader(sourcePdf.toString());
-                PdfWriter writer = new PdfWriter(targetPdf.toString());
-                PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
+        document.add(new Paragraph("Tag Structure Test").setFontSize(18));
+        document.add(new Paragraph("This PDF will have tag structure issues."));
 
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            if (root != null) {
-                switch (issueType) {
-                    case "L_WITH_P_CHILDREN" -> createListWithParagraphChildren(root);
-                    case "LI_WITH_SINGLE_P" -> createListItemWithSingleParagraph(root);
-                    case "MISSING_LBODY" -> createListItemMissingLBody(root);
-                    default -> logger.debug("Unknown issue type: " + issueType);
-                }
-            }
-        }
-
-        Files.deleteIfExists(sourcePdf);
-
-        logger.debug("Created broken PDF: " + targetPdf.toAbsolutePath());
-        return targetPdf;
+        com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
+        list.add(new ListItem("Item 1"));
+        list.add(new ListItem("Item 2"));
+        document.add(list);
     }
 
-    // Creates the issue: L > P (should be L > LI > LBody > P)
-    private void createListWithParagraphChildren(PdfStructTreeRoot root) {
-        findAndModifyElement(
-                root,
-                PdfName.L,
-                (listElem) -> {
-                    List<IStructureNode> kids = new ArrayList<>(listElem.getKids());
-                    for (IStructureNode kid : kids) {
-                        if (kid instanceof PdfStructElem) {
-                            PdfStructElem kidElem = (PdfStructElem) kid;
-                            if (PdfName.LI.equals(kidElem.getRole())) {
-                                PdfStructElem pElem = findParagraphInListItem(kidElem);
-                                if (pElem != null) {
-                                    listElem.removeKid(kidElem);
-                                    listElem.addKid(pElem);
-                                }
-                            }
-                        }
-                    }
-                });
+    /** Reusable content: a tagged PDF with a two-item list (suitable for LI breakages). */
+    private static void fixableListContent(
+            PdfDocument pdfDoc, com.itextpdf.layout.Document document) throws Exception {
+        document.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
+
+        com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
+        list.add(new ListItem("Item that will be broken"));
+        list.add(new ListItem("Another item"));
+        document.add(list);
     }
 
-    // Creates the issue: LI > P (should be LI > Lbl + LBody, with P inside LBody)
-    private void createListItemWithSingleParagraph(PdfStructTreeRoot root) {
-        findAndModifyElement(
-                root,
-                PdfName.LI,
-                (liElem) -> {
-                    List<IStructureNode> kids = new ArrayList<>(liElem.getKids());
-                    PdfStructElem pElem = null;
-
-                    for (IStructureNode kid : kids) {
-                        if (kid instanceof PdfStructElem) {
-                            PdfStructElem kidElem = (PdfStructElem) kid;
-                            if (PdfName.LBody.equals(kidElem.getRole())) {
-                                pElem = findFirstChild(kidElem, PdfName.P);
-                                if (pElem != null) {
-                                    kidElem.removeKid(pElem);
-                                }
-                            }
-                            liElem.removeKid(kidElem);
-                        }
-                    }
-
-                    if (pElem != null) {
-                        liElem.addKid(pElem);
-                    }
-                });
-    }
-
-    /**
-     * Creates the issue: LI > Lbl (missing LBody) This tests detection of incomplete list item
-     * structure
-     */
-    private void createListItemMissingLBody(PdfStructTreeRoot root) {
-        findAndModifyElement(
-                root,
-                PdfName.LI,
-                (liElem) -> {
-                    // Remove LBody, keep only Lbl
-                    List<IStructureNode> kids = new ArrayList<>(liElem.getKids());
-                    for (IStructureNode kid : kids) {
-                        if (kid instanceof PdfStructElem) {
-                            PdfStructElem kidElem = (PdfStructElem) kid;
-                            if (PdfName.LBody.equals(kidElem.getRole())) {
-                                liElem.removeKid(kidElem);
-                            }
-                        }
-                    }
-                });
-    }
-
-    /** Helper method to find and modify the first element with a specific role */
-    private void findAndModifyElement(
-            PdfStructTreeRoot root,
-            PdfName targetRole,
-            java.util.function.Consumer<PdfStructElem> modifier) {
-        for (Object kid : root.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem elem = findElementWithRole((PdfStructElem) kid, targetRole);
-                if (elem != null) {
-                    modifier.accept(elem);
-                    return; // Only modify the first occurrence
-                }
-            }
-        }
-    }
-
-    /** Recursively finds the first element with the specified role */
-    private PdfStructElem findElementWithRole(PdfStructElem elem, PdfName targetRole) {
-        if (targetRole.equals(elem.getRole())) {
-            return elem;
-        }
-
-        for (Object kid : elem.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem found = findElementWithRole((PdfStructElem) kid, targetRole);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-
-    private PdfStructElem findFirstChild(PdfStructElem parent, PdfName targetRole) {
-        for (Object kid : parent.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem kidElem = (PdfStructElem) kid;
-                if (targetRole.equals(kidElem.getRole())) {
-                    return kidElem;
-                }
-            }
-        }
-        return null;
-    }
-
-    private PdfStructElem findParagraphInListItem(PdfStructElem liElem) {
-        for (Object kid : liElem.getKids()) {
-            if (kid instanceof PdfStructElem) {
-                PdfStructElem kidElem = (PdfStructElem) kid;
-                if (PdfName.LBody.equals(kidElem.getRole())) {
-                    return findFirstChild(kidElem, PdfName.P);
-                }
-            }
-        }
-        return null;
-    }
-
-    private Path createPdfWithDocumentIssues() throws Exception {
-        return createBasicPdf(
-                (doc, document) -> {
-                    document.add(
-                            new Paragraph(
-                                    "This PDF has content but may be missing document-level accessibility properties."));
-                });
-    }
-
-    private Path createPdfWithTagIssues() throws Exception {
-        Path normalPdf =
-                createBasicPdf(
-                        testOutputPath("temp.pdf"),
-                        (doc, document) -> {
-                            document.add(new Paragraph("This PDF will have tag structure issues."));
-
-                            com.itextpdf.layout.element.List list =
-                                    new com.itextpdf.layout.element.List();
-                            list.add(new ListItem("Item 1"));
-                            list.add(new ListItem("Item 2"));
-                            document.add(list);
-                        });
-
-        return createBrokenTagStructure(normalPdf, testOutputPath(), "L_WITH_P_CHILDREN");
-    }
-
-    private Path createPdfWithMultipleIssues() throws Exception {
-        return createBasicPdf(
-                (doc, document) -> {
-                    document.add(new Paragraph("Multiple Issues Test Document").setFontSize(16));
-                    document.add(
-                            new Paragraph(
-                                    "This document contains various elements that may have accessibility issues."));
-
-                    Table table = new Table(3);
-                    table.addCell("Column 1");
-                    table.addCell("Column 2");
-                    table.addCell("Column 3");
-                    table.addCell("Value A");
-                    table.addCell("Value B");
-                    table.addCell("Value C");
-                    document.add(table);
-
-                    com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
-                    list.add(new ListItem("First item"));
-                    list.add(new ListItem("Second item"));
-                    list.add(new ListItem("Third item"));
-                    document.add(list);
-
-                    document.add(
-                            new Paragraph(
-                                    "Additional content to test various accessibility rules."));
-                });
-    }
-
-    private Path createPdfWithFixableTagIssues() throws Exception {
-        Path normalPdf =
-                createBasicPdf(
-                        testOutputPath("temp.pdf"),
-                        (doc, document) -> {
-                            document.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
-
-                            com.itextpdf.layout.element.List list =
-                                    new com.itextpdf.layout.element.List();
-                            list.add(new ListItem("Item that will be broken"));
-                            list.add(new ListItem("Another item"));
-                            document.add(list);
-                        });
-
-        return createBrokenTagStructure(normalPdf, testOutputPath(), "LI_WITH_SINGLE_P");
-    }
-
+    /** Creates a PDF with a Figure element containing text (low-level structure API). */
     private Path createFigureWithTextPdf() throws Exception {
-        OutputStream outputStream = testOutputStream();
+        Path outputPath = testOutputPath();
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(outputStream))) {
+        try (PdfDocument pdfDoc =
+                new PdfDocument(new com.itextpdf.kernel.pdf.PdfWriter(outputPath.toString()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(document);
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(documentElem);
             PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, page);
-            document.addKid(figure);
+            documentElem.addKid(figure);
 
             PdfMcrNumber mcr = new PdfMcrNumber(page, figure);
             figure.addKid(mcr);
@@ -474,6 +283,6 @@ public class ProcessingServiceTest extends PdfTestBase {
             canvas.endMarkedContent();
         }
 
-        return testOutputPath();
+        return outputPath;
     }
 }
