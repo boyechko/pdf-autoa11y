@@ -17,9 +17,15 @@
  */
 package net.boyechko.pdf.autoa11y.visitors;
 
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -46,10 +52,18 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
     private static final Pattern PAGE_NUMBER =
             Pattern.compile("^\\s*(Page\\s+)?\\d+\\s*(of\\s+\\d+)?\\s*$", Pattern.CASE_INSENSITIVE);
 
+    private static final float TINY_IMAGE_MAX_SIZE = 20f;
+
     private static final Set<String> CHECKABLE_ROLES =
             Set.of("P", "Link", "Span", "Figure", "Lbl", "LBody");
 
     private final IssueList issues = new IssueList();
+
+    private enum ArtifactKind {
+        NONE,
+        TEXT_PATTERN,
+        TINY_IMAGE
+    }
 
     @Override
     public String name() {
@@ -67,17 +81,17 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
             return true;
         }
 
-        if (matchesArtifactPattern(ctx)) {
-            String textContent = getTextContent(ctx);
-            String truncated =
-                    textContent.length() > 40 ? textContent.substring(0, 39) + "…" : textContent;
+        String textContent = getTextContent(ctx);
+        ArtifactKind artifactKind = detectArtifactKind(ctx, textContent);
+        if (artifactKind != ArtifactKind.NONE) {
             IssueFix fix = new ConvertToArtifact(ctx.node());
+            String message = artifactMessage(artifactKind, textContent);
             Issue issue =
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSeverity.WARNING,
                             new IssueLocation(ctx.node()),
-                            "Tagged content should be artifact: \"" + truncated + "\"",
+                            message,
                             fix);
             issues.add(issue);
             return false;
@@ -91,15 +105,89 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
         return issues;
     }
 
-    private boolean matchesArtifactPattern(VisitorContext ctx) {
-        String combinedText = getTextContent(ctx);
-        if (combinedText == null || combinedText.isEmpty()) {
+    private ArtifactKind detectArtifactKind(VisitorContext ctx, String textContent) {
+        if (matchesTextArtifactPattern(textContent)) {
+            return ArtifactKind.TEXT_PATTERN;
+        }
+        if (matchesTinyImagePattern(ctx, textContent)) {
+            return ArtifactKind.TINY_IMAGE;
+        }
+        return ArtifactKind.NONE;
+    }
+
+    private boolean matchesTextArtifactPattern(String textContent) {
+        if (textContent == null || textContent.isEmpty()) {
             return false;
         }
 
-        return FOOTER_URL_TIMESTAMP.matcher(combinedText).find()
-                || TIMESTAMP_ONLY.matcher(combinedText).matches()
-                || PAGE_NUMBER.matcher(combinedText).matches();
+        return FOOTER_URL_TIMESTAMP.matcher(textContent).find()
+                || TIMESTAMP_ONLY.matcher(textContent).matches()
+                || PAGE_NUMBER.matcher(textContent).matches();
+    }
+
+    private boolean matchesTinyImagePattern(VisitorContext ctx, String textContent) {
+        if (textContent != null && !textContent.isBlank()) {
+            return false;
+        }
+
+        boolean foundTinyMcid = false;
+        for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
+            if (mcr instanceof PdfObjRef) {
+                continue;
+            }
+            int mcid = mcr.getMcid();
+            if (mcid < 0) {
+                continue;
+            }
+
+            PdfDictionary pageDict = mcr.getPageObject();
+            if (pageDict == null) {
+                continue;
+            }
+            int pageNum = ctx.doc().getPageNumber(pageDict);
+            if (pageNum <= 0) {
+                continue;
+            }
+
+            String mcidText = ctx.docCtx().getMcidText(pageNum, mcid);
+            if (mcidText != null && !mcidText.isBlank()) {
+                return false;
+            }
+
+            Map<Integer, Rectangle> boundsByMcid =
+                    ctx.docCtx()
+                            .getOrComputeMcidBounds(
+                                    pageNum,
+                                    () -> Content.extractBoundsForPage(ctx.doc().getPage(pageNum)));
+            Rectangle bounds = boundsByMcid.get(mcid);
+            if (bounds == null) {
+                continue;
+            }
+            if (!isTinyBounds(bounds)) {
+                return false;
+            }
+            foundTinyMcid = true;
+        }
+
+        return foundTinyMcid;
+    }
+
+    private boolean isTinyBounds(Rectangle bounds) {
+        float width = Math.abs(bounds.getWidth());
+        float height = Math.abs(bounds.getHeight());
+        return width > 0
+                && height > 0
+                && width <= TINY_IMAGE_MAX_SIZE
+                && height <= TINY_IMAGE_MAX_SIZE;
+    }
+
+    private String artifactMessage(ArtifactKind artifactKind, String textContent) {
+        if (artifactKind == ArtifactKind.TINY_IMAGE) {
+            return "Tagged tiny image should be artifact";
+        }
+        String safeText = textContent != null ? textContent : "";
+        String truncated = safeText.length() > 40 ? safeText.substring(0, 39) + "…" : safeText;
+        return "Tagged content should be artifact: \"" + truncated + "\"";
     }
 
     private String getTextContent(VisitorContext ctx) {

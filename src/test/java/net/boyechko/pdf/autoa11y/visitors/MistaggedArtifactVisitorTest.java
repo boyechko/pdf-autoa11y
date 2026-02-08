@@ -19,13 +19,21 @@ package net.boyechko.pdf.autoa11y.visitors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
@@ -39,6 +47,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class MistaggedArtifactVisitorTest extends PdfTestBase {
+    private static final String ONE_PIXEL_PNG_BASE64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0s0AAAAASUVORK5CYII=";
+
     // Patterns copied from MistaggedArtifactVisitor for testing
     private static final Pattern FOOTER_URL_TIMESTAMP =
             Pattern.compile(
@@ -145,5 +156,58 @@ class MistaggedArtifactVisitorTest extends PdfTestBase {
             fix.apply(ctx);
             assertDoesNotThrow(() -> fix.apply(ctx));
         }
+    }
+
+    @Test
+    void detectsTinyTaggedImageAsMistaggedArtifact() throws Exception {
+        Path pdfFile = createTaggedImagePdf("MistaggedArtifactVisitorTest-tiny-image.pdf", 12f);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactVisitor());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            assertEquals(
+                    1, issues.size(), "Tiny tagged image should be flagged as mistagged artifact");
+            assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+            assertTrue(
+                    issues.get(0).message().contains("tiny image"),
+                    "Issue message should describe tiny image artifacting");
+        }
+    }
+
+    @Test
+    void doesNotFlagLargerTaggedImageAsMistaggedArtifact() throws Exception {
+        Path pdfFile = createTaggedImagePdf("MistaggedArtifactVisitorTest-large-image.pdf", 48f);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactVisitor());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            assertEquals(0, issues.size(), "Larger tagged image should not be auto-artifacted");
+        }
+    }
+
+    private Path createTaggedImagePdf(String filename, float renderedSize) throws Exception {
+        return createStructuredTestPdf(
+                testOutputPath(filename),
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+                    document.addKid(figure);
+
+                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+                    figure.addKid(mcr);
+
+                    PdfDictionary props = new PdfDictionary();
+                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+                    ImageData imageData =
+                            ImageDataFactory.create(
+                                    Base64.getDecoder().decode(ONE_PIXEL_PNG_BASE64));
+                    PdfCanvas canvas = new PdfCanvas(firstPage);
+                    canvas.beginMarkedContent(PdfName.Figure, props);
+                    canvas.addImageWithTransformationMatrix(
+                            imageData, renderedSize, 0, 0, renderedSize, 100, 650, false);
+                    canvas.endMarkedContent();
+                });
     }
 }
