@@ -111,7 +111,9 @@ public class ProcessingServiceTest extends PdfTestBase {
                 breakTestPdf(ProcessingServiceTest::listContent, TagBreakage.L_WITH_P_CHILDREN);
         IssueList issues = createProcessingService(testPdf).analyze();
         assertNotNull(issues, "Should return issues list");
-        assertFalse(issues.isEmpty(), "Should have at least one issue");
+        assertTrue(
+                issues.stream().anyMatch(i -> isListStructureIssue(i.type())),
+                "Should detect at least one list-structure validation issue");
     }
 
     @Test
@@ -169,9 +171,14 @@ public class ProcessingServiceTest extends PdfTestBase {
         ProcessingResult result = createProcessingService(brokenPdf).remediate();
         saveRemediatedPdf(result);
 
-        assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
+        assertTrue(
+                result.originalTagIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                "Should detect list-structure issues in the broken PDF");
         assertFalse(
                 result.appliedTagFixes().isEmpty(), "Should apply fixes to broken tag structure");
+        assertTrue(
+                result.appliedTagFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                "Should apply at least one fix associated with list-structure issues");
     }
 
     @Test
@@ -182,9 +189,12 @@ public class ProcessingServiceTest extends PdfTestBase {
         ProcessingResult result = createProcessingService(testPdf).remediate();
         saveRemediatedPdf(result);
 
-        assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
-        assertFalse(
-                result.appliedTagFixes().isEmpty(), "Should apply fixes to tag structure issues");
+        assertTrue(
+                result.originalTagIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                "Should detect list-structure issues");
+        assertTrue(
+                result.appliedTagFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                "Should apply fixes to list-structure issues");
     }
 
     @Test
@@ -284,5 +294,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         }
 
         return outputPath;
+    }
+
+    private static boolean isListStructureIssue(IssueType issueType) {
+        return issueType == IssueType.TAG_WRONG_CHILD
+                || issueType == IssueType.TAG_WRONG_CHILD_COUNT
+                || issueType == IssueType.TAG_WRONG_CHILD_PATTERN;
     }
 }
