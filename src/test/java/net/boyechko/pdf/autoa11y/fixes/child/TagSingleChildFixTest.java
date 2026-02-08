@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class TagSingleChildFixTest extends PdfTestBase {
 
     @Test
-    void treatLblFigureAsBullet_RemovesFigureTag() throws Exception {
+    void treatLblFigureAsBullet() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
 
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
@@ -81,9 +81,8 @@ class TagSingleChildFixTest extends PdfTestBase {
     }
 
     @Test
-    void describe_IncludesPageNumberWhenAvailable() throws Exception {
+    void wrapLDivInLI() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            // Create a simple document structure
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem l = new PdfStructElem(pdfDoc, PdfName.L);
             root.addKid(l);
@@ -92,31 +91,82 @@ class TagSingleChildFixTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
 
-            // Create a WrapInLI fix
             IssueFix fix = WrapInLI.tryCreate(div, l);
             assertNotNull(fix, "Fix should be created for L[Div] pattern");
+            fix.apply(ctx);
 
-            // Test both describe methods
-            String basicDescription = fix.describe();
-            String contextDescription = fix.describe(ctx);
+            List<PdfStructElem> lKids =
+                    l.getKids().stream()
+                            .filter(k -> k instanceof PdfStructElem)
+                            .map(k -> (PdfStructElem) k)
+                            .toList();
 
-            // Basic description should not have page info
-            assertFalse(
-                    basicDescription.contains("(p."),
-                    "Basic describe should not contain page info");
+            assertEquals(1, lKids.size(), "L should have one child after wrapping");
+            PdfStructElem li = lKids.get(0);
+            assertEquals(PdfName.LI, li.getRole(), "L child should be LI");
 
-            // Context description should include object number
-            assertTrue(
-                    contextDescription.contains("object #"),
-                    "Context describe should contain object number");
+            List<PdfStructElem> liKids =
+                    li.getKids().stream()
+                            .filter(k -> k instanceof PdfStructElem)
+                            .map(k -> (PdfStructElem) k)
+                            .toList();
 
-            // Both should contain the core information
-            assertTrue(
-                    basicDescription.contains("Wrapped Div"),
-                    "Should describe the wrapped element");
-            assertTrue(
-                    contextDescription.contains("Wrapped Div"),
-                    "Should describe the wrapped element");
+            assertEquals(1, liKids.size(), "LI should have one child");
+            PdfStructElem lbody = liKids.get(0);
+            assertEquals(PdfName.LBody, lbody.getRole(), "LI child should be LBody");
+
+            List<PdfStructElem> lbodyKids =
+                    lbody.getKids().stream()
+                            .filter(k -> k instanceof PdfStructElem)
+                            .map(k -> (PdfStructElem) k)
+                            .toList();
+
+            assertEquals(1, lbodyKids.size(), "LBody should have one child");
+            assertEquals(PdfName.Div, lbodyKids.get(0).getRole(), "LBody child should remain Div");
+            assertEquals(
+                    div.getPdfObject(),
+                    lbodyKids.get(0).getPdfObject(),
+                    "Original Div should be under LBody");
+        }
+    }
+
+    @Test
+    void wrapLIParagraphInLBody() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            root.addKid(li);
+            PdfStructElem paragraph = new PdfStructElem(pdfDoc, PdfName.P);
+            li.addKid(paragraph);
+
+            DocumentContext ctx = new DocumentContext(pdfDoc);
+
+            IssueFix fix = WrapInLBody.tryCreate(paragraph, li);
+            assertNotNull(fix, "Fix should be created for LI[P] pattern");
+            fix.apply(ctx);
+
+            List<PdfStructElem> liKids =
+                    li.getKids().stream()
+                            .filter(k -> k instanceof PdfStructElem)
+                            .map(k -> (PdfStructElem) k)
+                            .toList();
+
+            assertEquals(1, liKids.size(), "LI should have one child after wrapping");
+            PdfStructElem lbody = liKids.get(0);
+            assertEquals(PdfName.LBody, lbody.getRole(), "LI child should be LBody");
+
+            List<PdfStructElem> lbodyKids =
+                    lbody.getKids().stream()
+                            .filter(k -> k instanceof PdfStructElem)
+                            .map(k -> (PdfStructElem) k)
+                            .toList();
+
+            assertEquals(1, lbodyKids.size(), "LBody should have one child");
+            assertEquals(PdfName.P, lbodyKids.get(0).getRole(), "LBody child should remain P");
+            assertEquals(
+                    paragraph.getPdfObject(),
+                    lbodyKids.get(0).getPdfObject(),
+                    "Original paragraph should be under LBody");
         }
     }
 }
