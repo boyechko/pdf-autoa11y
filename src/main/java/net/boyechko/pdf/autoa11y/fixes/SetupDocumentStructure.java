@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,76 +175,17 @@ public class SetupDocumentStructure implements IssueFix {
 
         // Move each element to its page's Part
         for (PdfStructElem elem : elementsToMove) {
-            int pageNum = determinePageNumber(ctx, elem);
+            int pageNum = StructureTree.determinePageNumber(ctx, elem);
             if (pageNum > 0 && pageParts.containsKey(pageNum)) {
                 PdfStructElem targetPart = pageParts.get(pageNum);
-                moveElementToPart(documentElem, elem, targetPart);
-                elementsMoved++;
+                if (StructureTree.moveElement(documentElem, elem, targetPart)) {
+                    elementsMoved++;
+                }
             } else {
                 logger.debug(
                         "Element {} has no page association, leaving under Document",
                         elem.getRole() != null ? elem.getRole().getValue() : "unknown");
             }
-        }
-    }
-
-    // TODO: Move to a utility class (same as @getPageNumber in @DocumentContext?)
-    private int determinePageNumber(DocumentContext ctx, PdfStructElem elem) {
-        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (pg != null) {
-            int pageNum = ctx.doc().getPageNumber(pg);
-            if (pageNum > 0) return pageNum;
-        }
-
-        // Check via indirect reference in context cache
-        if (elem.getPdfObject().getIndirectReference() != null) {
-            int objNum = elem.getPdfObject().getIndirectReference().getObjNumber();
-            int pageNum = ctx.getPageNumber(objNum);
-            if (pageNum > 0) return pageNum;
-        }
-
-        // Recursively check first child with a page
-        List<IStructureNode> kids = elem.getKids();
-        if (kids != null) {
-            for (IStructureNode kid : kids) {
-                if (kid instanceof PdfStructElem childElem) {
-                    int pageNum = determinePageNumber(ctx, childElem);
-                    if (pageNum > 0) return pageNum;
-                }
-            }
-        }
-
-        return 0;
-    }
-
-    // TODO: Same as @moveElementToPart in @CreateLinkTag?
-    private void moveElementToPart(
-            PdfStructElem documentElem, PdfStructElem elem, PdfStructElem targetPart) {
-        PdfArray docKids = documentElem.getPdfObject().getAsArray(PdfName.K);
-        if (docKids == null) return;
-
-        // Remove from Document's K array
-        PdfObject elemObj = elem.getPdfObject();
-        boolean removed = false;
-        for (int i = 0; i < docKids.size(); i++) {
-            PdfObject obj = docKids.get(i);
-            if (obj == elemObj
-                    || (elemObj.getIndirectReference() != null
-                            && elemObj.getIndirectReference().equals(obj))) {
-                docKids.remove(i);
-                removed = true;
-                break;
-            }
-        }
-
-        if (removed) {
-            // Update parent reference (/P) and add to Part
-            elem.getPdfObject().put(PdfName.P, targetPart.getPdfObject());
-            targetPart.addKid(elem);
-            logger.debug(
-                    "Moved {} to Part obj #{}",
-                    elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                    targetPart.getPdfObject().getIndirectReference().getObjNumber());
         }
     }
 
