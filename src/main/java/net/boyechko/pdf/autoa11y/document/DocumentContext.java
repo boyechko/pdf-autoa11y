@@ -76,7 +76,7 @@ public class DocumentContext {
             }
 
             // Now get page number for this element (may inherit from children)
-            int objNum = structElem.getPdfObject().getIndirectReference().getObjNumber();
+            int objNum = StructureTree.objNumber(structElem);
             int pageNum = getPageNumber(structElem, document);
             if (pageNum > 0) {
                 mapping.put(objNum, pageNum);

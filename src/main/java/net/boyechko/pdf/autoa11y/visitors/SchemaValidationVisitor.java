@@ -213,7 +213,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
         IssueFix single = TagSingleChildFix.createIfApplicable(childNode, ctx.node());
         if (single != null) return single;
 
-        logger.debug(
+        logger.trace(
                 "No automatic fix available for kid {} under parent {}",
                 formatRole(childRole),
                 formatRole(ctx.role()));

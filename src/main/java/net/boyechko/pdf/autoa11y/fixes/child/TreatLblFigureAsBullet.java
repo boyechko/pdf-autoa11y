@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */
@@ -62,24 +63,24 @@ public final class TreatLblFigureAsBullet extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Replace Lbl object #"
-                + parent.getPdfObject().getIndirectReference().getObjNumber()
-                + " with its Figure object #"
-                + kid.getPdfObject().getIndirectReference().getObjNumber()
+        return "Replace Lbl obj #"
+                + StructureTree.objNumber(parent)
+                + " with its Figure obj #"
+                + StructureTree.objNumber(kid)
                 + " as a bullet label";
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int parentObjNum = parent.getPdfObject().getIndirectReference().getObjNumber();
-        int kidObjNum = kid.getPdfObject().getIndirectReference().getObjNumber();
+        int parentObjNum = StructureTree.objNumber(parent);
+        int kidObjNum = StructureTree.objNumber(kid);
         int pageNum = ctx.getPageNumber(parentObjNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
 
-        return "Replace Lbl object #"
+        return "Replace Lbl obj #"
                 + parentObjNum
                 + pageInfo
-                + " with its Figure object #"
+                + " with its Figure obj #"
                 + kidObjNum
                 + " as a bullet label";
     }

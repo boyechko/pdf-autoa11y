@@ -35,6 +35,12 @@ public final class StructureTree {
 
     private StructureTree() {}
 
+    /** Returns the PDF object number for a structure element, or -1 if unavailable. */
+    public static int objNumber(PdfStructElem elem) {
+        var ref = elem.getPdfObject().getIndirectReference();
+        return ref != null ? ref.getObjNumber() : -1;
+    }
+
     /** Finds the first child element with the given role. */
     public static PdfStructElem findFirstChild(IStructureNode parent, PdfName role) {
         List<IStructureNode> kids = parent.getKids();
@@ -71,8 +77,8 @@ public final class StructureTree {
         }
 
         // Check via indirect reference in context cache
-        if (elem.getPdfObject().getIndirectReference() != null) {
-            int objNum = elem.getPdfObject().getIndirectReference().getObjNumber();
+        int objNum = objNumber(elem);
+        if (objNum >= 0) {
             int pageNum = ctx.getPageNumber(objNum);
             if (pageNum > 0) return pageNum;
         }
@@ -122,7 +128,7 @@ public final class StructureTree {
             logger.debug(
                     "Moved {} to obj #{}",
                     elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                    toParent.getPdfObject().getIndirectReference().getObjNumber());
+                    objNumber(toParent));
         }
 
         return removed;

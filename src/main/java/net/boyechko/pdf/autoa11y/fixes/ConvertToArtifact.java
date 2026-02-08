@@ -31,6 +31,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,9 +65,10 @@ public class ConvertToArtifact implements IssueFix {
         if (parent instanceof PdfStructElem parentElem) {
             parentElem.removeKid(element);
             logger.debug(
-                    "Removed {} from parent {}",
+                    "Removed {} from parent {} obj # {}",
                     element.getRole().getValue(),
-                    parentElem.getRole().getValue());
+                    parentElem.getRole().getValue(),
+                    StructureTree.objNumber(parentElem));
         } else if (parent instanceof PdfStructTreeRoot root) {
             PdfObject kObj = root.getPdfObject().get(PdfName.K);
             if (kObj instanceof PdfArray kArray) {
@@ -87,9 +89,7 @@ public class ConvertToArtifact implements IssueFix {
                 "Found {} OBJR(s) in element {} (obj #{})",
                 objRefs.size(),
                 elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                elem.getPdfObject().getIndirectReference() != null
-                        ? elem.getPdfObject().getIndirectReference().getObjNumber()
-                        : 0);
+                StructureTree.objNumber(elem));
 
         for (PdfObjRef objRef : objRefs) {
             PdfObject refObj = objRef.getReferencedObject();
@@ -220,23 +220,17 @@ public class ConvertToArtifact implements IssueFix {
     @Override
     public String describe() {
         String role = element.getRole() != null ? element.getRole().getValue() : "unknown";
-        int objNum =
-                element.getPdfObject().getIndirectReference() != null
-                        ? element.getPdfObject().getIndirectReference().getObjNumber()
-                        : 0;
-        return "Converted " + role + " obj #" + objNum + " to artifact";
+        int objNum = StructureTree.objNumber(element);
+        return "Artifacted " + role + " obj #" + objNum;
     }
 
     @Override
     public String describe(DocumentContext ctx) {
         String role = element.getRole() != null ? element.getRole().getValue() : "unknown";
-        int objNum =
-                element.getPdfObject().getIndirectReference() != null
-                        ? element.getPdfObject().getIndirectReference().getObjNumber()
-                        : 0;
+        int objNum = StructureTree.objNumber(element);
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Converted " + role + " obj #" + objNum + pageInfo + " to artifact";
+        return "Artifacted " + role + " obj #" + objNum + pageInfo;
     }
 
     @Override
