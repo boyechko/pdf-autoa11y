@@ -19,12 +19,17 @@ package net.boyechko.pdf.autoa11y.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.*;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -44,24 +49,13 @@ public class ProcessingServiceTest extends PdfTestBase {
     @Test
     void encryptedPdfRaisesException() {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            service.remediate();
-        } catch (Exception e) {
-            assertTrue(e.getMessage().contains("password"));
-            return;
-        }
-        assertTrue(false, "Expected exception for encrypted PDF");
+        Exception e =
+                assertThrows(Exception.class, () -> createProcessingService(inputPath).remediate());
+        assertTrue(e.getMessage().contains("password"));
     }
 
     @Test
-    void encryptedPdfWithPasswordSucceeds() {
+    void encryptedPdfWithPasswordSucceeds() throws Exception {
         Path inputPath = Path.of("src/test/resources/blank_password.pdf");
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
@@ -70,244 +64,112 @@ public class ProcessingServiceTest extends PdfTestBase {
                         .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
 
-        try {
-            service.remediate();
-        } catch (Exception e) {
-            assertTrue(false, "Did not expect exception for encrypted PDF with password");
-        }
+        service.remediate();
     }
 
     @Test
-    void validPdfIsProcessedSuccessfully() {
-        Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            service.remediate();
-        } catch (Exception e) {
-            assertTrue(false, "Did not expect exception for valid PDF");
-        }
+    void validPdfIsProcessedSuccessfully() throws Exception {
+        createProcessingService(Path.of("src/test/resources/moby_dick.pdf")).remediate();
     }
 
     @Test
     void reportOnlyValidatesTagsWithoutModification() throws Exception {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        IssueList issues = service.analyze();
+        IssueList issues = createProcessingService(inputPath).analyze();
         assertNotNull(issues, "Report-only mode should return issues list");
     }
 
     @Test
-    void untaggedPdfRaisesException() {
+    void untaggedPdfReportsNoStructTree() throws Exception {
         Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            IssueList issues = service.analyze();
-            assertNotNull(issues, "Should return issues list");
-            assertTrue(
-                    issues.stream().anyMatch(i -> i.type() == IssueType.NO_STRUCT_TREE),
-                    "Should have NO_STRUCT_TREE issue");
-        } catch (Exception e) {
-            assertTrue(false, "Should not throw exception");
-        }
+        IssueList issues = createProcessingService(inputPath).analyze();
+        assertNotNull(issues, "Should return issues list");
+        assertTrue(
+                issues.stream().anyMatch(i -> i.type() == IssueType.NO_STRUCT_TREE),
+                "Should have NO_STRUCT_TREE issue");
     }
 
     @Test
     void documentLevelIssuesAreDetectedAndFixed() throws Exception {
         Path testPdf = createPdfWithDocumentIssues();
+        ProcessingResult result = createProcessingService(testPdf).remediate();
 
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(testPdf, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            ProcessingResult result = service.remediate();
-
-            assertNotNull(result, "Should return a result");
-            assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
-            assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
-
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            fail("Should not throw exception", e);
-        }
-
-        Files.deleteIfExists(testPdf);
+        assertNotNull(result, "Should return a result");
+        assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
+        assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
     }
 
     @Test
     void tagStructureIssuesAreDetected() throws Exception {
         Path testPdf = createPdfWithTagIssues();
-
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(testPdf, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-        IssueList issues = service.analyze();
+        IssueList issues = createProcessingService(testPdf).analyze();
         assertNotNull(issues, "Should return issues list");
-        assertTrue(issues.size() > 0, "Should have at least one issue");
+        assertFalse(issues.isEmpty(), "Should have at least one issue");
     }
 
     @Test
     void completeIssueResolutionWorkflow() throws Exception {
         Path testPdf = createPdfWithMultipleIssues();
+        ProcessingResult result = createProcessingService(testPdf).remediate();
 
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(testPdf, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-        try {
-            ProcessingResult result = service.remediate();
+        assertNotNull(result.originalTagIssues(), "Should have original tag issues");
+        assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
+        assertNotNull(result.remainingTagIssues(), "Should have remaining tag issues");
+        assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
+        assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
+        assertNotNull(result.remainingDocumentIssues(), "Should have total remaining issues");
 
-            assertNotNull(result.originalTagIssues(), "Should have original tag issues");
-            assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
-            assertNotNull(result.remainingTagIssues(), "Should have remaining tag issues");
-            assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
-            assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
-            assertNotNull(result.remainingDocumentIssues(), "Should have total remaining issues");
-
-            assertTrue(
-                    result.totalIssuesResolved() >= 0, "Should have resolved zero or more issues");
-            assertTrue(
-                    result.totalIssuesRemaining() <= result.totalIssuesDetected(),
-                    "Remaining issues should not exceed detected issues");
-
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            fail("Should not throw exception", e);
-        }
+        assertTrue(
+                result.totalIssuesRemaining() <= result.totalIssuesDetected(),
+                "Remaining issues should not exceed detected issues");
     }
 
     @Test
     void brokenTagStructureIsDetectedAndFixed() throws Exception {
         Path brokenPdf = createPdfWithTagIssues();
+        ProcessingResult result = createProcessingService(brokenPdf).remediate();
 
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(brokenPdf, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-        try {
-            ProcessingResult result = service.remediate();
-
-            assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
-            assertTrue(
-                    result.appliedTagFixes().size() > 0,
-                    "Should apply fixes to broken tag structure");
-
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
-        }
+        assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
+        assertFalse(
+                result.appliedTagFixes().isEmpty(), "Should apply fixes to broken tag structure");
     }
 
     @Test
     void tagStructureIssuesCanBeFixed() throws Exception {
         Path testPdf = createPdfWithFixableTagIssues();
+        ProcessingResult result = createProcessingService(testPdf).remediate();
 
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(testPdf, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            ProcessingResult result = service.remediate();
-
-            assertTrue(result.hasTagIssues(), "Should detect tag structure issues");
-            // TODO: Remove this once we have a proper test for this
-            assertTrue(
-                    result.appliedTagFixes().size() > 0,
-                    "Should apply fixes to tag structure issues");
-
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            fail("Should not throw exception", e);
-        }
+        assertFalse(result.originalTagIssues().isEmpty(), "Should detect tag structure issues");
+        assertFalse(
+                result.appliedTagFixes().isEmpty(), "Should apply fixes to tag structure issues");
     }
 
     @Test
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
         Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
+        ProcessingResult result = createProcessingService(inputPath).remediate();
 
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-        try {
-            ProcessingResult result = service.remediate();
-            assertNotNull(result.originalTagIssues());
-            assertNotNull(result.originalDocumentIssues());
-            assertTrue(
-                    result.totalIssuesDetected() >= 0,
-                    "Should detect zero or more issues in total");
-            assertTrue(
-                    result.totalIssuesRemaining() == 0,
-                    "Moby Dick PDF should be compliant with no remaining issues");
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
-        }
+        assertNotNull(result.originalTagIssues());
+        assertNotNull(result.originalDocumentIssues());
+        assertEquals(
+                0,
+                result.totalIssuesRemaining(),
+                "Moby Dick PDF should be compliant with no remaining issues");
     }
 
-    @Test
-    void documentLevelIssuesDetectedAndFixed() throws Exception {
-        Path testFile = createPdfWithDocumentIssues();
-
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(testFile, null))
-                        .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
-                        .build();
-
-        try {
-            ProcessingResult result = service.remediate();
-            assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
-
-            Files.deleteIfExists(result.tempOutputFile());
-        } catch (Exception e) {
-            // TODO: Remove this once we have a proper exception for this
-            assertTrue(true, "Should not throw exception");
-        }
+    private ProcessingService createProcessingService(Path testPdf) {
+        return new ProcessingService.ProcessingServiceBuilder()
+                .withPdfCustodian(new PdfCustodian(testPdf, null))
+                .withListener(new NoOpProcessingListener())
+                .withVerbosityLevel(VerbosityLevel.QUIET)
+                .build();
     }
 
-    private Path createBasicPdf(String filename, PdfSetupAction setupAction) throws Exception {
-        Path testFile = testOutputPath(filename);
+    private Path createBasicPdf(PdfSetupAction setupAction) throws Exception {
+        return createBasicPdf(testOutputPath(), setupAction);
+    }
 
+    private Path createBasicPdf(Path testFile, PdfSetupAction setupAction) throws Exception {
         try (PdfWriter writer = new PdfWriter(testFile.toString());
                 PdfDocument pdfDoc = new PdfDocument(writer)) {
 
@@ -495,7 +357,6 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     private Path createPdfWithDocumentIssues() throws Exception {
         return createBasicPdf(
-                "document_issues_test.pdf",
                 (doc, document) -> {
                     document.add(
                             new Paragraph(
@@ -506,7 +367,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     private Path createPdfWithTagIssues() throws Exception {
         Path normalPdf =
                 createBasicPdf(
-                        "tag_issues_temp.pdf",
+                        testOutputPath("temp.pdf"),
                         (doc, document) -> {
                             document.add(new Paragraph("This PDF will have tag structure issues."));
 
@@ -517,13 +378,11 @@ public class ProcessingServiceTest extends PdfTestBase {
                             document.add(list);
                         });
 
-        Path brokenPdf = testOutputPath("tag_issues_test.pdf");
-        return createBrokenTagStructure(normalPdf, brokenPdf, "L_WITH_P_CHILDREN");
+        return createBrokenTagStructure(normalPdf, testOutputPath(), "L_WITH_P_CHILDREN");
     }
 
     private Path createPdfWithMultipleIssues() throws Exception {
         return createBasicPdf(
-                "multiple_issues_test.pdf",
                 (doc, document) -> {
                     document.add(new Paragraph("Multiple Issues Test Document").setFontSize(16));
                     document.add(
@@ -554,7 +413,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     private Path createPdfWithFixableTagIssues() throws Exception {
         Path normalPdf =
                 createBasicPdf(
-                        "fixable_tag_issues_temp.pdf",
+                        testOutputPath("temp.pdf"),
                         (doc, document) -> {
                             document.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
 
@@ -565,7 +424,37 @@ public class ProcessingServiceTest extends PdfTestBase {
                             document.add(list);
                         });
 
-        Path brokenPdf = testOutputPath("fixable_tag_issues_test.pdf");
-        return createBrokenTagStructure(normalPdf, brokenPdf, "LI_WITH_SINGLE_P");
+        return createBrokenTagStructure(normalPdf, testOutputPath(), "LI_WITH_SINGLE_P");
+    }
+
+    private Path createFigureWithTextPdf() throws Exception {
+        OutputStream outputStream = testOutputStream();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(outputStream))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, page);
+            document.addKid(figure);
+
+            PdfMcrNumber mcr = new PdfMcrNumber(page, figure);
+            figure.addKid(mcr);
+
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfCanvas canvas = new PdfCanvas(page);
+            canvas.beginMarkedContent(PdfName.Figure, props);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            canvas.beginText();
+            canvas.setFontAndSize(font, 24);
+            canvas.moveText(100, 750);
+            canvas.showText("Figure text that should trigger remediation");
+            canvas.endText();
+            canvas.endMarkedContent();
+        }
+
+        return testOutputPath();
     }
 }
