@@ -40,6 +40,8 @@ public class ProcessingReporter implements ProcessingListener {
     private static final String SUBSECTION_MARK = "⊏";
     private static final int HEADER_WIDTH = 68;
 
+    private static final int MAX_PAGE_LIST_DISPLAY_COUNT = 5;
+
     private boolean phaseOpen = false;
 
     public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
@@ -230,8 +232,10 @@ public class ProcessingReporter implements ProcessingListener {
 
         if (max - min + 1 == pages.size()) {
             return min + "-" + max;
-        } else {
+        } else if (pages.size() <= MAX_PAGE_LIST_DISPLAY_COUNT) {
             return pages.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        } else {
+            return min + "-" + max;
         }
     }
 }
