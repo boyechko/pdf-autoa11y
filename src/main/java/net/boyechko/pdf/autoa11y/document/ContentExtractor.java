@@ -101,7 +101,8 @@ public final class ContentExtractor {
     }
 
     /** Gets the text content for all MCRs within a structure element. */
-    public static String getMcrContent(PdfStructElem node, PdfDocument document, int pageNumber) {
+    public static String getTextForElement(
+            PdfStructElem node, PdfDocument document, int pageNumber) {
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return "";
 
