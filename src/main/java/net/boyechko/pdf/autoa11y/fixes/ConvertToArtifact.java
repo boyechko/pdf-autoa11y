@@ -19,7 +19,6 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
@@ -216,41 +215,9 @@ public class ConvertToArtifact implements IssueFix {
     @Override
     public boolean invalidates(IssueFix otherFix) {
         if (otherFix instanceof ConvertToArtifact other) {
-            return isDescendantOf(other.element, this.element);
+            return StructureTree.isDescendantOf(other.element, this.element);
         }
         return false;
-    }
-
-    // TODO: Move to a utility class
-    private boolean isDescendantOf(PdfStructElem candidate, PdfStructElem ancestor) {
-        IStructureNode parent = candidate.getParent();
-        while (parent != null) {
-            if (parent instanceof PdfStructElem parentElem
-                    && isSameStructElem(parentElem, ancestor)) {
-                return true;
-            }
-            if (parent instanceof PdfStructElem parentElem) {
-                parent = parentElem.getParent();
-            } else {
-                break;
-            }
-        }
-        return false;
-    }
-
-    // TODO: Move to a utility class
-    private boolean isSameStructElem(PdfStructElem a, PdfStructElem b) {
-        if (a == b) {
-            return true;
-        }
-        PdfDictionary aDict = a.getPdfObject();
-        PdfDictionary bDict = b.getPdfObject();
-        if (aDict == bDict) {
-            return true;
-        }
-        PdfIndirectReference aRef = aDict.getIndirectReference();
-        PdfIndirectReference bRef = bDict.getIndirectReference();
-        return aRef != null && aRef.equals(bRef);
     }
 
     public PdfStructElem getElement() {

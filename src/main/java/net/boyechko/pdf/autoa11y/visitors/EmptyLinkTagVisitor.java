@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.ContentExtractor;
 import net.boyechko.pdf.autoa11y.document.Geometry;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -69,14 +70,14 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!linkElem.getRole().equals(PdfName.Link) || linkHasMcr(linkElem)) {
+            if (!linkElem.getRole().equals(PdfName.Link) || StructureTree.hasMcr(linkElem)) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
                 continue;
             }
 
-            PdfObjRef objRef = findObjRef(linkElem);
+            PdfObjRef objRef = StructureTree.findFirstObjRef(linkElem);
             if (objRef == null) {
                 continue;
             }
@@ -122,33 +123,5 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
     @Override
     public IssueList getIssues() {
         return issues;
-    }
-
-    // TODO: Move to a utility class
-    private boolean linkHasMcr(PdfStructElem linkElem) {
-        List<IStructureNode> kids = linkElem.getKids();
-        if (kids == null) {
-            return false;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // TODO: Move to a utility class
-    private PdfObjRef findObjRef(PdfStructElem linkElem) {
-        List<IStructureNode> kids = linkElem.getKids();
-        if (kids == null) {
-            return null;
-        }
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfObjRef objRef) {
-                return objRef;
-            }
-        }
-        return null;
     }
 }
