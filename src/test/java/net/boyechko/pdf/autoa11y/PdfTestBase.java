@@ -50,10 +50,8 @@ public abstract class PdfTestBase {
     }
 
     protected final OutputStream testOutputStream() {
-        String className = testClassName != null ? testClassName : getClass().getSimpleName();
         String methodName = testMethodName != null ? testMethodName : "test";
-        String fileName = String.format("%s-%s.pdf", className, methodName);
-        return testOutputStream(fileName);
+        return testOutputStream(methodName + ".pdf");
     }
 
     protected final OutputStream testOutputStream(String filename) {
@@ -65,22 +63,24 @@ public abstract class PdfTestBase {
         }
     }
 
+    protected final Path testOutputPath() {
+        String methodName = testMethodName != null ? testMethodName : "test";
+        return testOutputDir().resolve(methodName + ".pdf");
+    }
+
     protected final Path testOutputPath(String filename) {
         return testOutputDir().resolve(filename);
     }
 
-    /** Returns either the configured directory or the temporary directory. */
+    /** Returns {baseDir}/{testClassName}/, creating it if needed. */
     protected final Path testOutputDir() {
         if (outputDir != null) {
             return outputDir;
         }
 
-        if (!isPersistentOutputEnabled()) {
-            outputDir = tempDir;
-            return outputDir;
-        }
-
-        Path dir = Path.of(configuredOutputDir());
+        Path baseDir = isPersistentOutputEnabled() ? Path.of(configuredOutputDir()) : tempDir;
+        String className = testClassName != null ? testClassName : getClass().getSimpleName();
+        Path dir = baseDir.resolve(className);
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
