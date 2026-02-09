@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.core;
 
 import java.util.List;
 import java.util.function.Supplier;
+import net.boyechko.pdf.autoa11y.rules.BadlyMappedLigatureRule;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.StructureTreeRule;
@@ -43,7 +44,8 @@ public final class ProcessingDefaults {
                 new StructureTreeRule(),
                 new TaggedPdfRule(),
                 new MissingDocumentRule(),
-                new UnmarkedLinkRule());
+                new UnmarkedLinkRule(),
+                new BadlyMappedLigatureRule());
     }
 
     public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {

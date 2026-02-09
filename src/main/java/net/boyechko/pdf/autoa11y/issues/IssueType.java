@@ -24,6 +24,7 @@ public enum IssueType {
     NOT_TAGGED_PDF("PDF not tagged"),
     NO_STRUCT_TREE("structure tree missing"),
     TAB_ORDER_NOT_SET("tab order not set"),
+    LIGATURE_MAPPING_BROKEN("fonts with broken ligature mappings"),
 
     // Tag Issues
     TAG_UNKNOWN_ROLE("tags with unknown roles"),
