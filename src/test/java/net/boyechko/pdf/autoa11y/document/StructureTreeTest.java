@@ -320,6 +320,46 @@ class StructureTreeTest extends PdfTestBase {
     }
 
     @Test
+    void getKArrayReturnsNullForSingleChildKEntry() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            document.addKid(p);
+
+            assertNull(document.getPdfObject().getAsArray(PdfName.K));
+            assertNull(
+                    StructureTree.getKArray(document),
+                    "Read-only getter should not normalize single-object /K");
+        }
+    }
+
+    @Test
+    void normalizeKArrayConvertsSingleChildKEntry() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            document.addKid(p);
+
+            assertNull(document.getPdfObject().getAsArray(PdfName.K));
+
+            PdfArray normalized = StructureTree.normalizeKArray(document);
+            assertNotNull(normalized);
+            assertEquals(1, normalized.size());
+            assertEquals(0, StructureTree.findIndexInKArray(normalized, p));
+        }
+    }
+
+    @Test
     void findIndexInKArrayFindsElement() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
