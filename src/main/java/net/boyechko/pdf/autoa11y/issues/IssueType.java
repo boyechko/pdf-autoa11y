@@ -37,6 +37,7 @@ public enum IssueType {
 
     // Structure Issues
     MISSING_DOCUMENT_ELEMENT("structure tree root has no Document element"),
+    PAGE_PARTS_NOT_NORMALIZED("content not grouped into page-level Part elements"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("link annotations not tagged");
