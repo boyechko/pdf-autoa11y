@@ -42,7 +42,8 @@ public class PdfAutoA11yCLI {
             boolean force_save,
             boolean analyzeOnly,
             Path reportPath,
-            VerbosityLevel verbosity) {
+            VerbosityLevel verbosity,
+            boolean printStructureTree) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -95,6 +96,7 @@ public class PdfAutoA11yCLI {
         boolean generateReport = false;
         Path reportPath = null;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
+        boolean printStructureTree = false;
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("--report=")) {
@@ -115,6 +117,7 @@ public class PdfAutoA11yCLI {
                     case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
                     case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
                     case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
+                    case "-t", "--print-tree" -> printStructureTree = true;
                     case "-f", "--force" -> force_save = true;
                     case "-a", "--analyze" -> analyzeOnly = true;
                     case "-r", "--report" -> generateReport = true;
@@ -165,7 +168,14 @@ public class PdfAutoA11yCLI {
         }
 
         return new CLIConfig(
-                inputPath, outputPath, password, force_save, analyzeOnly, reportPath, verbosity);
+                inputPath,
+                outputPath,
+                password,
+                force_save,
+                analyzeOnly,
+                reportPath,
+                verbosity,
+                printStructureTree);
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -209,7 +219,7 @@ public class PdfAutoA11yCLI {
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
                             .withListener(reporter)
-                            .withVerbosityLevel(verbosity)
+                            .withPrintStructureTree(config.printStructureTree())
                             .build();
 
             if (config.analyzeOnly()) {
@@ -296,19 +306,20 @@ public class PdfAutoA11yCLI {
     }
 
     private static String usageMessage() {
-        return "Usage: java PdfAutoA11yCLI [-a] [-q|-v|-vv] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
-                + "  -h, --help      Show this help message\n"
-                + "  -a, --analyze   Analyze only (no remediation or output PDF)\n"
-                + "  -q, --quiet     Only show errors and final status\n"
-                + "  -v, --verbose   Show detailed tag structure\n"
-                + "  -vv, --debug    Show all debug information\n"
-                + "  -f, --force     Force save even if no fixes applied\n"
-                + "  -p, --password  Password for encrypted PDFs\n"
-                + "  -r, --report    Save output to report file (auto-named from input)\n"
-                + "                  Use -r=<file> or --report=<file> for a custom path\n"
+        return "Usage: java PdfAutoA11yCLI [-a] [-q|-v|-vv] [-t] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
+                + "  -h, --help        Show this help message\n"
+                + "  -a, --analyze     Analyze only (no remediation or output PDF)\n"
+                + "  -q, --quiet       Only show errors and final status\n"
+                + "  -v, --verbose     Show detailed processing information\n"
+                + "  -vv, --debug      Show all debug information\n"
+                + "  -t, --print-tree  Print the structure tree during processing\n"
+                + "  -f, --force       Force save even if no fixes applied\n"
+                + "  -p, --password    Password for encrypted PDFs\n"
+                + "  -r, --report      Save output to report file (auto-named from input)\n"
+                + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
-                + "  java PdfAutoA11yCLI -r -v document.pdf\n"
+                + "  java PdfAutoA11yCLI -r -t document.pdf\n"
                 + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf";
     }
 }

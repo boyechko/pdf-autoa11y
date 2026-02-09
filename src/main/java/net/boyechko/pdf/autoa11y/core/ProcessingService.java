@@ -42,12 +42,11 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final RuleEngine ruleEngine;
     private final ProcessingListener listener;
-    private final VerbosityLevel verbosityLevel;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
         private ProcessingListener listener;
-        private VerbosityLevel verbosityLevel;
+        private boolean printStructureTree;
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -59,8 +58,8 @@ public class ProcessingService {
             return this;
         }
 
-        public ProcessingServiceBuilder withVerbosityLevel(VerbosityLevel verbosityLevel) {
-            this.verbosityLevel = verbosityLevel;
+        public ProcessingServiceBuilder withPrintStructureTree(boolean printStructureTree) {
+            this.printStructureTree = printStructureTree;
             return this;
         }
 
@@ -69,9 +68,6 @@ public class ProcessingService {
                 throw new IllegalStateException(
                         "PdfCustodian must be provided via withPdfCustodian(...) before building ProcessingService");
             }
-            if (verbosityLevel == null) {
-                verbosityLevel = VerbosityLevel.NORMAL;
-            }
             return new ProcessingService(this);
         }
     }
@@ -79,12 +75,11 @@ public class ProcessingService {
     private ProcessingService(ProcessingServiceBuilder builder) {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
-        this.verbosityLevel = builder.verbosityLevel;
 
         List<Rule> rules = ProcessingDefaults.rules();
         List<Supplier<StructureTreeVisitor>> visitorSuppliers =
                 new ArrayList<>(ProcessingDefaults.visitorSuppliers());
-        if (verbosityLevel.isAtLeast(VerbosityLevel.VERBOSE)) {
+        if (builder.printStructureTree) {
             visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
@@ -196,7 +191,8 @@ public class ProcessingService {
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");
         } else {
-            listener.onWarning("Found " + tagIssues.size() + " issue(s)");
+            reportIssuesGrouped(tagIssues);
+            listener.onInfo("Found " + tagIssues.size() + " issue(s)");
         }
 
         return tagIssues;

@@ -59,7 +59,6 @@ public class ProcessingServiceTest extends PdfTestBase {
                 new ProcessingService.ProcessingServiceBuilder()
                         .withPdfCustodian(new PdfCustodian(inputPath, "password"))
                         .withListener(new NoOpProcessingListener())
-                        .withVerbosityLevel(VerbosityLevel.QUIET)
                         .build();
 
         service.remediate();
@@ -236,7 +235,6 @@ public class ProcessingServiceTest extends PdfTestBase {
         return new ProcessingService.ProcessingServiceBuilder()
                 .withPdfCustodian(new PdfCustodian(testPdf, null))
                 .withListener(new NoOpProcessingListener())
-                .withVerbosityLevel(VerbosityLevel.QUIET)
                 .build();
     }
 
