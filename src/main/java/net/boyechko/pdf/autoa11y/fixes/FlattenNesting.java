@@ -58,6 +58,13 @@ public class FlattenNesting implements IssueFix {
 
     private void flattenElement(PdfStructElem wrapper) {
         IStructureNode parentNode = wrapper.getParent();
+        if (parentNode == null) {
+            logger.debug(
+                    "Skipping flatten for {} (obj # {}): no parent",
+                    wrapper.getRole().getValue(),
+                    StructureTree.objNumber(wrapper));
+            return;
+        }
 
         List<PdfStructElem> childrenToMove = collectStructElemChildren(wrapper);
         if (childrenToMove.isEmpty()) {
@@ -66,9 +73,9 @@ public class FlattenNesting implements IssueFix {
             return;
         }
 
-        PdfArray kArray = StructureTree.getKArray(parentNode);
+        PdfArray kArray = StructureTree.normalizeKArray(parentNode);
         if (kArray == null) {
-            logger.debug("Parent K array is null, cannot flatten");
+            logger.debug("Parent K entry is missing, cannot flatten");
             return;
         }
 
@@ -114,6 +121,11 @@ public class FlattenNesting implements IssueFix {
             int wrapperIndex,
             IStructureNode newParent) {
         PdfDictionary newParentDict = StructureTree.getPdfObject(newParent);
+        String parentRole = newParent.getRole() != null ? newParent.getRole().getValue() : "root";
+        int parentObjNum =
+                newParent instanceof PdfStructElem parentElem
+                        ? StructureTree.objNumber(parentElem)
+                        : -1;
         for (int i = 0; i < children.size(); i++) {
             PdfStructElem child = children.get(i);
             wrapper.removeKid(child);
@@ -123,8 +135,8 @@ public class FlattenNesting implements IssueFix {
                     "Promoted {} (obj # {}) to parent {} (obj # {})",
                     child.getRole().getValue(),
                     StructureTree.objNumber(child),
-                    newParent.getRole().getValue(),
-                    StructureTree.objNumber((PdfStructElem) newParent));
+                    parentRole,
+                    parentObjNum);
         }
     }
 
