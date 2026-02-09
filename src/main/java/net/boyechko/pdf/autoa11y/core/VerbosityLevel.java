@@ -25,7 +25,7 @@ public enum VerbosityLevel {
     /** Show summary information (default) */
     NORMAL(1),
 
-    /** Show detailed tag structure and processing steps */
+    /** Show detailed processing steps */
     VERBOSE(2),
 
     /** Show all information including debug logs */

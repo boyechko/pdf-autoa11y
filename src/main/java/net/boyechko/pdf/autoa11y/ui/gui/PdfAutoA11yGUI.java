@@ -244,7 +244,7 @@ public class PdfAutoA11yGUI extends JFrame {
                                 new ProcessingService.ProcessingServiceBuilder()
                                         .withPdfCustodian(docFactory)
                                         .withListener(reporter)
-                                        .withVerbosityLevel(VerbosityLevel.VERBOSE)
+                                        .withPrintStructureTree(true)
                                         .build();
 
                         ProcessingResult result = service.remediate();
