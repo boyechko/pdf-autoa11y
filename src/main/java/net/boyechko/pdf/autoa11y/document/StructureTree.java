@@ -168,14 +168,34 @@ public final class StructureTree {
      * PdfArray. This means getAsArray(PdfName.K) returns null for single-child
      * elements. */
 
-    /** Gets the /K array from any structure node's underlying dictionary. */
+    /** Gets the /K entry as an array from any structure node's dictionary. */
     public static PdfArray getKArray(IStructureNode node) {
-        if (node instanceof PdfStructElem elem) {
-            return elem.getPdfObject().getAsArray(PdfName.K);
-        } else if (node instanceof PdfStructTreeRoot root) {
-            return root.getPdfObject().getAsArray(PdfName.K);
+        PdfDictionary dict = getPdfObject(node);
+        return dict != null ? dict.getAsArray(PdfName.K) : null;
+    }
+
+    /**
+     * Returns the /K entry as an array, converting a single-child /K object into a one-element
+     * array in-place when needed.
+     */
+    public static PdfArray normalizeKArray(IStructureNode node) {
+        PdfDictionary dict = getPdfObject(node);
+        if (dict == null) {
+            return null;
         }
-        return null;
+
+        PdfObject kObj = dict.get(PdfName.K);
+        if (kObj == null) {
+            return null;
+        }
+        if (kObj instanceof PdfArray kArray) {
+            return kArray;
+        }
+
+        PdfArray normalized = new PdfArray();
+        normalized.add(kObj);
+        dict.put(PdfName.K, normalized);
+        return normalized;
     }
 
     /** Finds the index of an element in a /K array. Returns -1 if not found. */
