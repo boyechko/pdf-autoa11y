@@ -19,35 +19,25 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Wraps everything in a Document wrapper if missing, then organizes content into Part-per-page
- * layout.
- */
+/** Ensures the structure tree has a top-level Document element. */
 public class SetupDocumentStructure implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(SetupDocumentStructure.class);
-    // After FlattenNesting (15), before CreateLinkTag (22)
+    // After FlattenNesting (15)
     private static final int P_DOC_SETUP = 18;
 
     private int elementsWrapped = 0;
-    private int partsCreated = 0;
-    private int elementsMoved = 0;
 
     @Override
     public int priority() {
@@ -61,12 +51,7 @@ public class SetupDocumentStructure implements IssueFix {
             return;
         }
 
-        PdfStructElem documentElem = ensureDocumentWrapper(ctx, root);
-        if (documentElem == null) {
-            return;
-        }
-
-        organizeByPage(ctx, documentElem);
+        ensureDocumentWrapper(ctx, root);
     }
 
     private PdfStructElem ensureDocumentWrapper(DocumentContext ctx, PdfStructTreeRoot root) {
@@ -120,117 +105,15 @@ public class SetupDocumentStructure implements IssueFix {
         return document;
     }
 
-    /** Creates Parts for all pages and moves content to appropriate Parts. */
-    private void organizeByPage(DocumentContext ctx, PdfStructElem documentElem) {
-        Map<Integer, PdfStructElem> pageParts = createPartsForAllPages(ctx, documentElem);
-        moveContentToParts(ctx, documentElem, pageParts);
-    }
-
-    private Map<Integer, PdfStructElem> createPartsForAllPages(
-            DocumentContext ctx, PdfStructElem documentElem) {
-        Map<Integer, PdfStructElem> pageParts = new HashMap<>();
-        PdfDocument doc = ctx.doc();
-
-        for (int pageNum = 1; pageNum <= doc.getNumberOfPages(); pageNum++) {
-            PdfPage page = doc.getPage(pageNum);
-            PdfStructElem partElem = findPartForPage(documentElem, page);
-
-            if (partElem == null) {
-                partElem = new PdfStructElem(doc, PdfName.Part);
-                partElem.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-                documentElem.addKid(partElem);
-                partsCreated++;
-                logger.debug(
-                        "Created Part element obj #{} for page {}",
-                        StructureTree.objNumber(partElem),
-                        pageNum);
-            }
-
-            pageParts.put(pageNum, partElem);
-        }
-
-        return pageParts;
-    }
-
-    private void moveContentToParts(
-            DocumentContext ctx,
-            PdfStructElem documentElem,
-            Map<Integer, PdfStructElem> pageParts) {
-
-        // Collect elements to move (can't modify while iterating)
-        List<PdfStructElem> elementsToMove = new ArrayList<>();
-        List<IStructureNode> kids = documentElem.getKids();
-        if (kids == null) return;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfName role = elem.getRole();
-                // Skip Part elements (they're our containers)
-                if (role == PdfName.Part) {
-                    continue;
-                }
-                elementsToMove.add(elem);
-            }
-        }
-
-        // Move each element to its page's Part
-        for (PdfStructElem elem : elementsToMove) {
-            int pageNum = StructureTree.determinePageNumber(ctx, elem);
-            if (pageNum > 0 && pageParts.containsKey(pageNum)) {
-                PdfStructElem targetPart = pageParts.get(pageNum);
-                if (StructureTree.moveElement(documentElem, elem, targetPart)) {
-                    elementsMoved++;
-                }
-            } else {
-                logger.debug(
-                        "Element {} has no page association, leaving under Document",
-                        elem.getRole() != null ? elem.getRole().getValue() : "unknown");
-            }
-        }
-    }
-
-    public static PdfStructElem findPartForPage(PdfStructElem documentElem, PdfPage page) {
-        PdfDictionary pageDict = page.getPdfObject();
-        List<IStructureNode> kids = documentElem.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfName role = elem.getRole();
-                if (role == PdfName.Part) {
-                    PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-                    if (pg != null) {
-                        if (pg.equals(pageDict)) {
-                            return elem;
-                        }
-                        if (pageDict.getIndirectReference() != null
-                                && pageDict.getIndirectReference()
-                                        .equals(pg.getIndirectReference())) {
-                            return elem;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     // TODO: It would be nice if this could use onDetail()
     @Override
     public String describe() {
-        StringBuilder sb = new StringBuilder("Set up document structure");
         if (elementsWrapped > 0) {
-            sb.append(": wrapped ").append(elementsWrapped).append(" element(s) in Document");
+            return "Set up document structure: wrapped "
+                    + elementsWrapped
+                    + " element(s) in Document";
         }
-        if (partsCreated > 0) {
-            if (elementsWrapped > 0) sb.append(", ");
-            else sb.append(": ");
-            sb.append("created ").append(partsCreated).append(" Part(s)");
-        }
-        if (elementsMoved > 0) {
-            sb.append(", moved ").append(elementsMoved).append(" element(s)");
-        }
-        return sb.toString();
+        return "Set up document structure";
     }
 
     @Override

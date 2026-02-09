@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /** Creates a Link tag for an annotation. */
 public class CreateLinkTag implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(CreateLinkTag.class);
-    // After SetupDocumentStructure (10), so Parts exist
+    // After document structure normalization fixes
     private static final int P_CREATE_LINK = 22;
 
     private final PdfDictionary annotDict;

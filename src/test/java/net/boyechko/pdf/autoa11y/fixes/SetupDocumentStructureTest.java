@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -39,93 +38,44 @@ class SetupDocumentStructureTest extends PdfTestBase {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
-            // Create structure with elements at root (no Document)
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-            root.addKid(p);
+            root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
+            root.addKid(new PdfStructElem(pdfDoc, new PdfName("P")));
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(ctx);
+            fix.apply(new DocumentContext(pdfDoc));
 
-            // Verify Document wrapper was created
             List<IStructureNode> rootKids = root.getKids();
-            assertEquals(1, rootKids.size(), "Root should have exactly one child (Document)");
-            PdfStructElem docElem = (PdfStructElem) rootKids.get(0);
-            assertEquals("Document", docElem.getRole().getValue());
+            assertEquals(1, rootKids.size(), "Root should contain only Document");
+            assertTrue(rootKids.get(0) instanceof PdfStructElem);
+
+            PdfStructElem document = (PdfStructElem) rootKids.get(0);
+            assertEquals(PdfName.Document, document.getRole());
+            assertEquals(
+                    2, document.getKids().size(), "Document should wrap original root children");
         }
     }
 
     @Test
-    void createsPartForEachPage() throws Exception {
+    void preservesExistingDocumentAndChildren() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
-            pdfDoc.addNewPage();
-            pdfDoc.addNewPage();
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            PdfStructElem heading = new PdfStructElem(pdfDoc, PdfName.H1);
+            root.addKid(document);
+            document.addKid(heading);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(ctx);
+            fix.apply(new DocumentContext(pdfDoc));
 
-            // Find Document element
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
-            assertEquals("Document", docElem.getRole().getValue());
-
-            // Count Part elements
-            long partCount =
-                    docElem.getKids().stream()
-                            .filter(k -> k instanceof PdfStructElem)
-                            .map(k -> (PdfStructElem) k)
-                            .filter(e -> "Part".equals(e.getRole().getValue()))
-                            .count();
-
-            assertEquals(3, partCount, "Should have one Part per page");
-        }
-    }
-
-    @Test
-    void movesContentToCorrectPart() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfPage page1 = pdfDoc.addNewPage();
-            PdfPage page2 = pdfDoc.addNewPage();
-
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-
-            // Create elements with /Pg pointing to different pages
-            PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            p1.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
-            root.addKid(p1);
-
-            PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            p2.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
-            root.addKid(p2);
-
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(ctx);
-
-            // Find Document and Parts
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
-            List<PdfStructElem> parts =
-                    docElem.getKids().stream()
-                            .filter(k -> k instanceof PdfStructElem)
-                            .map(k -> (PdfStructElem) k)
-                            .filter(e -> "Part".equals(e.getRole().getValue()))
-                            .toList();
-
-            assertEquals(2, parts.size(), "Should have 2 Parts");
-
-            // Each Part should have one P child
-            for (PdfStructElem part : parts) {
-                List<IStructureNode> partKids = part.getKids();
-                assertEquals(1, partKids.size(), "Each Part should have one child");
-                PdfStructElem child = (PdfStructElem) partKids.get(0);
-                assertEquals("P", child.getRole().getValue());
-            }
+            List<IStructureNode> rootKids = root.getKids();
+            assertEquals(1, rootKids.size(), "Existing Document should be kept");
+            PdfStructElem remainingDocument = (PdfStructElem) rootKids.get(0);
+            assertEquals(PdfName.Document, remainingDocument.getRole());
+            assertEquals(1, remainingDocument.getKids().size(), "Existing children should be kept");
         }
     }
 
@@ -136,80 +86,16 @@ class SetupDocumentStructureTest extends PdfTestBase {
             pdfDoc.addNewPage();
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-            root.addKid(p);
+            root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
             SetupDocumentStructure fix = new SetupDocumentStructure();
-
-            // Apply twice
+            DocumentContext ctx = new DocumentContext(pdfDoc);
             fix.apply(ctx);
             fix.apply(ctx);
 
-            // Should still have just one Document with one Part
             List<IStructureNode> rootKids = root.getKids();
-            assertEquals(1, rootKids.size(), "Root should have exactly one child");
-
-            PdfStructElem docElem = (PdfStructElem) rootKids.get(0);
-            assertEquals("Document", docElem.getRole().getValue());
-
-            long partCount =
-                    docElem.getKids().stream()
-                            .filter(k -> k instanceof PdfStructElem)
-                            .map(k -> (PdfStructElem) k)
-                            .filter(e -> "Part".equals(e.getRole().getValue()))
-                            .count();
-            assertEquals(1, partCount, "Should still have just one Part");
-        }
-    }
-
-    @Test
-    void preservesExistingDocument() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
-
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-
-            // Create Document with existing content
-            PdfStructElem docElem = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(docElem);
-            PdfStructElem h1 = new PdfStructElem(pdfDoc, new PdfName("H1"));
-            docElem.addKid(h1);
-
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(ctx);
-
-            // Document should still exist
-            List<IStructureNode> rootKids = root.getKids();
-            assertEquals(1, rootKids.size());
-            assertEquals("Document", ((PdfStructElem) rootKids.get(0)).getRole().getValue());
-        }
-    }
-
-    @Test
-    void findPartForPageReturnsCorrectPart() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfPage page1 = pdfDoc.addNewPage();
-            PdfPage page2 = pdfDoc.addNewPage();
-
-            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-
-            DocumentContext ctx = new DocumentContext(pdfDoc);
-            SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(ctx);
-
-            PdfStructElem docElem = (PdfStructElem) root.getKids().get(0);
-
-            // Test static utility method
-            PdfStructElem part1 = SetupDocumentStructure.findPartForPage(docElem, page1);
-            PdfStructElem part2 = SetupDocumentStructure.findPartForPage(docElem, page2);
-
-            assertNotNull(part1, "Should find Part for page 1");
-            assertNotNull(part2, "Should find Part for page 2");
-            assertNotSame(part1, part2, "Parts should be different");
+            assertEquals(1, rootKids.size(), "Should keep one Document at root");
+            assertEquals(PdfName.Document, ((PdfStructElem) rootKids.get(0)).getRole());
         }
     }
 
@@ -219,19 +105,13 @@ class SetupDocumentStructureTest extends PdfTestBase {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
-            // Don't add any structure elements - just empty root
-
-            DocumentContext ctx = new DocumentContext(pdfDoc);
             SetupDocumentStructure fix = new SetupDocumentStructure();
+            assertDoesNotThrow(() -> fix.apply(new DocumentContext(pdfDoc)));
 
-            // Should not throw
-            assertDoesNotThrow(() -> fix.apply(ctx));
-
-            // Should still create Document and Part
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             List<IStructureNode> rootKids = root.getKids();
-            assertEquals(1, rootKids.size());
-            assertEquals("Document", ((PdfStructElem) rootKids.get(0)).getRole().getValue());
+            assertEquals(1, rootKids.size(), "Should create Document for empty tree");
+            assertEquals(PdfName.Document, ((PdfStructElem) rootKids.get(0)).getRole());
         }
     }
 }
