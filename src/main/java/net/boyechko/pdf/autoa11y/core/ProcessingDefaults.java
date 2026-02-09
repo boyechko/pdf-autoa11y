@@ -26,6 +26,7 @@ import net.boyechko.pdf.autoa11y.rules.StructureTreeRule;
 import net.boyechko.pdf.autoa11y.rules.TabOrderRule;
 import net.boyechko.pdf.autoa11y.rules.TaggedPdfRule;
 import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
+import net.boyechko.pdf.autoa11y.rules.UnpartitionedDocumentRule;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
@@ -44,6 +45,7 @@ public final class ProcessingDefaults {
                 new StructureTreeRule(),
                 new TaggedPdfRule(),
                 new MissingDocumentRule(),
+                new UnpartitionedDocumentRule(),
                 new UnmarkedLinkRule(),
                 new BadlyMappedLigatureRule());
     }
