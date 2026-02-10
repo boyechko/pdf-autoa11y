@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
@@ -38,6 +39,21 @@ public final class StructureTree {
     private static final Logger logger = LoggerFactory.getLogger(StructureTree.class);
 
     private StructureTree() {}
+
+    /** Returns the PDF document for the given structure element. */
+    public static PdfDocument pdfDocumentFor(PdfStructElem n) {
+        return n.getPdfObject().getIndirectReference().getDocument();
+    }
+
+    /** Returns the PDF document for the given structure element. */
+    public static PdfDocument pdfDocumentFor(IStructureNode n) {
+        IStructureNode current = n;
+        while (current.getParent() != null) {
+            current = current.getParent();
+        }
+        PdfStructTreeRoot root = (PdfStructTreeRoot) current;
+        return root.getDocument();
+    }
 
     /** Returns the PDF object number for a structure element, or -1 if unavailable. */
     public static int objNumber(PdfStructElem elem) {
@@ -288,6 +304,7 @@ public final class StructureTree {
         return result;
     }
 
+    /** Recursively collects all OBJR (object reference) descendants of an element. */
     private static void collectObjRefs(PdfStructElem elem, List<PdfObjRef> result) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
@@ -307,6 +324,7 @@ public final class StructureTree {
         return result;
     }
 
+    /** Recursively collects all MCR descendants of an element (including OBJR entries). */
     private static void collectMcrs(PdfStructElem elem, List<PdfMcr> result) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
@@ -317,5 +335,41 @@ public final class StructureTree {
                 collectMcrs(childElem, result);
             }
         }
+    }
+
+    /**
+     * Returns the mapped role for a structure element, or the raw role if no mapping is available.
+     */
+    public static String mappedRole(PdfStructElem n) {
+        PdfDictionary roleMap = pdfDocumentFor(n).getStructTreeRoot().getRoleMap();
+        PdfName role = n.getRole();
+
+        if (roleMap != null) {
+            PdfName mappedRole = roleMap.getAsName(role);
+            return (mappedRole != null) ? mappedRole.getValue() : role.getValue();
+        }
+        return role.getValue();
+    }
+
+    /** Returns the parent of a structure element, or null if no parent is available. */
+    public static PdfStructElem parentOf(PdfStructElem n) {
+        IStructureNode p = n.getParent();
+        return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
+    }
+
+    /**
+     * Returns the children of a structure element, or an empty list if no children are available.
+     */
+    public static List<PdfStructElem> structKidsOf(PdfStructElem n) {
+        List<IStructureNode> kids = n.getKids();
+        if (kids == null) return List.of();
+
+        List<PdfStructElem> out = new ArrayList<>();
+        for (IStructureNode k : kids) {
+            if (k instanceof PdfStructElem) {
+                out.add((PdfStructElem) k);
+            }
+        }
+        return out;
     }
 }

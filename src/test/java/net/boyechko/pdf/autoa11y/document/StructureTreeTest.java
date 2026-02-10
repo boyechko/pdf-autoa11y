@@ -400,4 +400,19 @@ class StructureTreeTest extends PdfTestBase {
             assertEquals(-1, StructureTree.findIndexInKArray(kArray, orphan));
         }
     }
+
+    @Test
+    void pdfDocumentForReturnsDocument() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+
+            assertEquals(doc, StructureTree.pdfDocumentFor(document));
+            assertEquals(doc, StructureTree.pdfDocumentFor((IStructureNode) document));
+        }
+    }
 }
