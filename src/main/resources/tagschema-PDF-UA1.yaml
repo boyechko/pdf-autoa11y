@@ -84,7 +84,7 @@ roles:
     allowed_children: [Annot, BibEntry, Code, Figure, Formula, Link, Note, Quote, Reference, Span]
 
   Part:
-    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table]
 
   Quote:
     allowed_children: [Span]
