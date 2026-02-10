@@ -76,6 +76,11 @@ public final class StructureTree {
         return null;
     }
 
+    /** Finds the Document element in the structure tree. */
+    public static PdfStructElem findDocument(IStructureNode root) {
+        return findFirstChild(root, PdfName.Document);
+    }
+
     /** Checks whether a /Pg dictionary refers to the same page. */
     public static boolean isSamePage(PdfDictionary pgDict, PdfPage targetPage) {
         PdfDictionary targetDict = targetPage.getPdfObject();
@@ -411,6 +416,83 @@ public final class StructureTree {
             childNodes.add(toRoleTree(kid));
         }
         return new Node<>(elem.getRole().getValue(), childNodes);
+    }
+
+    /** Converts a PdfStructElem tree into a Node tree of role-name strings. */
+    public static String toRoleTreeString(PdfStructElem elem) {
+        return toRoleTree(elem).toString().replaceAll("\\s+", "");
+    }
+
+    /** Converts a PdfStructElem tree into an indented, multi-line string of role names. */
+    public static String toIndentedTreeString(PdfStructElem elem) {
+        StringBuilder sb = new StringBuilder();
+        appendIndentedTree(sb, elem, 0);
+        return sb.toString();
+    }
+
+    private static void appendIndentedTree(StringBuilder sb, PdfStructElem elem, int depth) {
+        sb.append("  ".repeat(depth));
+        sb.append(elem.getRole().getValue());
+        sb.append('\n');
+        for (PdfStructElem kid : structKidsOf(elem)) {
+            appendIndentedTree(sb, kid, depth + 1);
+        }
+    }
+
+    /**
+     * Like {@link #toIndentedTreeString}, but also shows MCRs and annotation object references
+     * (OBJRs) as leaf annotations on each element. Example output:
+     *
+     * <pre>
+     * Document
+     *   Part
+     *     Link  [MCR, OBJR:Link]
+     *       Figure  [MCR]
+     *     P  [MCR]
+     *     H1
+     *       Form  [OBJR:Widget]
+     * </pre>
+     */
+    public static String toDetailedTreeString(PdfStructElem elem) {
+        StringBuilder sb = new StringBuilder();
+        appendDetailedTree(sb, elem, 0);
+        return sb.toString();
+    }
+
+    private static void appendDetailedTree(StringBuilder sb, PdfStructElem elem, int depth) {
+        sb.append("  ".repeat(depth));
+        sb.append(elem.getRole().getValue());
+
+        // Collect non-structelem kids (MCRs and OBJRs)
+        List<IStructureNode> kids = elem.getKids();
+        if (kids != null) {
+            List<String> leafLabels = new ArrayList<>();
+            for (IStructureNode kid : kids) {
+                if (kid instanceof PdfObjRef objRef) {
+                    PdfDictionary refObj = objRef.getReferencedObject();
+                    if (refObj != null) {
+                        PdfName subtype = refObj.getAsName(PdfName.Subtype);
+                        leafLabels.add(subtype != null ? "OBJR:" + subtype.getValue() : "OBJR");
+                    } else {
+                        leafLabels.add("OBJR");
+                    }
+                } else if (kid instanceof PdfMcr) {
+                    leafLabels.add("MCR");
+                }
+            }
+            if (!leafLabels.isEmpty()) {
+                sb.append('\n');
+                sb.append("  ".repeat(depth + 1));
+                sb.append("[");
+                sb.append(String.join(", ", leafLabels));
+                sb.append(']');
+            }
+        }
+
+        sb.append('\n');
+        for (PdfStructElem kid : structKidsOf(elem)) {
+            appendDetailedTree(sb, kid, depth + 1);
+        }
     }
 
     /**
