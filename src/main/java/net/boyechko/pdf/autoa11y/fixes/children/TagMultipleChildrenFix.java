@@ -17,8 +17,10 @@
  */
 package net.boyechko.pdf.autoa11y.fixes.children;
 
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
+import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.fixes.child.TagSingleChildFix;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -32,9 +34,12 @@ public abstract class TagMultipleChildrenFix implements IssueFix {
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
 
-    protected TagMultipleChildrenFix(PdfStructElem parent, List<PdfStructElem> kids) {
+    protected TagMultipleChildrenFix(PdfStructElem parent, List<? extends IStructureNode> kids) {
         this.parent = parent;
-        this.kids = kids != null ? List.copyOf(kids) : List.of();
+        this.kids =
+                kids != null
+                        ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
+                        : List.of();
     }
 
     public static IssueFix createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
