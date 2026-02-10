@@ -37,9 +37,19 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             return;
         }
 
-        // Find the position of the first P among the parent's kids (MCRs + struct elements)
         PdfStructElem firstP = kids.get(0);
-        List<IStructureNode> parentKids = parent.getKids();
+        PdfStructElem actualParent = findParentContaining(firstP);
+        if (actualParent == null) {
+            logger.debug(
+                    "Skipping fix: P element obj #{} not found in any ancestor's K array "
+                            + "(stored parent was obj #{})",
+                    StructureTree.objNumber(firstP),
+                    StructureTree.objNumber(parent));
+            return;
+        }
+
+        // Find the position of the first P among the actual parent's kids
+        List<IStructureNode> parentKids = actualParent.getKids();
         int insertIndex = -1;
         for (int i = 0; i < parentKids.size(); i++) {
             IStructureNode kid = parentKids.get(i);
@@ -49,17 +59,17 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             }
         }
         if (insertIndex < 0) {
-            throw new Exception("First P element not found in parent kids");
+            return;
         }
 
-        // Remove all P elements from parent first
+        // Remove all P elements from actual parent
         for (PdfStructElem p : kids) {
-            parent.removeKid(p);
+            actualParent.removeKid(p);
         }
 
         // Create L element and add it at the saved position
         PdfStructElem listElem = new PdfStructElem(ctx.doc(), PdfName.L);
-        parent.addKid(insertIndex, listElem);
+        actualParent.addKid(insertIndex, listElem);
 
         // Build LI > LBody > P structure under L
         for (PdfStructElem p : kids) {
@@ -74,7 +84,27 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         logger.debug(
                 "Wrapped {} P elements in L > LI > LBody under obj #{}",
                 kids.size(),
-                StructureTree.objNumber(parent));
+                StructureTree.objNumber(actualParent));
+    }
+
+    /**
+     * Finds the actual parent whose K array contains the given element. Starts from the element's
+     * /P parent and walks up the ancestor chain. This handles cases where FlattenNesting promoted
+     * children but iText's getKids() cache became stale.
+     */
+    private PdfStructElem findParentContaining(PdfStructElem target) {
+        // Start from the target's /P parent, then walk up ancestors
+        IStructureNode candidate = target.getParent();
+        for (int depth = 0; depth < 10 && candidate instanceof PdfStructElem elem; depth++) {
+            for (IStructureNode kid : elem.getKids()) {
+                if (kid instanceof PdfStructElem kidElem
+                        && StructureTree.isSameElement(kidElem, target)) {
+                    return elem;
+                }
+            }
+            candidate = elem.getParent();
+        }
+        return null;
     }
 
     @Override

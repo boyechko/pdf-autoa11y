@@ -220,20 +220,6 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
     private record SubRun(
             List<PdfStructElem> elements, List<Integer> indices, List<Float> leftEdges) {}
 
-    /** Checks that all left edges in the list are within tolerance of each other. */
-    private boolean leftEdgesConsistent(List<Float> leftEdges) {
-        if (leftEdges.size() < 2) {
-            return true;
-        }
-        float min = Float.MAX_VALUE;
-        float max = -Float.MAX_VALUE;
-        for (float edge : leftEdges) {
-            min = Math.min(min, edge);
-            max = Math.max(max, edge);
-        }
-        return (max - min) <= LEFT_EDGE_TOLERANCE;
-    }
-
     /**
      * Gets the minimum left edge from non-run siblings (H1, H2, other P elements, etc.) to use as a
      * reference for indentation comparison.
