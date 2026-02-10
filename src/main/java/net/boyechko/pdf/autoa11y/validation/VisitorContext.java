@@ -34,6 +34,7 @@ public record VisitorContext(
         PdfStructElem node,
         String path,
         String role,
+        String mappedRole,
         TagSchema.Rule schemaRule,
         String parentRole,
         List<PdfStructElem> children,
@@ -43,6 +44,50 @@ public record VisitorContext(
         /** Index in traversal order (1-based). */
         int globalIndex,
         DocumentContext docCtx) {
+
+    /**
+     * Creates a VisitorContext from a PdfStructElem and internal state.
+     *
+     * @param node The current node being visited.
+     * @param parentPath The path to the parent of the current node.
+     * @param depth The depth of the current node in the tree.
+     * @param globalIndex The index of the current node in the traversal order.
+     * @param schema The schema to use for the current node.
+     * @param docCtx The document context.
+     * @return A new VisitorContext.
+     */
+    public static VisitorContext fromNode(
+            PdfStructElem node,
+            String parentPath,
+            int depth,
+            int globalIndex,
+            TagSchema schema,
+            DocumentContext docCtx) {
+        // TODO: Update callers to use mappedRole, then change to PdfName.
+        String role = StructureTree.mappedRole(node);
+        String mappedRole = StructureTree.mappedRole(node);
+        String path = parentPath + role + "[" + globalIndex + "]";
+        TagSchema.Rule schemaRule = schema != null ? schema.roles.get(role) : null;
+
+        PdfStructElem parent = StructureTree.parentOf(node);
+        String parentRole = parent != null ? StructureTree.mappedRole(parent) : null;
+
+        List<PdfStructElem> children = StructureTree.structKidsOf(node);
+        List<String> childRoles = children.stream().map(StructureTree::mappedRole).toList();
+
+        return new VisitorContext(
+                node,
+                path,
+                role,
+                mappedRole,
+                schemaRule,
+                parentRole,
+                children,
+                childRoles,
+                depth,
+                globalIndex,
+                docCtx);
+    }
 
     public PdfDocument doc() {
         return docCtx.doc();
@@ -70,6 +115,10 @@ public record VisitorContext(
 
     public boolean hasRole(String roleName) {
         return roleName.equals(role);
+    }
+
+    public boolean hasRole(PdfName roleName) {
+        return roleName.equals(node.getRole());
     }
 
     public boolean hasAnyRole(String... roleNames) {
