@@ -1,5 +1,90 @@
 # Contributing to PDF-Auto-A11y
 
+## Project Structure & Architecture
+
+This project is organized around a small processing pipeline that:
+
+1. Opens a PDF (read-only for analysis, read-write for remediation)
+2. Builds a `DocumentContext` wrapper
+3. Detects issues via document rules and structure-tree visitors
+4. Optionally applies automatic fixes and re-validates
+
+### Package Layout
+
+Most code lives under `src/main/java/net/boyechko/pdf/autoa11y/`:
+
+- `ui/`: CLI/GUI entry points and reporting (e.g. `PdfAutoA11yCLI`,
+  `PdfAutoA11yGUI`, `ProcessingReporter`)
+- `core/`: orchestration (e.g. `ProcessingService`, `ProcessingDefaults`)
+- `document/`: PDF IO and context helpers (e.g. `PdfCustodian`,
+  `DocumentContext`)
+- `validation/`: validation engine and tree-walking infrastructure (e.g.
+  `RuleEngine`, `StructureTreeWalker`, `TagSchema`)
+- `rules/`: document-level checks that do not require a tree traversal
+  (metadata, annotations, etc.)
+- `visitors/`: structure-tree checks implemented as a single traversal of
+  the tag tree (`StructureTreeVisitor`s)
+- `issues/`: shared issue model (`Issue`, `IssueType`, `IssueList`,
+  `IssueFix`, locations/severity)
+- `fixes/`: automatic fix implementations (typically implement
+  `IssueFix`)
+
+Dependencies are meant to be directional: `ui/` depends on `core/`, and
+`core/` orchestrates `validation/`, `rules/`, `visitors/`, `issues/`, and
+`fixes/`.
+
+### PDF Processing Flow
+
+The main entry point for processing is `core/ProcessingService`.
+`ProcessingService.analyze()` detects issues and reports them, while
+`ProcessingService.remediate()` additionally applies available fixes and
+returns a `ProcessingResult` that includes the (temporary) output file.
+
+```mermaid
+flowchart TD
+  UI["UI: CLI or GUI"] --> PS["core/ProcessingService"]
+  PS --> PC["document/PdfCustodian"]
+  PC -->|openForModification| PDF["PdfDocument"]
+  PDF --> CTX["document/DocumentContext"]
+
+  CTX --> DOC["Phase: document rules"]
+  CTX --> TAG["Phase: structure tree visitors"]
+
+  DOC -->|Rule.findIssues| RULES["rules/*"]
+  TAG -->|StructureTreeWalker.walk| WALK["validation/StructureTreeWalker"]
+  WALK --> VIS["visitors/*"]
+
+  RULES --> ISS["issues/IssueList"]
+  VIS --> ISS
+
+  ISS --> FIX["validation/RuleEngine.applyFixes"]
+  FIX -->|"priority + invalidation"| APPLIED["issues resolved/failed"]
+  APPLIED --> REVAL["Re-run visitors if tag fixes applied"]
+  REVAL --> OUT["ProcessingResult + output PDF"]
+```
+
+### How Issues Become Fixes
+
+Detection produces `issues/Issue` instances. An `Issue` may optionally
+carry an `issues/IssueFix` reference:
+
+- Document-level rules implement `validation/Rule` and return issues from
+  `Rule.findIssues(DocumentContext)`.
+- Structure-tree checks implement `validation/StructureTreeVisitor` and
+  return issues during the tree walk.
+- Fix application is centralized in `validation/RuleEngine.applyFixes`.
+  Fixes are sorted by `IssueFix.priority()` and can skip lower-priority
+  fixes via `IssueFix.invalidates(...)`.
+
+### Where to Add New Checks
+
+- Tag-structure check: add a new `StructureTreeVisitor` in `visitors/`
+  and register it in `core/ProcessingDefaults.visitorSuppliers()`.
+- Document-level check: add a new `Rule` in `rules/` and register it in
+  `core/ProcessingDefaults.rules()`.
+- Automatic remediation: implement `IssueFix` (often in `fixes/`) and
+  attach it when creating the corresponding `Issue`.
+
 ## Testing
 
 ### Running Tests
