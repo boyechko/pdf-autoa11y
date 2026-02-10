@@ -29,7 +29,9 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -165,6 +167,30 @@ public final class Content {
         // If more than 30% are single characters, assume artificial spacing
         double ratio = (double) singleCharWords / words.length;
         return ratio > ARTIFICIAL_SPACING_RATIO;
+    }
+
+    /** Gets the union bounding box for all MCRs within a structure element. */
+    public static Rectangle getBoundsForElement(
+            PdfStructElem node, DocumentContext ctx, int pageNum) {
+        Map<Integer, Rectangle> mcidBounds =
+                ctx.getOrComputeMcidBounds(
+                        pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
+
+        Rectangle result = null;
+        for (PdfMcr mcr : StructureTree.collectMcrs(node)) {
+            if (mcr instanceof PdfObjRef) {
+                continue;
+            }
+            int mcid = mcr.getMcid();
+            if (mcid < 0) {
+                continue;
+            }
+            Rectangle bounds = mcidBounds.get(mcid);
+            if (bounds != null) {
+                result = Geometry.union(result, bounds);
+            }
+        }
+        return result;
     }
 
     // ── Bounds extraction ───────────────────────────────────────────────
