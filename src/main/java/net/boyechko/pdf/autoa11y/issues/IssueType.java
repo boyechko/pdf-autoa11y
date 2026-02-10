@@ -41,7 +41,8 @@ public enum IssueType {
     NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("link annotations not tagged"),
-    LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs");
+    LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
+    PARAGRAPH_OF_LINKS("paragraph containing only links");
 
     private final String groupLabel;
 
