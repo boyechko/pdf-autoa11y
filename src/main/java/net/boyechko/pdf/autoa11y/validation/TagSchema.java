@@ -98,13 +98,14 @@ public final class TagSchema {
             var yaml = new Yaml(new Constructor(TagSchema.class, new LoaderOptions()));
             TagSchema schema = yaml.load(inputStream);
 
-            logger.debug(
-                    "Loaded TagSchema with {} roles from resource {}",
-                    schema.roles.size(),
-                    resourcePath);
+            int originalSchemaSize = schema.roles.size();
             schema.populateMissingRoles();
+            int populatedSchemaSize = schema.roles.size();
             logger.debug(
-                    "After populating missing roles, schema has {} roles", schema.roles.size());
+                    "Loaded TagSchema with {} roles ({}) from {}",
+                    originalSchemaSize,
+                    populatedSchemaSize,
+                    resourcePath);
 
             var warnings = schema.validateConsistency();
             if (!warnings.isEmpty()) {
