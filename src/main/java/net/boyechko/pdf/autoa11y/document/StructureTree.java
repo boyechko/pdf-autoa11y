@@ -372,4 +372,58 @@ public final class StructureTree {
         }
         return out;
     }
+
+    // --- Structure tree traversal utilities ---
+
+    public record Node<T>(T value, List<Node<T>> children) {
+        /** Creates a leaf node (no children). */
+        public static <T> Node<T> leaf(T value) {
+            return new Node<>(value, List.of());
+        }
+
+        /** Creates a node with children. */
+        @SafeVarargs
+        public static <T> Node<T> branch(T value, Node<T>... children) {
+            return new Node<>(value, List.of(children));
+        }
+
+        /** Returns a compact bracket notation, e.g. {@code Document[L[LI[LBody[P]]]]}. */
+        @Override
+        public String toString() {
+            if (children.isEmpty()) {
+                return String.valueOf(value);
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(value).append('[');
+            for (int i = 0; i < children.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(children.get(i));
+            }
+            sb.append(']');
+            return sb.toString();
+        }
+    }
+
+    /** Converts a PdfStructElem tree into a Node tree of role-name strings. */
+    public static Node<String> toRoleTree(PdfStructElem elem) {
+        List<Node<String>> childNodes = new ArrayList<>();
+        for (PdfStructElem kid : structKidsOf(elem)) {
+            childNodes.add(toRoleTree(kid));
+        }
+        return new Node<>(elem.getRole().getValue(), childNodes);
+    }
+
+    /**
+     * Navigates to a descendant by a sequence of child indices.
+     *
+     * <p>For example, {@code getDescendant(root, 0, 2, 0)} is equivalent to {@code
+     * root.getKids().get(0).getKids().get(2).getKids().get(0)}.
+     */
+    public static IStructureNode getDescendant(IStructureNode root, int... indices) {
+        IStructureNode current = root;
+        for (int idx : indices) {
+            current = current.getKids().get(idx);
+        }
+        return current;
+    }
 }

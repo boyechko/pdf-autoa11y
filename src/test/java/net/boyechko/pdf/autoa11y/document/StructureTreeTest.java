@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
+import static net.boyechko.pdf.autoa11y.document.StructureTree.Node.branch;
+import static net.boyechko.pdf.autoa11y.document.StructureTree.Node.leaf;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfArray;
@@ -29,6 +31,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.document.StructureTree.Node;
 import org.junit.jupiter.api.Test;
 
 class StructureTreeTest extends PdfTestBase {
@@ -398,6 +401,49 @@ class StructureTreeTest extends PdfTestBase {
             PdfArray kArray = StructureTree.getKArray(document);
             assertNotNull(kArray);
             assertEquals(-1, StructureTree.findIndexInKArray(kArray, orphan));
+        }
+    }
+
+    @Test
+    void toRoleTreeConvertsToRoleTree() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem h1 = new PdfStructElem(doc, PdfName.H1);
+            document.addKid(h1);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            document.addKid(p);
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            p.addKid(span);
+
+            Node<String> expected = branch("Document", leaf("H1"), branch("P", leaf("Span")));
+            assertEquals(expected, StructureTree.toRoleTree(document));
+        }
+    }
+
+    @Test
+    void getDescendantNavigatesToChild() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem h1 = new PdfStructElem(doc, PdfName.H1);
+            document.addKid(h1);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            document.addKid(p);
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            p.addKid(span);
+
+            PdfStructElem descendant = (PdfStructElem) StructureTree.getDescendant(root, 0, 1);
+            assertSame(p.getPdfObject(), descendant.getPdfObject());
         }
     }
 
