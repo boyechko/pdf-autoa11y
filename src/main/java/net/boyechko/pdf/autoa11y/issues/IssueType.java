@@ -40,7 +40,8 @@ public enum IssueType {
     PAGE_PARTS_NOT_NORMALIZED("content not grouped into page-level Part elements"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
-    UNMARKED_LINK("link annotations not tagged");
+    UNMARKED_LINK("link annotations not tagged"),
+    LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs");
 
     private final String groupLabel;
 
