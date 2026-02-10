@@ -17,14 +17,13 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,15 +121,15 @@ public class StructureTreeWalker {
     }
 
     private VisitorContext buildContext(PdfStructElem node, String parentPath, int depth) {
-        String role = mappedRole(node);
+        String role = StructureTree.mappedRole(node);
         String path = parentPath + role + "[" + globalIndex + "]";
         TagSchema.Rule schemaRule = schema != null ? schema.roles.get(role) : null;
 
-        PdfStructElem parent = parentOf(node);
-        String parentRole = parent != null ? mappedRole(parent) : null;
+        PdfStructElem parent = StructureTree.parentOf(node);
+        String parentRole = parent != null ? StructureTree.mappedRole(parent) : null;
 
-        List<PdfStructElem> children = structKidsOf(node);
-        List<String> childRoles = children.stream().map(this::mappedRole).toList();
+        List<PdfStructElem> children = StructureTree.structKidsOf(node);
+        List<String> childRoles = children.stream().map(k -> StructureTree.mappedRole(k)).toList();
 
         return new VisitorContext(
                 node,
@@ -143,34 +142,5 @@ public class StructureTreeWalker {
                 depth,
                 globalIndex,
                 docCtx);
-    }
-
-    private String mappedRole(PdfStructElem n) {
-        PdfDictionary roleMap = root.getRoleMap();
-        PdfName role = n.getRole();
-
-        if (roleMap != null) {
-            PdfName mappedRole = roleMap.getAsName(role);
-            return (mappedRole != null) ? mappedRole.getValue() : role.getValue();
-        }
-        return role.getValue();
-    }
-
-    private PdfStructElem parentOf(PdfStructElem n) {
-        IStructureNode p = n.getParent();
-        return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
-    }
-
-    private List<PdfStructElem> structKidsOf(PdfStructElem n) {
-        List<IStructureNode> kids = n.getKids();
-        if (kids == null) return List.of();
-
-        List<PdfStructElem> out = new ArrayList<>();
-        for (IStructureNode k : kids) {
-            if (k instanceof PdfStructElem) {
-                out.add((PdfStructElem) k);
-            }
-        }
-        return out;
     }
 }

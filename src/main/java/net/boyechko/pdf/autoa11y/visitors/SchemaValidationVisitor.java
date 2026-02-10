@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.fixes.child.TagSingleChildFix;
 import net.boyechko.pdf.autoa11y.fixes.children.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.issues.Issue;
@@ -78,13 +79,16 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
     }
 
     private void validateUnknownRole(VisitorContext ctx) {
+        /* If the schema rule is null, the role is not defined in the schema. */
         if (ctx.schemaRule() == null) {
             issues.add(
                     new Issue(
                             IssueType.TAG_UNKNOWN_ROLE,
                             IssueSeverity.ERROR,
                             new IssueLocation(ctx.node(), ctx.path()),
-                            "unknown role"));
+                            String.format(
+                                    "%s role is not defined in schema",
+                                    formatRole(StructureTree.mappedRole(ctx.node())))));
         }
     }
 
