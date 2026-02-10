@@ -17,9 +17,6 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfArray;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
@@ -73,24 +70,20 @@ public class FlattenNesting implements IssueFix {
             return;
         }
 
-        PdfArray kArray = StructureTree.normalizeKArray(parentNode);
-        if (kArray == null) {
-            logger.debug("Parent K entry is missing, cannot flatten");
-            return;
-        }
-
-        int wrapperIndex = StructureTree.findIndexInKArray(kArray, wrapper);
+        // Find wrapper's position among parent's kids
+        int wrapperIndex = StructureTree.findKidIndex(parentNode, wrapper);
         if (wrapperIndex < 0) {
             logger.debug(
-                    "Could not find wrapper (obj # {}) in parent K array",
+                    "Could not find wrapper (obj # {}) in parent kids",
                     StructureTree.objNumber(wrapper));
             return;
         }
 
-        promoteChildren(wrapper, childrenToMove, kArray, wrapperIndex, parentNode);
-
-        // Remove the wrapper (now shifted past the inserted children)
-        kArray.remove(wrapperIndex + childrenToMove.size());
+        // Remove wrapper from parent, then promote children at the same position.
+        // Using iText's addKid/removeKid API (not raw K-array manipulation) so that
+        // iText's internal caches stay consistent with the actual tree structure.
+        StructureTree.removeFromParent(wrapper, parentNode);
+        promoteChildren(wrapper, childrenToMove, wrapperIndex, parentNode);
 
         flattened++;
         logger.debug(
@@ -117,26 +110,12 @@ public class FlattenNesting implements IssueFix {
     private void promoteChildren(
             PdfStructElem wrapper,
             List<PdfStructElem> children,
-            PdfArray kArray,
-            int wrapperIndex,
+            int insertIndex,
             IStructureNode newParent) {
-        PdfDictionary newParentDict = StructureTree.getPdfObject(newParent);
-        String parentRole = newParent.getRole() != null ? newParent.getRole().getValue() : "root";
-        int parentObjNum =
-                newParent instanceof PdfStructElem parentElem
-                        ? StructureTree.objNumber(parentElem)
-                        : -1;
         for (int i = 0; i < children.size(); i++) {
             PdfStructElem child = children.get(i);
             wrapper.removeKid(child);
-            child.getPdfObject().put(PdfName.P, newParentDict);
-            kArray.add(wrapperIndex + i, child.getPdfObject());
-            logger.trace(
-                    "Promoted {} (obj # {}) to parent {} (obj # {})",
-                    child.getRole().getValue(),
-                    StructureTree.objNumber(child),
-                    parentRole,
-                    parentObjNum);
+            StructureTree.addKidToParent(newParent, insertIndex + i, child);
         }
     }
 

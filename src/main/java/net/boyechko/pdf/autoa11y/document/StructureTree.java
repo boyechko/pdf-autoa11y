@@ -168,6 +168,28 @@ public final class StructureTree {
         return a == b || (a.getIndirectReference() != null && a.getIndirectReference().equals(b));
     }
 
+    /** Finds the index of a kid element within a parent's kids list (via getKids). */
+    public static int findKidIndex(IStructureNode parent, PdfStructElem target) {
+        List<IStructureNode> kids = parent.getKids();
+        if (kids == null) return -1;
+        for (int i = 0; i < kids.size(); i++) {
+            IStructureNode kid = kids.get(i);
+            if (kid instanceof PdfStructElem elem && isSameElement(elem, target)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Adds a kid at a specific index (works with both PdfStructElem and PdfStructTreeRoot). */
+    public static void addKidToParent(IStructureNode parent, int index, PdfStructElem kid) {
+        if (parent instanceof PdfStructElem parentElem) {
+            parentElem.addKid(index, kid);
+        } else if (parent instanceof PdfStructTreeRoot root) {
+            root.addKid(index, kid);
+        }
+    }
+
     /** Removes an element from its parent (works with both PdfStructElem and PdfStructTreeRoot). */
     public static void removeFromParent(PdfStructElem elem, IStructureNode parent) {
         if (parent instanceof PdfStructElem parentElem) {
