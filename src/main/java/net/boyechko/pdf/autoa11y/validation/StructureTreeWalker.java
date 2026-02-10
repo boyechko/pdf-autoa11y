@@ -23,7 +23,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +82,8 @@ public class StructureTreeWalker {
     private void walkElement(PdfStructElem node, String parentPath, int depth) {
         globalIndex++;
 
-        VisitorContext ctx = buildContext(node, parentPath, depth);
+        VisitorContext ctx =
+                VisitorContext.fromNode(node, parentPath, depth, globalIndex, schema, docCtx);
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;
@@ -118,29 +118,5 @@ public class StructureTreeWalker {
                         e.getMessage());
             }
         }
-    }
-
-    private VisitorContext buildContext(PdfStructElem node, String parentPath, int depth) {
-        String role = StructureTree.mappedRole(node);
-        String path = parentPath + role + "[" + globalIndex + "]";
-        TagSchema.Rule schemaRule = schema != null ? schema.roles.get(role) : null;
-
-        PdfStructElem parent = StructureTree.parentOf(node);
-        String parentRole = parent != null ? StructureTree.mappedRole(parent) : null;
-
-        List<PdfStructElem> children = StructureTree.structKidsOf(node);
-        List<String> childRoles = children.stream().map(k -> StructureTree.mappedRole(k)).toList();
-
-        return new VisitorContext(
-                node,
-                path,
-                role,
-                schemaRule,
-                parentRole,
-                children,
-                childRoles,
-                depth,
-                globalIndex,
-                docCtx);
     }
 }
