@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
@@ -78,6 +79,8 @@ public class NormalizePageParts implements IssueFix {
             PdfStructElem partElem = findPartForPage(documentElem, page);
             if (partElem == null) {
                 partElem = new PdfStructElem(doc, PdfName.Part, page);
+                partElem.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+                partElem.put(PdfName.T, new PdfString("p. " + pageNum));
                 documentElem.addKid(partElem);
                 partsCreated++;
                 logger.debug(

@@ -29,6 +29,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import org.junit.jupiter.api.Test;
 
 class NormalizePagePartsTest extends PdfTestBase {
@@ -61,6 +62,39 @@ class NormalizePagePartsTest extends PdfTestBase {
             assertEquals(1, part2.getKids().size(), "Part for page 2 should contain one child");
             assertEquals(PdfName.P, ((PdfStructElem) part1.getKids().get(0)).getRole());
             assertEquals(PdfName.P, ((PdfStructElem) part2.getKids().get(0)).getRole());
+        }
+    }
+
+    @Test
+    void partElementsHavePgAndTitle() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page1 = pdfDoc.addNewPage();
+            PdfPage page2 = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            NormalizePageParts fix = new NormalizePageParts();
+            fix.apply(new DocumentContext(pdfDoc));
+
+            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
+            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            assertNotNull(part1, "Part for page 1 should exist");
+            assertNotNull(part2, "Part for page 2 should exist");
+
+            assertTrue(
+                    StructureTree.isSamePage(
+                            part1.getPdfObject().getAsDictionary(PdfName.Pg), page1),
+                    "/Pg for part 1 should reference page 1");
+            assertTrue(
+                    StructureTree.isSamePage(
+                            part2.getPdfObject().getAsDictionary(PdfName.Pg), page2),
+                    "/Pg for part 2 should reference page 2");
+
+            assertEquals("p. 1", part1.getPdfObject().getAsString(PdfName.T).getValue());
+            assertEquals("p. 2", part2.getPdfObject().getAsString(PdfName.T).getValue());
         }
     }
 
