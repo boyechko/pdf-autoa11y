@@ -104,7 +104,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             if (docElem == null) {
                 return "<no Document element>";
             }
-            return StructureTree.toIndentedTreeString(docElem).strip();
+            return StructureTree.toDetailedTreeString(docElem).strip();
         }
     }
 
