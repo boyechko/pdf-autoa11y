@@ -30,6 +30,7 @@ import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
 import net.boyechko.pdf.autoa11y.rules.UnpartitionedDocumentRule;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.visitors.EmptyElementVisitor;
 import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
 import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
@@ -60,6 +61,7 @@ public final class ProcessingDefaults {
                 FigureWithTextVisitor::new,
                 EmptyLinkTagVisitor::new,
                 SchemaValidationVisitor::new,
-                ParagraphRunVisitor::new);
+                ParagraphRunVisitor::new,
+                EmptyElementVisitor::new);
     }
 }
