@@ -17,6 +17,9 @@
  */
 package net.boyechko.pdf.autoa11y.ui.cli;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -25,6 +28,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,8 @@ public class PdfAutoA11yCLI {
             String password,
             boolean force_save,
             boolean analyzeOnly,
+            boolean dumpTree,
+            boolean dumpTreeDetailed,
             Path reportPath,
             VerbosityLevel verbosity,
             boolean printStructureTree) {
@@ -48,7 +54,7 @@ public class PdfAutoA11yCLI {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (!analyzeOnly && outputPath == null) {
+            if (!analyzeOnly && !dumpTree && !dumpTreeDetailed && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -93,6 +99,8 @@ public class PdfAutoA11yCLI {
         String password = null;
         boolean force_save = false;
         boolean analyzeOnly = false;
+        boolean dumpTree = false;
+        boolean dumpTreeDetailed = false;
         boolean generateReport = false;
         Path reportPath = null;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
@@ -118,6 +126,8 @@ public class PdfAutoA11yCLI {
                     case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
                     case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
                     case "-t", "--print-tree" -> printStructureTree = true;
+                    case "--dump-tree" -> dumpTree = true;
+                    case "--dump-tree-detailed" -> dumpTreeDetailed = true;
                     case "-f", "--force" -> force_save = true;
                     case "-a", "--analyze" -> analyzeOnly = true;
                     case "-r", "--report" -> generateReport = true;
@@ -147,7 +157,7 @@ public class PdfAutoA11yCLI {
                 inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
 
         // Generate output path
-        if (!analyzeOnly) {
+        if (!analyzeOnly && !dumpTree && !dumpTreeDetailed) {
             if (outputPath == null) {
                 String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
                 Path parent = inputPath.getParent();
@@ -173,6 +183,8 @@ public class PdfAutoA11yCLI {
                 password,
                 force_save,
                 analyzeOnly,
+                dumpTree,
+                dumpTreeDetailed,
                 reportPath,
                 verbosity,
                 printStructureTree);
@@ -197,6 +209,11 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
+        if (config.dumpTree() || config.dumpTreeDetailed()) {
+            dumpTree(config);
+            return;
+        }
+
         PrintStream output = System.out;
         OutputStream reportFile = null;
 
@@ -267,6 +284,32 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    private static void dumpTree(CLIConfig config) {
+        try {
+            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+            try (PdfDocument pdfDoc = custodian.openForReading()) {
+                PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+                if (root == null) {
+                    System.err.println("✗ PDF has no structure tree");
+                    System.exit(1);
+                }
+                PdfStructElem docElem = StructureTree.findDocument(root);
+                if (docElem == null) {
+                    System.err.println("✗ Structure tree has no Document element");
+                    System.exit(1);
+                }
+                if (config.dumpTreeDetailed()) {
+                    System.out.print(StructureTree.toDetailedTreeString(docElem));
+                } else {
+                    System.out.print(StructureTree.toIndentedTreeString(docElem));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Failed to read PDF: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
     /** Writes to two output streams simultaneously, like the Unix tee command. */
     private static class TeeOutputStream extends OutputStream {
         private final OutputStream out1;
@@ -313,6 +356,8 @@ public class PdfAutoA11yCLI {
                 + "  -v, --verbose     Show detailed processing information\n"
                 + "  -vv, --debug      Show all debug information\n"
                 + "  -t, --print-tree  Print the structure tree during processing\n"
+                + "  --dump-tree       Print the structure tree (roles only) and exit\n"
+                + "  --dump-tree-detailed  Like --dump-tree but also shows MCRs and annotations\n"
                 + "  -f, --force       Force save even if no fixes applied\n"
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save output to report file (auto-named from input)\n"
@@ -320,6 +365,7 @@ public class PdfAutoA11yCLI {
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
                 + "  java PdfAutoA11yCLI -r -t document.pdf\n"
+                + "  java PdfAutoA11yCLI --dump-tree document.pdf\n"
                 + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf";
     }
 }
