@@ -1,0 +1,105 @@
+/*
+ * PDF-Auto-A11y - Automated PDF Accessibility Remediation
+ * Copyright (C) 2025 Richard Boyechko
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package net.boyechko.pdf.autoa11y;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import net.boyechko.pdf.autoa11y.core.NoOpProcessingListener;
+import net.boyechko.pdf.autoa11y.core.ProcessingResult;
+import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.document.StructureTree;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+/**
+ * Goal-driven integration tests. Each test runs the full remediation pipeline on a real PDF and
+ * compares the output structure tree against a hand-crafted goal snapshot.
+ *
+ * <p>Workflow for adding a new test case:
+ *
+ * <ol>
+ *   <li>Run {@code ./pdf-autoa11y --dump-tree inputs/foo.pdf} to see the "before" tree
+ *   <li>Manually remediate the PDF (e.g., in Acrobat)
+ *   <li>Run {@code ./pdf-autoa11y --dump-tree foo_fixed.pdf >
+ *       src/test/resources/snapshots/foo.goal.txt}
+ *   <li>Add "foo.pdf" to the {@code @ValueSource} below
+ *   <li>Run tests — they fail (red) until automated fixes match the goal (green)
+ * </ol>
+ */
+public class GoalDrivenIntegrationTest extends PdfTestBase {
+
+    private static final Path INPUTS_DIR = Path.of("inputs");
+    private static final Path SNAPSHOTS_DIR = Path.of("src/test/resources/snapshots");
+
+    @ParameterizedTest(name = "remediate {0}")
+    @ValueSource(
+            strings = {
+                "catalog1.pdf",
+                "catalog_five.pdf",
+            })
+    @Tag("GoalDriven")
+    void remediateAndCompareToGoal(String pdfName) throws Exception {
+        Path inputPath = INPUTS_DIR.resolve(pdfName);
+        assumeTrue(Files.exists(inputPath), "Input PDF not found: " + inputPath);
+
+        String baseName = pdfName.replace(".pdf", "");
+        Path goalFile = SNAPSHOTS_DIR.resolve(baseName + ".goal.txt");
+        assumeTrue(Files.exists(goalFile), "Goal snapshot not found: " + goalFile);
+
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(inputPath))
+                        .withListener(new NoOpProcessingListener())
+                        .build();
+
+        ProcessingResult result = service.remediate();
+        saveRemediatedPdf(result);
+
+        String actualTree = readStructureTree(result.tempOutputFile());
+        String expectedTree = Files.readString(goalFile).strip();
+
+        assertEquals(
+                expectedTree,
+                actualTree,
+                "Structure tree of remediated "
+                        + pdfName
+                        + " does not match goal.\n"
+                        + "To update the goal, manually remediate the PDF and run:\n"
+                        + "  ./pdf-autoa11y --dump-tree <fixed.pdf>"
+                        + " > "
+                        + goalFile);
+    }
+
+    private String readStructureTree(Path pdfPath) throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            PdfStructElem docElem = StructureTree.findDocument(doc.getStructTreeRoot());
+            if (docElem == null) {
+                return "<no Document element>";
+            }
+            return StructureTree.toRoleTreeString(docElem);
+        }
+    }
+}
