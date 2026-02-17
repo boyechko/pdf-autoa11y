@@ -42,6 +42,7 @@ public enum IssueType {
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("link annotations not tagged"),
     UNEXPECTED_WIDGET("unexpected widget annotations"),
+    EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     PARAGRAPH_OF_LINKS("paragraph containing only links");
 
