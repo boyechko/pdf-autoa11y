@@ -126,10 +126,15 @@ public class ProcessingService {
         IssueList appliedTagFixes = applyFixesPhase(context, tagIssues, "structure tree");
         IssueList appliedDocFixes = applyFixesPhase(context, docIssues, "document");
 
-        // Phase 4: Re-detect tag issues
+        // Phase 4: Re-detect and fix tag issues until stable
         IssueList remainingTagIssues = tagIssues;
-        if (appliedTagFixes.size() > 0) {
+        if (appliedTagFixes.size() > 0 || appliedDocFixes.size() > 0) {
             remainingTagIssues = detectTagIssuesPhase(context);
+            IssueList newFixes = applyFixesPhase(context, remainingTagIssues, "structure tree");
+            appliedTagFixes.addAll(newFixes);
+            if (newFixes.size() > 0) {
+                remainingTagIssues = detectTagIssuesPhase(context);
+            }
         }
 
         // Phase 5: Generate summary
