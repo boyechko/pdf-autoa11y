@@ -17,14 +17,18 @@
  */
 package net.boyechko.pdf.autoa11y;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.github.difflib.DiffUtils;
+import com.github.difflib.UnifiedDiffUtils;
+import com.github.difflib.patch.Patch;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.core.NoOpProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -81,16 +85,17 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
         String actualTree = readStructureTree(result.tempOutputFile());
         String expectedTree = Files.readString(goalFile).strip();
 
-        assertEquals(
-                expectedTree,
-                actualTree,
-                "Structure tree of remediated "
-                        + pdfName
-                        + " does not match goal.\n"
-                        + "To update the goal, manually remediate the PDF and run:\n"
-                        + "  ./pdf-autoa11y --dump-tree <fixed.pdf>"
-                        + " > "
-                        + goalFile);
+        if (!expectedTree.equals(actualTree)) {
+            fail(
+                    "Structure tree of remediated "
+                            + pdfName
+                            + " does not match goal.\n"
+                            + "To update the goal, manually remediate the PDF and run:\n"
+                            + "  ./pdf-autoa11y --dump-tree <fixed.pdf> > "
+                            + goalFile
+                            + "\n\n"
+                            + unifiedDiff(expectedTree, actualTree));
+        }
     }
 
     private String readStructureTree(Path pdfPath) throws Exception {
@@ -99,7 +104,16 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             if (docElem == null) {
                 return "<no Document element>";
             }
-            return StructureTree.toRoleTreeString(docElem);
+            return StructureTree.toIndentedTreeString(docElem).strip();
         }
+    }
+
+    private static String unifiedDiff(String expected, String actual) {
+        List<String> goalLines = expected.lines().toList();
+        List<String> actualLines = actual.lines().toList();
+        Patch<String> patch = DiffUtils.diff(goalLines, actualLines);
+        List<String> diff =
+                UnifiedDiffUtils.generateUnifiedDiff("goal", "actual", goalLines, patch, 2);
+        return String.join("\n", diff);
     }
 }
