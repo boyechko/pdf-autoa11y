@@ -18,15 +18,20 @@
 package net.boyechko.pdf.autoa11y.ui.cli;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
@@ -299,7 +304,12 @@ public class PdfAutoA11yCLI {
                     System.exit(1);
                 }
                 if (config.dumpTreeDetailed()) {
-                    System.out.print(StructureTree.toDetailedTreeString(docElem));
+                    Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+                    for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                        PdfPage page = pdfDoc.getPage(i);
+                        contentKinds.putAll(Content.extractContentKindsForPage(page));
+                    }
+                    System.out.print(StructureTree.toDetailedTreeString(docElem, contentKinds));
                 } else {
                     System.out.print(StructureTree.toIndentedTreeString(docElem));
                 }

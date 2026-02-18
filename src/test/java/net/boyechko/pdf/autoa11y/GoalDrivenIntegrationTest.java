@@ -24,14 +24,19 @@ import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
 import com.github.difflib.patch.Patch;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.core.NoOpProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import org.junit.jupiter.api.Tag;
@@ -104,7 +109,12 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             if (docElem == null) {
                 return "<no Document element>";
             }
-            return StructureTree.toDetailedTreeString(docElem).strip();
+            Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+            for (int i = 1; i <= doc.getNumberOfPages(); i++) {
+                PdfPage page = doc.getPage(i);
+                contentKinds.putAll(Content.extractContentKindsForPage(page));
+            }
+            return StructureTree.toDetailedTreeString(docElem, contentKinds).strip();
         }
     }
 
