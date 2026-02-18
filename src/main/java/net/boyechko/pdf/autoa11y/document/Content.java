@@ -34,6 +34,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,73 @@ public final class Content {
     private static final Logger logger = LoggerFactory.getLogger(Content.class);
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;
 
+    /** The kind of content found in a marked content section. */
+    public enum ContentKind {
+        TEXT,
+        IMAGE
+    }
+
     private Content() {}
+
+    // ── Content kind extraction ─────────────────────────────────────────
+
+    /** Determines the content kind (text, image, or both) for each MCID on a page. */
+    public static Map<Integer, Set<ContentKind>> extractContentKindsForPage(PdfPage page) {
+        Map<Integer, Set<ContentKind>> result = new HashMap<>();
+        if (page == null) {
+            return result;
+        }
+
+        try {
+            ContentKindListener listener = new ContentKindListener(result);
+            PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
+            processor.processPageContent(page);
+        } catch (Exception e) {
+            int pageNum = page.getDocument().getPageNumber(page);
+            logger.debug(
+                    "Failed to extract content kinds for page {}: {}", pageNum, e.getMessage());
+        }
+
+        return result;
+    }
+
+    /** Listener that tracks whether each MCID contains text, images, or both. */
+    private static class ContentKindListener implements IEventListener {
+        private final Map<Integer, Set<ContentKind>> kindsByMcid;
+
+        ContentKindListener(Map<Integer, Set<ContentKind>> kindsByMcid) {
+            this.kindsByMcid = kindsByMcid;
+        }
+
+        @Override
+        public void eventOccurred(IEventData data, EventType type) {
+            if (type == EventType.RENDER_TEXT) {
+                TextRenderInfo textInfo = (TextRenderInfo) data;
+                Integer mcid = textInfo.getMcid();
+                if (mcid != null && mcid >= 0) {
+                    String text = textInfo.getText();
+                    if (text != null && !text.trim().isEmpty()) {
+                        kindsByMcid
+                                .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
+                                .add(ContentKind.TEXT);
+                    }
+                }
+            } else if (type == EventType.RENDER_IMAGE) {
+                ImageRenderInfo imageInfo = (ImageRenderInfo) data;
+                int mcid = imageInfo.getMcid();
+                if (mcid >= 0) {
+                    kindsByMcid
+                            .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
+                            .add(ContentKind.IMAGE);
+                }
+            }
+        }
+
+        @Override
+        public Set<EventType> getSupportedEvents() {
+            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE);
+        }
+    }
 
     // ── Text extraction ─────────────────────────────────────────────────
 
