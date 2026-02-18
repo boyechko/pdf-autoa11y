@@ -31,6 +31,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -468,20 +470,34 @@ public final class StructureTree {
      * <pre>
      * Document
      *   Part
-     *     Link  [MCR, OBJR:Link]
-     *       Figure  [MCR]
-     *     P  [MCR]
-     *     H1
-     *       Form  [OBJR:Widget]
+     *     Link
+     *       [MCR:text, OBJR:Link]
+     *       Figure
+     *         [MCR:image]
+     *     P
+     *       [MCR:text]
      * </pre>
      */
     public static String toDetailedTreeString(PdfStructElem elem) {
+        return toDetailedTreeString(elem, Map.of());
+    }
+
+    /**
+     * Like {@link #toDetailedTreeString(PdfStructElem)}, but labels MCRs with their content kind
+     * (text/image) using the provided map from MCID to content kinds.
+     */
+    public static String toDetailedTreeString(
+            PdfStructElem elem, Map<Integer, Set<Content.ContentKind>> contentKinds) {
         StringBuilder sb = new StringBuilder();
-        appendDetailedTree(sb, elem, 0);
+        appendDetailedTree(sb, elem, 0, contentKinds);
         return sb.toString();
     }
 
-    private static void appendDetailedTree(StringBuilder sb, PdfStructElem elem, int depth) {
+    private static void appendDetailedTree(
+            StringBuilder sb,
+            PdfStructElem elem,
+            int depth,
+            Map<Integer, Set<Content.ContentKind>> contentKinds) {
         sb.append("  ".repeat(depth));
         sb.append(elem.getRole().getValue());
 
@@ -491,30 +507,58 @@ public final class StructureTree {
             List<String> leafLabels = new ArrayList<>();
             for (IStructureNode kid : kids) {
                 if (kid instanceof PdfObjRef objRef) {
-                    PdfDictionary refObj = objRef.getReferencedObject();
-                    if (refObj != null) {
-                        PdfName subtype = refObj.getAsName(PdfName.Subtype);
-                        leafLabels.add(subtype != null ? "OBJR:" + subtype.getValue() : "OBJR");
-                    } else {
-                        leafLabels.add("OBJR");
-                    }
-                } else if (kid instanceof PdfMcr) {
-                    leafLabels.add("MCR");
+                    leafLabels.add(objrLabel(objRef));
+                } else if (kid instanceof PdfMcr mcr) {
+                    leafLabels.add(mcrLabel(mcr, contentKinds));
                 }
             }
-            if (!leafLabels.isEmpty()) {
+            for (String label : leafLabels) {
                 sb.append('\n');
                 sb.append("  ".repeat(depth + 1));
-                sb.append("[");
-                sb.append(String.join(", ", leafLabels));
+                sb.append('[');
+                sb.append(label);
                 sb.append(']');
             }
         }
 
         sb.append('\n');
         for (PdfStructElem kid : structKidsOf(elem)) {
-            appendDetailedTree(sb, kid, depth + 1);
+            appendDetailedTree(sb, kid, depth + 1, contentKinds);
         }
+    }
+
+    private static String objrLabel(PdfObjRef objRef) {
+        PdfDictionary refObj = objRef.getReferencedObject();
+        if (refObj == null) {
+            return "OBJR";
+        }
+        PdfName subtype = refObj.getAsName(PdfName.Subtype);
+        String objrLabel = subtype != null ? "OBJR:" + subtype.getValue() : "OBJR";
+        PdfIndirectReference ref = refObj.getIndirectReference();
+        return ref != null ? objrLabel + " #" + ref.getObjNumber() : objrLabel;
+    }
+
+    private static String mcrLabel(
+            PdfMcr mcr, Map<Integer, Set<Content.ContentKind>> contentKinds) {
+        int mcid = mcr.getMcid();
+        Set<Content.ContentKind> kinds = contentKinds.get(mcid);
+        String mcrLabel = "MCR";
+
+        if (kinds == null || kinds.isEmpty()) {
+            logger.debug("No content kinds found for MCID #{}", mcid);
+            return "MCR";
+        }
+        boolean hasText = kinds.contains(Content.ContentKind.TEXT);
+        boolean hasImage = kinds.contains(Content.ContentKind.IMAGE);
+        if (hasText && hasImage) {
+            mcrLabel += ":text+image";
+        } else if (hasText) {
+            mcrLabel += ":text";
+        } else {
+            mcrLabel += ":image";
+        }
+        PdfIndirectReference ref = mcr.getPdfObject().getIndirectReference();
+        return ref != null ? mcrLabel + " #" + ref.getObjNumber() : mcrLabel;
     }
 
     /**
