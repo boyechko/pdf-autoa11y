@@ -34,7 +34,4 @@ public class NoOpProcessingListener implements ProcessingListener {
 
     @Override
     public void onSummary(IssueList allIssues) {}
-
-    @Override
-    public void onSummary(int detected, int resolved, int remaining) {}
 }
