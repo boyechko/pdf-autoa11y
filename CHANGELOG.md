@@ -7,6 +7,27 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## Added
+- New visitor, `BulletGlyphVisitor`, which allows building a cache of
+  artifacted bullet point locations to be used by `WrapParagraphInList` fix to
+  convert paragraphs to list items.
+- New visitor, `EmptyElementVisitor`, that cleans up empty structural elements
+  at the end of processing.
+- New rule, `UnexpectedWidgetRule`, that checks for misplaced widgets and
+  removes them via `RemoveWidgetAnnotation`.
+
+## Changed
+- Updated `--dump-tree-detailed` option to include object numbers for object
+  references (OBJRs).
+- Updated the `ProcessingService` to apply fixes added to the pipeline after the
+  second analysis phase.
+- Updated `ParagraphOfLinksVisitor` to only care about elements containing more
+  than `MIN_LINKS_COUNT` (default: 2) links.
+
+## Fixed
+- Tag schema allows inline structural elements (ILSEs) as children for `LBody`
+  element.
+
 ## [0.7.0] - 2026-02-17
 
 ### Added
