@@ -26,6 +26,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 
 public class ProcessingReporter implements ProcessingListener {
     private final PrintStream output;
@@ -107,6 +108,41 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     @Override
+    public void onSummary(IssueList allIssues) {
+        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            int detected = allIssues.size();
+            int resolved = allIssues.getResolvedIssues().size();
+            int remaining = allIssues.getRemainingIssues().size();
+
+            closePhaseBoxIfOpen();
+            printBoxHeader("Summary");
+
+            if (detected == 0 && resolved == 0) {
+                printLine(
+                        "Checked "
+                                + ProcessingDefaults.rules().size()
+                                + " document-level rules and found no issues",
+                        SUCCESS);
+                printLine(
+                        "Checked "
+                                + ProcessingDefaults.visitorSuppliers().size()
+                                + " structure tree rules and found no issues",
+                        SUCCESS);
+            } else {
+                printLine("Issues detected: " + detected, INFO);
+                printLine("Resolved: " + resolved, SUCCESS);
+                if (remaining > 0) {
+                    onSubsection("Manual review needed");
+                    for (Issue issue : allIssues.getRemainingIssues()) {
+                        printLine(issue.message(), WARNING);
+                    }
+                }
+            }
+            printBoxFooter();
+        }
+    }
+
+    @Override
     public void onSummary(int detected, int resolved, int remaining) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
@@ -124,10 +160,10 @@ public class ProcessingReporter implements ProcessingListener {
                                 + " structure tree rules and found no issues",
                         SUCCESS);
             } else {
-                printLine("Issues detected: " + detected, WARNING);
+                printLine("Issues detected: " + detected, INFO);
                 printLine("Resolved: " + resolved, SUCCESS);
                 if (remaining > 0) {
-                    printLine("Manual review needed: " + remaining, WARNING);
+                    onSubsection("Manual review needed");
                 }
             }
             printBoxFooter();
@@ -191,8 +227,8 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     /**
-     * Prints an indented line with the given message and icon if the verbosity
-     * level is at least the given level.
+     * Prints an indented line with the given message and icon if the verbosity level is at least
+     * the given level.
      */
     private void printLine(String message, String icon, VerbosityLevel level) {
         if (verbosity.shouldShow(level)) {
