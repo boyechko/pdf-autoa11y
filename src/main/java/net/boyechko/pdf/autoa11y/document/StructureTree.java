@@ -529,11 +529,14 @@ public final class StructureTree {
 
     private static String objrLabel(PdfObjRef objRef) {
         PdfDictionary refObj = objRef.getReferencedObject();
+        String objrLabel = "OBJR:";
         if (refObj == null) {
-            return "OBJR";
+            logger.debug(
+                    "No referenced object found for OBJR {}", objRef.getPdfObject().toString());
+            return objrLabel + "Unknown";
         }
         PdfName subtype = refObj.getAsName(PdfName.Subtype);
-        String objrLabel = subtype != null ? "OBJR:" + subtype.getValue() : "OBJR";
+        objrLabel = subtype != null ? objrLabel + subtype.getValue() : objrLabel;
         PdfIndirectReference ref = refObj.getIndirectReference();
         return ref != null ? objrLabel + " #" + ref.getObjNumber() : objrLabel;
     }
@@ -542,20 +545,20 @@ public final class StructureTree {
             PdfMcr mcr, Map<Integer, Set<Content.ContentKind>> contentKinds) {
         int mcid = mcr.getMcid();
         Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-        String mcrLabel = "MCR";
+        String mcrLabel = "MCR:";
 
         if (kinds == null || kinds.isEmpty()) {
             logger.debug("No content kinds found for MCID #{}", mcid);
-            return "MCR";
+            return mcrLabel + "Unknown";
         }
         boolean hasText = kinds.contains(Content.ContentKind.TEXT);
         boolean hasImage = kinds.contains(Content.ContentKind.IMAGE);
         if (hasText && hasImage) {
-            mcrLabel += ":text+image";
+            mcrLabel += "Text+Image";
         } else if (hasText) {
-            mcrLabel += ":text";
+            mcrLabel += "Text";
         } else {
-            mcrLabel += ":image";
+            mcrLabel += "Image";
         }
         PdfIndirectReference ref = mcr.getPdfObject().getIndirectReference();
         return ref != null ? mcrLabel + " #" + ref.getObjNumber() : mcrLabel;
