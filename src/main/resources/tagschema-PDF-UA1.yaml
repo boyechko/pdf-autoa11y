@@ -69,7 +69,7 @@ roles:
     allowed_children: [Span]
 
   LBody:
-    allowed_children: [L, P, Span]
+    allowed_children: [Code, Figure, Formula, L, Link, Note, Quote, P, Reference, Span]
 
   LI:
     allowed_children: [Lbl, LBody]
