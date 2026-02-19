@@ -167,12 +167,10 @@ public class ProcessingService {
             }
 
             // Summary
-            IssueList remainingTagIssues = allTagIssues.getRemainingIssues();
-            IssueList remainingDocIssues = allDocIssues.getRemainingIssues();
-            int detected = allDocIssues.size() + allTagIssues.size();
-            int remaining = remainingDocIssues.size() + remainingTagIssues.size();
-            int resolved = detected - remaining;
-            listener.onSummary(detected, resolved, remaining);
+            IssueList allIssues = new IssueList();
+            allIssues.addAll(allTagIssues);
+            allIssues.addAll(allDocIssues);
+            listener.onSummary(allIssues);
 
             // Cleanup pipeline directory (final output is safely outside it)
             cleanupPipelineDir(pipelineDir, tempFiles);
@@ -180,10 +178,10 @@ public class ProcessingService {
             return new ProcessingResult(
                     allTagIssues,
                     allTagFixes,
-                    remainingTagIssues,
+                    allIssues.getRemainingIssues(),
                     allDocIssues,
                     allDocFixes,
-                    remainingDocIssues,
+                    allIssues.getRemainingIssues(),
                     finalOutput);
         } catch (Exception e) {
             cleanupPipelineDir(pipelineDir, tempFiles);
