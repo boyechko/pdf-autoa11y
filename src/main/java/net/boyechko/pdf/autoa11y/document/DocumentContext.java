@@ -23,6 +23,7 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -32,12 +33,14 @@ public class DocumentContext {
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
+    private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
         this.mcidTextCache = new HashMap<>();
+        this.bulletPositionCache = new HashMap<>();
     }
 
     public PdfDocument doc() {
@@ -51,6 +54,12 @@ public class DocumentContext {
     public Map<Integer, Rectangle> getOrComputeMcidBounds(
             int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
         return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
+    }
+
+    /** Returns bullet positions for a page, extracting on first access. */
+    public List<Content.BulletPosition> getOrComputeBulletPositions(
+            int pageNum, Supplier<List<Content.BulletPosition>> supplier) {
+        return bulletPositionCache.computeIfAbsent(pageNum, k -> supplier.get());
     }
 
     /** Returns all MCID text for a page, extracting on first access. */
