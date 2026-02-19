@@ -102,6 +102,26 @@ public class RuleEngine {
         return walker.walk(root, ctx);
     }
 
+    /** Runs a single visitor in its own tree walk. */
+    public IssueList runSingleVisitor(
+            DocumentContext ctx, Supplier<StructureTreeVisitor> visitorSupplier) {
+        return runVisitor(ctx, visitorSupplier.get());
+    }
+
+    /** Runs a pre-instantiated visitor in its own tree walk. */
+    public IssueList runVisitor(DocumentContext ctx, StructureTreeVisitor visitor) {
+        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            logger.debug("No structure tree found, skipping visitor check");
+            return new IssueList();
+        }
+
+        StructureTreeWalker walker = new StructureTreeWalker(schema);
+        walker.addVisitor(visitor);
+
+        return walker.walk(root, ctx);
+    }
+
     private List<StructureTreeVisitor> instantiateVisitors() {
         List<StructureTreeVisitor> visitors = new ArrayList<>(visitorSuppliers.size());
         for (Supplier<StructureTreeVisitor> visitorSupplier : visitorSuppliers) {
