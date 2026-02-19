@@ -17,15 +17,20 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
+import com.itextpdf.kernel.geom.IShape;
 import com.itextpdf.kernel.geom.LineSegment;
 import com.itextpdf.kernel.geom.Matrix;
+import com.itextpdf.kernel.geom.Path;
+import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.geom.Vector;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
 import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
+import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -33,6 +38,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -112,6 +118,162 @@ public final class Content {
         @Override
         public Set<EventType> getSupportedEvents() {
             return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE);
+        }
+    }
+
+    // ── Bullet glyph detection ─────────────────────────────────────────
+
+    /** Position of a detected bullet glyph in page coordinates. */
+    public record BulletPosition(float x, float y) {}
+
+    /**
+     * Scans a page's content stream for Bézier-circle bullet glyphs drawn as artifacts. Matches the
+     * specific two-curve circle pattern produced by web-to-PDF converters:
+     *
+     * <pre>
+     * 0 0 m
+     * 0 2.5 -3.75 2.5 -3.75 0 c
+     * -3.75 -2.5 0 -2.5 0 0 c
+     * </pre>
+     *
+     * The untransformed path spans roughly 3.75 × 5 pt. The CTM positions each bullet on the page.
+     */
+    public static List<BulletPosition> extractBulletPositionsForPage(PdfPage page) {
+        List<BulletPosition> bullets = new ArrayList<>();
+        if (page == null) {
+            return bullets;
+        }
+
+        try {
+            BulletGlyphListener listener = new BulletGlyphListener(bullets);
+            PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
+            processor.processPageContent(page);
+        } catch (Exception e) {
+            int pageNum = page.getDocument().getPageNumber(page);
+            logger.debug(
+                    "Failed to extract bullet positions for page {}: {}", pageNum, e.getMessage());
+        }
+
+        return bullets;
+    }
+
+    /**
+     * Listener that detects the specific two-cubic-Bézier circle pattern used as bullet glyphs in
+     * artifact content. The path must have exactly one subpath with exactly two cubic Bézier
+     * segments, and the untransformed bounding box must be approximately 3.75 × 5 pt.
+     */
+    private static class BulletGlyphListener implements IEventListener {
+        /** Expected untransformed width of the bullet circle (3.75 pt). */
+        private static final float EXPECTED_WIDTH = 3.75f;
+
+        /** Expected untransformed height of the bullet circle (5.0 pt). */
+        private static final float EXPECTED_HEIGHT = 5.0f;
+
+        /** Tolerance for matching expected dimensions. */
+        private static final float DIMENSION_TOLERANCE = 1.0f;
+
+        private static final float DEDUP_TOLERANCE = 1.0f;
+
+        private final List<BulletPosition> bullets;
+
+        BulletGlyphListener(List<BulletPosition> bullets) {
+            this.bullets = bullets;
+        }
+
+        @Override
+        public void eventOccurred(IEventData data, EventType type) {
+            if (type != EventType.RENDER_PATH) {
+                return;
+            }
+            PathRenderInfo pathInfo = (PathRenderInfo) data;
+
+            // Only consider artifacts (not inside marked content)
+            if (pathInfo.getMcid() >= 0) {
+                return;
+            }
+
+            // Must be painted (filled, stroked, or both)
+            if (pathInfo.getOperation() == PathRenderInfo.NO_OP) {
+                return;
+            }
+
+            Path path = pathInfo.getPath();
+            if (!isBezierCircle(path)) {
+                return;
+            }
+
+            // Compute center in page coordinates via CTM
+            Matrix ctm = pathInfo.getCtm();
+            Point start = path.getSubpaths().get(0).getStartPoint();
+            Vector center = new Vector((float) start.getX(), (float) start.getY(), 1).cross(ctm);
+            float cx = center.get(Vector.I1);
+            float cy = center.get(Vector.I2);
+
+            // Deduplicate fill+stroke pairs for the same bullet
+            boolean duplicate =
+                    bullets.stream()
+                            .anyMatch(
+                                    b ->
+                                            Math.abs(b.x() - cx) < DEDUP_TOLERANCE
+                                                    && Math.abs(b.y() - cy) < DEDUP_TOLERANCE);
+            if (!duplicate) {
+                bullets.add(new BulletPosition(cx, cy));
+            }
+        }
+
+        /** Checks if a path is a two-cubic-Bézier circle of the expected bullet dimensions. */
+        private boolean isBezierCircle(Path path) {
+            List<Subpath> subpaths = path.getSubpaths();
+            if (subpaths.size() != 1) {
+                return false;
+            }
+
+            Subpath subpath = subpaths.get(0);
+            List<IShape> segments = subpath.getSegments();
+            if (segments.size() != 2) {
+                return false;
+            }
+
+            // Both segments must be cubic Bézier curves (4 base points each)
+            for (IShape segment : segments) {
+                if (!(segment instanceof com.itextpdf.kernel.geom.BezierCurve)) {
+                    return false;
+                }
+                if (segment.getBasePoints().size() != 4) {
+                    return false;
+                }
+            }
+
+            // Check untransformed bounding box matches expected bullet dimensions
+            float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE;
+            float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+
+            Point start = subpath.getStartPoint();
+            if (start != null) {
+                minX = Math.min(minX, (float) start.getX());
+                minY = Math.min(minY, (float) start.getY());
+                maxX = Math.max(maxX, (float) start.getX());
+                maxY = Math.max(maxY, (float) start.getY());
+            }
+            for (IShape segment : segments) {
+                for (Point pt : segment.getBasePoints()) {
+                    minX = Math.min(minX, (float) pt.getX());
+                    minY = Math.min(minY, (float) pt.getY());
+                    maxX = Math.max(maxX, (float) pt.getX());
+                    maxY = Math.max(maxY, (float) pt.getY());
+                }
+            }
+
+            float width = maxX - minX;
+            float height = maxY - minY;
+
+            return Math.abs(width - EXPECTED_WIDTH) <= DIMENSION_TOLERANCE
+                    && Math.abs(height - EXPECTED_HEIGHT) <= DIMENSION_TOLERANCE;
+        }
+
+        @Override
+        public Set<EventType> getSupportedEvents() {
+            return Set.of(EventType.RENDER_PATH);
         }
     }
 
