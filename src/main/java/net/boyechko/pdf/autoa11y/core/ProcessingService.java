@@ -117,11 +117,13 @@ public class ProcessingService {
             listener.onPhaseStart("Document rules");
             try (PdfDocument doc = custodian.decryptToTemp(current)) {
                 DocumentContext ctx = new DocumentContext(doc);
+                listener.onDetectedSectionStart();
                 IssueList docIssues = runDocumentRules(ctx);
                 allDocIssues.addAll(docIssues);
                 if (!docIssues.isEmpty()) {
                     IssueList docFixes = applyFixes(ctx, docIssues);
                     allDocFixes.addAll(docFixes);
+                    reportRemainingIssues(docIssues);
                 }
             }
 
@@ -136,6 +138,7 @@ public class ProcessingService {
                 listener.onPhaseStart(visitor.name());
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocumentContext ctx = new DocumentContext(doc);
+                    listener.onDetectedSectionStart();
                     IssueList issues = ruleEngine.runVisitor(ctx, visitor);
                     allTagIssues.addAll(issues);
 
@@ -143,6 +146,7 @@ public class ProcessingService {
                         reportIssuesGrouped(issues);
                         IssueList fixes = applyFixes(ctx, issues);
                         allTagFixes.addAll(fixes);
+                        reportRemainingIssues(issues);
                     } else {
                         listener.onSuccess("No issues found");
                     }
@@ -224,8 +228,20 @@ public class ProcessingService {
             return new IssueList();
         }
         IssueList applied = ruleEngine.applyFixes(ctx, issues);
+        if (!applied.isEmpty()) {
+            listener.onFixesSectionStart();
+        }
         reportFixesGrouped(applied);
         return applied;
+    }
+
+    private void reportRemainingIssues(IssueList issues) {
+        IssueList remainingIssues = issues.getRemainingIssues();
+        if (remainingIssues.isEmpty()) {
+            return;
+        }
+        listener.onManualReviewSectionStart();
+        reportIssuesGrouped(remainingIssues);
     }
 
     // == Analysis helpers =============================================

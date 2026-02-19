@@ -40,6 +40,18 @@ public interface ProcessingListener {
 
     default void onSubsection(String header) {}
 
+    default void onDetectedSectionStart() {
+        onSubsection("Detected issues");
+    }
+
+    default void onFixesSectionStart() {
+        onSubsection("Fixes applied");
+    }
+
+    default void onManualReviewSectionStart() {
+        onSubsection("Needs manual review");
+    }
+
     default void onIssueGroup(String groupLabel, List<Issue> issues) {
         for (Issue issue : issues) {
             onWarning(issue.message());
