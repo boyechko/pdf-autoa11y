@@ -77,6 +77,49 @@ public final class PdfCustodian {
         return new PdfDocument(pdfReader, pdfWriter);
     }
 
+    /** Opens the original (possibly encrypted) input and writes to output WITHOUT encryption. */
+    public PdfDocument decryptToTemp(Path outputPath) throws IOException {
+        analyzeEncryptionIfNeeded();
+
+        PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
+        WriterProperties writerProps = new WriterProperties();
+        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
+        PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
+
+        return new PdfDocument(pdfReader, pdfWriter);
+    }
+
+    /** Opens an unencrypted temp file for modification and writes to a new temp. */
+    public static PdfDocument openTempForModification(Path inputPath, Path outputPath)
+            throws IOException {
+        PdfReader pdfReader = new PdfReader(inputPath.toString());
+        WriterProperties writerProps = new WriterProperties();
+        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
+        PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
+
+        return new PdfDocument(pdfReader, pdfWriter);
+    }
+
+    /**
+     * Copies an unencrypted temp file to the final output with the original encryption settings.
+     */
+    public void reencrypt(Path inputPath, Path outputPath) throws IOException {
+        analyzeEncryptionIfNeeded();
+
+        try (PdfReader pdfReader = new PdfReader(inputPath.toString());
+                PdfWriter pdfWriter =
+                        new PdfWriter(outputPath.toString(), buildWriterProperties());
+                PdfDocument doc = new PdfDocument(pdfReader, pdfWriter)) {
+            // Document is saved on close — no modifications needed.
+        }
+    }
+
+    /** Returns whether the original PDF is encrypted and needs re-encryption on final output. */
+    public boolean isEncrypted() throws IOException {
+        analyzeEncryptionIfNeeded();
+        return encryptionInfo.isEncrypted() && password != null;
+    }
+
     private void analyzeEncryptionIfNeeded() throws IOException {
         if (encryptionInfo != null) {
             return;
