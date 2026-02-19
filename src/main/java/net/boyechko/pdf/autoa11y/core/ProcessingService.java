@@ -114,12 +114,15 @@ public class ProcessingService {
             Path current =
                     pipelineDir.resolve(String.format("step%02d_document-rules.pdf", stepNum++));
             tempFiles.add(current);
+            listener.onPhaseStart("Document rules");
             try (PdfDocument doc = custodian.decryptToTemp(current)) {
                 DocumentContext ctx = new DocumentContext(doc);
-                IssueList docIssues = detectDocumentIssuesPhase(ctx);
-                IssueList docFixes = applyFixesPhase(ctx, docIssues, "document");
+                IssueList docIssues = runDocumentRules(ctx);
                 allDocIssues.addAll(docIssues);
-                allDocFixes.addAll(docFixes);
+                if (!docIssues.isEmpty()) {
+                    IssueList docFixes = applyFixes(ctx, docIssues);
+                    allDocFixes.addAll(docFixes);
+                }
             }
 
             // Steps 1..N: Each visitor in its own pipeline step
@@ -130,6 +133,7 @@ public class ProcessingService {
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
                 tempFiles.add(output);
 
+                listener.onPhaseStart(visitor.name());
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocumentContext ctx = new DocumentContext(doc);
                     IssueList issues = ruleEngine.runVisitor(ctx, visitor);
@@ -137,9 +141,10 @@ public class ProcessingService {
 
                     if (!issues.isEmpty()) {
                         reportIssuesGrouped(issues);
-                        IssueList fixes = ruleEngine.applyFixes(ctx, issues);
-                        reportFixesGrouped(fixes);
+                        IssueList fixes = applyFixes(ctx, issues);
                         allTagFixes.addAll(fixes);
+                    } else {
+                        listener.onSuccess("No issues found");
                     }
                 }
 
@@ -186,8 +191,8 @@ public class ProcessingService {
         try (PdfDocument pdfDoc = custodian.openForReading()) {
             DocumentContext context = new DocumentContext(pdfDoc);
 
-            IssueList documentIssues = detectDocumentIssuesPhase(context);
-            IssueList tagIssues = detectTagIssuesPhase(context);
+            IssueList documentIssues = detectDocumentIssuesForAnalysis(context);
+            IssueList tagIssues = detectTagIssuesForAnalysis(context);
             IssueList totalIssues = new IssueList();
             totalIssues.addAll(documentIssues);
             totalIssues.addAll(tagIssues);
@@ -198,27 +203,41 @@ public class ProcessingService {
 
     // == Pipeline helpers =============================================
 
-    private IssueList detectDocumentIssuesPhase(DocumentContext context) {
-        listener.onPhaseStart("Detecting document-level issues");
+    /** Runs all document rules, reporting per-rule pass/fail. */
+    private IssueList runDocumentRules(DocumentContext ctx) {
         IssueList allDocIssues = new IssueList();
-
         for (Rule rule : ruleEngine.getRules()) {
-            IssueList ruleIssues = rule.findIssues(context);
+            IssueList ruleIssues = rule.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
-
             if (ruleIssues.isEmpty()) {
                 listener.onSuccess(rule.passedMessage());
             } else {
                 reportIssuesGrouped(ruleIssues);
             }
         }
-        listener.onInfo("Found " + allDocIssues.size() + " issues");
-
         return allDocIssues;
     }
 
-    /** Used only by {@link #analyze()} — runs all visitors in a single walk. */
-    private IssueList detectTagIssuesPhase(DocumentContext context) {
+    /** Applies fixes and reports results. Returns the applied fixes. */
+    private IssueList applyFixes(DocumentContext ctx, IssueList issues) {
+        if (issues.isEmpty()) {
+            return new IssueList();
+        }
+        IssueList applied = ruleEngine.applyFixes(ctx, issues);
+        reportFixesGrouped(applied);
+        return applied;
+    }
+
+    // == Analysis helpers =============================================
+
+    private IssueList detectDocumentIssuesForAnalysis(DocumentContext context) {
+        listener.onPhaseStart("Detecting document-level issues");
+        IssueList docIssues = runDocumentRules(context);
+        listener.onInfo("Found " + docIssues.size() + " issues");
+        return docIssues;
+    }
+
+    private IssueList detectTagIssuesForAnalysis(DocumentContext context) {
         listener.onPhaseStart("Detecting structure tree issues");
 
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
@@ -237,19 +256,6 @@ public class ProcessingService {
         }
 
         return tagIssues;
-    }
-
-    private IssueList applyFixesPhase(
-            DocumentContext context, IssueList issues, String issuesCategory) {
-        listener.onPhaseStart("Applying " + issuesCategory + " fixes");
-        if (issues.isEmpty()) {
-            listener.onInfo("No " + issuesCategory + " issues to fix");
-            return new IssueList();
-        }
-
-        IssueList appliedFixes = ruleEngine.applyFixes(context, issues);
-        reportFixesGrouped(appliedFixes);
-        return appliedFixes;
     }
 
     // == Reporting helpers ============================================
