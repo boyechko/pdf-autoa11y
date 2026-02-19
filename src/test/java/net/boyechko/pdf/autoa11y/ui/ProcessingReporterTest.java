@@ -20,53 +20,111 @@ package net.boyechko.pdf.autoa11y.ui;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issues.IssueLocation;
+import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class ProcessingReporterTest {
     @Test
     @Tag("visual")
-    void rendersMockRunForVisualTuning() {
+    void rendersVisualTranscriptWithoutRunningRemediation() {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         ProcessingReporter reporter =
                 new ProcessingReporter(new PrintStream(buffer), VerbosityLevel.NORMAL);
 
-        reporter.onPhaseStart("Validating tag structure");
-        reporter.onWarning("Found 1 issue(s)");
-
-        reporter.onPhaseStart("Applying automatic fixes");
-        reporter.onSuccess("Nothing to be done");
-
-        reporter.onPhaseStart("Re-validating tag structure");
-        reporter.onSuccess("Nothing to be done");
-
-        reporter.onPhaseStart("Checking document-level compliance");
-        reporter.onSuccess("Language Set");
-        reporter.onSuccess("Tab Order");
-        reporter.onSuccess("Tag Structure Present");
-        reporter.onSuccess("Tagged PDF");
-        reporter.onWarning("Structure tree root has no Document element");
-        reporter.onWarning("5 tagged content that should be artifacts");
-        reporter.onWarning("31 link annotations not tagged (pages 1-5)");
-        reporter.onSuccess("Empty Link Tag Check");
-        reporter.onWarning("Found 10 Part/Sect/Art wrapper(s)");
-        reporter.onWarning("3 figures containing text");
-
-        reporter.onPhaseStart("Applying document fixes");
-        reporter.onSuccess("Flattened 10 unnecessary Part/Sect/Art wrapper(s)");
-        reporter.onSuccess("31 Link tags created (pages 1-5)");
-        reporter.onSuccess("Set up document structure: created 5 Part(s), moved 48 element(s)");
-        reporter.onSuccess("3 Figure roles changed");
-        reporter.onSuccess("5 elements converted to artifacts");
-
-        reporter.onSummary(42, 41, 1);
+        replayProcessingTranscript(reporter);
         reporter.onSuccess("Output saved to output/five_acro_autoa11y_pass1.pdf");
 
         String rendered = normalize(buffer);
 
-        System.out.println("--- Mocked Output Preview ---");
+        System.out.println("--- Visual Transcript Preview ---");
         System.out.print(rendered);
         System.out.println("--- End Preview ---");
+    }
+
+    private void replayProcessingTranscript(ProcessingReporter reporter) {
+        IssueList summaryIssues = new IssueList();
+
+        reporter.onPhaseStart("Document rules");
+        reporter.onDetectedSectionStart();
+        Issue missingLanguage =
+                issue(
+                        IssueType.LANGUAGE_NOT_SET,
+                        IssueSeverity.ERROR,
+                        "Document language (Lang) is not set");
+        Issue missingDocumentElement =
+                issue(
+                        IssueType.MISSING_DOCUMENT_ELEMENT,
+                        IssueSeverity.ERROR,
+                        "Structure tree root has no Document element");
+        reporter.onWarning(missingLanguage.message());
+        reporter.onWarning(missingDocumentElement.message());
+        reporter.onSuccess("Document tab order is set to follow structure tree");
+
+        reporter.onFixesSectionStart();
+        missingLanguage.markResolved("Set document language (Lang)");
+        reporter.onIssueFixed(missingLanguage.resolutionNote());
+
+        reporter.onManualReviewSectionStart();
+        reporter.onWarning(missingDocumentElement.message());
+        summaryIssues.add(missingLanguage);
+        summaryIssues.add(missingDocumentElement);
+
+        reporter.onPhaseStart("Needless Nesting Visitor");
+        reporter.onDetectedSectionStart();
+        IssueList groupedNestingIssues = new IssueList();
+        groupedNestingIssues.add(
+                issue(
+                        IssueType.NEEDLESS_NESTING,
+                        IssueSeverity.WARNING,
+                        1,
+                        "Found needless Part wrapper #311"));
+        groupedNestingIssues.add(
+                issue(
+                        IssueType.NEEDLESS_NESTING,
+                        IssueSeverity.WARNING,
+                        2,
+                        "Found needless Part wrapper #401"));
+        groupedNestingIssues.add(
+                issue(
+                        IssueType.NEEDLESS_NESTING,
+                        IssueSeverity.WARNING,
+                        3,
+                        "Found needless Part wrapper #511"));
+        reporter.onIssueGroup(IssueType.NEEDLESS_NESTING.groupLabel(), groupedNestingIssues);
+
+        reporter.onFixesSectionStart();
+        for (Issue issue : groupedNestingIssues) {
+            issue.markResolved("Flattened needless wrapper");
+        }
+        reporter.onFixGroup(IssueType.NEEDLESS_NESTING.groupLabel(), groupedNestingIssues);
+        summaryIssues.addAll(groupedNestingIssues);
+
+        reporter.onPhaseStart("Schema Validation Visitor");
+        reporter.onDetectedSectionStart();
+        Issue invalidSchemaTag =
+                issue(
+                        IssueType.TAG_WRONG_CHILD,
+                        IssueSeverity.ERROR,
+                        "<Link> not allowed under <Document>");
+        reporter.onWarning(invalidSchemaTag.message());
+        reporter.onManualReviewSectionStart();
+        reporter.onWarning(invalidSchemaTag.message());
+        summaryIssues.add(invalidSchemaTag);
+
+        reporter.onSummary(summaryIssues);
+    }
+
+    private Issue issue(IssueType type, IssueSeverity severity, String message) {
+        return new Issue(type, severity, message);
+    }
+
+    private Issue issue(IssueType type, IssueSeverity severity, Integer page, String message) {
+        return new Issue(type, severity, new IssueLocation(page, null), message);
     }
 
     private String normalize(ByteArrayOutputStream buffer) {
