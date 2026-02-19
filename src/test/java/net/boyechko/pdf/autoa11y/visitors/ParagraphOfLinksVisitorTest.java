@@ -87,7 +87,7 @@ public class ParagraphOfLinksVisitorTest extends PdfTestBase {
     }
 
     @Test
-    void ignoresParagraphsWithNoLinks() throws Exception {
+    void ignoresParagraphsWithIntermixedLinks() throws Exception {
         ParagraphOfLinksVisitor visitor = new ParagraphOfLinksVisitor();
 
         createTestPdf(

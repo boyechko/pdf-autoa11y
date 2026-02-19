@@ -29,6 +29,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
+    private static final int MIN_LINKS_COUNT = 2;
     private final IssueList issues = new IssueList();
 
     @Override
@@ -43,7 +44,7 @@ public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
 
     @Override
     public boolean enterElement(VisitorContext ctx) {
-        if (!PdfName.P.equals(ctx.node().getRole())) {
+        if (ctx.children().size() < MIN_LINKS_COUNT) {
             return true;
         }
 
