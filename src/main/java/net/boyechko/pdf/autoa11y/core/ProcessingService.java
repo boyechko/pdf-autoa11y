@@ -36,12 +36,20 @@ import net.boyechko.pdf.autoa11y.validation.RuleEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
+
+    /** Set to true to keep all intermediate pipeline files for debugging. */
+    private static final boolean KEEP_PIPELINE_TEMPS = true;
+
     private final PdfCustodian custodian;
     private final RuleEngine ruleEngine;
     private final ProcessingListener listener;
+    private final List<Supplier<StructureTreeVisitor>> visitorSuppliers;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -77,8 +85,7 @@ public class ProcessingService {
         this.listener = builder.listener;
 
         List<Rule> rules = ProcessingDefaults.rules();
-        List<Supplier<StructureTreeVisitor>> visitorSuppliers =
-                new ArrayList<>(ProcessingDefaults.visitorSuppliers());
+        this.visitorSuppliers = new ArrayList<>(ProcessingDefaults.visitorSuppliers());
         if (builder.printStructureTree) {
             visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
@@ -87,13 +94,90 @@ public class ProcessingService {
         this.ruleEngine = new RuleEngine(rules, visitorSuppliers, schema);
     }
 
+    /**
+     * Remediates the PDF using a sequential pipeline. Each rule/visitor runs as its own step,
+     * reading the previous step's output file.
+     */
     public ProcessingResult remediate() throws Exception {
-        Path tempOutputFile = Files.createTempFile("pdf_autoa11y_", ".pdf");
+        Path pipelineDir = Files.createTempDirectory("pdf-autoa11y-");
+        List<Path> tempFiles = new ArrayList<>();
 
-        try (PdfDocument pdfDoc = custodian.openForModification(tempOutputFile)) {
-            return remediatePdfDoc(pdfDoc, tempOutputFile);
+        IssueList allDocIssues = new IssueList();
+        IssueList allDocFixes = new IssueList();
+        IssueList allTagIssues = new IssueList();
+        IssueList allTagFixes = new IssueList();
+
+        try {
+            int stepNum = 0;
+
+            // Step 0: Document-level rules (decrypt original → first temp)
+            Path current =
+                    pipelineDir.resolve(String.format("step%02d_document-rules.pdf", stepNum++));
+            tempFiles.add(current);
+            try (PdfDocument doc = custodian.decryptToTemp(current)) {
+                DocumentContext ctx = new DocumentContext(doc);
+                IssueList docIssues = detectDocumentIssuesPhase(ctx);
+                IssueList docFixes = applyFixesPhase(ctx, docIssues, "document");
+                allDocIssues.addAll(docIssues);
+                allDocFixes.addAll(docFixes);
+            }
+
+            // Steps 1..N: Each visitor in its own pipeline step
+            for (Supplier<StructureTreeVisitor> supplier : visitorSuppliers) {
+                StructureTreeVisitor visitor = supplier.get();
+                String stepName = sanitizeForFilename(visitor.name());
+                Path output =
+                        pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
+                tempFiles.add(output);
+
+                try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
+                    DocumentContext ctx = new DocumentContext(doc);
+                    IssueList issues = ruleEngine.runVisitor(ctx, visitor);
+                    allTagIssues.addAll(issues);
+
+                    if (!issues.isEmpty()) {
+                        reportIssuesGrouped(issues);
+                        IssueList fixes = ruleEngine.applyFixes(ctx, issues);
+                        reportFixesGrouped(fixes);
+                        allTagFixes.addAll(fixes);
+                    }
+                }
+
+                if (!KEEP_PIPELINE_TEMPS) {
+                    Files.deleteIfExists(current);
+                }
+                current = output;
+            }
+
+            // Finalize: copy result out of pipeline directory
+            Path finalOutput = Files.createTempFile("pdf_autoa11y_", ".pdf");
+            if (custodian.isEncrypted()) {
+                custodian.reencrypt(current, finalOutput);
+            } else {
+                Files.copy(current, finalOutput, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Summary
+            IssueList remainingTagIssues = allTagIssues.getRemainingIssues();
+            IssueList remainingDocIssues = allDocIssues.getRemainingIssues();
+            int detected = allDocIssues.size() + allTagIssues.size();
+            int remaining = remainingDocIssues.size() + remainingTagIssues.size();
+            int resolved = detected - remaining;
+            listener.onSummary(detected, resolved, remaining);
+
+            // Cleanup pipeline directory (final output is safely outside it)
+            cleanupPipelineDir(pipelineDir, tempFiles);
+
+            return new ProcessingResult(
+                    allTagIssues,
+                    allTagFixes,
+                    remainingTagIssues,
+                    allDocIssues,
+                    allDocFixes,
+                    remainingDocIssues,
+                    finalOutput);
         } catch (Exception e) {
-            Files.deleteIfExists(tempOutputFile);
+            cleanupPipelineDir(pipelineDir, tempFiles);
             throw e;
         }
     }
@@ -112,56 +196,7 @@ public class ProcessingService {
         }
     }
 
-    private ProcessingResult remediatePdfDoc(PdfDocument pdfDoc, Path tempOutputFile)
-            throws Exception {
-        DocumentContext context = new DocumentContext(pdfDoc);
-
-        // Phase 1: Detect document issues
-        IssueList docIssues = detectDocumentIssuesPhase(context);
-
-        // Phase 2: Detect tag issues
-        IssueList tagIssues = detectTagIssuesPhase(context);
-
-        // Phase 3: Apply available fixes
-        IssueList appliedTagFixes = applyFixesPhase(context, tagIssues, "structure tree");
-        IssueList appliedDocFixes = applyFixesPhase(context, docIssues, "document");
-
-        // Phase 4: Re-detect and fix tag issues until stable
-        IssueList remainingTagIssues = tagIssues;
-        if (appliedTagFixes.size() > 0 || appliedDocFixes.size() > 0) {
-            remainingTagIssues = detectTagIssuesPhase(context);
-            IssueList newFixes = applyFixesPhase(context, remainingTagIssues, "structure tree");
-            appliedTagFixes.addAll(newFixes);
-            if (newFixes.size() > 0) {
-                remainingTagIssues = detectTagIssuesPhase(context);
-            }
-        }
-
-        // Phase 5: Generate summary
-        IssueList totalRemainingIssues = new IssueList();
-        totalRemainingIssues.addAll(remainingTagIssues);
-        totalRemainingIssues.addAll(docIssues.getRemainingIssues());
-
-        IssueList totalAppliedFixes = new IssueList();
-        totalAppliedFixes.addAll(appliedTagFixes);
-        totalAppliedFixes.addAll(appliedDocFixes);
-
-        int detected = tagIssues.size() + docIssues.size();
-        int remaining = totalRemainingIssues.size();
-        int resolved = detected - remaining;
-        listener.onSummary(detected, resolved, remaining);
-
-        ProcessingResult result =
-                new ProcessingResult(
-                        tagIssues,
-                        appliedTagFixes,
-                        remainingTagIssues,
-                        docIssues,
-                        appliedDocFixes,
-                        docIssues.getRemainingIssues(),
-                        tempOutputFile);
-        return result;
-    }
+    // == Pipeline helpers =============================================
 
     private IssueList detectDocumentIssuesPhase(DocumentContext context) {
         listener.onPhaseStart("Detecting document-level issues");
@@ -182,6 +217,7 @@ public class ProcessingService {
         return allDocIssues;
     }
 
+    /** Used only by {@link #analyze()} — runs all visitors in a single walk. */
     private IssueList detectTagIssuesPhase(DocumentContext context) {
         listener.onPhaseStart("Detecting structure tree issues");
 
@@ -215,6 +251,8 @@ public class ProcessingService {
         reportFixesGrouped(appliedFixes);
         return appliedFixes;
     }
+
+    // == Reporting helpers ============================================
 
     private void reportIssuesGrouped(IssueList issues) {
         Map<IssueType, List<Issue>> grouped =
@@ -252,5 +290,30 @@ public class ProcessingService {
                 }
             }
         }
+    }
+
+    /**
+     * Cleans up the pipeline directory and temporary files if the {@link#KEEP_PIPELINE_TEMPS} flag
+     * is false.
+     */
+    private static void cleanupPipelineDir(Path pipelineDir, List<Path> tempFiles) {
+        if (KEEP_PIPELINE_TEMPS) {
+            logger.info("Pipeline temps kept at: {}", pipelineDir);
+            return;
+        }
+        for (Path temp : tempFiles) {
+            try {
+                Files.deleteIfExists(temp);
+            } catch (Exception ignored) {
+            }
+        }
+        try {
+            Files.deleteIfExists(pipelineDir);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String sanitizeForFilename(String name) {
+        return name.replaceAll("[^a-zA-Z0-9_-]", "_");
     }
 }
