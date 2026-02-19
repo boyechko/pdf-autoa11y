@@ -35,6 +35,7 @@ import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
 import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
 import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.visitors.ParagraphOfLinksVisitor;
 import net.boyechko.pdf.autoa11y.visitors.ParagraphRunVisitor;
 import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
 
@@ -62,6 +63,7 @@ public final class ProcessingDefaults {
                 EmptyLinkTagVisitor::new,
                 SchemaValidationVisitor::new,
                 ParagraphRunVisitor::new,
+                ParagraphOfLinksVisitor::new,
                 EmptyElementVisitor::new);
     }
 }
