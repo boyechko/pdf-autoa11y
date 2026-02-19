@@ -67,7 +67,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
     @ValueSource(
             strings = {
                 "catalog1.pdf",
-                "catalog_five.pdf",
+                "catalog18.pdf",
             })
     @Tag("GoalDriven")
     void remediateAndCompareToGoal(String pdfName) throws Exception {
@@ -87,8 +87,9 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
         ProcessingResult result = service.remediate();
         saveRemediatedPdf(result);
 
-        String actualTree = readStructureTree(result.tempOutputFile());
-        String expectedTree = Files.readString(goalFile).strip();
+        // Remove obj numbers from tree to make it easier to compare
+        String actualTree = readStructureTree(result.tempOutputFile()).replaceAll(" #\\d+", "");
+        String expectedTree = Files.readString(goalFile).strip().replaceAll(" #\\d+", "");
 
         if (!expectedTree.equals(actualTree)) {
             fail(
