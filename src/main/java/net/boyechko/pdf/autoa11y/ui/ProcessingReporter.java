@@ -143,34 +143,6 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     @Override
-    public void onSummary(int detected, int resolved, int remaining) {
-        if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            closePhaseBoxIfOpen();
-            printBoxHeader("Summary");
-
-            if (detected == 0 && resolved == 0) {
-                printLine(
-                        "Checked "
-                                + ProcessingDefaults.rules().size()
-                                + " document-level rules and found no issues",
-                        SUCCESS);
-                printLine(
-                        "Checked "
-                                + ProcessingDefaults.visitorSuppliers().size()
-                                + " structure tree rules and found no issues",
-                        SUCCESS);
-            } else {
-                printLine("Issues detected: " + detected, INFO);
-                printLine("Resolved: " + resolved, SUCCESS);
-                if (remaining > 0) {
-                    onSubsection("Manual review needed");
-                }
-            }
-            printBoxFooter();
-        }
-    }
-
-    @Override
     public void onSuccess(String message) {
         printLine(message, SUCCESS);
     }

@@ -33,8 +33,6 @@ public interface ProcessingListener {
 
     void onSummary(IssueList allIssues);
 
-    void onSummary(int detected, int resolved, int remaining);
-
     default void onError(String message) {}
 
     default void onInfo(String message) {}
