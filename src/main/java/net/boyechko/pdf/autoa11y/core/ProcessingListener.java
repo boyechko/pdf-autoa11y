@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.core;
 
 import java.util.List;
 import net.boyechko.pdf.autoa11y.issues.Issue;
+import net.boyechko.pdf.autoa11y.issues.IssueList;
 
 /** Interface for reporting progress and results of the processing. */
 public interface ProcessingListener {
@@ -29,6 +30,8 @@ public interface ProcessingListener {
     void onWarning(String message);
 
     void onIssueFixed(String resolutionNote);
+
+    void onSummary(IssueList allIssues);
 
     void onSummary(int detected, int resolved, int remaining);
 

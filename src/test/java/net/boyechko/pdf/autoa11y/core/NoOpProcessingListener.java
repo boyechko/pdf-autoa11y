@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
+import net.boyechko.pdf.autoa11y.issues.IssueList;
+
 public class NoOpProcessingListener implements ProcessingListener {
     @Override
     public void onPhaseStart(String phaseName) {}
@@ -29,6 +31,9 @@ public class NoOpProcessingListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(String resolutionNote) {}
+
+    @Override
+    public void onSummary(IssueList allIssues) {}
 
     @Override
     public void onSummary(int detected, int resolved, int remaining) {}
