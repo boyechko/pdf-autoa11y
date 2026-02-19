@@ -32,12 +32,12 @@ public class ProcessingReporter implements ProcessingListener {
     private final VerbosityLevel verbosity;
 
     private static final String SUCCESS = "✓";
-    private static final String ERROR = "✗";
-    private static final String WARNING = "▸";
-    private static final String INFO = "ℹ";
+    private static final String ERROR = "⛔️";
+    private static final String WARNING = "️✗";
+    private static final String INFO = "○";
 
     private static final String INDENT = "│ ";
-    private static final String SUBSECTION_MARK = "⊏";
+    private static final String SUBSECTION_MARK = "🞙︎";
     private static final int HEADER_WIDTH = 68;
 
     private boolean phaseOpen = false;
@@ -59,8 +59,8 @@ public class ProcessingReporter implements ProcessingListener {
     @Override
     public void onSubsection(String header) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            output.println();
-            output.println(INDENT + SUBSECTION_MARK + " " + header);
+            printEmptyLine();
+            printLine(header, SUBSECTION_MARK);
         }
     }
 
@@ -79,7 +79,7 @@ public class ProcessingReporter implements ProcessingListener {
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
-                printDetail(issue.message());
+                printLine(issue.message(), WARNING, VerbosityLevel.VERBOSE);
             }
         }
     }
@@ -100,7 +100,7 @@ public class ProcessingReporter implements ProcessingListener {
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : resolvedIssues) {
                 if (issue.resolutionNote() != null) {
-                    printDetail(issue.resolutionNote());
+                    printLine(issue.resolutionNote(), SUCCESS, VerbosityLevel.VERBOSE);
                 }
             }
         }
@@ -190,6 +190,10 @@ public class ProcessingReporter implements ProcessingListener {
         }
     }
 
+    /**
+     * Prints an indented line with the given message and icon if the verbosity
+     * level is at least the given level.
+     */
     private void printLine(String message, String icon, VerbosityLevel level) {
         if (verbosity.shouldShow(level)) {
             output.println(icon == null ? message : INDENT + icon + " " + message);
@@ -200,8 +204,8 @@ public class ProcessingReporter implements ProcessingListener {
         printLine(message, icon, VerbosityLevel.NORMAL);
     }
 
-    private void printDetail(String message) {
-        printLine(INDENT + "  • " + message, null);
+    private void printEmptyLine() {
+        printLine("", "", VerbosityLevel.QUIET);
     }
 
     private String buildGroupSummary(String groupLabel, int count, Set<Integer> pages) {
