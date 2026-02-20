@@ -262,10 +262,10 @@ public class PdfAutoA11yCLI {
                 }
 
                 logger().info(
-                                "Moving temporary output file {} to {}",
+                                "Copying temporary output file {} to {}",
                                 result.tempOutputFile(),
                                 config.outputPath());
-                Files.move(
+                Files.copy(
                         result.tempOutputFile(),
                         config.outputPath(),
                         StandardCopyOption.REPLACE_EXISTING);
