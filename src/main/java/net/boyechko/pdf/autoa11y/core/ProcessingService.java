@@ -46,6 +46,8 @@ public class ProcessingService {
     /** Set to true to keep all intermediate pipeline files for debugging. */
     private static final boolean KEEP_PIPELINE_TEMPS = true;
 
+    private static final Path PIPELINE_TEMP_DIR = Path.of("target/pipeline/");
+
     private final PdfCustodian custodian;
     private final RuleEngine ruleEngine;
     private final ProcessingListener listener;
@@ -99,7 +101,22 @@ public class ProcessingService {
      * reading the previous step's output file.
      */
     public ProcessingResult remediate() throws Exception {
-        Path pipelineDir = Files.createTempDirectory("pdf-autoa11y-");
+        Path pipelineDir = PIPELINE_TEMP_DIR;
+        if (!Files.exists(pipelineDir)) {
+            Files.createDirectories(pipelineDir);
+        } else {
+            Files.list(pipelineDir)
+                    .forEach(
+                            path -> {
+                                try {
+                                    Files.delete(path);
+                                } catch (Exception e) {
+                                    logger.error("Error deleting pipeline temp file", e);
+                                    throw new RuntimeException(
+                                            "Error deleting pipeline temp file", e);
+                                }
+                            });
+        }
         List<Path> tempFiles = new ArrayList<>();
 
         IssueList allDocIssues = new IssueList();
@@ -159,7 +176,7 @@ public class ProcessingService {
             }
 
             // Finalize: copy result out of pipeline directory
-            Path finalOutput = Files.createTempFile("pdf_autoa11y_", ".pdf");
+            Path finalOutput = PIPELINE_TEMP_DIR.resolve("output.pdf");
             if (custodian.isEncrypted()) {
                 custodian.reencrypt(current, finalOutput);
             } else {
