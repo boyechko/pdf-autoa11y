@@ -52,6 +52,17 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
             return null;
         }
 
+        // Reject if parent has non-struct-elem kids (MCRs/OBJRs) that would be
+        // orphaned under L — only convert when ALL kids are struct elements.
+        var allKids = parent.getKids();
+        if (allKids != null && allKids.size() != kids.size()) {
+            logger.debug(
+                    "ListifyParagraphOfLinks not applicable: parent has {} total kids but {} struct kids",
+                    allKids.size(),
+                    kids.size());
+            return null;
+        }
+
         return new ListifyParagraphOfLinks(parent, kids);
     }
 
