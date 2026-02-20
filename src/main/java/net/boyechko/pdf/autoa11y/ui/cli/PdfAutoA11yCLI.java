@@ -50,7 +50,7 @@ public class PdfAutoA11yCLI {
             String password,
             boolean force_save,
             boolean analyzeOnly,
-            boolean dumpTree,
+            boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
             Path reportPath,
             VerbosityLevel verbosity,
@@ -59,7 +59,7 @@ public class PdfAutoA11yCLI {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (!analyzeOnly && !dumpTree && !dumpTreeDetailed && outputPath == null) {
+            if (!analyzeOnly && !dumpTreeSimple && !dumpTreeDetailed && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -104,7 +104,7 @@ public class PdfAutoA11yCLI {
         String password = null;
         boolean force_save = false;
         boolean analyzeOnly = false;
-        boolean dumpTree = false;
+        boolean dumpTreeSimple = false;
         boolean dumpTreeDetailed = false;
         boolean generateReport = false;
         Path reportPath = null;
@@ -131,8 +131,8 @@ public class PdfAutoA11yCLI {
                     case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
                     case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
                     case "-t", "--print-tree" -> printStructureTree = true;
-                    case "--dump-tree" -> dumpTree = true;
-                    case "--dump-tree-detailed" -> dumpTreeDetailed = true;
+                    case "--dump-tree" -> dumpTreeDetailed = true;
+                    case "--dump-roles" -> dumpTreeSimple = true;
                     case "-f", "--force" -> force_save = true;
                     case "-a", "--analyze" -> analyzeOnly = true;
                     case "-r", "--report" -> generateReport = true;
@@ -162,7 +162,7 @@ public class PdfAutoA11yCLI {
                 inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
 
         // Generate output path
-        if (!analyzeOnly && !dumpTree && !dumpTreeDetailed) {
+        if (!analyzeOnly && !dumpTreeSimple && !dumpTreeDetailed) {
             if (outputPath == null) {
                 String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
                 Path parent = inputPath.getParent();
@@ -188,7 +188,7 @@ public class PdfAutoA11yCLI {
                 password,
                 force_save,
                 analyzeOnly,
-                dumpTree,
+                dumpTreeSimple,
                 dumpTreeDetailed,
                 reportPath,
                 verbosity,
@@ -214,7 +214,7 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
-        if (config.dumpTree() || config.dumpTreeDetailed()) {
+        if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
             dumpTree(config);
             return;
         }
@@ -289,6 +289,7 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    /** Prints the structure tree to the console based on the CLI config. */
     private static void dumpTree(CLIConfig config) {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
@@ -366,8 +367,8 @@ public class PdfAutoA11yCLI {
                 + "  -v, --verbose     Show detailed processing information\n"
                 + "  -vv, --debug      Show all debug information\n"
                 + "  -t, --print-tree  Print the structure tree during processing\n"
-                + "  --dump-tree       Print the structure tree (roles only) and exit\n"
-                + "  --dump-tree-detailed  Like --dump-tree but also shows MCRs and annotations\n"
+                + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
+                + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  -f, --force       Force save even if no fixes applied\n"
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save output to report file (auto-named from input)\n"
