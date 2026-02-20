@@ -86,9 +86,9 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
         ProcessingResult result = service.remediate();
         saveRemediatedPdf(result);
 
-        // Remove obj numbers from tree to make it easier to compare
-        String actualTree = readStructureTree(result.tempOutputFile()).replaceAll(" #\\d+", "");
-        String expectedTree = Files.readString(goalFile).strip().replaceAll(" #\\d+", "");
+        // Remove obj numbers (#) and MCID (&) from tree to make it easier to compare
+        String actualTree = readStructureTree(result.tempOutputFile()).replaceAll(" [#&]\\d+", "");
+        String expectedTree = Files.readString(goalFile).strip().replaceAll(" [#&]\\d+", "");
 
         if (!expectedTree.equals(actualTree)) {
             fail(
