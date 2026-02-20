@@ -487,69 +487,77 @@ public final class StructureTree {
             PdfStructElem elem,
             int depth,
             Map<Integer, Set<Content.ContentKind>> contentKinds) {
-        sb.append("  ".repeat(depth));
-        sb.append(elem.getRole().getValue());
+        sb.append(indentation(depth));
+        sb.append(structElemLabel(elem));
         sb.append('\n');
 
         // Output all children in /K array order
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
 
-        String childIndent = "  ".repeat(depth + 1);
+        String childIndent = indentation(depth + 1);
         for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem childElem) {
-                appendDetailedTree(sb, childElem, depth + 1, contentKinds);
-            } else if (kid instanceof PdfObjRef objRef) {
-                sb.append(childIndent);
-                sb.append('[');
-                sb.append(objrLabel(objRef));
-                sb.append(']');
-                sb.append('\n');
-            } else if (kid instanceof PdfMcr mcr) {
-                sb.append(childIndent);
-                sb.append('[');
-                sb.append(mcrLabel(mcr, contentKinds));
-                sb.append(']');
-                sb.append('\n');
+            switch (kid) {
+                case PdfStructElem childElem ->
+                        appendDetailedTree(sb, childElem, depth + 1, contentKinds);
+                case PdfObjRef objRef -> {
+                    sb.append(childIndent);
+                    sb.append("<" + objrLabel(objRef) + ">");
+                    sb.append('\n');
+                }
+                case PdfMcr mcr -> {
+                    sb.append(childIndent);
+                    sb.append("[" + mcrLabel(mcr, contentKinds) + "]");
+                    sb.append('\n');
+                }
+                default -> throw new IllegalArgumentException("Unexpected value: " + kid);
             }
         }
     }
 
+    private static String structElemLabel(PdfStructElem elem) {
+        return elem.getRole().getValue();
+    }
+
     private static String objrLabel(PdfObjRef objRef) {
         PdfDictionary refObj = objRef.getReferencedObject();
-        String objrLabel = "OBJR:";
+        String objrLabel = "";
         if (refObj == null) {
             logger.debug(
                     "No referenced object found for OBJR {}", objRef.getPdfObject().toString());
-            return objrLabel + "Unknown";
+            return objrLabel + "unknown";
         }
         PdfName subtype = refObj.getAsName(PdfName.Subtype);
-        objrLabel = subtype != null ? objrLabel + subtype.getValue() : objrLabel;
+        objrLabel = subtype != null ? objrLabel + subtype.getValue().toLowerCase() : objrLabel;
         PdfIndirectReference ref = refObj.getIndirectReference();
-        return ref != null ? objrLabel + " #" + ref.getObjNumber() : objrLabel;
+        String label = ref != null ? objrLabel + " #" + ref.getObjNumber() : objrLabel;
+        return label;
     }
 
     private static String mcrLabel(
             PdfMcr mcr, Map<Integer, Set<Content.ContentKind>> contentKinds) {
         int mcid = mcr.getMcid();
         Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-        String mcrLabel = "MCR:";
+        String mcrLabel = "";
 
         if (kinds == null || kinds.isEmpty()) {
             logger.debug("No content kinds found for MCID #{}", mcid);
-            return mcrLabel + "Unknown";
+            return mcrLabel + "unknown";
         }
         boolean hasText = kinds.contains(Content.ContentKind.TEXT);
         boolean hasImage = kinds.contains(Content.ContentKind.IMAGE);
         if (hasText && hasImage) {
-            mcrLabel += "Text+Image";
+            mcrLabel += "text+image";
         } else if (hasText) {
-            mcrLabel += "Text";
+            mcrLabel += "text";
         } else {
-            mcrLabel += "Image";
+            mcrLabel += "image";
         }
-        PdfIndirectReference ref = mcr.getPdfObject().getIndirectReference();
-        return ref != null ? mcrLabel + " #" + ref.getObjNumber() : mcrLabel;
+        return mcrLabel + " &" + mcid;
+    }
+
+    private static String indentation(int depth) {
+        return " ".repeat(2 * depth);
     }
 
     /**
