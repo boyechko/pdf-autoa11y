@@ -37,14 +37,21 @@ import org.junit.jupiter.api.Test;
 /** Test suite for PdfCustodian pipeline methods. */
 public class PdfCustodianTest extends PdfTestBase {
 
-    private static final Path TAGGED_PDF = Path.of("src/test/resources/moby_dick.pdf");
     private static final String PASSWORD = "password";
 
+    private Path taggedPdf;
     private Path clearPdf;
     private Path encryptedPdf;
 
     @BeforeEach
-    void createFixtures() throws IOException {
+    void createFixtures() throws Exception {
+        taggedPdf =
+                createTestPdf(
+                        testOutputPath("fixture_tagged.pdf"),
+                        (pdfDoc, layoutDoc) -> {
+                            layoutDoc.add(
+                                    new com.itextpdf.layout.element.Paragraph("Tagged fixture"));
+                        });
         clearPdf = createClearPdf(testOutputPath("fixture_clear.pdf"));
         encryptedPdf = createEncryptedPdf(testOutputPath("fixture_encrypted.pdf"), PASSWORD);
     }
@@ -91,8 +98,7 @@ public class PdfCustodianTest extends PdfTestBase {
     @Test
     void decryptToTempPreservesStructureTree() throws Exception {
         Path output = testOutputPath("decrypted_tagged.pdf");
-        // moby_dick.pdf is unencrypted+tagged — decryptToTemp should preserve structure
-        PdfCustodian custodian = new PdfCustodian(TAGGED_PDF);
+        PdfCustodian custodian = new PdfCustodian(taggedPdf);
         try (PdfDocument doc = custodian.decryptToTemp(output)) {
             // close writes the output
         }
