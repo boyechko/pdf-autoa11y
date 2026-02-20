@@ -398,6 +398,14 @@ public final class Content {
         return ratio > ARTIFICIAL_SPACING_RATIO;
     }
 
+    /** Gets the bounding box for a single MCR by its MCID. */
+    public static Rectangle getBoundsForMcid(DocumentContext ctx, int pageNum, int mcid) {
+        Map<Integer, Rectangle> mcidBounds =
+                ctx.getOrComputeMcidBounds(
+                        pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
+        return mcidBounds.get(mcid);
+    }
+
     /** Gets the union bounding box for all MCRs within a structure element. */
     public static Rectangle getBoundsForElement(
             PdfStructElem node, DocumentContext ctx, int pageNum) {
