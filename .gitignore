@@ -48,6 +48,10 @@ tmp/
 *.swp
 *~.nib
 
+# Tooling
+.claude/
+AGENTS.md
+
 # VC
 .github
 
@@ -63,4 +67,3 @@ Thumbs.db
 # Project specific
 inputs/
 outputs/
-src/test/resources/
