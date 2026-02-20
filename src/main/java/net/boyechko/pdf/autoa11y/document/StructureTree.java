@@ -465,18 +465,7 @@ public final class StructureTree {
 
     /**
      * Like {@link #toIndentedTreeString}, but also shows MCRs and annotation object references
-     * (OBJRs) as leaf annotations on each element. Example output:
-     *
-     * <pre>
-     * Document
-     *   Part
-     *     Link
-     *       [MCR:text, OBJR:Link]
-     *       Figure
-     *         [MCR:image]
-     *     P
-     *       [MCR:text]
-     * </pre>
+     * (OBJRs) as leaf annotations on each element.
      */
     public static String toDetailedTreeString(PdfStructElem elem) {
         return toDetailedTreeString(elem, Map.of());
