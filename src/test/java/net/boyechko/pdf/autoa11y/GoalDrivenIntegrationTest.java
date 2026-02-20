@@ -60,22 +60,22 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 public class GoalDrivenIntegrationTest extends PdfTestBase {
 
-    private static final Path INPUTS_DIR = Path.of("inputs");
-    private static final Path SNAPSHOTS_DIR = Path.of("src/test/resources/snapshots");
+    private static final Path GOALS_DIR = Path.of("src/test/resources/goals");
 
     @ParameterizedTest(name = "remediate {0}")
     @ValueSource(
             strings = {
-                "catalog1.pdf",
-                "catalog18.pdf",
+                "catalog001_a11y.pdf",
+                "catalog006_a11y.pdf",
+                "catalog018_a11y.pdf",
             })
     @Tag("GoalDriven")
     void remediateAndCompareToGoal(String pdfName) throws Exception {
-        Path inputPath = INPUTS_DIR.resolve(pdfName);
+        Path inputPath = GOALS_DIR.resolve(pdfName);
         assumeTrue(Files.exists(inputPath), "Input PDF not found: " + inputPath);
 
         String baseName = pdfName.replace(".pdf", "");
-        Path goalFile = SNAPSHOTS_DIR.resolve(baseName + ".goal.txt");
+        Path goalFile = GOALS_DIR.resolve(baseName + ".goal.txt");
         assumeTrue(Files.exists(goalFile), "Goal snapshot not found: " + goalFile);
 
         ProcessingService service =
