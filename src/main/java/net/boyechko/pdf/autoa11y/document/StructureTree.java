@@ -489,30 +489,29 @@ public final class StructureTree {
             Map<Integer, Set<Content.ContentKind>> contentKinds) {
         sb.append("  ".repeat(depth));
         sb.append(elem.getRole().getValue());
-
-        // Collect non-structelem kids (MCRs and OBJRs)
-        List<IStructureNode> kids = elem.getKids();
-        if (kids != null) {
-            List<String> leafLabels = new ArrayList<>();
-            for (IStructureNode kid : kids) {
-                if (kid instanceof PdfObjRef objRef) {
-                    leafLabels.add(objrLabel(objRef));
-                } else if (kid instanceof PdfMcr mcr) {
-                    leafLabels.add(mcrLabel(mcr, contentKinds));
-                }
-            }
-            for (String label : leafLabels) {
-                sb.append('\n');
-                sb.append("  ".repeat(depth + 1));
-                sb.append('[');
-                sb.append(label);
-                sb.append(']');
-            }
-        }
-
         sb.append('\n');
-        for (PdfStructElem kid : structKidsOf(elem)) {
-            appendDetailedTree(sb, kid, depth + 1, contentKinds);
+
+        // Output all children in /K array order
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return;
+
+        String childIndent = "  ".repeat(depth + 1);
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem childElem) {
+                appendDetailedTree(sb, childElem, depth + 1, contentKinds);
+            } else if (kid instanceof PdfObjRef objRef) {
+                sb.append(childIndent);
+                sb.append('[');
+                sb.append(objrLabel(objRef));
+                sb.append(']');
+                sb.append('\n');
+            } else if (kid instanceof PdfMcr mcr) {
+                sb.append(childIndent);
+                sb.append('[');
+                sb.append(mcrLabel(mcr, contentKinds));
+                sb.append(']');
+                sb.append('\n');
+            }
         }
     }
 
