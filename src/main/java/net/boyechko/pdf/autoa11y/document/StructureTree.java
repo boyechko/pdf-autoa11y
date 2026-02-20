@@ -478,7 +478,8 @@ public final class StructureTree {
     public static String toDetailedTreeString(
             PdfStructElem elem, Map<Integer, Set<Content.ContentKind>> contentKinds) {
         StringBuilder sb = new StringBuilder();
-        appendDetailedTree(sb, elem, 0, contentKinds);
+        int[] currentPage = {0};
+        appendDetailedTree(sb, elem, 0, contentKinds, currentPage);
         return sb.toString();
     }
 
@@ -486,7 +487,8 @@ public final class StructureTree {
             StringBuilder sb,
             PdfStructElem elem,
             int depth,
-            Map<Integer, Set<Content.ContentKind>> contentKinds) {
+            Map<Integer, Set<Content.ContentKind>> contentKinds,
+            int[] currentPage) {
         sb.append(indentation(depth));
         sb.append(structElemLabel(elem));
         sb.append('\n');
@@ -499,19 +501,44 @@ public final class StructureTree {
         for (IStructureNode kid : kids) {
             switch (kid) {
                 case PdfStructElem childElem ->
-                        appendDetailedTree(sb, childElem, depth + 1, contentKinds);
+                        appendDetailedTree(sb, childElem, depth + 1, contentKinds, currentPage);
                 case PdfObjRef objRef -> {
+                    emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
                     sb.append(childIndent);
                     sb.append("<" + objrLabel(objRef) + ">");
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {
+                    emitPageBreakIfNeeded(sb, pageOf(mcr), currentPage);
                     sb.append(childIndent);
                     sb.append("[" + mcrLabel(mcr, contentKinds) + "]");
                     sb.append('\n');
                 }
                 default -> throw new IllegalArgumentException("Unexpected value: " + kid);
             }
+        }
+    }
+
+    public static int pageOf(PdfMcr mcr) {
+        PdfDictionary pageObj = mcr.getPageObject();
+        if (pageObj == null) return 0;
+        PdfDocument doc = pageObj.getIndirectReference().getDocument();
+        return doc.getPageNumber(pageObj);
+    }
+
+    public static int pageOf(PdfObjRef objRef) {
+        PdfDictionary pageObj = objRef.getPageObject();
+        if (pageObj == null) return 0;
+        PdfDocument doc = pageObj.getIndirectReference().getDocument();
+        return doc.getPageNumber(pageObj);
+    }
+
+    private static void emitPageBreakIfNeeded(StringBuilder sb, int pageNum, int[] currentPage) {
+        if (pageNum > 0 && pageNum != currentPage[0]) {
+            currentPage[0] = pageNum;
+            sb.append("--- Page ");
+            sb.append(pageNum);
+            sb.append(" ---\n");
         }
     }
 
