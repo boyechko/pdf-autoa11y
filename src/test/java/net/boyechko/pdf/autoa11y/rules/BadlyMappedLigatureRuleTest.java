@@ -34,10 +34,12 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
 class BadlyMappedLigatureRuleTest extends PdfTestBase {
+    private static final Path CATALOG_P1_PDF =
+            Path.of("src/test/resources/UWBothellCatalog202425_001.pdf");
 
     @Test
     void detectsBrokenLigatureMappingsInCatalogSample() throws Exception {
-        Path inputPath = Path.of("src/test/resources/catalog_p1.pdf");
+        Path inputPath = CATALOG_P1_PDF;
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath.toString()))) {
             BadlyMappedLigatureRule rule = new BadlyMappedLigatureRule();
             IssueList issues = rule.findIssues(new DocumentContext(pdfDoc));
@@ -51,7 +53,7 @@ class BadlyMappedLigatureRuleTest extends PdfTestBase {
 
     @Test
     void remapsLigaturesSoExtractedWordsAreCorrect() throws Exception {
-        Path inputPath = Path.of("src/test/resources/catalog_p1.pdf");
+        Path inputPath = CATALOG_P1_PDF;
         Path outputPath = testOutputPath("catalog_p1-ligatures-fixed.pdf");
 
         try (PdfDocument pdfDoc =

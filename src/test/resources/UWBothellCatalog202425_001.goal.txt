@@ -1,0 +1,60 @@
+Document
+  Link
+--- Page 1 ---
+    <link #82>
+    <link #81>
+    <link #80>
+    <link #79>
+    Figure
+      [image &1]
+  P
+    [text &2]
+  P
+    [text &4]
+  H1
+    [text &5]
+  P
+    [text &6]
+    Link
+      <link #96>
+      [text &7]
+    [text &8]
+  H1
+    [text &9]
+  L
+    LI
+      LBody
+        P
+          Link
+            <link #94>
+            [text &10]
+    LI
+      LBody
+        P
+          Link
+            <link #92>
+            [text &11]
+    LI
+      LBody
+        P
+          Link
+            <link #90>
+            [text &12]
+    LI
+      LBody
+        P
+          Link
+            <link #88>
+            [text &13]
+    LI
+      LBody
+        P
+          Link
+            <link #86>
+            [text &14]
+  P
+    [text &15]
+  P
+    Link
+      <link #84>
+      [text &16]
