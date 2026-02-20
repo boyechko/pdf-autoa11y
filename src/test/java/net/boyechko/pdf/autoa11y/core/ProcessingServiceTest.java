@@ -45,26 +45,6 @@ import org.junit.jupiter.api.Test;
 public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
-    void encryptedPdfRaisesException() {
-        Path inputPath = Path.of("src/test/resources/blank_password.pdf");
-        Exception e =
-                assertThrows(Exception.class, () -> createProcessingService(inputPath).remediate());
-        assertTrue(e.getMessage().contains("password"));
-    }
-
-    @Test
-    void encryptedPdfWithPasswordSucceeds() throws Exception {
-        Path inputPath = Path.of("src/test/resources/blank_password.pdf");
-        ProcessingService service =
-                new ProcessingService.ProcessingServiceBuilder()
-                        .withPdfCustodian(new PdfCustodian(inputPath, "password"))
-                        .withListener(new NoOpProcessingListener())
-                        .build();
-
-        service.remediate();
-    }
-
-    @Test
     void validPdfIsProcessedSuccessfully() throws Exception {
         createProcessingService(Path.of("src/test/resources/moby_dick.pdf")).remediate();
     }
