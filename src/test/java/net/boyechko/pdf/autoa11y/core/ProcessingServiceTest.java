@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -58,7 +59,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void untaggedPdfReportsNoStructTree() throws Exception {
-        Path inputPath = Path.of("src/test/resources/moby_dick_untagged.pdf");
+        Path inputPath = createUntaggedPdf();
         IssueList issues = createProcessingService(inputPath).analyze();
         assertNotNull(issues, "Should return issues list");
         assertTrue(
@@ -210,6 +211,14 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
+
+    private Path createUntaggedPdf() throws Exception {
+        Path output = testOutputPath("untagged.pdf");
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(output.toString()))) {
+            doc.addNewPage();
+        }
+        return output;
+    }
 
     private ProcessingService createProcessingService(Path testPdf) {
         return new ProcessingService.ProcessingServiceBuilder()
