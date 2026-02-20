@@ -32,7 +32,10 @@ public abstract class TagSingleChildFix implements IssueFix {
     }
 
     public static IssueFix createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
-        IssueFix fix = WrapInLI.tryCreate(kid, parent);
+        IssueFix fix = ExtractLBodyToList.tryCreate(kid, parent);
+        if (fix != null) return fix;
+
+        fix = WrapInLI.tryCreate(kid, parent);
         if (fix != null) return fix;
 
         fix = WrapInLBody.tryCreate(kid, parent);
