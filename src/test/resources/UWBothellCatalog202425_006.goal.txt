@@ -1,0 +1,83 @@
+Document
+  Part
+    Link
+--- Page 1 ---
+      <link #89>
+      <link #88>
+      <link #87>
+      P
+        [image &1]
+        Link
+          <link #85>
+          [text &2]
+        [image &3]
+        Link
+          <link #83>
+          [text &4]
+    P
+      [text &6]
+    P
+      ParagraphSpan
+        Link
+          <link #71>
+          [text &7]
+      ParagraphSpan
+        [text &8]
+    H1
+      [text &9]
+    P
+      [text &10]
+      Link
+        <link #105>
+        [text &11]
+      [text &12]
+    L
+      LI
+        LBody
+          P
+            Link
+              <link #103>
+              [text &13]
+      LI
+        LBody
+          P
+            Link
+              <link #101>
+              [text &14]
+      LI
+        LBody
+          P
+            Link
+              <link #99>
+              [text &15]
+      LI
+        LBody
+          P
+            Link
+              <link #97>
+              [text &16]
+    H1
+      [text &17]
+    P
+      [text &18]
+    H1
+      [text &19]
+    P
+      Link
+        <link #95>
+        [text &20]
+    L
+      LI
+        LBody
+          P
+            Link
+              <link #93>
+              [text &21]
+            [text &22]
+      LI
+        LBody
+          P
+            Link
+              <link #91>
+              [text &23]
+            [text &24]
