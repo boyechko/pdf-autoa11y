@@ -44,6 +44,7 @@ public enum IssueType {
     UNEXPECTED_WIDGET("unexpected widget annotations"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
+    BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
     PARAGRAPH_OF_LINKS("paragraph containing only links");
 
     private final String groupLabel;

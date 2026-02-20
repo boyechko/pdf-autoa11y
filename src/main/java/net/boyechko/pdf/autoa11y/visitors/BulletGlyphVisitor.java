@@ -18,12 +18,16 @@
 package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.fixes.children.WrapBulletAlignedKidsInLBody;
 import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -137,6 +141,11 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
             } else {
                 emitRunIfLongEnough(ctx, currentRun);
                 currentRun = new ArrayList<>();
+
+                // Drill into too-tall elements to find bullet-aligned raw kids
+                if (bounds != null && bounds.getHeight() > MAX_ELEMENT_HEIGHT) {
+                    findBulletAlignedKidsInElement(ctx, child, bullets, pageNum);
+                }
             }
         }
         emitRunIfLongEnough(ctx, currentRun);
@@ -168,5 +177,113 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
                 run.size(),
                 StructureTree.objNumber(ctx.node()),
                 ctx.getPageNumber());
+    }
+
+    /** A group of consecutive raw kid indices that align with the same bullet y-position. */
+    private record BulletAlignedGroup(List<Integer> kidIndices, float bulletY) {}
+
+    /**
+     * Drills into an element's raw kids to find groups that align with bullet positions. Each group
+     * becomes a WrapBulletAlignedKidsInLBody fix.
+     */
+    private void findBulletAlignedKidsInElement(
+            VisitorContext ctx,
+            PdfStructElem element,
+            List<Content.BulletPosition> bullets,
+            int pageNum) {
+        List<IStructureNode> rawKids = element.getKids();
+        if (rawKids == null || rawKids.isEmpty()) {
+            return;
+        }
+
+        List<BulletAlignedGroup> groups = new ArrayList<>();
+        List<Integer> currentGroup = new ArrayList<>();
+        float currentBulletY = Float.NaN;
+
+        for (int i = 0; i < rawKids.size(); i++) {
+            IStructureNode kid = rawKids.get(i);
+            Rectangle kidBounds = boundsForRawKid(kid, ctx, pageNum);
+
+            if (kidBounds == null) {
+                // Skip kids without bounds (e.g., OBJRs)
+                continue;
+            }
+
+            Content.BulletPosition matchedBullet = findMatchingBullet(bullets, kidBounds);
+            if (matchedBullet != null) {
+                if (currentGroup.isEmpty()
+                        || Math.abs(currentBulletY - matchedBullet.y()) < Y_OVERLAP_TOLERANCE) {
+                    currentGroup.add(i);
+                    currentBulletY = matchedBullet.y();
+                } else {
+                    // Different bullet — flush current group and start new one
+                    groups.add(
+                            new BulletAlignedGroup(new ArrayList<>(currentGroup), currentBulletY));
+                    currentGroup.clear();
+                    currentGroup.add(i);
+                    currentBulletY = matchedBullet.y();
+                }
+            } else {
+                if (!currentGroup.isEmpty()) {
+                    groups.add(
+                            new BulletAlignedGroup(new ArrayList<>(currentGroup), currentBulletY));
+                    currentGroup.clear();
+                    currentBulletY = Float.NaN;
+                }
+            }
+        }
+
+        // Flush final group
+        if (!currentGroup.isEmpty()) {
+            groups.add(new BulletAlignedGroup(new ArrayList<>(currentGroup), currentBulletY));
+        }
+
+        // Emit issues for each group (in reverse order so index adjustments are safe)
+        for (int g = groups.size() - 1; g >= 0; g--) {
+            BulletAlignedGroup group = groups.get(g);
+            IssueFix fix =
+                    new WrapBulletAlignedKidsInLBody(element, group.kidIndices(), group.bulletY());
+            Issue issue =
+                    new Issue(
+                            IssueType.BULLET_ALIGNED_KIDS_IN_ELEMENT,
+                            IssueSeverity.WARNING,
+                            new IssueLocation(element, ctx.path()),
+                            group.kidIndices().size()
+                                    + " raw kids aligned with bullet glyph inside "
+                                    + element.getRole().getValue(),
+                            fix);
+            issues.add(issue);
+
+            logger.debug(
+                    "Found {} bullet-aligned raw kids in obj #{} (bulletY={})",
+                    group.kidIndices().size(),
+                    StructureTree.objNumber(element),
+                    String.format("%.1f", group.bulletY()));
+        }
+    }
+
+    /** Computes bounds for a single raw kid (MCR or struct element). */
+    private Rectangle boundsForRawKid(IStructureNode kid, VisitorContext ctx, int pageNum) {
+        if (kid instanceof PdfObjRef) {
+            return null;
+        } else if (kid instanceof PdfMcr mcr) {
+            int mcid = mcr.getMcid();
+            if (mcid < 0) return null;
+            return Content.getBoundsForMcid(ctx.docCtx(), pageNum, mcid);
+        } else if (kid instanceof PdfStructElem structKid) {
+            return Content.getBoundsForElement(structKid, ctx.docCtx(), pageNum);
+        }
+        return null;
+    }
+
+    /** Finds the bullet that matches a given bounding box, or null if none matches. */
+    private Content.BulletPosition findMatchingBullet(
+            List<Content.BulletPosition> bullets, Rectangle bounds) {
+        float bottom = bounds.getBottom() - Y_OVERLAP_TOLERANCE;
+        float top = bounds.getTop() + Y_OVERLAP_TOLERANCE;
+        return bullets.stream()
+                .filter(b -> b.y() >= bottom && b.y() <= top)
+                .findFirst()
+                .orElse(null);
     }
 }
