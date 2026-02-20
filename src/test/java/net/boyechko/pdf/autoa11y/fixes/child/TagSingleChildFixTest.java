@@ -169,4 +169,65 @@ class TagSingleChildFixTest extends PdfTestBase {
                     "Original paragraph should be under LBody");
         }
     }
+
+    @Test
+    void extractLBodyToList_firesForLBodyUnderP() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            root.addKid(p);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
+            p.addKid(lBody);
+
+            IssueFix fix = ExtractLBodyToList.tryCreate(lBody, p);
+            assertNotNull(fix, "Fix should be created for P[LBody] pattern");
+            assertInstanceOf(ExtractLBodyToList.class, fix);
+        }
+    }
+
+    @Test
+    void extractLBodyToList_skipsLBodyUnderLI() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            root.addKid(li);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
+            li.addKid(lBody);
+
+            IssueFix fix = ExtractLBodyToList.tryCreate(lBody, li);
+            assertNull(fix, "Fix should NOT be created for LI[LBody] — already valid");
+        }
+    }
+
+    @Test
+    void extractLBodyToList_skipsLBodyUnderL() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem l = new PdfStructElem(pdfDoc, PdfName.L);
+            root.addKid(l);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
+            l.addKid(lBody);
+
+            IssueFix fix = ExtractLBodyToList.tryCreate(lBody, l);
+            assertNull(fix, "Fix should NOT be created for L[LBody] — WrapInLI handles this");
+        }
+    }
+
+    @Test
+    void extractLBodyToList_dispatchedByCreateIfApplicable() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            root.addKid(p);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
+            p.addKid(lBody);
+
+            IssueFix fix = TagSingleChildFix.createIfApplicable(lBody, p);
+            assertNotNull(fix, "createIfApplicable should find a fix for P[LBody]");
+            assertInstanceOf(
+                    ExtractLBodyToList.class,
+                    fix,
+                    "createIfApplicable should dispatch to ExtractLBodyToList, not WrapInLI");
+        }
+    }
 }
