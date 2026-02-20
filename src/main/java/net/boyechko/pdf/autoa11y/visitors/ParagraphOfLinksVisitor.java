@@ -48,6 +48,13 @@ public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
             return true;
         }
 
+        // Skip if the element has non-struct-elem kids (MCRs/OBJRs) that would
+        // be orphaned when we convert Link children to LI > LBody > Link.
+        var allKids = ctx.node().getKids();
+        if (allKids != null && allKids.size() != ctx.children().size()) {
+            return true;
+        }
+
         if (ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
             IssueFix fix = new ListifyParagraphOfLinks(ctx.node(), ctx.children());
             Issue newIssue =
