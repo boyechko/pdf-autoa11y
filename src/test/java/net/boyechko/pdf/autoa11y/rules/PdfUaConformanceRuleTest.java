@@ -19,11 +19,13 @@ package net.boyechko.pdf.autoa11y.rules;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.pdf.PdfConformance;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfUAConformance;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.WriterProperties;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
@@ -88,6 +90,17 @@ class PdfUaConformanceRuleTest extends PdfTestBase {
             IssueList issues = rule.findIssues(ctx);
             assertTrue(issues.isEmpty(), "Should pass when no PDF/UA claim");
         }
+    }
+
+    /** Canary: fails if iText renames the field we clear via reflection. */
+    @Test
+    void pdfDocumentHasPdfConformanceField() throws Exception {
+        Field field = PdfDocument.class.getDeclaredField("pdfConformance");
+        assertEquals(
+                PdfConformance.class,
+                field.getType(),
+                "PdfDocument.pdfConformance field type changed — update"
+                        + " PdfUaConformanceRule.clearCachedConformance()");
     }
 
     private Path createPdfClaimingUa() throws Exception {
