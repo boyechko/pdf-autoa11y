@@ -23,12 +23,11 @@ import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects if the structure tree root is present. */
-public class StructureTreeRule implements Rule {
-    private static final int P_DOC_SETUP = 10; // early phase
+public class StructureTreeExistsRule implements Rule {
 
     @Override
     public String name() {
-        return "Structure Tree Rule";
+        return "Structure Tree Exists Rule";
     }
 
     @Override
@@ -38,7 +37,7 @@ public class StructureTreeRule implements Rule {
 
     @Override
     public String failedMessage() {
-        return "Structure tree root is missing";
+        return "Document has no structure tree and cannot be remediated";
     }
 
     @Override
@@ -48,8 +47,9 @@ public class StructureTreeRule implements Rule {
             Issue issue =
                     new Issue(
                             IssueType.NO_STRUCT_TREE,
-                            IssueSeverity.ERROR,
-                            "Document has no structure tree (StructTreeRoot is null)",
+                            IssueSeverity.FATAL,
+                            "This PDF has no structure tree. It must be tagged before"
+                                    + " accessibility remediation can proceed.",
                             null);
             return new IssueList(issue);
         }
