@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.core;
 import java.util.List;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.rules.BadlyMappedLigatureRule;
+import net.boyechko.pdf.autoa11y.rules.ImageOnlyDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.StructureTreeRule;
@@ -44,6 +45,7 @@ public final class ProcessingDefaults {
 
     public static List<Rule> rules() {
         return List.of(
+                new ImageOnlyDocumentRule(),
                 new LanguageSetRule(),
                 new TabOrderRule(),
                 new StructureTreeRule(),
