@@ -23,6 +23,7 @@ import net.boyechko.pdf.autoa11y.rules.BadlyMappedLigatureRule;
 import net.boyechko.pdf.autoa11y.rules.ImageOnlyDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
+import net.boyechko.pdf.autoa11y.rules.PdfUaConformanceRule;
 import net.boyechko.pdf.autoa11y.rules.StructureTreeExistsRule;
 import net.boyechko.pdf.autoa11y.rules.TabOrderRule;
 import net.boyechko.pdf.autoa11y.rules.TaggedPdfRule;
@@ -50,6 +51,7 @@ public final class ProcessingDefaults {
                 new LanguageSetRule(),
                 new TabOrderRule(),
                 new TaggedPdfRule(),
+                new PdfUaConformanceRule(),
                 new MissingDocumentRule(),
                 new UnpartitionedDocumentRule(),
                 new UnmarkedLinkRule(),
