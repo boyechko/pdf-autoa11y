@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfUAConformance;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.ReaderProperties;
 import com.itextpdf.kernel.pdf.WriterProperties;
@@ -82,9 +81,7 @@ public final class PdfCustodian {
         analyzeEncryptionIfNeeded();
 
         PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
-        WriterProperties writerProps = new WriterProperties();
-        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
-        PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
+        PdfWriter pdfWriter = new PdfWriter(outputPath.toString());
 
         return new PdfDocument(pdfReader, pdfWriter);
     }
@@ -93,9 +90,7 @@ public final class PdfCustodian {
     public static PdfDocument openTempForModification(Path inputPath, Path outputPath)
             throws IOException {
         PdfReader pdfReader = new PdfReader(inputPath.toString());
-        WriterProperties writerProps = new WriterProperties();
-        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
-        PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
+        PdfWriter pdfWriter = new PdfWriter(outputPath.toString());
 
         return new PdfDocument(pdfReader, pdfWriter);
     }
@@ -156,7 +151,6 @@ public final class PdfCustodian {
                     null, password.getBytes(), DEFAULT_PERMISSIONS, DEFAULT_CRYPTO_MODE);
         }
 
-        writerProps.addPdfUaXmpMetadata(PdfUAConformance.PDF_UA_1);
         return writerProps;
     }
 }
