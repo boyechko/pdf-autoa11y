@@ -23,6 +23,18 @@ public record ProcessingResult(
         IssueList remainingDocumentIssues,
         Path tempOutputFile) {
 
+    /** Returns an aborted result with no output file and the given fatal issues. */
+    public static ProcessingResult aborted(IssueList fatalIssues) {
+        return new ProcessingResult(
+                new IssueList(),
+                new IssueList(),
+                new IssueList(),
+                fatalIssues,
+                new IssueList(),
+                fatalIssues,
+                null);
+    }
+
     public int totalIssuesDetected() {
         return originalTagIssues.size() + originalDocumentIssues.size();
     }
