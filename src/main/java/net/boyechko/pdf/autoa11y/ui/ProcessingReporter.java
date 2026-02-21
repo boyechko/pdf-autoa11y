@@ -18,6 +18,7 @@
 package net.boyechko.pdf.autoa11y.ui;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -199,12 +200,27 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     /**
-     * Prints an indented line with the given message and icon if the verbosity level is at least
-     * the given level.
+     * Prints an indented line with the given message and icon, word-wrapping long messages to stay
+     * within the box width. Continuation lines are indented to align with the message start.
      */
     private void printLine(String message, String icon, VerbosityLevel level) {
-        if (verbosity.shouldShow(level)) {
-            output.println(icon == null ? message : INDENT + icon + " " + message);
+        if (!verbosity.shouldShow(level)) {
+            return;
+        }
+        if (icon == null) {
+            output.println(message);
+            return;
+        }
+        String prefix = INDENT + icon + " ";
+        String continuationPrefix = INDENT + "  ";
+        List<String> lines = wordWrap(message, HEADER_WIDTH);
+        if (lines.isEmpty()) {
+            output.println(prefix);
+            return;
+        }
+        output.println(prefix + lines.get(0));
+        for (int i = 1; i < lines.size(); i++) {
+            output.println(continuationPrefix + lines.get(i));
         }
     }
 
@@ -231,6 +247,36 @@ public class ProcessingReporter implements ProcessingListener {
         }
 
         return sb.toString();
+    }
+
+    /** Word-wraps text at word boundaries to fit within maxWidth characters per line. */
+    private static List<String> wordWrap(String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return List.of();
+        }
+        if (text.length() <= maxWidth) {
+            return List.of(text);
+        }
+
+        List<String> lines = new ArrayList<>();
+        String[] words = text.split(" ");
+        StringBuilder currentLine = new StringBuilder();
+
+        for (String word : words) {
+            if (currentLine.isEmpty()) {
+                currentLine.append(word);
+            } else if (currentLine.length() + 1 + word.length() <= maxWidth) {
+                currentLine.append(' ').append(word);
+            } else {
+                lines.add(currentLine.toString());
+                currentLine.setLength(0);
+                currentLine.append(word);
+            }
+        }
+        if (!currentLine.isEmpty()) {
+            lines.add(currentLine.toString());
+        }
+        return lines;
     }
 
     private String formatPageRange(Set<Integer> pages) {
