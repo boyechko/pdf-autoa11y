@@ -23,7 +23,6 @@ import com.itextpdf.kernel.exceptions.BadPasswordException;
 import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfUAConformance;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.WriterProperties;
 import java.io.IOException;
@@ -72,17 +71,16 @@ public class PdfCustodianTest extends PdfTestBase {
     // ── openTempForModification ────────────────────────────────────
 
     @Test
-    void openTempForModificationSetsPdfUaConformance() throws Exception {
-        Path output = testOutputPath("temp_ua_conformance.pdf");
+    void openTempForModificationDoesNotClaimPdfUa() throws Exception {
+        Path output = testOutputPath("temp_no_ua_conformance.pdf");
         try (PdfDocument doc = PdfCustodian.openTempForModification(clearPdf, output)) {
             // close writes the output
         }
 
         try (PdfDocument result = new PdfDocument(new PdfReader(output.toString()))) {
-            assertEquals(
-                    PdfUAConformance.PDF_UA_1,
+            assertNull(
                     result.getConformance().getUAConformance(),
-                    "Output should declare PDF/UA-1 conformance");
+                    "Output should not declare PDF/UA conformance");
         }
     }
 
