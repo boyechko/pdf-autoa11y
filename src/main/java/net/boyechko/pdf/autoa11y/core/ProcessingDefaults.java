@@ -46,9 +46,9 @@ public final class ProcessingDefaults {
     public static List<Rule> rules() {
         return List.of(
                 new ImageOnlyDocumentRule(),
+                new StructureTreeExistsRule(),
                 new LanguageSetRule(),
                 new TabOrderRule(),
-                new StructureTreeExistsRule(),
                 new TaggedPdfRule(),
                 new MissingDocumentRule(),
                 new UnpartitionedDocumentRule(),
