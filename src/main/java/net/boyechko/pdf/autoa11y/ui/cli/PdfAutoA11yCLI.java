@@ -251,6 +251,10 @@ public class PdfAutoA11yCLI {
                 logger().info("Remediating document");
                 ProcessingResult result = service.remediate();
 
+                if (result.tempOutputFile() == null) {
+                    return;
+                }
+
                 if (result.totalIssuesResolved() == 0 && !config.force_save()) {
                     reporter.onInfo("No changes made; output file not created");
                     return;
