@@ -44,15 +44,17 @@ import org.junit.jupiter.api.Test;
 
 /** Test suite for ProcessingService. */
 public class ProcessingServiceTest extends PdfTestBase {
+    private static final Path TAGGED_BASELINE_PDF =
+            Path.of("src/test/resources/tagged_baseline.pdf");
 
     @Test
     void validPdfIsProcessedSuccessfully() throws Exception {
-        createProcessingService(Path.of("src/test/resources/moby_dick.pdf")).remediate();
+        createProcessingService(TAGGED_BASELINE_PDF).remediate();
     }
 
     @Test
     void reportOnlyValidatesTagsWithoutModification() throws Exception {
-        Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
+        Path inputPath = TAGGED_BASELINE_PDF;
         IssueList issues = createProcessingService(inputPath).analyze();
         assertNotNull(issues, "Report-only mode should return issues list");
     }
@@ -179,7 +181,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
-        Path inputPath = Path.of("src/test/resources/moby_dick.pdf");
+        Path inputPath = TAGGED_BASELINE_PDF;
         ProcessingResult result = createProcessingService(inputPath).remediate();
 
         assertNotNull(result.originalTagIssues());
@@ -187,7 +189,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         assertEquals(
                 0,
                 result.totalIssuesRemaining(),
-                "Moby Dick PDF should be compliant with no remaining issues");
+                "Tagged basedline PDF should be compliant with no remaining issues");
     }
 
     @Test
