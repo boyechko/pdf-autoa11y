@@ -21,5 +21,6 @@ package net.boyechko.pdf.autoa11y.issues;
 public enum IssueSeverity {
     INFO,
     WARNING,
-    ERROR
+    ERROR,
+    FATAL
 }

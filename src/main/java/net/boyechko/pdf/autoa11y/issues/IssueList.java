@@ -51,6 +51,11 @@ public class IssueList extends ArrayList<Issue> {
                 .collect(Collectors.toCollection(IssueList::new));
     }
 
+    /** Returns true if any issue has FATAL severity, meaning processing cannot continue. */
+    public boolean hasFatalIssues() {
+        return stream().anyMatch(issue -> issue.severity() == IssueSeverity.FATAL);
+    }
+
     /**
      * Returns a subset of this list that contains only the issues that have failed to be resolved.
      */
