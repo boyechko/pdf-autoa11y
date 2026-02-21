@@ -139,7 +139,6 @@ public class ProcessingService {
                 allDocIssues.addAll(docIssues);
 
                 if (allDocIssues.hasFatalIssues()) {
-                    reportRemainingIssues(allDocIssues);
                     listener.onSummary(allDocIssues);
                     cleanupPipelineDir(pipelineDir, tempFiles);
                     return ProcessingResult.aborted(allDocIssues);
