@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import java.util.Map;
@@ -52,7 +53,9 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
     private static final Pattern PAGE_NUMBER =
             Pattern.compile("^\\s*(Page\\s+)?\\d+\\s*(of\\s+\\d+)?\\s*$", Pattern.CASE_INSENSITIVE);
 
-    private static final float TINY_IMAGE_MAX_SIZE = 20f;
+    // Images above both thresholds are meaningful content images, not decorative
+    static final float MEANINGFUL_MIN_WIDTH = 144f; // 2 inches
+    static final float MEANINGFUL_MIN_HEIGHT = 72f; // 1 inch
 
     private static final Set<String> CHECKABLE_ROLES =
             Set.of("P", "Link", "Span", "Figure", "Lbl", "LBody");
@@ -62,7 +65,7 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
     private enum ArtifactKind {
         NONE,
         TEXT_PATTERN,
-        TINY_IMAGE
+        DECORATIVE_IMAGE
     }
 
     @Override
@@ -109,8 +112,8 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
         if (matchesTextArtifactPattern(textContent)) {
             return ArtifactKind.TEXT_PATTERN;
         }
-        if (matchesTinyImagePattern(ctx, textContent)) {
-            return ArtifactKind.TINY_IMAGE;
+        if (matchesDecorativeImage(ctx, textContent)) {
+            return ArtifactKind.DECORATIVE_IMAGE;
         }
         return ArtifactKind.NONE;
     }
@@ -125,12 +128,23 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
                 || PAGE_NUMBER.matcher(textContent).matches();
     }
 
-    private boolean matchesTinyImagePattern(VisitorContext ctx, String textContent) {
+    /**
+     * Detects decorative images that should be artifacts: elements with no text content, image MCR
+     * content, no alt text (for Figures), and bounds below meaningful-size thresholds.
+     */
+    private boolean matchesDecorativeImage(VisitorContext ctx, String textContent) {
         if (textContent != null && !textContent.isBlank()) {
             return false;
         }
 
-        boolean foundTinyMcid = false;
+        boolean isFigure = PdfName.Figure.equals(ctx.node().getRole());
+        if (isFigure && ctx.node().getAlt() != null) {
+            return false;
+        }
+
+        boolean foundImageMcid = false;
+        Rectangle unionBounds = null;
+
         for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {
                 continue;
@@ -149,10 +163,13 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
                 continue;
             }
 
+            // Any text in any MCR means this isn't a pure image element
             String mcidText = ctx.docCtx().getMcidText(pageNum, mcid);
             if (mcidText != null && !mcidText.isBlank()) {
                 return false;
             }
+
+            foundImageMcid = foundImageMcid || hasImageContent(ctx, pageNum, mcid);
 
             Map<Integer, Rectangle> boundsByMcid =
                     ctx.docCtx()
@@ -160,30 +177,38 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
                                     pageNum,
                                     () -> Content.extractBoundsForPage(ctx.doc().getPage(pageNum)));
             Rectangle bounds = boundsByMcid.get(mcid);
-            if (bounds == null) {
-                continue;
+            if (bounds != null) {
+                unionBounds =
+                        unionBounds == null
+                                ? bounds
+                                : Rectangle.getCommonRectangle(unionBounds, bounds);
             }
-            if (!isTinyBounds(bounds)) {
-                return false;
-            }
-            foundTinyMcid = true;
         }
 
-        return foundTinyMcid;
+        return foundImageMcid && unionBounds != null && !isMeaningfulSize(unionBounds);
     }
 
-    private boolean isTinyBounds(Rectangle bounds) {
+    private boolean hasImageContent(VisitorContext ctx, int pageNum, int mcid) {
+        Map<Integer, Set<Content.ContentKind>> contentKinds =
+                ctx.docCtx()
+                        .getOrComputeContentKinds(
+                                pageNum,
+                                () ->
+                                        Content.extractContentKindsForPage(
+                                                ctx.doc().getPage(pageNum)));
+        Set<Content.ContentKind> kinds = contentKinds.get(mcid);
+        return kinds != null && kinds.contains(Content.ContentKind.IMAGE);
+    }
+
+    public static boolean isMeaningfulSize(Rectangle bounds) {
         float width = Math.abs(bounds.getWidth());
         float height = Math.abs(bounds.getHeight());
-        return width > 0
-                && height > 0
-                && width <= TINY_IMAGE_MAX_SIZE
-                && height <= TINY_IMAGE_MAX_SIZE;
+        return width > MEANINGFUL_MIN_WIDTH && height > MEANINGFUL_MIN_HEIGHT;
     }
 
     private String artifactMessage(ArtifactKind artifactKind, String textContent) {
-        if (artifactKind == ArtifactKind.TINY_IMAGE) {
-            return "Tagged tiny image should be artifact";
+        if (artifactKind == ArtifactKind.DECORATIVE_IMAGE) {
+            return "Decorative image should be artifact";
         }
         String safeText = textContent != null ? textContent : "";
         String truncated = safeText.length() > 40 ? safeText.substring(0, 39) + "…" : safeText;

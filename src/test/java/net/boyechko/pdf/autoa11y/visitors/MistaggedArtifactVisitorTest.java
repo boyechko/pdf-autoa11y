@@ -170,28 +170,65 @@ class MistaggedArtifactVisitorTest extends PdfTestBase {
                     1, issues.size(), "Tiny tagged image should be flagged as mistagged artifact");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
             assertTrue(
-                    issues.get(0).message().contains("tiny image"),
-                    "Issue message should describe tiny image artifacting");
+                    issues.get(0).message().contains("Decorative image"),
+                    "Issue message should describe decorative image artifacting");
         }
     }
 
     @Test
-    void doesNotFlagLargerTaggedImageAsMistaggedArtifact() throws Exception {
-        Path pdfFile = createTaggedImagePdf("MistaggedArtifactVisitorTest-large-image.pdf", 48f);
+    void detectsDecorativeFigureWithoutAltText() throws Exception {
+        // 48pt is above the tiny threshold (20pt) but below meaningful (144w × 72h)
+        Path pdfFile = createTaggedImagePdf("MistaggedArtifactVisitorTest-decorative.pdf", 48f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactVisitor());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
-            assertEquals(0, issues.size(), "Larger tagged image should not be auto-artifacted");
+            assertEquals(1, issues.size(), "Decorative figure without alt text should be flagged");
+            assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+            assertTrue(issues.get(0).message().contains("Decorative image"));
+        }
+    }
+
+    @Test
+    void doesNotFlagMeaningfulFigureAsMistaggedArtifact() throws Exception {
+        // 200pt × 200pt is above the meaningful thresholds (144w × 72h)
+        Path pdfFile = createTaggedImagePdf("MistaggedArtifactVisitorTest-meaningful.pdf", 200f);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactVisitor());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            assertEquals(0, issues.size(), "Meaningful-size figure should not be auto-artifacted");
+        }
+    }
+
+    @Test
+    void doesNotFlagFigureWithAltText() throws Exception {
+        Path pdfFile =
+                createTaggedImagePdf("MistaggedArtifactVisitorTest-with-alt.pdf", 48f, "A photo");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactVisitor());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            assertEquals(0, issues.size(), "Figure with alt text should not be flagged");
         }
     }
 
     private Path createTaggedImagePdf(String filename, float renderedSize) throws Exception {
+        return createTaggedImagePdf(filename, renderedSize, null);
+    }
+
+    private Path createTaggedImagePdf(String filename, float renderedSize, String altText)
+            throws Exception {
         return createStructuredTestPdf(
                 testOutputPath(filename),
                 (pdfDoc, firstPage, root, document) -> {
                     PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+                    if (altText != null) {
+                        figure.setAlt(new com.itextpdf.kernel.pdf.PdfString(altText));
+                    }
                     document.addKid(figure);
 
                     PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
