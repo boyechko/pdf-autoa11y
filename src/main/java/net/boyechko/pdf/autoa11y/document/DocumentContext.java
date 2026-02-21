@@ -25,6 +25,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /** Provides access to the document and its structure. */
@@ -34,6 +35,7 @@ public class DocumentContext {
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
+    private final Map<Integer, Map<Integer, Set<Content.ContentKind>>> contentKindsCache;
 
     public DocumentContext(PdfDocument doc) {
         this.doc = doc;
@@ -41,16 +43,19 @@ public class DocumentContext {
         this.mcidBoundsCache = new HashMap<>();
         this.mcidTextCache = new HashMap<>();
         this.bulletPositionCache = new HashMap<>();
+        this.contentKindsCache = new HashMap<>();
     }
 
     public PdfDocument doc() {
         return doc;
     }
 
+    /** Returns the page number for a given object number based on the object-to-page mapping. */
     public int getPageNumber(int objectNumber) {
         return objectToPageMapping.getOrDefault(objectNumber, 0);
     }
 
+    /** Returns the bounding box for a given MCID, extracting on first access. */
     public Map<Integer, Rectangle> getOrComputeMcidBounds(
             int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
         return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
@@ -66,6 +71,14 @@ public class DocumentContext {
     public Map<Integer, String> getMcidText(int pageNum) {
         return mcidTextCache.computeIfAbsent(
                 pageNum, k -> Content.extractTextForPage(doc.getPage(pageNum)));
+    }
+
+    /**
+     * Returns content kinds (text, image, or both) per MCID for a page, extracting on first access.
+     */
+    public Map<Integer, Set<Content.ContentKind>> getOrComputeContentKinds(
+            int pageNum, Supplier<Map<Integer, Set<Content.ContentKind>>> supplier) {
+        return contentKindsCache.computeIfAbsent(pageNum, k -> supplier.get());
     }
 
     /** Returns the text for a specific MCID, extracting the page on first access. */
@@ -87,6 +100,7 @@ public class DocumentContext {
         return mapping;
     }
 
+    /** Builds the object-to-page mapping recursively. */
     private void buildMappingRecursive(
             IStructureNode node, PdfDocument document, Map<Integer, Integer> mapping) {
         if (node instanceof PdfStructElem structElem) {
@@ -97,7 +111,7 @@ public class DocumentContext {
                 }
             }
 
-            // Now get page number for this element (may inherit from children)
+            // Get page number for this element (may inherit from children)
             int objNum = StructureTree.objNumber(structElem);
             int pageNum = getPageNumber(structElem, document);
             if (pageNum > 0) {
@@ -106,6 +120,10 @@ public class DocumentContext {
         }
     }
 
+    /**
+     * Returns the page number for a structure element, using the /Pg dictionary or indirect
+     * reference.
+     */
     private int getPageNumber(PdfStructElem node, PdfDocument document) {
         PdfDictionary dict = node.getPdfObject();
         PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);
