@@ -61,7 +61,7 @@ public final class Content {
 
     private Content() {}
 
-    // ── Content kind extraction ─────────────────────────────────────────
+    // == Content kind extraction =========================================
 
     /** Determines the content kind (text, image, or both) for each MCID on a page. */
     public static Map<Integer, Set<ContentKind>> extractContentKindsForPage(PdfPage page) {
@@ -121,7 +121,7 @@ public final class Content {
         }
     }
 
-    // ── Bullet glyph detection ─────────────────────────────────────────
+    // == Bullet glyph detection =========================================
 
     /** Position of a detected bullet glyph in page coordinates. */
     public record BulletPosition(float x, float y) {}
@@ -163,17 +163,18 @@ public final class Content {
      * segments, and the untransformed bounding box must be approximately 3.75 × 5 pt.
      */
     private static class BulletGlyphListener implements IEventListener {
-        /** Expected untransformed width of the bullet circle (3.75 pt). */
+        /** Expected untransformed width and height of the bullet circle (3.75 pt and 5.0 pt). */
         private static final float EXPECTED_WIDTH = 3.75f;
 
-        /** Expected untransformed height of the bullet circle (5.0 pt). */
         private static final float EXPECTED_HEIGHT = 5.0f;
 
-        /** Tolerance for matching expected dimensions. */
+        /** Tolerance for matching expected dimensions (1.0 pt). */
         private static final float DIMENSION_TOLERANCE = 1.0f;
 
+        /** Tolerance for deduplicating duplicate bullets (1.0 pt). */
         private static final float DEDUP_TOLERANCE = 1.0f;
 
+        /** List of detected bullet positions. */
         private final List<BulletPosition> bullets;
 
         BulletGlyphListener(List<BulletPosition> bullets) {
@@ -277,7 +278,7 @@ public final class Content {
         }
     }
 
-    // ── Text extraction ─────────────────────────────────────────────────
+    // == Text extraction =================================================
 
     /** Extracts text for all MCIDs on a page in a single content-stream pass. */
     public static Map<Integer, String> extractTextForPage(PdfPage page) {
@@ -373,7 +374,6 @@ public final class Content {
         // Remove Unicode replacement character (U+FFFD)
         String cleaned = text.replace("\uFFFD", "");
 
-        // Check if text has artificial character spacing (more than 30% single-char words)
         if (hasArtificialSpacing(cleaned)) {
             // Remove spaces between single characters
             cleaned = cleaned.replaceAll("(?<=\\S) (?=\\S)", "");
@@ -390,10 +390,8 @@ public final class Content {
             return false; // Not enough data to determine
         }
 
-        // Count single-character "words"
         long singleCharWords = Arrays.stream(words).filter(w -> w.length() == 1).count();
 
-        // If more than 30% are single characters, assume artificial spacing
         double ratio = (double) singleCharWords / words.length;
         return ratio > ARTIFICIAL_SPACING_RATIO;
     }
@@ -430,8 +428,9 @@ public final class Content {
         return result;
     }
 
-    // ── Bounds extraction ───────────────────────────────────────────────
+    // == Bounds extraction ===============================================
 
+    /** Extracts the bounding boxes for all MCIDs on a page. */
     public static Map<Integer, Rectangle> extractBoundsForPage(PdfPage page) {
         Map<Integer, Rectangle> bounds = new HashMap<>();
         if (page == null) {
@@ -480,6 +479,7 @@ public final class Content {
         }
     }
 
+    /** Adds a bounding box to the map of MCID bounds. */
     private static void addBounds(Map<Integer, Rectangle> bounds, int mcid, Rectangle rect) {
         if (rect == null) {
             return;
@@ -488,6 +488,7 @@ public final class Content {
         bounds.put(mcid, Geometry.union(existing, rect));
     }
 
+    /** Computes the bounding box for a text render info. */
     private static Rectangle rectFromText(TextRenderInfo info) {
         String text = info.getText();
         if (text == null || text.trim().isEmpty()) {
@@ -502,6 +503,7 @@ public final class Content {
                 descent.getEndPoint());
     }
 
+    /** Computes the bounding box for an image render info. */
     private static Rectangle rectFromImage(ImageRenderInfo info) {
         Matrix ctm = info.getImageCtm();
         if (ctm == null) {
@@ -514,6 +516,7 @@ public final class Content {
         return rectFromPoints(p0, p1, p2, p3);
     }
 
+    /** Computes the bounding box for a list of points. */
     private static Rectangle rectFromPoints(Vector... points) {
         float minX = Float.MAX_VALUE;
         float minY = Float.MAX_VALUE;
