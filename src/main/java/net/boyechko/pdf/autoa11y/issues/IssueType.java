@@ -19,6 +19,9 @@ package net.boyechko.pdf.autoa11y.issues;
 
 /** Represents the type of an accessibility issue found in a PDF document. */
 public enum IssueType {
+    // Fatal issues (processing cannot continue)
+    IMAGE_ONLY_DOCUMENT("image-only document with no text"),
+
     // Document-level issues
     LANGUAGE_NOT_SET("language not set"),
     NOT_TAGGED_PDF("PDF not tagged"),
