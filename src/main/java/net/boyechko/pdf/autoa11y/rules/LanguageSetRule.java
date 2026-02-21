@@ -38,7 +38,7 @@ public class LanguageSetRule implements Rule {
 
     @Override
     public String failedMessage() {
-        return "✗ Document language (Lang) is not set";
+        return "Document language (Lang) is not set";
     }
 
     @Override
@@ -76,7 +76,7 @@ public class LanguageSetRule implements Rule {
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSeverity.ERROR,
-                        "✗ Document language (Lang) is not set",
+                        "Document language (Lang) is not set",
                         fix);
         return new IssueList(issue);
     }
