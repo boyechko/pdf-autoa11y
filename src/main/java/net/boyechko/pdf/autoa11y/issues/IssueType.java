@@ -23,6 +23,7 @@ public enum IssueType {
     IMAGE_ONLY_DOCUMENT("image-only document with no text"),
 
     // Document-level issues
+    FALSE_PDFUA_CONFORMANCE("false PDF/UA conformance claim"),
     LANGUAGE_NOT_SET("language not set"),
     NOT_TAGGED_PDF("PDF not tagged"),
     NO_STRUCT_TREE("structure tree missing"),
