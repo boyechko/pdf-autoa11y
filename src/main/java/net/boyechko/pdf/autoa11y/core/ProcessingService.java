@@ -137,6 +137,14 @@ public class ProcessingService {
                 listener.onDetectedSectionStart();
                 IssueList docIssues = runDocumentRules(ctx);
                 allDocIssues.addAll(docIssues);
+
+                if (allDocIssues.hasFatalIssues()) {
+                    reportRemainingIssues(allDocIssues);
+                    listener.onSummary(allDocIssues);
+                    cleanupPipelineDir(pipelineDir, tempFiles);
+                    return ProcessingResult.aborted(allDocIssues);
+                }
+
                 if (!docIssues.isEmpty()) {
                     IssueList docFixes = applyFixes(ctx, docIssues);
                     allDocFixes.addAll(docFixes);
@@ -211,6 +219,10 @@ public class ProcessingService {
             DocumentContext context = new DocumentContext(pdfDoc);
 
             IssueList documentIssues = detectDocumentIssuesForAnalysis(context);
+            if (documentIssues.hasFatalIssues()) {
+                return documentIssues;
+            }
+
             IssueList tagIssues = detectTagIssuesForAnalysis(context);
             IssueList totalIssues = new IssueList();
             totalIssues.addAll(documentIssues);
@@ -222,7 +234,7 @@ public class ProcessingService {
 
     // == Pipeline helpers =============================================
 
-    /** Runs all document rules, reporting per-rule pass/fail. */
+    /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentRules(DocumentContext ctx) {
         IssueList allDocIssues = new IssueList();
         for (Rule rule : ruleEngine.getRules()) {
@@ -232,6 +244,9 @@ public class ProcessingService {
                 listener.onSuccess(rule.passedMessage());
             } else {
                 reportIssuesGrouped(ruleIssues);
+            }
+            if (allDocIssues.hasFatalIssues()) {
+                break;
             }
         }
         return allDocIssues;
