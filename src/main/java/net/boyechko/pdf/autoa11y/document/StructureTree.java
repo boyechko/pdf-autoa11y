@@ -157,10 +157,7 @@ public final class StructureTree {
         if (removed) {
             elem.getPdfObject().put(PdfName.P, toParent.getPdfObject());
             toParent.addKid(elem);
-            logger.debug(
-                    "Moved {} to obj #{}",
-                    elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                    objNumber(toParent));
+            logger.debug("Moved {} into {}", Format.elem(elem), Format.elem(toParent));
         }
 
         return removed;
