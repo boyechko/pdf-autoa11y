@@ -43,6 +43,7 @@ public class ProcessingReporter implements ProcessingListener {
     private static final int HEADER_WIDTH = 68;
 
     private boolean phaseOpen = false;
+    private boolean subsectionOpen = false;
 
     public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
         this.output = output;
@@ -61,8 +62,11 @@ public class ProcessingReporter implements ProcessingListener {
     @Override
     public void onSubsection(String header) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
-            printEmptyLine();
+            if (subsectionOpen) {
+                printEmptyLine();
+            }
             printLine(header, SUBSECTION_MARK);
+            subsectionOpen = true;
         }
     }
 
@@ -133,6 +137,7 @@ public class ProcessingReporter implements ProcessingListener {
                 printLine("Issues detected: " + detected, INFO);
                 printLine("Resolved: " + resolved, SUCCESS);
                 if (remaining > 0) {
+                    printEmptyLine();
                     onSubsection("Manual review needed");
                     for (Issue issue : allIssues.getRemainingIssues()) {
                         printLine(issue.message(), WARNING);
@@ -181,6 +186,7 @@ public class ProcessingReporter implements ProcessingListener {
         if (phaseOpen && verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             printBoxFooter();
             phaseOpen = false;
+            subsectionOpen = false;
         }
     }
 
