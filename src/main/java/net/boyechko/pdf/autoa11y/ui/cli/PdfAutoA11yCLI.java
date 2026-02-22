@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.*;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
@@ -54,7 +57,9 @@ public class PdfAutoA11yCLI {
             boolean dumpTreeDetailed,
             Path reportPath,
             VerbosityLevel verbosity,
-            boolean printStructureTree) {
+            boolean printStructureTree,
+            Set<String> skipVisitors,
+            Set<String> includeOnlyVisitors) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -110,6 +115,8 @@ public class PdfAutoA11yCLI {
         Path reportPath = null;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
         boolean printStructureTree = false;
+        Set<String> skipVisitors = Set.of();
+        Set<String> includeOnlyVisitors = Set.of();
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("--report=")) {
@@ -118,6 +125,11 @@ public class PdfAutoA11yCLI {
             } else if (args[i].startsWith("-r=")) {
                 reportPath = Paths.get(args[i].substring("-r=".length()));
                 generateReport = true;
+            } else if (args[i].startsWith("--skip-visitors=")) {
+                skipVisitors = parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
+            } else if (args[i].startsWith("--include-visitors=")) {
+                includeOnlyVisitors =
+                        parseCommaSeparated(args[i].substring("--include-visitors=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
@@ -125,6 +137,22 @@ public class PdfAutoA11yCLI {
                             password = args[++i];
                         } else {
                             throw new CLIException("Password not specified after -p");
+                        }
+                    }
+                    case "--skip-visitors" -> {
+                        if (i + 1 < args.length) {
+                            skipVisitors = parseCommaSeparated(args[++i]);
+                        } else {
+                            throw new CLIException(
+                                    "Visitor names not specified after --skip-visitors");
+                        }
+                    }
+                    case "--include-visitors" -> {
+                        if (i + 1 < args.length) {
+                            includeOnlyVisitors = parseCommaSeparated(args[++i]);
+                        } else {
+                            throw new CLIException(
+                                    "Visitor names not specified after --include-visitors");
                         }
                     }
                     case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
@@ -192,7 +220,9 @@ public class PdfAutoA11yCLI {
                 dumpTreeDetailed,
                 reportPath,
                 verbosity,
-                printStructureTree);
+                printStructureTree,
+                skipVisitors,
+                includeOnlyVisitors);
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -242,6 +272,8 @@ public class PdfAutoA11yCLI {
                             .withPdfCustodian(docFactory)
                             .withListener(reporter)
                             .withPrintStructureTree(config.printStructureTree())
+                            .skipVisitors(config.skipVisitors())
+                            .includeOnlyVisitors(config.includeOnlyVisitors())
                             .build();
 
             if (config.analyzeOnly()) {
@@ -354,6 +386,13 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    private static Set<String> parseCommaSeparated(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
     private static boolean isHelpRequested(String[] args) {
         for (String arg : args) {
             if ("-h".equals(arg) || "--help".equals(arg)) {
@@ -377,10 +416,13 @@ public class PdfAutoA11yCLI {
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save output to report file (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
+                + "  --skip-visitors <names>     Skip specific visitors (comma-separated class names)\n"
+                + "  --include-visitors <names>  Run only these visitors (comma-separated class names)\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
                 + "  java PdfAutoA11yCLI -r -t document.pdf\n"
                 + "  java PdfAutoA11yCLI --dump-tree document.pdf\n"
-                + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf";
+                + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf\n"
+                + "  java PdfAutoA11yCLI --skip-visitors=NeedlessNestingVisitor,PagePartVisitor document.pdf";
     }
 }
