@@ -69,7 +69,7 @@ public final class ProcessingDefaults {
                 EmptyLinkTagVisitor::new,
                 BulletGlyphVisitor::new,
                 ParagraphOfLinksVisitor::new,
-                SchemaValidationVisitor::new,
-                EmptyElementVisitor::new);
+                EmptyElementVisitor::new,
+                SchemaValidationVisitor::new);
     }
 }
