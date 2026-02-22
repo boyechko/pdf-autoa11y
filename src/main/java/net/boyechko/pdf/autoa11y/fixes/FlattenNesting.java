@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -56,10 +57,7 @@ public class FlattenNesting implements IssueFix {
     private void flattenElement(PdfStructElem wrapper) {
         IStructureNode parentNode = wrapper.getParent();
         if (parentNode == null) {
-            logger.debug(
-                    "Skipping flatten for {} (obj # {}): no parent",
-                    wrapper.getRole().getValue(),
-                    StructureTree.objNumber(wrapper));
+            logger.debug("Skipping flatten for {}: no parent", Format.elem(wrapper));
             return;
         }
 
@@ -73,9 +71,7 @@ public class FlattenNesting implements IssueFix {
         // Find wrapper's position among parent's kids
         int wrapperIndex = StructureTree.findKidIndex(parentNode, wrapper);
         if (wrapperIndex < 0) {
-            logger.debug(
-                    "Could not find wrapper (obj # {}) in parent kids",
-                    StructureTree.objNumber(wrapper));
+            logger.debug("Could not find {} in parent kids", Format.elem(wrapper));
             return;
         }
 
@@ -87,9 +83,8 @@ public class FlattenNesting implements IssueFix {
 
         flattened++;
         logger.debug(
-                "Flattened {} (obj # {}) with {} children at position {}",
-                wrapper.getRole().getValue(),
-                StructureTree.objNumber(wrapper),
+                "Flattened {} with {} children at position {}",
+                Format.elem(wrapper),
                 childrenToMove.size(),
                 wrapperIndex);
     }

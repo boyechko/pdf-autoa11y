@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 
 /** Wraps a run of consecutive P elements in L > LI > LBody structure. */
@@ -41,8 +42,8 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         PdfStructElem actualParent = findParentContaining(firstP);
         if (actualParent == null) {
             logger.debug(
-                    "Skipping fix: P element obj #{} not found in any ancestor's K array "
-                            + "(stored parent was obj #{})",
+                    "Skipping fix: P element obj. #{} not found in any ancestor's K array "
+                            + "(stored parent was obj. #{})",
                     StructureTree.objNumber(firstP),
                     StructureTree.objNumber(parent));
             return;
@@ -82,7 +83,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         }
 
         logger.debug(
-                "Wrapped {} P elements in L > LI > LBody under obj #{}",
+                "Wrapped {} P elements in L > LI > LBody under obj. #{}",
                 kids.size(),
                 StructureTree.objNumber(actualParent));
     }
@@ -114,10 +115,9 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(parent);
-        int pageNum = ctx.getPageNumber(objNum);
-        return String.format(
-                "Retagged suspected list of %d P elements as a list (obj #%d, p. %d)",
-                kids.size(), objNum, pageNum);
+        return "Retagged suspected list of "
+                + kids.size()
+                + " P elements as a list "
+                + Format.elem(parent, ctx);
     }
 }

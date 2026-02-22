@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Wraps a single child element in an LI structure. */
@@ -64,17 +64,16 @@ public final class WrapInLI extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Wrapped "
-                + getKidRole()
-                + " in "
-                + wrappedIn
-                + " under L obj #"
-                + StructureTree.objNumber(parent);
+        return "Wrapped " + getKidRole() + " in " + wrappedIn + " under " + Format.elem(parent);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        String basic = describe();
-        return basic + " (p. " + ctx.getPageNumber(StructureTree.objNumber(parent)) + ")";
+        return "Wrapped "
+                + getKidRole()
+                + " in "
+                + wrappedIn
+                + " under "
+                + Format.elem(parent, ctx);
     }
 }

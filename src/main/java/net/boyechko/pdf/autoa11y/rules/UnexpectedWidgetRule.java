@@ -66,7 +66,7 @@ public class UnexpectedWidgetRule implements Rule {
                                     ? annotDict.getIndirectReference().getObjNumber()
                                     : 0;
                     logger.debug(
-                            "Unexpected Widget annotation found: obj #{}, p. {}", objNum, pageNum);
+                            "Unexpected Widget annotation found: obj. #{}, p. {}", objNum, pageNum);
 
                     IssueFix fix = new RemoveWidgetAnnotation(annotDict, pageNum);
                     Issue issue =
@@ -74,7 +74,7 @@ public class UnexpectedWidgetRule implements Rule {
                                     IssueType.UNEXPECTED_WIDGET,
                                     IssueSeverity.ERROR,
                                     new IssueLocation(pageNum, "Page " + pageNum),
-                                    "Unexpected Widget annotation found on page " + pageNum,
+                                    "Unexpected Widget annotation",
                                     fix);
                     issues.add(issue);
                 }
@@ -99,7 +99,7 @@ public class UnexpectedWidgetRule implements Rule {
 
         int ff = getInheritedInt(annotDict, PdfName.Ff);
         logger.debug(
-                "Widget obj #{}: FT={}, Ff={}, pushbutton={}",
+                "Widget obj. #{}: FT={}, Ff={}, pushbutton={}",
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
                         : "?",

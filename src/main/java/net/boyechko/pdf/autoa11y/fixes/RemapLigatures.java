@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Repairs broken ligature mappings in a font's ToUnicode CMap. */
@@ -301,7 +302,7 @@ public class RemapLigatures implements IssueFix {
 
     @Override
     public String describe() {
-        return "Remapped ligatures in font obj #" + fontObjNum;
+        return "Remapped ligatures in font " + Format.obj(fontObjNum);
     }
 
     @Override
@@ -310,8 +311,8 @@ public class RemapLigatures implements IssueFix {
                 + replacementByCode.size()
                 + " ligature mapping(s) in font "
                 + fontName
-                + " (obj #"
-                + fontObjNum
+                + " ("
+                + Format.obj(fontObjNum)
                 + ")";
     }
 

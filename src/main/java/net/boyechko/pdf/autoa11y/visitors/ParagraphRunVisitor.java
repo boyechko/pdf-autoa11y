@@ -181,7 +181,7 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
 
         if (referenceLeft < 0) {
             logger.debug(
-                    "No reference left edge for P sub-run under obj #{}, skipping",
+                    "No reference left edge for P sub-run under obj. #{}, skipping",
                     StructureTree.objNumber(ctx.node()));
             return;
         }
@@ -189,7 +189,7 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
         float indent = runMedianLeft - referenceLeft;
         if (indent < INDENT_THRESHOLD) {
             logger.debug(
-                    "P sub-run under obj #{} indent {}pt < threshold {}pt, skipping",
+                    "P sub-run under obj. #{} indent {}pt < threshold {}pt, skipping",
                     StructureTree.objNumber(ctx.node()),
                     String.format("%.1f", indent),
                     INDENT_THRESHOLD);
@@ -210,7 +210,7 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
         issues.add(issue);
 
         logger.debug(
-                "Detected suspected list of {} elements under obj #{} (indent {}pt) on page {}",
+                "Detected suspected list of {} elements under obj. #{} (indent {}pt) on page {}",
                 subRun.elements.size(),
                 StructureTree.objNumber(ctx.node()),
                 String.format("%.1f", indent),

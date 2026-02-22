@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -66,7 +67,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
         PdfStructElem linkElem = StructureTree.findByObjNumber(root, linkObjNum);
         if (linkElem == null) {
-            logger.debug("Link element not found for obj #{}", linkObjNum);
+            logger.debug("Link element not found for obj. #{}", linkObjNum);
             return;
         }
         if (StructureTree.hasMcr(linkElem)) {
@@ -136,7 +137,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public String describe() {
-        return "Moved sibling MCR into Link for annotation obj #" + linkObjNum;
+        return "Moved sibling MCR into Link for annotation " + Format.obj(linkObjNum);
     }
 
     @Override

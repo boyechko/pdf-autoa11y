@@ -80,7 +80,7 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSeverity.WARNING,
                         new IssueLocation(ctx.node()),
-                        "Figure without alt text (needs manual description)");
+                        "Figure without alt text");
         issues.add(issue);
         return true;
     }
@@ -90,6 +90,7 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
         return issues;
     }
 
+    // TODO: This is a duplicate of the method in MistaggedArtifactVisitor
     private boolean hasImageMcr(VisitorContext ctx, int pageNumber) {
         for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {
