@@ -17,6 +17,10 @@
  */
 package net.boyechko.pdf.autoa11y.ui;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +32,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
+import org.slf4j.LoggerFactory;
 
 public class ProcessingReporter implements ProcessingListener {
     private final PrintStream output;
@@ -44,10 +49,15 @@ public class ProcessingReporter implements ProcessingListener {
 
     private boolean phaseOpen = false;
     private boolean subsectionOpen = false;
+    private final ListAppender<ILoggingEvent> logBuffer;
 
     public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
         this.output = output;
         this.verbosity = verbosity;
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logBuffer = new ListAppender<>();
+        logBuffer.start();
+        rootLogger.addAppender(logBuffer);
     }
 
     @Override
@@ -200,8 +210,24 @@ public class ProcessingReporter implements ProcessingListener {
 
     private void printBoxFooter() {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
+            drainLogBuffer();
             output.println("│");
             output.println("└─╯");
+        }
+    }
+
+    /**
+     * Flushes log events captured since the last drain into the open box, formatted with the same
+     * icons used for warnings and errors elsewhere in the output.
+     */
+    private void drainLogBuffer() {
+        if (logBuffer.list.isEmpty()) return;
+        List<ILoggingEvent> events = new ArrayList<>(logBuffer.list);
+        logBuffer.list.clear();
+        printEmptyLine();
+        for (ILoggingEvent event : events) {
+            String icon = event.getLevel().isGreaterOrEqual(Level.ERROR) ? ERROR : WARNING;
+            printLine(event.getFormattedMessage(), icon);
         }
     }
 
