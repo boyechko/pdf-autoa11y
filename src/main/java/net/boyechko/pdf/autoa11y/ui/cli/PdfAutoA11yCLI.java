@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.ui.cli;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -300,7 +302,8 @@ public class PdfAutoA11yCLI {
                     case VERBOSE -> "info";
                     case DEBUG -> "debug";
                 };
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
+        LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
+        ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.toLevel(level));
     }
 
     private static Logger logger() {
