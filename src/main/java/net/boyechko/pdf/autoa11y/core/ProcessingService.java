@@ -22,8 +22,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
@@ -57,6 +59,8 @@ public class ProcessingService {
         private PdfCustodian custodian;
         private ProcessingListener listener;
         private boolean printStructureTree;
+        private final Set<String> skipVisitors = new HashSet<>();
+        private final Set<String> includeOnlyVisitors = new HashSet<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -70,6 +74,16 @@ public class ProcessingService {
 
         public ProcessingServiceBuilder withPrintStructureTree(boolean printStructureTree) {
             this.printStructureTree = printStructureTree;
+            return this;
+        }
+
+        public ProcessingServiceBuilder skipVisitors(Set<String> visitorClassNames) {
+            skipVisitors.addAll(visitorClassNames);
+            return this;
+        }
+
+        public ProcessingServiceBuilder includeOnlyVisitors(Set<String> visitorClassNames) {
+            includeOnlyVisitors.addAll(visitorClassNames);
             return this;
         }
 
@@ -87,13 +101,39 @@ public class ProcessingService {
         this.listener = builder.listener;
 
         List<Rule> rules = ProcessingDefaults.rules();
-        this.visitorSuppliers = new ArrayList<>(ProcessingDefaults.visitorSuppliers());
+        this.visitorSuppliers =
+                filterVisitors(
+                        ProcessingDefaults.visitorSuppliers(),
+                        builder.skipVisitors,
+                        builder.includeOnlyVisitors);
         if (builder.printStructureTree) {
             visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
         TagSchema schema = TagSchema.loadDefault();
         this.ruleEngine = new RuleEngine(rules, visitorSuppliers, schema);
+    }
+
+    /** Filters the list of visitor suppliers based on the skip and includeOnly sets. */
+    private static ArrayList<Supplier<StructureTreeVisitor>> filterVisitors(
+            List<Supplier<StructureTreeVisitor>> defaults,
+            Set<String> skip,
+            Set<String> includeOnly) {
+        if (skip.isEmpty() && includeOnly.isEmpty()) {
+            return new ArrayList<>(defaults);
+        }
+        ArrayList<Supplier<StructureTreeVisitor>> filtered = new ArrayList<>();
+        for (Supplier<StructureTreeVisitor> supplier : defaults) {
+            String className = supplier.get().getClass().getSimpleName();
+            if (!includeOnly.isEmpty()) {
+                if (includeOnly.contains(className)) {
+                    filtered.add(supplier);
+                }
+            } else if (!skip.contains(className)) {
+                filtered.add(supplier);
+            }
+        }
+        return filtered;
     }
 
     /**
