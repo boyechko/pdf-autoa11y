@@ -36,6 +36,7 @@ import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import java.nio.file.Path;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
@@ -210,6 +211,33 @@ public class ProcessingServiceTest extends PdfTestBase {
                 result.remainingTagIssues().stream()
                         .noneMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
                 "Remaining tag issues should not include FIGURE_WITH_TEXT");
+    }
+
+    @Test
+    void skippingPrerequisiteVisitorFailsWithClearMessage() {
+        // PagePartVisitor depends on NeedlessNestingVisitor.
+        // Skipping the prerequisite should fail with an actionable message,
+        // not a generic "has not been registered" error from RuleEngine.
+        var ex =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new ProcessingService.ProcessingServiceBuilder()
+                                        .withPdfCustodian(
+                                                new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                                        .withListener(new NoOpProcessingListener())
+                                        .skipVisitors(Set.of("NeedlessNestingVisitor"))
+                                        .build());
+        String message = ex.getMessage();
+        assertTrue(
+                message.contains("NeedlessNestingVisitor"),
+                "Error should name the skipped prerequisite, but was: " + message);
+        assertTrue(
+                message.contains("PagePartVisitor"),
+                "Error should name the dependent visitor, but was: " + message);
+        assertTrue(
+                message.contains("skip"),
+                "Error should suggest skipping both visitors, but was: " + message);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
