@@ -92,7 +92,7 @@ public class ProcessingReporter implements ProcessingListener {
                         .collect(Collectors.toCollection(TreeSet::new));
 
         String summary = buildGroupSummary(groupLabel, issues.size(), pages);
-        onWarning(summary);
+        printLine(summary, WARNING);
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
@@ -112,7 +112,7 @@ public class ProcessingReporter implements ProcessingListener {
                         .collect(Collectors.toCollection(TreeSet::new));
 
         String summary = buildGroupSummary(groupLabel, resolvedIssues.size(), pages);
-        onSuccess(summary);
+        printLine(summary, SUCCESS);
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : resolvedIssues) {
@@ -165,8 +165,8 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     @Override
-    public void onIssueFixed(String resolutionNote) {
-        onSuccess(resolutionNote);
+    public void onIssueFixed(Issue issue) {
+        onSuccess(issue.resolutionNote());
     }
 
     @Override
@@ -175,8 +175,8 @@ public class ProcessingReporter implements ProcessingListener {
     }
 
     @Override
-    public void onWarning(String message) {
-        printLine(message, WARNING);
+    public void onWarning(Issue issue) {
+        printLine(issue.message(), WARNING);
     }
 
     @Override

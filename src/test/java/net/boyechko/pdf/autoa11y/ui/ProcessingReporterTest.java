@@ -61,16 +61,16 @@ public class ProcessingReporterTest {
                         IssueType.MISSING_DOCUMENT_ELEMENT,
                         IssueSeverity.ERROR,
                         "Structure tree root has no Document element");
-        reporter.onWarning(missingLanguage.message());
-        reporter.onWarning(missingDocumentElement.message());
+        reporter.onWarning(missingLanguage);
+        reporter.onWarning(missingDocumentElement);
         reporter.onSuccess("Document tab order is set to follow structure tree");
 
         reporter.onFixesSectionStart();
         missingLanguage.markResolved("Set document language (Lang)");
-        reporter.onIssueFixed(missingLanguage.resolutionNote());
+        reporter.onIssueFixed(missingLanguage);
 
         reporter.onManualReviewSectionStart();
-        reporter.onWarning(missingDocumentElement.message());
+        reporter.onWarning(missingDocumentElement);
         summaryIssues.add(missingLanguage);
         summaryIssues.add(missingDocumentElement);
 
@@ -111,9 +111,9 @@ public class ProcessingReporterTest {
                         IssueType.TAG_WRONG_CHILD,
                         IssueSeverity.ERROR,
                         "<Link> not allowed under <Document>");
-        reporter.onWarning(invalidSchemaTag.message());
+        reporter.onWarning(invalidSchemaTag);
         reporter.onManualReviewSectionStart();
-        reporter.onWarning(invalidSchemaTag.message());
+        reporter.onWarning(invalidSchemaTag);
         summaryIssues.add(invalidSchemaTag);
 
         reporter.onSummary(summaryIssues);
