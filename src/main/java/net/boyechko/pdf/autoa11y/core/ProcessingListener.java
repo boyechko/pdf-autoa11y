@@ -27,9 +27,9 @@ public interface ProcessingListener {
 
     void onSuccess(String message);
 
-    void onWarning(String message);
+    void onWarning(Issue issue);
 
-    void onIssueFixed(String resolutionNote);
+    void onIssueFixed(Issue issue);
 
     void onSummary(IssueList allIssues);
 
@@ -55,14 +55,14 @@ public interface ProcessingListener {
 
     default void onIssueGroup(String groupLabel, List<Issue> issues) {
         for (Issue issue : issues) {
-            onWarning(issue.message());
+            onWarning(issue);
         }
     }
 
     default void onFixGroup(String groupLabel, List<Issue> resolvedIssues) {
         for (Issue issue : resolvedIssues) {
             if (issue.isResolved()) {
-                onIssueFixed(issue.resolutionNote());
+                onIssueFixed(issue);
             }
         }
     }
