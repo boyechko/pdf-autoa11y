@@ -37,7 +37,7 @@ public class StructureTreeExistsRule implements Rule {
 
     @Override
     public String failedMessage() {
-        return "Document has no structure tree and cannot be remediated";
+        return "Document has no structure tree root";
     }
 
     @Override

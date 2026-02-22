@@ -33,12 +33,12 @@ public class LanguageSetRule implements Rule {
 
     @Override
     public String passedMessage() {
-        return "Document language (Lang) is set";
+        return "Document-level language attribute is set";
     }
 
     @Override
     public String failedMessage() {
-        return "Document language (Lang) is not set";
+        return "Document-level language attribute is not set";
     }
 
     @Override
@@ -59,7 +59,7 @@ public class LanguageSetRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set document language (Lang)";
+                        return "Set document language to English (en-US)";
                     }
 
                     @Override
@@ -67,17 +67,12 @@ public class LanguageSetRule implements Rule {
                         PdfCatalog cat2 = c.doc().getCatalog();
                         cat2.put(
                                 PdfName.Lang,
-                                new PdfString("en-US")); // Default to English; ideally should be
-                        // user-specified
+                                new PdfString("en-US")); // Default to English if not set
                     }
                 };
 
         Issue issue =
-                new Issue(
-                        IssueType.LANGUAGE_NOT_SET,
-                        IssueSeverity.ERROR,
-                        "Document language (Lang) is not set",
-                        fix);
+                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSeverity.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

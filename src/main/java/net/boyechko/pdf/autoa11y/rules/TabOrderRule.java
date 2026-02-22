@@ -33,12 +33,12 @@ public class TabOrderRule implements Rule {
 
     @Override
     public String passedMessage() {
-        return "Document tab order is set to follow structure tree";
+        return "Document tab order is set to follow the structure tree";
     }
 
     @Override
     public String failedMessage() {
-        return "Document tab order is not set";
+        return "Document tab order is not set to follow the structure tree";
     }
 
     @Override
@@ -56,7 +56,7 @@ public class TabOrderRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set document tab order to follow structure tree";
+                        return "Set document tab order to follow the structure tree";
                     }
 
                     @Override
@@ -69,11 +69,7 @@ public class TabOrderRule implements Rule {
                 };
 
         Issue issue =
-                new Issue(
-                        IssueType.TAB_ORDER_NOT_SET,
-                        IssueSeverity.ERROR,
-                        "Document tab order is not set to follow structure tree",
-                        fix);
+                new Issue(IssueType.TAB_ORDER_NOT_SET, IssueSeverity.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

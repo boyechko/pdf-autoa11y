@@ -76,7 +76,7 @@ public class MissingDocumentRule implements Rule {
                 new Issue(
                         IssueType.MISSING_DOCUMENT_ELEMENT,
                         IssueSeverity.ERROR,
-                        "Structure tree root has no Document element",
+                        failedMessage(),
                         fix);
         return new IssueList(issue);
     }
