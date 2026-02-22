@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
@@ -155,5 +156,132 @@ class NormalizePagePartsTest extends PdfTestBase {
             assertEquals(1, part1.getKids().size(), "Page 1 Part should remain stable");
             assertEquals(1, part2.getKids().size(), "Page 2 Part should remain stable");
         }
+    }
+
+    /**
+     * Pre-existing Part for one page mixed with loose elements: existing Part should be preserved
+     * and loose elements should move to their page Parts.
+     */
+    @Test
+    void mixOfExistingPartAndLooseElements() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page1 = pdfDoc.addNewPage();
+            PdfPage page2 = pdfDoc.addNewPage();
+            PdfPage page3 = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            // Page 1 already has a Part
+            PdfStructElem existingPart = new PdfStructElem(pdfDoc, PdfName.Part, page1);
+            existingPart.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            document.addKid(existingPart);
+            existingPart.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page1));
+
+            // Loose elements for pages 2 and 3 (post-flattening)
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page3));
+
+            NormalizePageParts fix = new NormalizePageParts();
+            fix.apply(new DocumentContext(pdfDoc));
+
+            // Existing Part for page 1 should still be there
+            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
+            assertNotNull(part1, "Existing Part for page 1 should be preserved");
+            assertEquals(
+                    PdfName.H1,
+                    ((PdfStructElem) part1.getKids().get(0)).getRole(),
+                    "Original page 1 content should be intact");
+
+            // Pages 2 and 3 should have their loose elements
+            for (int pageNum = 2; pageNum <= 3; pageNum++) {
+                PdfStructElem part =
+                        NormalizePageParts.findPartForPage(document, pdfDoc.getPage(pageNum));
+                assertNotNull(part, "Part should exist for page " + pageNum);
+                int contentCount = countPageContent(part, pdfDoc, pageNum);
+                assertTrue(
+                        contentCount > 0,
+                        "Part for page "
+                                + pageNum
+                                + " should have reachable content for that page");
+            }
+        }
+    }
+
+    /**
+     * Interleaved flat elements from different pages should maintain their original relative
+     * ordering within each Part.
+     */
+    @Test
+    void readingOrderPreservedWithinPageParts() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page1 = pdfDoc.addNewPage();
+            PdfPage page2 = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            // Interleaved: H1(p1), P(p2), P(p1), H1(p2)
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page1));
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page1));
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page2));
+
+            NormalizePageParts fix = new NormalizePageParts();
+            fix.apply(new DocumentContext(pdfDoc));
+
+            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
+            List<IStructureNode> part1Kids = part1.getKids();
+            assertEquals(2, part1Kids.size(), "Page 1 Part should have 2 children");
+            assertEquals(
+                    PdfName.H1,
+                    ((PdfStructElem) part1Kids.get(0)).getRole(),
+                    "First element on page 1 should be H1");
+            assertEquals(
+                    PdfName.P,
+                    ((PdfStructElem) part1Kids.get(1)).getRole(),
+                    "Second element on page 1 should be P");
+
+            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            List<IStructureNode> part2Kids = part2.getKids();
+            assertEquals(2, part2Kids.size(), "Page 2 Part should have 2 children");
+            assertEquals(
+                    PdfName.P,
+                    ((PdfStructElem) part2Kids.get(0)).getRole(),
+                    "First element on page 2 should be P");
+            assertEquals(
+                    PdfName.H1,
+                    ((PdfStructElem) part2Kids.get(1)).getRole(),
+                    "Second element on page 2 should be H1");
+        }
+    }
+
+    /**
+     * Counts non-Part structure elements within a subtree that carry a /Pg reference to the target
+     * page. Part containers are excluded because they always carry /Pg but don't represent actual
+     * document content.
+     */
+    private int countPageContent(PdfStructElem elem, PdfDocument doc, int targetPageNum) {
+        int count = 0;
+        if (!PdfName.Part.equals(elem.getRole())) {
+            PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
+            if (pg != null && doc.getPageNumber(pg) == targetPageNum) {
+                count++;
+            }
+        }
+        List<IStructureNode> kids = elem.getKids();
+        if (kids != null) {
+            for (IStructureNode kid : kids) {
+                if (kid instanceof PdfStructElem childElem) {
+                    count += countPageContent(childElem, doc, targetPageNum);
+                }
+            }
+        }
+        return count;
     }
 }

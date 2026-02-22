@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.rules;
+package net.boyechko.pdf.autoa11y.visitors;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
@@ -25,6 +25,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
@@ -33,31 +34,42 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/** Detects when direct Document children should be grouped into page-level Part containers. */
-public class UnpartitionedDocumentRule implements Rule {
+/**
+ * Detects when direct Document children should be grouped into page-level Part containers. Runs
+ * after NeedlessNestingVisitor so that pre-existing Part wrappers (without /Pg) have already been
+ * flattened.
+ */
+public class PagePartVisitor implements StructureTreeVisitor {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
+
+    private DocumentContext docCtx;
+    private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Unpartitioned Document Rule";
+        return "Page Part Visitor";
     }
 
     @Override
-    public String passedMessage() {
-        return "Document content grouped by page Parts";
+    public String description() {
+        return "Document content should be grouped by page Parts";
     }
 
     @Override
-    public String failedMessage() {
-        return "Document content is not grouped by page Parts";
+    public boolean enterElement(VisitorContext ctx) {
+        if (docCtx == null) {
+            docCtx = ctx.docCtx();
+        }
+        return true;
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
-        if (!needsNormalization(ctx)) {
-            return new IssueList();
+    public void afterTraversal() {
+        if (docCtx == null || !needsNormalization(docCtx)) {
+            return;
         }
 
         IssueFix fix = new NormalizePageParts();
@@ -67,10 +79,20 @@ public class UnpartitionedDocumentRule implements Rule {
                         IssueSeverity.WARNING,
                         "Direct Document children should be grouped into page-level Part elements",
                         fix);
-        return new IssueList(issue);
+        issues.add(issue);
     }
 
-    public static boolean needsNormalization(DocumentContext ctx) {
+    @Override
+    public Set<Class<? extends StructureTreeVisitor>> prerequisites() {
+        return Set.of(NeedlessNestingVisitor.class);
+    }
+
+    @Override
+    public IssueList getIssues() {
+        return issues;
+    }
+
+    static boolean needsNormalization(DocumentContext ctx) {
         if (ctx.doc().getNumberOfPages() < MINIMUM_NUMBER_OF_PAGES) {
             return false;
         }
