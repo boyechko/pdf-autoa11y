@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
+import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 
 public class NoOpProcessingListener implements ProcessingListener {
@@ -27,10 +28,10 @@ public class NoOpProcessingListener implements ProcessingListener {
     public void onSuccess(String message) {}
 
     @Override
-    public void onWarning(String message) {}
+    public void onWarning(Issue issue) {}
 
     @Override
-    public void onIssueFixed(String resolutionNote) {}
+    public void onIssueFixed(Issue issue) {}
 
     @Override
     public void onSummary(IssueList allIssues) {}

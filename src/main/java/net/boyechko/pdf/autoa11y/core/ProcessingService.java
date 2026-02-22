@@ -398,7 +398,7 @@ public class ProcessingService {
                 listener.onIssueGroup(entry.getKey().groupLabel(), groupIssues);
             } else {
                 for (Issue issue : groupIssues) {
-                    listener.onWarning(issue.message());
+                    listener.onWarning(issue);
                 }
             }
         }
@@ -419,7 +419,7 @@ public class ProcessingService {
                 listener.onFixGroup(groupLabel, groupFixes);
             } else {
                 for (Issue issue : groupFixes) {
-                    listener.onIssueFixed(issue.resolutionNote());
+                    listener.onIssueFixed(issue);
                 }
             }
         }
