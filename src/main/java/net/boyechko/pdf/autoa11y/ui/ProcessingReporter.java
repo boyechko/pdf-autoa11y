@@ -55,10 +55,10 @@ public class ProcessingReporter implements ProcessingListener {
     public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
         this.output = output;
         this.verbosity = verbosity;
-        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        Logger appLogger = (Logger) LoggerFactory.getLogger("net.boyechko.pdf.autoa11y");
         logBuffer = new ListAppender<>();
         logBuffer.start();
-        rootLogger.addAppender(logBuffer);
+        appLogger.addAppender(logBuffer);
     }
 
     @Override
