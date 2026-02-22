@@ -61,6 +61,10 @@ public final class PdfCustodian {
         this(inputPath, null);
     }
 
+    public Path getInputPath() {
+        return this.inputPath;
+    }
+
     public PdfDocument openForReading() throws IOException {
         PdfReader pdfReader = new PdfReader(inputPath.toString(), readerProps);
         return new PdfDocument(pdfReader);
