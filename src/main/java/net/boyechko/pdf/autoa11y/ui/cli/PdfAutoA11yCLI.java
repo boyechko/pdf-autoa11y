@@ -80,75 +80,6 @@ public class PdfAutoA11yCLI {
         }
     }
 
-    /** Mutable builder that accumulates parsed CLI arguments and resolves derived paths. */
-    static class CLIConfigBuilder {
-        Path inputPath;
-        Path outputPath;
-        String password;
-        boolean forceSave;
-        boolean analyzeOnly;
-        boolean dumpTreeSimple;
-        boolean dumpTreeDetailed;
-        boolean generateReport;
-        Path reportPath;
-        VerbosityLevel verbosity = VerbosityLevel.NORMAL;
-        boolean printStructureTree;
-        Set<String> skipVisitors = Set.of();
-        Set<String> includeOnlyVisitors = Set.of();
-
-        CLIConfig build() throws CLIException {
-            if (inputPath == null) {
-                throw new CLIException("No input file specified");
-            }
-            if (!Files.exists(inputPath)) {
-                throw new CLIException("File not found: " + inputPath);
-            }
-
-            String baseName =
-                    inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
-            resolveOutputPath(baseName);
-            resolveReportPath(baseName);
-
-            return new CLIConfig(
-                    inputPath,
-                    outputPath,
-                    password,
-                    forceSave,
-                    analyzeOnly,
-                    dumpTreeSimple,
-                    dumpTreeDetailed,
-                    reportPath,
-                    verbosity,
-                    printStructureTree,
-                    skipVisitors,
-                    includeOnlyVisitors);
-        }
-
-        private void resolveOutputPath(String baseName) {
-            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed) {
-                return;
-            }
-            if (outputPath == null) {
-                String outputFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
-                Path parent = inputPath.getParent();
-                outputPath =
-                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
-            } else if (Files.isDirectory(outputPath)) {
-                outputPath = outputPath.resolve(baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
-            }
-        }
-
-        private void resolveReportPath(String baseName) {
-            String reportFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
-            if (generateReport && reportPath == null) {
-                Path reportSibling = analyzeOnly ? inputPath : outputPath;
-                reportPath = reportSibling.resolveSibling(reportFilename);
-            } else if (reportPath != null && Files.isDirectory(reportPath)) {
-                reportPath = reportPath.resolve(reportFilename);
-            }
-        }
-    }
-
     public static void main(String[] args) {
         try {
             if (isHelpRequested(args)) {
@@ -166,94 +97,6 @@ public class PdfAutoA11yCLI {
             System.err.println("Error: " + e.getMessage());
             System.exit(1);
         }
-    }
-
-    private static CLIConfig parseArguments(String[] args) throws CLIException {
-        if (args.length == 0) {
-            throw new CLIException("No input file specified\n" + usageMessage());
-        }
-
-        CLIConfigBuilder b = new CLIConfigBuilder();
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].startsWith("--report=")) {
-                b.reportPath = Paths.get(args[i].substring("--report=".length()));
-                b.generateReport = true;
-            } else if (args[i].startsWith("-r=")) {
-                b.reportPath = Paths.get(args[i].substring("-r=".length()));
-                b.generateReport = true;
-            } else if (args[i].startsWith("--skip-visitors=")) {
-                b.skipVisitors =
-                        parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
-            } else if (args[i].startsWith("--include-visitors=")) {
-                b.includeOnlyVisitors =
-                        parseCommaSeparated(args[i].substring("--include-visitors=".length()));
-            } else {
-                switch (args[i]) {
-                    case "-p", "--password" -> {
-                        if (i + 1 < args.length) {
-                            b.password = args[++i];
-                        } else {
-                            throw new CLIException("Password not specified after -p");
-                        }
-                    }
-                    case "--skip-visitors" -> {
-                        if (i + 1 < args.length) {
-                            b.skipVisitors = parseCommaSeparated(args[++i]);
-                        } else {
-                            throw new CLIException(
-                                    "Visitor names not specified after --skip-visitors");
-                        }
-                    }
-                    case "--include-visitors" -> {
-                        if (i + 1 < args.length) {
-                            b.includeOnlyVisitors = parseCommaSeparated(args[++i]);
-                        } else {
-                            throw new CLIException(
-                                    "Visitor names not specified after --include-visitors");
-                        }
-                    }
-                    case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
-                    case "-v", "--verbose" -> b.verbosity = VerbosityLevel.VERBOSE;
-                    case "-vv", "--debug" -> b.verbosity = VerbosityLevel.DEBUG;
-                    case "-t", "--print-tree" -> b.printStructureTree = true;
-                    case "--dump-tree" -> b.dumpTreeDetailed = true;
-                    case "--dump-roles" -> b.dumpTreeSimple = true;
-                    case "-f", "--force" -> b.forceSave = true;
-                    case "-a", "--analyze" -> b.analyzeOnly = true;
-                    case "-r", "--report" -> b.generateReport = true;
-                    default -> {
-                        if (b.inputPath == null) {
-                            b.inputPath = Paths.get(args[i]);
-                        } else if (b.outputPath == null) {
-                            b.outputPath = Paths.get(args[i]);
-                        } else {
-                            throw new CLIException("Multiple input files specified");
-                        }
-                    }
-                }
-            }
-        }
-
-        return b.build();
-    }
-
-    private static void configureLogging(VerbosityLevel verbosity) {
-        String level =
-                switch (verbosity) {
-                    case QUIET -> "error";
-                    case NORMAL -> "warn";
-                    case VERBOSE -> "info";
-                    case DEBUG -> "debug";
-                };
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
-    }
-
-    private static Logger logger() {
-        if (logger == null) {
-            logger = LoggerFactory.getLogger(PdfAutoA11yCLI.class);
-        }
-        return logger;
     }
 
     private static void processFile(CLIConfig config) {
@@ -376,6 +219,163 @@ public class PdfAutoA11yCLI {
         } catch (Exception e) {
             System.err.println("✗ Failed to read PDF: " + e.getMessage());
             System.exit(1);
+        }
+    }
+
+    private static CLIConfig parseArguments(String[] args) throws CLIException {
+        if (args.length == 0) {
+            throw new CLIException("No input file specified\n" + usageMessage());
+        }
+
+        CLIConfigBuilder b = new CLIConfigBuilder();
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].startsWith("--report=")) {
+                b.reportPath = Paths.get(args[i].substring("--report=".length()));
+                b.generateReport = true;
+            } else if (args[i].startsWith("-r=")) {
+                b.reportPath = Paths.get(args[i].substring("-r=".length()));
+                b.generateReport = true;
+            } else if (args[i].startsWith("--skip-visitors=")) {
+                b.skipVisitors =
+                        parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
+            } else if (args[i].startsWith("--include-visitors=")) {
+                b.includeOnlyVisitors =
+                        parseCommaSeparated(args[i].substring("--include-visitors=".length()));
+            } else {
+                switch (args[i]) {
+                    case "-p", "--password" -> {
+                        if (i + 1 < args.length) {
+                            b.password = args[++i];
+                        } else {
+                            throw new CLIException("Password not specified after -p");
+                        }
+                    }
+                    case "--skip-visitors" -> {
+                        if (i + 1 < args.length) {
+                            b.skipVisitors = parseCommaSeparated(args[++i]);
+                        } else {
+                            throw new CLIException(
+                                    "Visitor names not specified after --skip-visitors");
+                        }
+                    }
+                    case "--include-visitors" -> {
+                        if (i + 1 < args.length) {
+                            b.includeOnlyVisitors = parseCommaSeparated(args[++i]);
+                        } else {
+                            throw new CLIException(
+                                    "Visitor names not specified after --include-visitors");
+                        }
+                    }
+                    case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
+                    case "-v", "--verbose" -> b.verbosity = VerbosityLevel.VERBOSE;
+                    case "-vv", "--debug" -> b.verbosity = VerbosityLevel.DEBUG;
+                    case "-t", "--print-tree" -> b.printStructureTree = true;
+                    case "--dump-tree" -> b.dumpTreeDetailed = true;
+                    case "--dump-roles" -> b.dumpTreeSimple = true;
+                    case "-f", "--force" -> b.forceSave = true;
+                    case "-a", "--analyze" -> b.analyzeOnly = true;
+                    case "-r", "--report" -> b.generateReport = true;
+                    default -> {
+                        if (b.inputPath == null) {
+                            b.inputPath = Paths.get(args[i]);
+                        } else if (b.outputPath == null) {
+                            b.outputPath = Paths.get(args[i]);
+                        } else {
+                            throw new CLIException("Multiple input files specified");
+                        }
+                    }
+                }
+            }
+        }
+
+        return b.build();
+    }
+
+    private static void configureLogging(VerbosityLevel verbosity) {
+        String level =
+                switch (verbosity) {
+                    case QUIET -> "error";
+                    case NORMAL -> "warn";
+                    case VERBOSE -> "info";
+                    case DEBUG -> "debug";
+                };
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
+    }
+
+    private static Logger logger() {
+        if (logger == null) {
+            logger = LoggerFactory.getLogger(PdfAutoA11yCLI.class);
+        }
+        return logger;
+    }
+
+    /** Mutable builder that accumulates parsed CLI arguments and resolves derived paths. */
+    static class CLIConfigBuilder {
+        Path inputPath;
+        Path outputPath;
+        String password;
+        boolean forceSave;
+        boolean analyzeOnly;
+        boolean dumpTreeSimple;
+        boolean dumpTreeDetailed;
+        boolean generateReport;
+        Path reportPath;
+        VerbosityLevel verbosity = VerbosityLevel.NORMAL;
+        boolean printStructureTree;
+        Set<String> skipVisitors = Set.of();
+        Set<String> includeOnlyVisitors = Set.of();
+
+        CLIConfig build() throws CLIException {
+            if (inputPath == null) {
+                throw new CLIException("No input file specified");
+            }
+            if (!Files.exists(inputPath)) {
+                throw new CLIException("File not found: " + inputPath);
+            }
+
+            String baseName =
+                    inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
+            resolveOutputPath(baseName);
+            resolveReportPath(baseName);
+
+            return new CLIConfig(
+                    inputPath,
+                    outputPath,
+                    password,
+                    forceSave,
+                    analyzeOnly,
+                    dumpTreeSimple,
+                    dumpTreeDetailed,
+                    reportPath,
+                    verbosity,
+                    printStructureTree,
+                    skipVisitors,
+                    includeOnlyVisitors);
+        }
+
+        private void resolveOutputPath(String baseName) {
+            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed) {
+                return;
+            }
+            if (outputPath == null) {
+                String outputFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
+                Path parent = inputPath.getParent();
+                outputPath =
+                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
+            } else if (Files.isDirectory(outputPath)) {
+                outputPath = outputPath.resolve(baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
+            }
+        }
+
+        private void resolveReportPath(String baseName) {
+            String reportFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
+            if (generateReport && reportPath == null) {
+                Path reportSibling = analyzeOnly ? inputPath : outputPath;
+                reportPath = reportSibling.resolveSibling(reportFilename);
+            } else if (reportPath != null && Files.isDirectory(reportPath)) {
+                reportPath = reportPath.resolve(reportFilename);
+            }
         }
     }
 
