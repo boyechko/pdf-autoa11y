@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.LoggerFactory;
@@ -96,7 +97,10 @@ public class ProcessingReporter implements ProcessingListener {
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
-                printLine(issue.message(), WARNING, VerbosityLevel.VERBOSE);
+                printLine(
+                        issue.message() + Format.location(issue.where()),
+                        WARNING,
+                        VerbosityLevel.VERBOSE);
             }
         }
     }
@@ -151,7 +155,7 @@ public class ProcessingReporter implements ProcessingListener {
                     printEmptyLine();
                     onSubsection("Manual review needed");
                     for (Issue issue : allIssues.getRemainingIssues()) {
-                        printLine(issue.message(), WARNING);
+                        printLine(issue.message() + Format.location(issue.where()), WARNING);
                     }
                 }
             }
@@ -176,7 +180,7 @@ public class ProcessingReporter implements ProcessingListener {
 
     @Override
     public void onWarning(Issue issue) {
-        printLine(issue.message(), WARNING);
+        printLine(issue.message() + Format.location(issue.where()), WARNING);
     }
 
     @Override
