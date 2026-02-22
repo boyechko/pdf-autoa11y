@@ -37,6 +37,7 @@ public enum IssueType {
     TAG_WRONG_CHILD_COUNT("tags with wrong child count"),
     TAG_WRONG_CHILD_PATTERN("tags with wrong child pattern"),
     FIGURE_WITH_TEXT("figures containing text"),
+    FIGURE_MISSING_ALT("figures without alt text"),
     EMPTY_LINK_TAG("empty link tags"),
 
     // Structure Issues
