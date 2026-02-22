@@ -29,7 +29,6 @@ import net.boyechko.pdf.autoa11y.rules.TabOrderRule;
 import net.boyechko.pdf.autoa11y.rules.TaggedPdfRule;
 import net.boyechko.pdf.autoa11y.rules.UnexpectedWidgetRule;
 import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
-import net.boyechko.pdf.autoa11y.rules.UnpartitionedDocumentRule;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.visitors.BulletGlyphVisitor;
@@ -39,6 +38,7 @@ import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MissingAltTextVisitor;
 import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
 import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.visitors.PagePartVisitor;
 import net.boyechko.pdf.autoa11y.visitors.ParagraphOfLinksVisitor;
 import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
 
@@ -50,7 +50,6 @@ public final class ProcessingDefaults {
                 new ImageOnlyDocumentRule(),
                 new StructureTreeExistsRule(),
                 new MissingDocumentRule(),
-                new UnpartitionedDocumentRule(),
                 new UnmarkedLinkRule(),
                 new UnexpectedWidgetRule(),
                 new BadlyMappedLigatureRule(),
@@ -63,6 +62,7 @@ public final class ProcessingDefaults {
     public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {
         return List.of(
                 NeedlessNestingVisitor::new,
+                PagePartVisitor::new,
                 MistaggedArtifactVisitor::new,
                 FigureWithTextVisitor::new,
                 MissingAltTextVisitor::new,
