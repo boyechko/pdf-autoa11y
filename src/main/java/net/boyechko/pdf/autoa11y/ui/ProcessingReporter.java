@@ -46,6 +46,7 @@ public class ProcessingReporter implements ProcessingListener {
     private static final String INDENT = "│ ";
     private static final String SUBSECTION_MARK = "🞙︎";
     private static final int HEADER_WIDTH = 68;
+    private static final int LINE_WIDTH = 80;
 
     private boolean phaseOpen = false;
     private boolean subsectionOpen = false;
@@ -226,8 +227,10 @@ public class ProcessingReporter implements ProcessingListener {
         logBuffer.list.clear();
         printEmptyLine();
         for (ILoggingEvent event : events) {
-            String icon = event.getLevel().isGreaterOrEqual(Level.ERROR) ? ERROR : WARNING;
-            printLine(event.getFormattedMessage(), icon);
+            String icon = event.getLevel().isGreaterOrEqual(Level.ERROR) ? ERROR : INFO;
+            String levelString = event.getLevel().toString().toUpperCase();
+            String origin = event.getLoggerName();
+            printLine("[" + levelString + "] " + origin + ": " + event.getFormattedMessage(), icon);
         }
     }
 
@@ -245,7 +248,7 @@ public class ProcessingReporter implements ProcessingListener {
         }
         String prefix = INDENT + icon + " ";
         String continuationPrefix = INDENT + "  ";
-        List<String> lines = wordWrap(message, HEADER_WIDTH);
+        List<String> lines = wordWrap(message, LINE_WIDTH);
         if (lines.isEmpty()) {
             output.println(prefix);
             return;
