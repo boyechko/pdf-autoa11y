@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -76,9 +77,9 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 pageDict.remove(PdfName.Annots);
             }
             pageDict.setModified();
-            logger.debug("Removed Widget annotation obj #{} from page {}", objNumber(), pageNum);
+            logger.debug("Removed Widget annotation obj. #{} from page {}", objNumber(), pageNum);
         } else {
-            logger.warn("Widget annotation obj #{} not found on page {}", objNumber(), pageNum);
+            logger.warn("Widget annotation obj. #{} not found on page {}", objNumber(), pageNum);
         }
     }
 
@@ -163,7 +164,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
             return;
         }
         if (!removeObjRefRecursive(docElem)) {
-            logger.debug("OBJR for Widget obj #{} not found in structure tree", objNumber());
+            logger.debug("OBJR for Widget obj. #{} not found in structure tree", objNumber());
         }
     }
 
@@ -183,7 +184,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 if (refObj instanceof PdfDictionary refDict && matchesAnnotation(refDict)) {
                     removeObjRefFromElement(elem, objRef);
                     logger.debug(
-                            "Removed OBJR for Widget obj #{} from {} (obj #{})",
+                            "Removed OBJR for Widget obj. #{} from {} (obj. #{})",
                             objNumber(),
                             elem.getRole().getValue(),
                             StructureTree.objNumber(elem));
@@ -241,7 +242,11 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     @Override
     public String describe() {
-        return "Removed Widget annotation obj #" + objNumber() + " (p. " + pageNum + ")";
+        return "Removed Widget annotation "
+                + Format.obj(objNumber())
+                + " ("
+                + Format.page(pageNum)
+                + ")";
     }
 
     @Override

@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
@@ -73,7 +74,6 @@ public class ConvertToArtifact implements IssueFix {
         artifactElement(element, ctx);
     }
 
-    /** Artifacts the element. */
     private void artifactElement(PdfStructElem element, DocumentContext ctx) throws IOException {
         IStructureNode parent = element.getParent();
         if (parent == null) {
@@ -85,10 +85,7 @@ public class ConvertToArtifact implements IssueFix {
             return;
         }
 
-        logger.trace(
-                "Artifacting {} (obj # {})",
-                element.getRole().getValue(),
-                StructureTree.objNumber(element));
+        logger.trace("Artifacting {}", Format.elem(element));
 
         Map<PdfPage, Set<Integer>> mcidsByPage = collectMcidsByPage(element, ctx);
         removeAnnotationsForElement(element, ctx);
@@ -110,6 +107,7 @@ public class ConvertToArtifact implements IssueFix {
         return false;
     }
 
+    // TODO: This is a duplicate of the method in MistaggedArtifactVisitor?
     private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocumentContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
         List<PdfMcr> mcrs = StructureTree.collectMcrs(elem);
@@ -281,11 +279,7 @@ public class ConvertToArtifact implements IssueFix {
     private void removeAnnotationsForElement(PdfStructElem elem, DocumentContext ctx) {
         List<PdfObjRef> objRefs = StructureTree.collectObjRefs(elem);
 
-        logger.trace(
-                "Found {} object ref(s) in {} (obj #{})",
-                objRefs.size(),
-                elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                StructureTree.objNumber(elem));
+        logger.trace("Found {} object ref(s) in {}", objRefs.size(), Format.elem(elem));
 
         for (PdfObjRef objRef : objRefs) {
             PdfObject refObj = objRef.getReferencedObject();
@@ -336,7 +330,7 @@ public class ConvertToArtifact implements IssueFix {
                 return;
             }
         }
-        logger.warn("Failed to find and remove annotation obj #{} on any page", annotObjNum);
+        logger.warn("Failed to find and remove annotation obj. #{} on any page", annotObjNum);
     }
 
     /**
@@ -381,7 +375,7 @@ public class ConvertToArtifact implements IssueFix {
                     annot.getPdfObject().getIndirectReference() != null
                             ? annot.getPdfObject().getIndirectReference().getObjNumber()
                             : 0;
-            logger.debug("Removed Link annotation obj #{} from page {}", objNum, pageNum);
+            logger.debug("Removed Link annotation obj. #{} from page {}", objNum, pageNum);
         }
 
         return toRemove.size();
@@ -389,18 +383,12 @@ public class ConvertToArtifact implements IssueFix {
 
     @Override
     public String describe() {
-        String role = element.getRole() != null ? element.getRole().getValue() : "unknown";
-        int objNum = StructureTree.objNumber(element);
-        return "Artifacted " + role + " obj #" + objNum;
+        return "Artifacted " + Format.elem(element);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        String role = element.getRole() != null ? element.getRole().getValue() : "unknown";
-        int objNum = StructureTree.objNumber(element);
-        int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Artifacted " + role + " obj #" + objNum + pageInfo;
+        return "Artifacted " + Format.elem(element, ctx);
     }
 
     @Override

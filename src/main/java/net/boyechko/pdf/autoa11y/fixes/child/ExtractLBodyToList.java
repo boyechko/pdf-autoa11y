@@ -25,6 +25,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -105,7 +106,7 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
         kid.getPdfObject().remove(PdfName.T);
 
         logger.debug(
-                "Extracted LBody from obj #{} into L obj #{} at position {}",
+                "Extracted LBody from obj. #{} into L obj. #{} at position {}",
                 StructureTree.objNumber(parent),
                 StructureTree.objNumber(listElem),
                 insertPos);
@@ -154,23 +155,11 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Extracted LBody from "
-                + getParentRole()
-                + " obj #"
-                + StructureTree.objNumber(parent)
-                + " into list";
+        return "Extracted LBody from " + Format.elem(parent) + " into list";
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(parent);
-        int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Extracted LBody from "
-                + getParentRole()
-                + " obj #"
-                + objNum
-                + pageInfo
-                + " into list";
+        return "Extracted LBody from " + Format.elem(parent, ctx) + " into list";
     }
 }

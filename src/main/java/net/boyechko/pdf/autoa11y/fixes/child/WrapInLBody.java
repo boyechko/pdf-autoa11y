@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
 /** Wraps a single child element under LI in a LBody structure. */
@@ -51,17 +51,11 @@ public final class WrapInLBody extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Wrapped "
-                + getKidRole()
-                + " in LBody under LI obj #"
-                + StructureTree.objNumber(parent);
+        return "Wrapped " + getKidRole() + " in LBody under " + Format.elem(parent);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(parent);
-        int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Wrapped " + getKidRole() + " in LBody under LI obj #" + objNum + pageInfo;
+        return "Wrapped " + getKidRole() + " in LBody under " + Format.elem(parent, ctx);
     }
 }

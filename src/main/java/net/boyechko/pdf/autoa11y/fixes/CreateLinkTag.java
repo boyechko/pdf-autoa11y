@@ -89,7 +89,7 @@ public class CreateLinkTag implements IssueFix {
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
                         : 0;
-        logger.debug("Created Link tag for annotation obj #{} (p. {})", annotObjNum, pageNum);
+        logger.debug("Created Link tag for annotation obj. #{} (p. {})", annotObjNum, pageNum);
     }
 
     private PdfAnnotation findMatchingAnnotation(PdfPage page, PdfDictionary targetDict) {
@@ -249,12 +249,11 @@ public class CreateLinkTag implements IssueFix {
     @Override
     public String describe() {
         String uri = UnmarkedLinkRule.getAnnotationUri(annotDict);
-        String objNumber =
-                String.valueOf(
-                        annotDict.getIndirectReference() != null
-                                ? annotDict.getIndirectReference().getObjNumber()
-                                : 0);
-        String baseDescription = UnmarkedLinkRule.buildDescription(objNumber, uri, pageNum);
+        int objNumber =
+                annotDict.getIndirectReference() != null
+                        ? annotDict.getIndirectReference().getObjNumber()
+                        : 0;
+        String baseDescription = UnmarkedLinkRule.buildDescription(objNumber, uri);
         return "Created tag for " + baseDescription;
     }
 

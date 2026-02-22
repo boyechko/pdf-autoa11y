@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 
@@ -51,15 +52,15 @@ public class ChangeFigureRole implements IssueFix {
     @Override
     public String describe() {
         int objNum = StructureTree.objNumber(figure);
-        return "Changed Figure to " + newRole.getValue() + " for obj #" + objNum;
+        return "Changed Figure to " + newRole.getValue() + " for " + Format.obj(objNum);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
         int objNum = StructureTree.objNumber(figure);
         int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
-        return "Changed Figure to " + newRole.getValue() + " for obj #" + objNum + pageInfo;
+        String pageInfo = (pageNum > 0) ? " (" + Format.page(pageNum) + ")" : "";
+        return "Changed Figure to " + newRole.getValue() + " for " + Format.obj(objNum) + pageInfo;
     }
 
     @Override

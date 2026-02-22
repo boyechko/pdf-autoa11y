@@ -173,7 +173,7 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
         issues.add(issue);
 
         logger.debug(
-                "Detected {} elements with bullet glyphs under obj #{} on page {}",
+                "Detected {} elements with bullet glyphs under obj. #{} on page {}",
                 run.size(),
                 StructureTree.objNumber(ctx.node()),
                 ctx.getPageNumber());
@@ -255,7 +255,7 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
             issues.add(issue);
 
             logger.debug(
-                    "Found {} bullet-aligned raw kids in obj #{} (bulletY={})",
+                    "Found {} bullet-aligned raw kids in obj. #{} (bulletY={})",
                     group.kidIndices().size(),
                     StructureTree.objNumber(element),
                     String.format("%.1f", group.bulletY()));

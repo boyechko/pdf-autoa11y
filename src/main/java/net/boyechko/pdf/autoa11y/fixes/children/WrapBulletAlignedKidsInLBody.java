@@ -26,6 +26,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
@@ -127,7 +128,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
 
         logger.debug(
-                "Wrapped {} raw kids in LBody>P under obj #{} (bulletY={})",
+                "Wrapped {} raw kids in LBody>P under obj. #{} (bulletY={})",
                 kidIndices.size(),
                 StructureTree.objNumber(parent),
                 String.format("%.1f", bulletY));
@@ -137,19 +138,15 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
     public String describe() {
         return "Wrapped "
                 + kidIndices.size()
-                + " bullet-aligned kids in LBody under obj #"
-                + StructureTree.objNumber(parent);
+                + " bullet-aligned kids in LBody under "
+                + Format.elem(parent);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(parent);
-        int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (p. " + pageNum + ")" : "";
         return "Wrapped "
                 + kidIndices.size()
-                + " bullet-aligned kids in LBody under obj #"
-                + objNum
-                + pageInfo;
+                + " bullet-aligned kids in LBody under "
+                + Format.elem(parent, ctx);
     }
 }

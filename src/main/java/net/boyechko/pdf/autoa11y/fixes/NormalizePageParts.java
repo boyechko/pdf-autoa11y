@@ -84,7 +84,7 @@ public class NormalizePageParts implements IssueFix {
                 documentElem.addKid(partElem);
                 partsCreated++;
                 logger.debug(
-                        "Created Part element obj #{} for page {}",
+                        "Created Part element obj. #{} for page {}",
                         StructureTree.objNumber(partElem),
                         pageNum);
             }
@@ -116,7 +116,7 @@ public class NormalizePageParts implements IssueFix {
                 if (StructureTree.moveElement(documentElem, elem, targetPart)) {
                     elementsMoved++;
                     logger.debug(
-                            "Moved {} (obj #{}) into Part for page {}",
+                            "Moved {} (obj. #{}) into Part for page {}",
                             elem.getRole() != null ? elem.getRole().getValue() : "unknown",
                             StructureTree.objNumber(elem),
                             pageNum);
