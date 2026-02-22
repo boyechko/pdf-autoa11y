@@ -19,9 +19,8 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -33,7 +32,12 @@ import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Removes a pushbutton Widget annotation from the page and its OBJR from the structure tree. */
+/**
+ * Removes a pushbutton Widget annotation from the page, AcroForm, and structure tree. Uses raw PDF
+ * array manipulation throughout to avoid iText's internal state management which can produce
+ * "Flushed object contains indirect reference which is free" errors when removing annotations via
+ * the high-level API.
+ */
 public class RemoveWidgetAnnotation implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(RemoveWidgetAnnotation.class);
     private static final int P_REMOVE_WIDGET = 12;
@@ -53,35 +57,100 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     @Override
     public void apply(DocumentContext ctx) throws Exception {
-        removeAnnotationFromPage(ctx);
+        removeFromPageAnnots(ctx);
+        removeFromAcroForm(ctx);
         removeObjRefFromStructureTree(ctx);
     }
 
-    private void removeAnnotationFromPage(DocumentContext ctx) {
-        PdfPage page = ctx.doc().getPage(pageNum);
-        List<PdfAnnotation> annotations = page.getAnnotations();
-
-        for (PdfAnnotation annot : annotations) {
-            PdfDictionary annotPdfObj = annot.getPdfObject();
-            if (matchesAnnotation(annotPdfObj)) {
-                page.removeAnnotation(annot);
-                logger.debug(
-                        "Removed Widget annotation obj #{} from page {}", objNumber(), pageNum);
-                return;
-            }
+    /** Removes this annotation from the page's /Annots array directly. */
+    private void removeFromPageAnnots(DocumentContext ctx) {
+        PdfDictionary pageDict = ctx.doc().getPage(pageNum).getPdfObject();
+        PdfArray annots = pageDict.getAsArray(PdfName.Annots);
+        if (annots == null) {
+            return;
         }
-        logger.warn("Widget annotation obj #{} not found on page {}", objNumber(), pageNum);
+
+        if (removeMatchingEntry(annots)) {
+            annots.setModified();
+            if (annots.isEmpty()) {
+                pageDict.remove(PdfName.Annots);
+            }
+            pageDict.setModified();
+            logger.debug("Removed Widget annotation obj #{} from page {}", objNumber(), pageNum);
+        } else {
+            logger.warn("Widget annotation obj #{} not found on page {}", objNumber(), pageNum);
+        }
     }
 
-    private boolean matchesAnnotation(PdfDictionary candidate) {
-        if (candidate == annotDict) {
-            return true;
+    /**
+     * Removes this widget from the AcroForm field hierarchy. For child widgets (with /Parent),
+     * removes from the parent's /Kids. For merged field+widget dicts, removes from /Fields. Cleans
+     * up empty parent fields and the AcroForm itself.
+     */
+    private void removeFromAcroForm(DocumentContext ctx) {
+        PdfDictionary catalog = ctx.doc().getCatalog().getPdfObject();
+        PdfDictionary acroForm = catalog.getAsDictionary(PdfName.AcroForm);
+        if (acroForm == null) {
+            return;
         }
-        if (annotDict.getIndirectReference() != null
-                && annotDict.getIndirectReference().equals(candidate.getIndirectReference())) {
-            return true;
+        PdfArray fields = acroForm.getAsArray(PdfName.Fields);
+        if (fields == null) {
+            return;
         }
-        return candidate.equals(annotDict);
+
+        PdfDictionary parent = annotDict.getAsDictionary(PdfName.Parent);
+        if (parent != null) {
+            // Child widget: remove from parent's /Kids
+            PdfArray kids = parent.getAsArray(PdfName.Kids);
+            if (kids != null && removeMatchingEntry(kids)) {
+                kids.setModified();
+                parent.setModified();
+            }
+            // If parent has no remaining kids, remove parent from /Fields
+            if (kids == null || kids.isEmpty()) {
+                removeMatchingEntry(fields, parent);
+                fields.setModified();
+            }
+        } else {
+            // Merged field+widget: remove directly from /Fields
+            if (removeMatchingEntry(fields)) {
+                fields.setModified();
+            }
+        }
+
+        if (fields.isEmpty()) {
+            catalog.remove(PdfName.AcroForm);
+            catalog.setModified();
+            logger.debug("Removed empty AcroForm from catalog");
+        }
+    }
+
+    /**
+     * Removes the entry matching this annotation's indirect reference from the array. Returns true
+     * if an entry was found and removed.
+     */
+    private boolean removeMatchingEntry(PdfArray array) {
+        return removeMatchingEntry(array, annotDict);
+    }
+
+    /**
+     * Removes an entry from the array whose indirect reference matches the target dictionary.
+     * Checks both raw (non-dereferenced) and resolved entries to handle iText's internal storage.
+     */
+    private boolean removeMatchingEntry(PdfArray array, PdfDictionary target) {
+        if (target.getIndirectReference() == null) {
+            return false;
+        }
+        for (int i = 0; i < array.size(); i++) {
+            // Check resolved (dereferenced) entry
+            PdfObject resolved = array.get(i);
+            if (resolved != null
+                    && target.getIndirectReference().equals(resolved.getIndirectReference())) {
+                array.remove(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void removeObjRefFromStructureTree(DocumentContext ctx) {
@@ -144,7 +213,6 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 kArray.remove(i);
                 return;
             }
-            // Also check indirect references
             if (entry.getIndirectReference() != null
                     && objRefDict.getIndirectReference() != null
                     && entry.getIndirectReference().equals(objRefDict.getIndirectReference())) {
@@ -152,6 +220,17 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 return;
             }
         }
+    }
+
+    private boolean matchesAnnotation(PdfDictionary candidate) {
+        if (candidate == annotDict) {
+            return true;
+        }
+        if (annotDict.getIndirectReference() != null
+                && annotDict.getIndirectReference().equals(candidate.getIndirectReference())) {
+            return true;
+        }
+        return candidate.equals(annotDict);
     }
 
     private int objNumber() {
