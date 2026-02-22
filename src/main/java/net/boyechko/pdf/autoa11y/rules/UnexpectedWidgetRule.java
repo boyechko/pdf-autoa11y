@@ -65,6 +65,8 @@ public class UnexpectedWidgetRule implements Rule {
                             annotDict.getIndirectReference() != null
                                     ? annotDict.getIndirectReference().getObjNumber()
                                     : 0;
+                    logger.debug(
+                            "Unexpected Widget annotation found: obj #{}, p. {}", objNum, pageNum);
 
                     IssueFix fix = new RemoveWidgetAnnotation(annotDict, pageNum);
                     Issue issue =
@@ -72,11 +74,7 @@ public class UnexpectedWidgetRule implements Rule {
                                     IssueType.UNEXPECTED_WIDGET,
                                     IssueSeverity.ERROR,
                                     new IssueLocation(pageNum, "Page " + pageNum),
-                                    "Pushbutton Widget annotation #"
-                                            + objNum
-                                            + " (p. "
-                                            + pageNum
-                                            + ")",
+                                    "Unexpected Widget annotation found on page " + pageNum,
                                     fix);
                     issues.add(issue);
                 }

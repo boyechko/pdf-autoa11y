@@ -45,12 +45,12 @@ public class ImageOnlyDocumentRule implements Rule {
 
     @Override
     public String passedMessage() {
-        return "Document has extractable text content";
+        return "Document is not an image-only document";
     }
 
     @Override
     public String failedMessage() {
-        return "Document appears to be an image-only document with no text";
+        return "Document is an image-only document with no text";
     }
 
     @Override

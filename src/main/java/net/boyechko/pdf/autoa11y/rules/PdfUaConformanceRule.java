@@ -41,12 +41,12 @@ public class PdfUaConformanceRule implements Rule {
 
     @Override
     public String passedMessage() {
-        return "No false PDF/UA conformance claim";
+        return "Document does not claim PDF/UA conformance";
     }
 
     @Override
     public String failedMessage() {
-        return "Document falsely claims PDF/UA conformance";
+        return "Document claims PDF/UA conformance that has not been verified";
     }
 
     @Override
@@ -77,7 +77,7 @@ public class PdfUaConformanceRule implements Rule {
                 new Issue(
                         IssueType.FALSE_PDFUA_CONFORMANCE,
                         IssueSeverity.ERROR,
-                        "Document claims PDF/UA conformance that has not been verified",
+                        failedMessage(),
                         fix);
         return new IssueList(issue);
     }

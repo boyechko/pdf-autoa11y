@@ -38,7 +38,7 @@ public class TaggedPdfRule implements Rule {
 
     @Override
     public String failedMessage() {
-        return "Document is not marked as tagged PDF";
+        return "Document is not marked as tagged PDF (Marked flag not set in MarkInfo dictionary)";
     }
 
     @Override
@@ -79,11 +79,7 @@ public class TaggedPdfRule implements Rule {
                 };
 
         Issue issue =
-                new Issue(
-                        IssueType.NOT_TAGGED_PDF,
-                        IssueSeverity.ERROR,
-                        "Document is not marked as tagged PDF (Marked flag not set in MarkInfo dictionary)",
-                        fix);
+                new Issue(IssueType.NOT_TAGGED_PDF, IssueSeverity.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }
