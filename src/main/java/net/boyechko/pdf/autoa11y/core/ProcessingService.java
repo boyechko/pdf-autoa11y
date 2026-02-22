@@ -101,7 +101,7 @@ public class ProcessingService {
      * reading the previous step's output file.
      */
     public ProcessingResult remediate() throws Exception {
-        Path pipelineDir = PIPELINE_TEMP_DIR;
+        Path pipelineDir = PIPELINE_TEMP_DIR.resolve(custodian.getInputPath().getFileName());
         if (!Files.exists(pipelineDir)) {
             Files.createDirectories(pipelineDir);
         } else {
@@ -183,7 +183,7 @@ public class ProcessingService {
             }
 
             // Finalize: copy result out of pipeline directory
-            Path finalOutput = PIPELINE_TEMP_DIR.resolve("output.pdf");
+            Path finalOutput = pipelineDir.resolve("output.pdf");
             if (custodian.isEncrypted()) {
                 custodian.reencrypt(current, finalOutput);
             } else {
