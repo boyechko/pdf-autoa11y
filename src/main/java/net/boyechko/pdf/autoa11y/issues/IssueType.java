@@ -36,21 +36,21 @@ public enum IssueType {
     TAG_WRONG_CHILD("tags with wrong children"),
     TAG_WRONG_CHILD_COUNT("tags with wrong child count"),
     TAG_WRONG_CHILD_PATTERN("tags with wrong child pattern"),
-    FIGURE_WITH_TEXT("figures containing text"),
-    FIGURE_MISSING_ALT("figures without alt text"),
+    FIGURE_WITH_TEXT("Figure elements containing text"),
+    FIGURE_MISSING_ALT("images missing alt text"),
     EMPTY_LINK_TAG("empty link tags"),
 
     // Structure Issues
     MISSING_DOCUMENT_ELEMENT("structure tree root has no Document element"),
     PAGE_PARTS_NOT_NORMALIZED("content not grouped into page-level Part elements"),
-    NEEDLESS_NESTING("unnecessary Part/Sect/Art wrappers"),
+    NEEDLESS_NESTING("unnecessary Part/Sect/Art/Div wrappers"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
-    UNMARKED_LINK("link annotations not tagged"),
-    UNEXPECTED_WIDGET("unexpected widget annotations"),
+    UNMARKED_LINK("Link annotations not tagged"),
+    UNEXPECTED_WIDGET("unexpected Widget annotations"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
-    PARAGRAPH_OF_LINKS("paragraph containing only links");
+    PARAGRAPH_OF_LINKS("paragraphs containing only links");
 
     private final String groupLabel;
 
