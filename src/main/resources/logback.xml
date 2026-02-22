@@ -1,0 +1,15 @@
+<configuration>
+  <!-- Suppress Logback's own startup status messages -->
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+  <!--
+    No console appender is declared here. ProcessingReporter attaches a
+    ListAppender programmatically and drains it into the phase box so that
+    log output never interleaves with the box-drawing UI.
+  -->
+
+  <!-- iText font subsystem is very chatty at WARN; keep it at ERROR -->
+  <logger name="com.itextpdf.kernel.font" level="error" />
+
+  <root level="warn" />
+</configuration>

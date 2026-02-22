@@ -1,0 +1,22 @@
+<configuration>
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+  <!--
+    Write to a file so log output survives Maven's console filtering.
+    The file lands in target/ and is cleaned by `mvn clean`.
+  -->
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>target/test-debug.log</file>
+    <append>false</append>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Suppress noisy iText internals -->
+  <logger name="com.itextpdf" level="warn" />
+
+  <root level="debug">
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>

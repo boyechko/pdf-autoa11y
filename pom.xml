@@ -20,7 +20,7 @@
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
     <maven-surefire-plugin.excludedGroups>visual, GoalDriven</maven-surefire-plugin.excludedGroups>
     <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y/test-pdfs</pdf.autoa11y.testOutputDir>
-    <slf4j-simple.version>2.0.17</slf4j-simple.version>
+    <logback.version>1.5.16</logback.version>
     <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
   </properties>
 
@@ -55,11 +55,11 @@
       <artifactId>bouncy-castle-adapter</artifactId>
       <version>${itext.version}</version>
     </dependency>
-    <!-- iText uses SLF4J -->
+    <!-- iText uses SLF4J; logback-classic provides the binding -->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j-simple.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
     </dependency>
   </dependencies>
 
