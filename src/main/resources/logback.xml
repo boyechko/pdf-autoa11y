@@ -11,5 +11,9 @@
   <!-- iText font subsystem is very chatty at WARN; keep it at ERROR -->
   <logger name="com.itextpdf.kernel.font" level="error" />
 
+  <!-- iText structure tree warns about duplicate StructParent indices in
+       malformed PDFs; not actionable by the user -->
+  <logger name="com.itextpdf.kernel.pdf.tagging" level="error" />
+
   <root level="warn" />
 </configuration>
