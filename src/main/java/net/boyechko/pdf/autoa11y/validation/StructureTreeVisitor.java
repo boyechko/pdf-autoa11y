@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 
 /** Visitor interface for PDF structure tree traversal. */
@@ -37,4 +38,12 @@ public interface StructureTreeVisitor {
     default void afterTraversal() {}
 
     IssueList getIssues();
+
+    /**
+     * Returns visitor classes that must run before this visitor. The pipeline validates at
+     * construction time that all prerequisites appear earlier in the visitor list.
+     */
+    default Set<Class<? extends StructureTreeVisitor>> prerequisites() {
+        return Set.of();
+    }
 }

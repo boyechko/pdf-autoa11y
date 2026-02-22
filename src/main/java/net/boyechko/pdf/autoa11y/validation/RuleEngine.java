@@ -20,8 +20,10 @@ package net.boyechko.pdf.autoa11y.validation;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
@@ -60,6 +62,25 @@ public class RuleEngine {
         this.rules = List.copyOf(rules);
         this.visitorSuppliers = List.copyOf(visitorSuppliers);
         this.schema = schema;
+        validateVisitorPrerequisites();
+    }
+
+    private void validateVisitorPrerequisites() {
+        Set<Class<? extends StructureTreeVisitor>> seen = new HashSet<>();
+        for (Supplier<StructureTreeVisitor> supplier : visitorSuppliers) {
+            StructureTreeVisitor visitor = supplier.get();
+            for (Class<? extends StructureTreeVisitor> prereq : visitor.prerequisites()) {
+                if (!seen.contains(prereq)) {
+                    throw new IllegalArgumentException(
+                            visitor.getClass().getSimpleName()
+                                    + " requires "
+                                    + prereq.getSimpleName()
+                                    + " to run first, but it has not been registered"
+                                    + " or appears later in the visitor list");
+                }
+            }
+            seen.add(visitor.getClass());
+        }
     }
 
     public List<Rule> getRules() {
