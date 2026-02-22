@@ -49,15 +49,15 @@ public final class ProcessingDefaults {
         return List.of(
                 new ImageOnlyDocumentRule(),
                 new StructureTreeExistsRule(),
-                new LanguageSetRule(),
-                new TabOrderRule(),
-                new TaggedPdfRule(),
-                new PdfUaConformanceRule(),
                 new MissingDocumentRule(),
                 new UnpartitionedDocumentRule(),
                 new UnmarkedLinkRule(),
                 new UnexpectedWidgetRule(),
-                new BadlyMappedLigatureRule());
+                new BadlyMappedLigatureRule(),
+                new LanguageSetRule(),
+                new TabOrderRule(),
+                new TaggedPdfRule(),
+                new PdfUaConformanceRule());
     }
 
     public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {
@@ -68,8 +68,8 @@ public final class ProcessingDefaults {
                 MissingAltTextVisitor::new,
                 EmptyLinkTagVisitor::new,
                 BulletGlyphVisitor::new,
-                SchemaValidationVisitor::new,
                 ParagraphOfLinksVisitor::new,
+                SchemaValidationVisitor::new,
                 EmptyElementVisitor::new);
     }
 }
