@@ -80,6 +80,75 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    /** Mutable builder that accumulates parsed CLI arguments and resolves derived paths. */
+    static class CLIConfigBuilder {
+        Path inputPath;
+        Path outputPath;
+        String password;
+        boolean forceSave;
+        boolean analyzeOnly;
+        boolean dumpTreeSimple;
+        boolean dumpTreeDetailed;
+        boolean generateReport;
+        Path reportPath;
+        VerbosityLevel verbosity = VerbosityLevel.NORMAL;
+        boolean printStructureTree;
+        Set<String> skipVisitors = Set.of();
+        Set<String> includeOnlyVisitors = Set.of();
+
+        CLIConfig build() throws CLIException {
+            if (inputPath == null) {
+                throw new CLIException("No input file specified");
+            }
+            if (!Files.exists(inputPath)) {
+                throw new CLIException("File not found: " + inputPath);
+            }
+
+            String baseName =
+                    inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
+            resolveOutputPath(baseName);
+            resolveReportPath(baseName);
+
+            return new CLIConfig(
+                    inputPath,
+                    outputPath,
+                    password,
+                    forceSave,
+                    analyzeOnly,
+                    dumpTreeSimple,
+                    dumpTreeDetailed,
+                    reportPath,
+                    verbosity,
+                    printStructureTree,
+                    skipVisitors,
+                    includeOnlyVisitors);
+        }
+
+        private void resolveOutputPath(String baseName) {
+            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed) {
+                return;
+            }
+            if (outputPath == null) {
+                String outputFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
+                Path parent = inputPath.getParent();
+                outputPath =
+                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
+            } else if (Files.isDirectory(outputPath)) {
+                outputPath = outputPath.resolve(baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
+            }
+        }
+
+        private void resolveReportPath(String baseName) {
+            String reportFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
+            if (generateReport && reportPath == null) {
+                Path reportSibling = analyzeOnly ? inputPath : outputPath;
+                reportPath = reportSibling.resolveSibling(reportFilename);
+            } else if (reportPath != null && Files.isDirectory(reportPath)) {
+                reportPath = reportPath.resolve(reportFilename);
+            }
+        }
+    }
+
     public static void main(String[] args) {
         try {
             if (isHelpRequested(args)) {
@@ -104,44 +173,33 @@ public class PdfAutoA11yCLI {
             throw new CLIException("No input file specified\n" + usageMessage());
         }
 
-        Path inputPath = null;
-        Path outputPath = null;
-        String password = null;
-        boolean force_save = false;
-        boolean analyzeOnly = false;
-        boolean dumpTreeSimple = false;
-        boolean dumpTreeDetailed = false;
-        boolean generateReport = false;
-        Path reportPath = null;
-        VerbosityLevel verbosity = VerbosityLevel.NORMAL;
-        boolean printStructureTree = false;
-        Set<String> skipVisitors = Set.of();
-        Set<String> includeOnlyVisitors = Set.of();
+        CLIConfigBuilder b = new CLIConfigBuilder();
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("--report=")) {
-                reportPath = Paths.get(args[i].substring("--report=".length()));
-                generateReport = true;
+                b.reportPath = Paths.get(args[i].substring("--report=".length()));
+                b.generateReport = true;
             } else if (args[i].startsWith("-r=")) {
-                reportPath = Paths.get(args[i].substring("-r=".length()));
-                generateReport = true;
+                b.reportPath = Paths.get(args[i].substring("-r=".length()));
+                b.generateReport = true;
             } else if (args[i].startsWith("--skip-visitors=")) {
-                skipVisitors = parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
+                b.skipVisitors =
+                        parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
             } else if (args[i].startsWith("--include-visitors=")) {
-                includeOnlyVisitors =
+                b.includeOnlyVisitors =
                         parseCommaSeparated(args[i].substring("--include-visitors=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
                         if (i + 1 < args.length) {
-                            password = args[++i];
+                            b.password = args[++i];
                         } else {
                             throw new CLIException("Password not specified after -p");
                         }
                     }
                     case "--skip-visitors" -> {
                         if (i + 1 < args.length) {
-                            skipVisitors = parseCommaSeparated(args[++i]);
+                            b.skipVisitors = parseCommaSeparated(args[++i]);
                         } else {
                             throw new CLIException(
                                     "Visitor names not specified after --skip-visitors");
@@ -149,26 +207,26 @@ public class PdfAutoA11yCLI {
                     }
                     case "--include-visitors" -> {
                         if (i + 1 < args.length) {
-                            includeOnlyVisitors = parseCommaSeparated(args[++i]);
+                            b.includeOnlyVisitors = parseCommaSeparated(args[++i]);
                         } else {
                             throw new CLIException(
                                     "Visitor names not specified after --include-visitors");
                         }
                     }
-                    case "-q", "--quiet" -> verbosity = VerbosityLevel.QUIET;
-                    case "-v", "--verbose" -> verbosity = VerbosityLevel.VERBOSE;
-                    case "-vv", "--debug" -> verbosity = VerbosityLevel.DEBUG;
-                    case "-t", "--print-tree" -> printStructureTree = true;
-                    case "--dump-tree" -> dumpTreeDetailed = true;
-                    case "--dump-roles" -> dumpTreeSimple = true;
-                    case "-f", "--force" -> force_save = true;
-                    case "-a", "--analyze" -> analyzeOnly = true;
-                    case "-r", "--report" -> generateReport = true;
+                    case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
+                    case "-v", "--verbose" -> b.verbosity = VerbosityLevel.VERBOSE;
+                    case "-vv", "--debug" -> b.verbosity = VerbosityLevel.DEBUG;
+                    case "-t", "--print-tree" -> b.printStructureTree = true;
+                    case "--dump-tree" -> b.dumpTreeDetailed = true;
+                    case "--dump-roles" -> b.dumpTreeSimple = true;
+                    case "-f", "--force" -> b.forceSave = true;
+                    case "-a", "--analyze" -> b.analyzeOnly = true;
+                    case "-r", "--report" -> b.generateReport = true;
                     default -> {
-                        if (inputPath == null) {
-                            inputPath = Paths.get(args[i]);
-                        } else if (outputPath == null) {
-                            outputPath = Paths.get(args[i]);
+                        if (b.inputPath == null) {
+                            b.inputPath = Paths.get(args[i]);
+                        } else if (b.outputPath == null) {
+                            b.outputPath = Paths.get(args[i]);
                         } else {
                             throw new CLIException("Multiple input files specified");
                         }
@@ -177,52 +235,7 @@ public class PdfAutoA11yCLI {
             }
         }
 
-        if (inputPath == null) {
-            throw new CLIException("No input file specified");
-        }
-
-        if (!Files.exists(inputPath)) {
-            throw new CLIException("File not found: " + inputPath);
-        }
-
-        // Compute base name for auto-generated filenames
-        String inputBaseName =
-                inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
-
-        // Generate output path
-        if (!analyzeOnly && !dumpTreeSimple && !dumpTreeDetailed) {
-            if (outputPath == null) {
-                String outputFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf";
-                Path parent = inputPath.getParent();
-                outputPath =
-                        parent != null ? parent.resolve(outputFilename) : Paths.get(outputFilename);
-            } else if (Files.isDirectory(outputPath)) {
-                outputPath = outputPath.resolve(inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
-            }
-        }
-
-        // Resolve report path
-        String reportFilename = inputBaseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
-        if (generateReport && reportPath == null) {
-            Path reportSibling = analyzeOnly ? inputPath : outputPath;
-            reportPath = reportSibling.resolveSibling(reportFilename);
-        } else if (reportPath != null && Files.isDirectory(reportPath)) {
-            reportPath = reportPath.resolve(reportFilename);
-        }
-
-        return new CLIConfig(
-                inputPath,
-                outputPath,
-                password,
-                force_save,
-                analyzeOnly,
-                dumpTreeSimple,
-                dumpTreeDetailed,
-                reportPath,
-                verbosity,
-                printStructureTree,
-                skipVisitors,
-                includeOnlyVisitors);
+        return b.build();
     }
 
     private static void configureLogging(VerbosityLevel verbosity) {
@@ -249,22 +262,16 @@ public class PdfAutoA11yCLI {
             return;
         }
 
-        PrintStream output = System.out;
         OutputStream reportFile = null;
+        PrintStream output = System.out;
 
         try {
-            if (config.reportPath() != null) {
-                Path reportParent = config.reportPath().getParent();
-                if (reportParent != null) {
-                    Files.createDirectories(reportParent);
-                }
-                logger().info("Saving report to {}", config.reportPath());
-                reportFile = Files.newOutputStream(config.reportPath());
+            reportFile = openReportStream(config);
+            if (reportFile != null) {
                 output = new PrintStream(new TeeOutputStream(System.out, reportFile));
             }
 
-            VerbosityLevel verbosity = config.verbosity();
-            ProcessingReporter reporter = new ProcessingReporter(output, verbosity);
+            ProcessingReporter reporter = new ProcessingReporter(output, config.verbosity());
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
             ProcessingService service =
@@ -282,31 +289,7 @@ public class PdfAutoA11yCLI {
             } else {
                 logger().info("Remediating document");
                 ProcessingResult result = service.remediate();
-
-                if (result.tempOutputFile() == null) {
-                    return;
-                }
-
-                if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-                    reporter.onInfo("No changes made; output file not created");
-                    return;
-                }
-
-                Path outputParent = config.outputPath().getParent();
-                if (outputParent != null) {
-                    Files.createDirectories(outputParent);
-                }
-
-                logger().info(
-                                "Copying temporary output file {} to {}",
-                                result.tempOutputFile(),
-                                config.outputPath());
-                Files.copy(
-                        result.tempOutputFile(),
-                        config.outputPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
-
-                reporter.onSuccess("Output saved to " + config.outputPath().toString());
+                saveRemediationResult(result, config, reporter);
             }
         } catch (Exception e) {
             System.err.println("✗ Processing failed due to an exception:");
@@ -323,6 +306,45 @@ public class PdfAutoA11yCLI {
                 }
             }
         }
+    }
+
+    private static OutputStream openReportStream(CLIConfig config) throws IOException {
+        if (config.reportPath() == null) {
+            return null;
+        }
+        Path reportParent = config.reportPath().getParent();
+        if (reportParent != null) {
+            Files.createDirectories(reportParent);
+        }
+        logger().info("Saving report to {}", config.reportPath());
+        return Files.newOutputStream(config.reportPath());
+    }
+
+    private static void saveRemediationResult(
+            ProcessingResult result, CLIConfig config, ProcessingReporter reporter)
+            throws IOException {
+        if (result.tempOutputFile() == null) {
+            return;
+        }
+
+        if (result.totalIssuesResolved() == 0 && !config.force_save()) {
+            reporter.onInfo("No changes made; output file not created");
+            return;
+        }
+
+        Path outputParent = config.outputPath().getParent();
+        if (outputParent != null) {
+            Files.createDirectories(outputParent);
+        }
+
+        logger().info(
+                        "Copying temporary output file {} to {}",
+                        result.tempOutputFile(),
+                        config.outputPath());
+        Files.copy(
+                result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        reporter.onSuccess("Output saved to " + config.outputPath().toString());
     }
 
     /** Prints the structure tree to the console based on the CLI config. */
