@@ -94,8 +94,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
             return;
         }
         if (!removeObjRefRecursive(docElem)) {
-            logger.warn(
-                    "OBJR for Widget annotation obj #{} not found in structure tree", objNumber());
+            logger.debug("OBJR for Widget obj #{} not found in structure tree", objNumber());
         }
     }
 
