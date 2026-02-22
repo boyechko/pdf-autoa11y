@@ -46,7 +46,7 @@ public class ProcessingService {
     /** Set to true to keep all intermediate pipeline files for debugging. */
     private static final boolean KEEP_PIPELINE_TEMPS = true;
 
-    private static final Path PIPELINE_TEMP_DIR = Path.of("target/pipeline/");
+    private static final Path PIPELINE_TEMP_DIR = resolvePipelineTempDir();
 
     private final PdfCustodian custodian;
     private final RuleEngine ruleEngine;
@@ -232,6 +232,19 @@ public class ProcessingService {
     }
 
     // == Pipeline helpers =============================================
+
+    private static Path resolvePipelineTempDir() {
+        // 1. Explicit JVM flag:  -Dautoa11y.pipeline.dir=/my/path
+        String sysProp = System.getProperty("autoa11y.pipeline.dir");
+        if (sysProp != null) return Path.of(sysProp);
+
+        // 2. Environment variable: export AUTOA11Y_PIPELINE_DIR=/my/path
+        String envVar = System.getenv("AUTOA11Y_PIPELINE_DIR");
+        if (envVar != null) return Path.of(envVar);
+
+        // 3. Default: /tmp/pipeline/
+        return Path.of("/tmp/pdf-autoa11y/pipeline");
+    }
 
     /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentRules(DocumentContext ctx) {
