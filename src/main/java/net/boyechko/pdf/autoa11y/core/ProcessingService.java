@@ -123,17 +123,44 @@ public class ProcessingService {
             return new ArrayList<>(defaults);
         }
         ArrayList<Supplier<StructureTreeVisitor>> filtered = new ArrayList<>();
+        Set<String> removedNames = new HashSet<>();
         for (Supplier<StructureTreeVisitor> supplier : defaults) {
             String className = supplier.get().getClass().getSimpleName();
             if (!includeOnly.isEmpty()) {
                 if (includeOnly.contains(className)) {
                     filtered.add(supplier);
+                } else {
+                    removedNames.add(className);
                 }
             } else if (!skip.contains(className)) {
                 filtered.add(supplier);
+            } else {
+                removedNames.add(className);
             }
         }
+        validateNoMissingPrerequisites(filtered, removedNames);
         return filtered;
+    }
+
+    private static void validateNoMissingPrerequisites(
+            List<Supplier<StructureTreeVisitor>> visitors, Set<String> removedNames) {
+        for (Supplier<StructureTreeVisitor> supplier : visitors) {
+            StructureTreeVisitor visitor = supplier.get();
+            for (Class<? extends StructureTreeVisitor> prereq : visitor.prerequisites()) {
+                String prereqName = prereq.getSimpleName();
+                if (removedNames.contains(prereqName)) {
+                    throw new IllegalArgumentException(
+                            visitor.getClass().getSimpleName()
+                                    + " requires "
+                                    + prereqName
+                                    + ", which was excluded."
+                                    + " To skip both, use: --skip-visitors "
+                                    + prereqName
+                                    + ","
+                                    + visitor.getClass().getSimpleName());
+                }
+            }
+        }
     }
 
     /**
