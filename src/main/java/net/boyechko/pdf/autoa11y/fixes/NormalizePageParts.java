@@ -173,6 +173,6 @@ public class NormalizePageParts implements IssueFix {
 
     @Override
     public String groupLabel() {
-        return "Page Parts normalized";
+        return "page-level Part elements created";
     }
 }

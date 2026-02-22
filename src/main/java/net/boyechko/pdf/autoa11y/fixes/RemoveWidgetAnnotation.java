@@ -163,7 +163,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     @Override
     public String describe() {
-        return "Removed pushbutton widget obj #" + objNumber() + " (p. " + pageNum + ")";
+        return "Removed Widget annotation obj #" + objNumber() + " (p. " + pageNum + ")";
     }
 
     @Override
@@ -173,6 +173,6 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     @Override
     public String groupLabel() {
-        return "unexpected widget annotations removed";
+        return "unexpected Widget annotations removed";
     }
 }
