@@ -318,6 +318,8 @@ public class ProcessingService {
 
     // == Reporting helpers ============================================
 
+    private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
+
     private void reportIssuesGrouped(IssueList issues) {
         Map<IssueType, List<Issue>> grouped =
                 issues.stream().collect(Collectors.groupingBy(Issue::type));
@@ -325,7 +327,7 @@ public class ProcessingService {
         for (Map.Entry<IssueType, List<Issue>> entry : grouped.entrySet()) {
             List<Issue> groupIssues = entry.getValue();
 
-            if (groupIssues.size() >= 3) {
+            if (groupIssues.size() >= MIN_GROUP_SIZE_FOR_GROUPING) {
                 listener.onIssueGroup(entry.getKey().groupLabel(), groupIssues);
             } else {
                 for (Issue issue : groupIssues) {
@@ -345,7 +347,7 @@ public class ProcessingService {
         for (Map.Entry<Class<?>, List<Issue>> entry : grouped.entrySet()) {
             List<Issue> groupFixes = entry.getValue();
 
-            if (groupFixes.size() >= 3) {
+            if (groupFixes.size() >= MIN_GROUP_SIZE_FOR_GROUPING) {
                 String groupLabel = groupFixes.get(0).fix().groupLabel();
                 listener.onFixGroup(groupLabel, groupFixes);
             } else {
