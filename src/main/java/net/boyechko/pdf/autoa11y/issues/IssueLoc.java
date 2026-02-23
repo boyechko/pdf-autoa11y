@@ -22,32 +22,32 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
-public final class IssueLocation {
+public final class IssueLoc {
     private final Integer page; // null if document-level
     private final PdfStructElem element; // may be null if not applicable
     private final String path; // optional: struct tree path, object id, etc.
 
-    public IssueLocation() {
+    public IssueLoc() {
         this(null, null, null);
     }
 
-    public IssueLocation(String path) {
+    public IssueLoc(String path) {
         this(null, path, null);
     }
 
-    public IssueLocation(Integer page, String path) {
+    public IssueLoc(Integer page, String path) {
         this(page, path, null);
     }
 
-    public IssueLocation(PdfStructElem element) {
+    public IssueLoc(PdfStructElem element) {
         this(null, null, element);
     }
 
-    public IssueLocation(PdfStructElem element, String path) {
+    public IssueLoc(PdfStructElem element, String path) {
         this(null, path, element);
     }
 
-    public IssueLocation(Integer page, String path, PdfStructElem element) {
+    public IssueLoc(Integer page, String path, PdfStructElem element) {
         this.page = page;
         this.path = path;
         this.element = element;

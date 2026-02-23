@@ -20,8 +20,8 @@ package net.boyechko.pdf.autoa11y.issues;
 /** Represents an accessibility issue found in a PDF document. */
 public final class Issue {
     private final IssueType type;
-    private final IssueSeverity severity;
-    private final IssueLocation where;
+    private final IssueSev severity;
+    private final IssueLoc where;
     private final String message;
     private final IssueFix fix; // may be null if no automatic fix exists
 
@@ -29,20 +29,19 @@ public final class Issue {
     private boolean failed;
     private String resolutionNote;
 
-    public Issue(IssueType type, IssueSeverity sev, String message) {
-        this(type, sev, new IssueLocation(), message, null);
+    public Issue(IssueType type, IssueSev sev, String message) {
+        this(type, sev, new IssueLoc(), message, null);
     }
 
-    public Issue(IssueType type, IssueSeverity sev, String message, IssueFix fix) {
-        this(type, sev, new IssueLocation(), message, fix);
+    public Issue(IssueType type, IssueSev sev, String message, IssueFix fix) {
+        this(type, sev, new IssueLoc(), message, fix);
     }
 
-    public Issue(IssueType type, IssueSeverity sev, IssueLocation where, String message) {
+    public Issue(IssueType type, IssueSev sev, IssueLoc where, String message) {
         this(type, sev, where, message, null);
     }
 
-    public Issue(
-            IssueType type, IssueSeverity sev, IssueLocation where, String message, IssueFix fix) {
+    public Issue(IssueType type, IssueSev sev, IssueLoc where, String message, IssueFix fix) {
         this.type = type;
         this.severity = sev;
         this.where = where;
@@ -54,11 +53,11 @@ public final class Issue {
         return type;
     }
 
-    public IssueSeverity severity() {
+    public IssueSev severity() {
         return severity;
     }
 
-    public IssueLocation where() {
+    public IssueLoc where() {
         return where;
     }
 
