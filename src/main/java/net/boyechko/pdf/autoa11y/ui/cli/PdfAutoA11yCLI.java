@@ -24,8 +24,6 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -108,16 +106,8 @@ public class PdfAutoA11yCLI {
             return;
         }
 
-        OutputStream reportFile = null;
-        PrintStream output = System.out;
-
         try {
-            reportFile = openReportStream(config);
-            if (reportFile != null) {
-                output = new PrintStream(new TeeOutputStream(System.out, reportFile));
-            }
-
-            ProcessingReporter reporter = new ProcessingReporter(output, config.verbosity());
+            ProcessingReporter reporter = new ProcessingReporter(System.out, config.verbosity());
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
             ProcessingService service =
@@ -141,29 +131,7 @@ public class PdfAutoA11yCLI {
             System.err.println("✗ Processing failed due to an exception:");
             System.err.println();
             e.printStackTrace();
-        } finally {
-            logger().info("Closing output stream");
-            if (reportFile != null) {
-                output.flush();
-                try {
-                    reportFile.close();
-                } catch (IOException e) {
-                    logger().warn("Failed to close report file", e);
-                }
-            }
         }
-    }
-
-    private static OutputStream openReportStream(CLIConfig config) throws IOException {
-        if (config.reportPath() == null) {
-            return null;
-        }
-        Path reportParent = config.reportPath().getParent();
-        if (reportParent != null) {
-            Files.createDirectories(reportParent);
-        }
-        logger().info("Saving report to {}", config.reportPath());
-        return Files.newOutputStream(config.reportPath());
     }
 
     private static void saveRemediationResult(
@@ -192,17 +160,17 @@ public class PdfAutoA11yCLI {
 
         reporter.onSuccess("Output saved to " + config.outputPath().toString());
 
-        writeAccessibilityReport(result, config, reporter);
+        if (config.reportPath() != null) {
+            writeAccessibilityReport(result, config, reporter);
+        }
     }
 
     private static void writeAccessibilityReport(
             ProcessingResult result, CLIConfig config, ProcessingReporter reporter) {
-        String outputName = config.outputPath().getFileName().toString();
-        String reportName = outputName.replaceFirst("\\.pdf$", ".report.txt");
-        Path reportPath = config.outputPath().resolveSibling(reportName);
         try {
-            AccessibilityReport.write(result, config.inputPath(), config.outputPath(), reportPath);
-            reporter.onSuccess("Report saved to " + reportPath);
+            AccessibilityReport.write(
+                    result, config.inputPath(), config.outputPath(), config.reportPath());
+            reporter.onSuccess("Report saved to " + config.reportPath());
         } catch (IOException e) {
             reporter.onError("Failed to write report: " + e.getMessage());
         }
@@ -388,42 +356,13 @@ public class PdfAutoA11yCLI {
         }
 
         private void resolveReportPath(String baseName) {
-            String reportFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".txt";
+            String reportFilename = baseName + DEFAULT_OUTPUT_SUFFIX + ".report.txt";
             if (generateReport && reportPath == null) {
                 Path reportSibling = analyzeOnly ? inputPath : outputPath;
                 reportPath = reportSibling.resolveSibling(reportFilename);
             } else if (reportPath != null && Files.isDirectory(reportPath)) {
                 reportPath = reportPath.resolve(reportFilename);
             }
-        }
-    }
-
-    /** Writes to two output streams simultaneously, like the Unix tee command. */
-    private static class TeeOutputStream extends OutputStream {
-        private final OutputStream out1;
-        private final OutputStream out2;
-
-        TeeOutputStream(OutputStream out1, OutputStream out2) {
-            this.out1 = out1;
-            this.out2 = out2;
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            out1.write(b);
-            out2.write(b);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            out1.write(b, off, len);
-            out2.write(b, off, len);
-        }
-
-        @Override
-        public void flush() throws IOException {
-            out1.flush();
-            out2.flush();
         }
     }
 
@@ -455,7 +394,7 @@ public class PdfAutoA11yCLI {
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  -f, --force       Force save even if no fixes applied\n"
                 + "  -p, --password    Password for encrypted PDFs\n"
-                + "  -r, --report      Save output to report file (auto-named from input)\n"
+                + "  -r, --report      Save accessibility report (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --skip-visitors <names>     Skip specific visitors (comma-separated class names)\n"
                 + "  --include-visitors <names>  Run only these visitors (comma-separated class names)\n"
