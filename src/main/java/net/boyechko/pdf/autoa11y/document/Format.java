@@ -62,6 +62,11 @@ public final class Format {
         return "obj. #" + objNum;
     }
 
+    /** Returns a short label for a PDF object number and page number. */
+    public static String obj(int objNum, int pageNum) {
+        return obj(objNum) + " (" + page(pageNum) + ")";
+    }
+
     /** Returns a short label for a page number. */
     public static String page(int pageNum) {
         return "p. " + pageNum;
@@ -72,11 +77,16 @@ public final class Format {
         return "MCID #" + mcid;
     }
 
+    /** Returns a short label for a marked content identifier on a page. */
+    public static String mcid(int mcid, int pageNum) {
+        return mcid(mcid) + " (" + page(pageNum) + ")";
+    }
+
     /**
      * Returns a parenthesized location string for an issue, e.g. {@code " (obj. #42, p. 3)"}.
      * Returns empty string when no location info is available.
      */
-    public static String location(IssueLocation where) {
+    public static String loc(IssueLocation where) {
         if (where == null) return "";
         Integer objId = where.objectId();
         Integer page = where.page();
@@ -87,5 +97,13 @@ public final class Format {
         if (page != null) sb.append(page(page));
         sb.append(")");
         return sb.toString();
+    }
+
+    /**
+     * Returns a parenthesized location string for an object number and page number. e.g. {@code "
+     * (obj. #42, p. 3)"}.
+     */
+    public static String loc(int objNum, int pageNum) {
+        return " (" + obj(objNum) + ", " + page(pageNum) + ")";
     }
 }
