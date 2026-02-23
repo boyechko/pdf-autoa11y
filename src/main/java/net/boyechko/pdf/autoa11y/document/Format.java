@@ -87,16 +87,20 @@ public final class Format {
      * Returns empty string when no location info is available.
      */
     public static String loc(IssueLoc where) {
-        if (where == null) return "";
-        Integer objId = where.objectId();
-        Integer page = where.page();
-        if (objId == null && page == null) return "";
-        StringBuilder sb = new StringBuilder(" (");
-        if (objId != null) sb.append(obj(objId));
-        if (objId != null && page != null) sb.append(", ");
-        if (page != null) sb.append(page(page));
-        sb.append(")");
-        return sb.toString();
+        return switch (where) {
+            case null -> "";
+            case IssueLoc.None n -> "";
+            case IssueLoc.AtElem(var e) -> {
+                int n = StructureTree.objNumber(e);
+                yield n >= 0 ? " (" + obj(n) + ")" : "";
+            }
+            case IssueLoc.AtPageNum(var pn) -> " (" + page(pn) + ")";
+            case IssueLoc.AtObjNum(var o, var p) -> {
+                String s = " (" + obj(o);
+                if (p != null) s += ", " + page(p);
+                yield s + ")";
+            }
+        };
     }
 
     /**

@@ -167,7 +167,7 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        new IssueLoc(ctx.node(), ctx.path()),
+                        IssueLoc.atElem(ctx.node()),
                         run.size() + " elements aligned with vector bullet glyphs",
                         fix);
         issues.add(issue);
@@ -247,7 +247,7 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.BULLET_ALIGNED_KIDS_IN_ELEMENT,
                             IssueSev.WARNING,
-                            new IssueLoc(element, ctx.path()),
+                            IssueLoc.atElem(element),
                             group.kidIndices().size()
                                     + " raw kids aligned with bullet glyph inside "
                                     + element.getRole().getValue(),

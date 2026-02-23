@@ -85,7 +85,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.TAG_UNKNOWN_ROLE,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node(), ctx.path()),
+                            IssueLoc.atElem(ctx.node()),
                             String.format(
                                     "%s role is not defined in schema",
                                     formatRole(StructureTree.mappedRole(ctx.node())))));
@@ -107,7 +107,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.TAG_WRONG_PARENT,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node(), ctx.path()),
+                            IssueLoc.atElem(ctx.node()),
                             message));
         }
     }
@@ -129,7 +129,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node(), ctx.path()),
+                            IssueLoc.atElem(ctx.node()),
                             message));
         }
 
@@ -144,7 +144,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node(), ctx.path()),
+                            IssueLoc.atElem(ctx.node()),
                             message));
         }
     }
@@ -167,7 +167,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                         new Issue(
                                 IssueType.TAG_WRONG_CHILD,
                                 IssueSev.ERROR,
-                                new IssueLoc(ctx.children().get(i), ctx.path()),
+                                IssueLoc.atElem(ctx.children().get(i)),
                                 message,
                                 fix));
 
@@ -194,7 +194,7 @@ public class SchemaValidationVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_PATTERN,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node(), ctx.path()),
+                            IssueLoc.atElem(ctx.node()),
                             message));
         }
     }

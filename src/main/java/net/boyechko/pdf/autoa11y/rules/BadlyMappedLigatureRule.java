@@ -23,7 +23,6 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.RemapLigatures;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
@@ -78,9 +77,7 @@ public class BadlyMappedLigatureRule implements Rule {
                     new Issue(
                             IssueType.LIGATURE_MAPPING_BROKEN,
                             IssueSev.WARNING,
-                            new IssueLoc(
-                                    firstPage > 0 ? firstPage : null,
-                                    "font " + Format.obj(fontObjNum)),
+                            IssueLoc.atObjNum(fontObjNum, firstPage > 0 ? firstPage : null),
                             message,
                             new RemapLigatures(fontObjNum, fontName, replacements));
             issues.add(issue);

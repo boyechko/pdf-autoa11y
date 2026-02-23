@@ -201,7 +201,7 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        new IssueLoc(ctx.node(), ctx.path()),
+                        IssueLoc.atElem(ctx.node()),
                         subRun.elements.size()
                                 + " consecutive P elements appear to be a list (indented "
                                 + String.format("%.0f", indent)

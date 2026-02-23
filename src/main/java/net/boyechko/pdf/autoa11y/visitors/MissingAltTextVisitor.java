@@ -79,7 +79,7 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.WARNING,
-                        new IssueLoc(ctx.node()),
+                        IssueLoc.atElem(ctx.node()),
                         "Figure without alt text");
         issues.add(issue);
         return true;

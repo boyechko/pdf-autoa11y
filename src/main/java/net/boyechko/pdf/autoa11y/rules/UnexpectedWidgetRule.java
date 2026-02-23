@@ -22,7 +22,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.RemoveWidgetAnnotation;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
@@ -67,12 +66,15 @@ public class UnexpectedWidgetRule implements Rule {
                             annotDict.getIndirectReference() != null
                                     ? annotDict.getIndirectReference().getObjNumber()
                                     : -1;
-                    String path = objNum >= 0 ? Format.obj(objNum) : null;
+                    IssueLoc loc =
+                            objNum >= 0
+                                    ? IssueLoc.atObjNum(objNum, pageNum)
+                                    : IssueLoc.atPageNum(pageNum);
                     Issue issue =
                             new Issue(
                                     IssueType.UNEXPECTED_WIDGET,
                                     IssueSev.ERROR,
-                                    new IssueLoc(pageNum, path),
+                                    loc,
                                     "Unexpected Widget annotation",
                                     fix);
                     issues.add(issue);

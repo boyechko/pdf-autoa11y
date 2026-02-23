@@ -124,7 +124,7 @@ public class FormattedListenerTest {
     }
 
     private Issue issue(IssueType type, IssueSev severity, Integer page, String message) {
-        return new Issue(type, severity, new IssueLoc(page, null), message);
+        return new Issue(type, severity, IssueLoc.atPageNum(page), message);
     }
 
     private String normalize(ByteArrayOutputStream buffer) {
