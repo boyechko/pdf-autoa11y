@@ -93,7 +93,7 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            new IssueLoc(ctx.node()),
+                            IssueLoc.atElem(ctx.node()),
                             message,
                             fix);
             issues.add(issue);

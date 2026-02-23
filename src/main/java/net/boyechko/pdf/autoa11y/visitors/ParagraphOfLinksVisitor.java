@@ -61,7 +61,7 @@ public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.PARAGRAPH_OF_LINKS,
                             IssueSev.ERROR,
-                            new IssueLoc(ctx.node()),
+                            IssueLoc.atElem(ctx.node()),
                             "Paragraph contains only links",
                             fix);
             issues.add(newIssue);

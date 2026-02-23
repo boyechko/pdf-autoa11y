@@ -67,7 +67,7 @@ public class FigureWithTextVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.FIGURE_WITH_TEXT,
                             IssueSev.WARNING,
-                            new IssueLoc(ctx.node()),
+                            IssueLoc.atElem(ctx.node()),
                             "Figure contains text: \"" + truncated + "\"",
                             fix);
             issues.add(issue);

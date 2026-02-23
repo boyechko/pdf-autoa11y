@@ -107,7 +107,7 @@ public class EmptyLinkTagVisitor implements StructureTreeVisitor {
                     new Issue(
                             IssueType.EMPTY_LINK_TAG,
                             IssueSev.WARNING,
-                            new IssueLoc(pageNum, "Page " + pageNum),
+                            IssueLoc.atPageNum(pageNum),
                             "Link element (after/inside "
                                     + prev.getRole().getValue()
                                     + ") is missing link description",
