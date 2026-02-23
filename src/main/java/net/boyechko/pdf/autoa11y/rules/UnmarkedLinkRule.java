@@ -83,7 +83,7 @@ public class UnmarkedLinkRule implements Rule {
 
     /** Builds a description for a link annotation. */
     public static String buildDescription(int objNumber, String uri) {
-        StringBuilder sb = new StringBuilder("Link annotation ").append(Format.obj(objNumber));
+        StringBuilder sb = new StringBuilder("Link annotation ").append(Format.objNum(objNumber));
 
         if (uri != null) {
             String displayUri = uri.length() > 30 ? uri.substring(0, 29) + "…" : uri;

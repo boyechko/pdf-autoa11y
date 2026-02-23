@@ -85,7 +85,7 @@ public class NormalizePageParts implements IssueFix {
                 partsCreated++;
                 logger.debug(
                         "Created Part element obj. #{} for page {}",
-                        StructureTree.objNumber(partElem),
+                        StructureTree.objNum(partElem),
                         pageNum);
             }
             pageParts.put(pageNum, partElem);
@@ -118,7 +118,7 @@ public class NormalizePageParts implements IssueFix {
                     logger.debug(
                             "Moved {} (obj. #{}) into Part for page {}",
                             elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                            StructureTree.objNumber(elem),
+                            StructureTree.objNum(elem),
                             pageNum);
                 }
             } else {

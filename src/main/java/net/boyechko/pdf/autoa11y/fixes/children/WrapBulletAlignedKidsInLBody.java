@@ -130,7 +130,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         logger.debug(
                 "Wrapped {} raw kids in LBody>P under obj. #{} (bulletY={})",
                 kidIndices.size(),
-                StructureTree.objNumber(parent),
+                StructureTree.objNum(parent),
                 String.format("%.1f", bulletY));
     }
 

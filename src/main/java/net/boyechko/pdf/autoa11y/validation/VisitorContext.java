@@ -101,7 +101,7 @@ public record VisitorContext(
             return doc().getPageNumber(pg);
         }
 
-        int objNum = StructureTree.objNumber(node);
+        int objNum = StructureTree.objNum(node);
         if (objNum >= 0) {
             return docCtx.getPageNumber(objNum);
         }
@@ -110,7 +110,7 @@ public record VisitorContext(
     }
 
     public int getObjNum() {
-        return StructureTree.objNumber(node);
+        return StructureTree.objNum(node);
     }
 
     public boolean hasRole(String roleName) {

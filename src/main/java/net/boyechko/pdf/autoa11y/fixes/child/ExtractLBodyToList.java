@@ -107,8 +107,8 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
 
         logger.debug(
                 "Extracted LBody from obj. #{} into L obj. #{} at position {}",
-                StructureTree.objNumber(parent),
-                StructureTree.objNumber(listElem),
+                StructureTree.objNum(parent),
+                StructureTree.objNum(listElem),
                 insertPos);
     }
 

@@ -54,7 +54,7 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
     public void apply(DocumentContext ctx) throws Exception {
         logger.debug(
                 "Applying WrapPairsOfLblLBodyInLI to L obj. #"
-                        + StructureTree.objNumber(parent)
+                        + StructureTree.objNum(parent)
                         + " with "
                         + kids.size()
                         + " kids");

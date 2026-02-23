@@ -82,8 +82,8 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        int objNum = StructureTree.objNumber(parent);
-        return "Listified P element with links to L element " + Format.obj(objNum);
+        int objNum = StructureTree.objNum(parent);
+        return "Listified P element with links to L element " + Format.objNum(objNum);
     }
 
     @Override
