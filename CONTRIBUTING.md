@@ -14,7 +14,7 @@ This project is organized around a small processing pipeline that:
 Most code lives under `src/main/java/net/boyechko/pdf/autoa11y/`:
 
 - `ui/`: CLI/GUI entry points and reporting (e.g. `PdfAutoA11yCLI`,
-  `PdfAutoA11yGUI`, `ProcessingReporter`)
+  `PdfAutoA11yGUI`, `FormattedListener`, `LoggingListener`)
 - `core/`: orchestration (e.g. `ProcessingService`, `ProcessingDefaults`)
 - `document/`: PDF IO and context helpers (e.g. `PdfCustodian`,
   `DocumentContext`)
