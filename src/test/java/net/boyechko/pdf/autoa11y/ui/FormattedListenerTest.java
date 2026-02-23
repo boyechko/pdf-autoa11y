@@ -28,13 +28,13 @@ import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class ProcessingReporterTest {
+public class FormattedListenerTest {
     @Test
     @Tag("visual")
     void rendersVisualTranscriptWithoutRunningRemediation() {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        ProcessingReporter reporter =
-                new ProcessingReporter(new PrintStream(buffer), VerbosityLevel.NORMAL);
+        FormattedListener reporter =
+                new FormattedListener(new PrintStream(buffer), VerbosityLevel.NORMAL);
 
         replayProcessingTranscript(reporter);
         reporter.onSuccess("Output saved to output/five_acro_autoa11y_pass1.pdf");
@@ -46,7 +46,7 @@ public class ProcessingReporterTest {
         System.out.println("--- End Preview ---");
     }
 
-    private void replayProcessingTranscript(ProcessingReporter reporter) {
+    private void replayProcessingTranscript(FormattedListener reporter) {
         IssueList summaryIssues = new IssueList();
 
         reporter.onPhaseStart("Document rules");

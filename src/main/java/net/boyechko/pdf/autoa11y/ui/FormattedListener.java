@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
 import org.slf4j.LoggerFactory;
 
-public class ProcessingReporter implements ProcessingListener {
+public class FormattedListener implements ProcessingListener {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
 
@@ -53,7 +53,7 @@ public class ProcessingReporter implements ProcessingListener {
     private boolean subsectionOpen = false;
     private final ListAppender<ILoggingEvent> logBuffer;
 
-    public ProcessingReporter(PrintStream output, VerbosityLevel verbosity) {
+    public FormattedListener(PrintStream output, VerbosityLevel verbosity) {
         this.output = output;
         this.verbosity = verbosity;
         Logger appLogger = (Logger) LoggerFactory.getLogger("net.boyechko.pdf.autoa11y");

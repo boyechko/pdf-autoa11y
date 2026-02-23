@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
-import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
+import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 
 public class PdfAutoA11yGUI extends JFrame {
     private JLabel dropLabel;
@@ -228,8 +228,7 @@ public class PdfAutoA11yGUI extends JFrame {
         outputArea.setText("Processing " + selectedFile.getName() + "...\n");
 
         PrintStream textAreaStream = createTextAreaPrintStream();
-        ProcessingReporter reporter =
-                new ProcessingReporter(textAreaStream, VerbosityLevel.VERBOSE);
+        FormattedListener reporter = new FormattedListener(textAreaStream, VerbosityLevel.VERBOSE);
 
         SwingWorker<ProcessingResult, String> worker =
                 new SwingWorker<ProcessingResult, String>() {
