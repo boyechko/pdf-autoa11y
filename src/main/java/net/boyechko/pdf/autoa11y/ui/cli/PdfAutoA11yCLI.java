@@ -94,10 +94,6 @@ public class PdfAutoA11yCLI {
             }
             CLIConfig config = parseArguments(args);
             configureLogging(config.verbosity());
-            logger().info(
-                            "Starting processing of {} with verbosity level {}",
-                            config.inputPath(),
-                            config.verbosity());
             processFile(config);
         } catch (CLIException e) {
             System.err.println("Error: " + e.getMessage());
@@ -131,10 +127,8 @@ public class PdfAutoA11yCLI {
                             .build();
 
             if (config.analyzeOnly()) {
-                logger().info("Analyzing document");
                 service.analyze();
             } else {
-                logger().info("Remediating document");
                 ProcessingResult result = service.remediate();
                 saveRemediationResult(result, config, listener);
             }
@@ -162,10 +156,6 @@ public class PdfAutoA11yCLI {
             Files.createDirectories(outputParent);
         }
 
-        logger().info(
-                        "Copying temporary output file {} to {}",
-                        result.tempOutputFile(),
-                        config.outputPath());
         Files.copy(
                 result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
 
