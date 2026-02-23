@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.RemoveWidgetAnnotation;
 import net.boyechko.pdf.autoa11y.issues.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
@@ -60,20 +61,18 @@ public class UnexpectedWidgetRule implements Rule {
 
             for (PdfAnnotation annot : page.getAnnotations()) {
                 PdfDictionary annotDict = annot.getPdfObject();
-                if (isPushbuttonWidget(annotDict)) {
+                if (isPushbuttonWidget(annotDict, pageNum)) {
+                    IssueFix fix = new RemoveWidgetAnnotation(annotDict, pageNum);
                     int objNum =
                             annotDict.getIndirectReference() != null
                                     ? annotDict.getIndirectReference().getObjNumber()
-                                    : 0;
-                    logger.debug(
-                            "Unexpected Widget annotation found: obj. #{}, p. {}", objNum, pageNum);
-
-                    IssueFix fix = new RemoveWidgetAnnotation(annotDict, pageNum);
+                                    : -1;
+                    String path = objNum >= 0 ? Format.obj(objNum) : null;
                     Issue issue =
                             new Issue(
                                     IssueType.UNEXPECTED_WIDGET,
                                     IssueSeverity.ERROR,
-                                    new IssueLocation(pageNum, "Page " + pageNum),
+                                    new IssueLocation(pageNum, path),
                                     "Unexpected Widget annotation",
                                     fix);
                     issues.add(issue);
@@ -84,7 +83,7 @@ public class UnexpectedWidgetRule implements Rule {
         return issues;
     }
 
-    private boolean isPushbuttonWidget(PdfDictionary annotDict) {
+    private boolean isPushbuttonWidget(PdfDictionary annotDict, int pageNum) {
         PdfName subtype = annotDict.getAsName(PdfName.Subtype);
         if (!PdfName.Widget.equals(subtype)) {
             return false;
@@ -98,14 +97,6 @@ public class UnexpectedWidgetRule implements Rule {
         }
 
         int ff = getInheritedInt(annotDict, PdfName.Ff);
-        logger.debug(
-                "Widget obj. #{}: FT={}, Ff={}, pushbutton={}",
-                annotDict.getIndirectReference() != null
-                        ? annotDict.getIndirectReference().getObjNumber()
-                        : "?",
-                fieldType,
-                ff,
-                (ff & PUSHBUTTON_FLAG) != 0);
         return (ff & PUSHBUTTON_FLAG) != 0;
     }
 
