@@ -64,7 +64,7 @@ public class PdfUaConformanceRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Remove false PDF/UA conformance claim from XMP metadata";
+                        return "Removed unlikely PDF/UA conformance claim from XMP metadata";
                     }
 
                     @Override

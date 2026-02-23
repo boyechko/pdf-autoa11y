@@ -70,7 +70,7 @@ public class UnmarkedLinkRule implements Rule {
                             new Issue(
                                     IssueType.UNMARKED_LINK,
                                     IssueSeverity.ERROR,
-                                    new IssueLocation(pageNum, "Page " + pageNum),
+                                    new IssueLocation(pageNum, Format.obj(objNumber)),
                                     "Untagged " + description,
                                     fix);
                     issues.add(issue);
