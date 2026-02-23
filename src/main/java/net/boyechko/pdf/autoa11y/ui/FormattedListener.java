@@ -98,7 +98,7 @@ public class FormattedListener implements ProcessingListener {
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
                 printLine(
-                        issue.message() + Format.location(issue.where()),
+                        issue.message() + Format.loc(issue.where()),
                         WARNING,
                         VerbosityLevel.VERBOSE);
             }
@@ -155,7 +155,7 @@ public class FormattedListener implements ProcessingListener {
                     printEmptyLine();
                     onSubsection("Manual review needed");
                     for (Issue issue : allIssues.getRemainingIssues()) {
-                        printLine(issue.message() + Format.location(issue.where()), WARNING);
+                        printLine(issue.message() + Format.loc(issue.where()), WARNING);
                     }
                 }
             }
@@ -180,7 +180,7 @@ public class FormattedListener implements ProcessingListener {
 
     @Override
     public void onWarning(Issue issue) {
-        printLine(issue.message() + Format.location(issue.where()), WARNING);
+        printLine(issue.message() + Format.loc(issue.where()), WARNING);
     }
 
     @Override

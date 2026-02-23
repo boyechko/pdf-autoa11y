@@ -150,7 +150,7 @@ public final class AccessibilityReport {
             }
         } else {
             for (Issue issue : issues) {
-                out.println("  - " + issue.message() + Format.location(issue.where()));
+                out.println("  - " + issue.message() + Format.loc(issue.where()));
             }
         }
     }
