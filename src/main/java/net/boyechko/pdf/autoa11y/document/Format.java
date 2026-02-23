@@ -33,7 +33,7 @@ public final class Format {
     /** Returns a short label for a structure element: role and object number. */
     public static String elem(PdfStructElem elem) {
         String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructureTree.objNumber(elem);
+        int objNum = StructureTree.objNum(elem);
         return objNum >= 0 ? role + " (obj. #" + objNum + ")" : role;
     }
 
@@ -44,7 +44,7 @@ public final class Format {
      */
     public static String elem(PdfStructElem elem, int pageNum) {
         String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructureTree.objNumber(elem);
+        int objNum = StructureTree.objNum(elem);
         if (objNum < 0) return role;
         if (pageNum > 0) return role + " (obj. #" + objNum + ", p. " + pageNum + ")";
         return role + " (obj. #" + objNum + ")";
@@ -52,19 +52,19 @@ public final class Format {
 
     /** Returns a short label for a structure element, resolving the page via {@code ctx}. */
     public static String elem(PdfStructElem elem, DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(elem);
+        int objNum = StructureTree.objNum(elem);
         int pageNum = ctx.getPageNumber(objNum);
         return elem(elem, pageNum);
     }
 
     /** Returns a short label for a PDF object number. */
-    public static String obj(int objNum) {
+    public static String objNum(int objNum) {
         return "obj. #" + objNum;
     }
 
     /** Returns a short label for a PDF object number and page number. */
-    public static String obj(int objNum, int pageNum) {
-        return obj(objNum) + " (" + page(pageNum) + ")";
+    public static String objNum(int objNum, int pageNum) {
+        return objNum(objNum) + " (" + page(pageNum) + ")";
     }
 
     /** Returns a short label for a page number. */
@@ -91,12 +91,12 @@ public final class Format {
             case null -> "";
             case IssueLoc.None n -> "";
             case IssueLoc.AtElem(var e) -> {
-                int n = StructureTree.objNumber(e);
-                yield n >= 0 ? " (" + obj(n) + ")" : "";
+                int n = StructureTree.objNum(e);
+                yield n >= 0 ? " (" + objNum(n) + ")" : "";
             }
             case IssueLoc.AtPageNum(var pn) -> " (" + page(pn) + ")";
             case IssueLoc.AtObjNum(var o, var p) -> {
-                String s = " (" + obj(o);
+                String s = " (" + objNum(o);
                 if (p != null) s += ", " + page(p);
                 yield s + ")";
             }
@@ -108,6 +108,6 @@ public final class Format {
      * (obj. #42, p. 3)"}.
      */
     public static String loc(int objNum, int pageNum) {
-        return " (" + obj(objNum) + ", " + page(pageNum) + ")";
+        return " (" + objNum(objNum) + ", " + page(pageNum) + ")";
     }
 }
