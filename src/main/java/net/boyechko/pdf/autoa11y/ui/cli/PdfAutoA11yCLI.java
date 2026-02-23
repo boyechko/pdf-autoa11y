@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
@@ -38,7 +39,7 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
-import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
+import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,13 +108,13 @@ public class PdfAutoA11yCLI {
         }
 
         try {
-            ProcessingReporter reporter = new ProcessingReporter(System.out, config.verbosity());
+            FormattedListener listener = new FormattedListener(System.out, config.verbosity());
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
             ProcessingService service =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
-                            .withListener(reporter)
+                            .withListener(listener)
                             .withPrintStructureTree(config.printStructureTree())
                             .skipVisitors(config.skipVisitors())
                             .includeOnlyVisitors(config.includeOnlyVisitors())
@@ -125,7 +126,7 @@ public class PdfAutoA11yCLI {
             } else {
                 logger().info("Remediating document");
                 ProcessingResult result = service.remediate();
-                saveRemediationResult(result, config, reporter);
+                saveRemediationResult(result, config, listener);
             }
         } catch (Exception e) {
             System.err.println("✗ Processing failed due to an exception:");
@@ -135,14 +136,14 @@ public class PdfAutoA11yCLI {
     }
 
     private static void saveRemediationResult(
-            ProcessingResult result, CLIConfig config, ProcessingReporter reporter)
+            ProcessingResult result, CLIConfig config, ProcessingListener listener)
             throws IOException {
         if (result.tempOutputFile() == null) {
             return;
         }
 
         if (result.totalIssuesResolved() == 0 && !config.force_save()) {
-            reporter.onInfo("No changes made; output file not created");
+            listener.onInfo("No changes made; output file not created");
             return;
         }
 
@@ -158,21 +159,21 @@ public class PdfAutoA11yCLI {
         Files.copy(
                 result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        reporter.onSuccess("Output saved to " + config.outputPath().toString());
+        listener.onSuccess("Output saved to " + config.outputPath().toString());
 
         if (config.reportPath() != null) {
-            writeAccessibilityReport(result, config, reporter);
+            writeAccessibilityReport(result, config, listener);
         }
     }
 
     private static void writeAccessibilityReport(
-            ProcessingResult result, CLIConfig config, ProcessingReporter reporter) {
+            ProcessingResult result, CLIConfig config, ProcessingListener listener) {
         try {
             AccessibilityReport.write(
                     result, config.inputPath(), config.outputPath(), config.reportPath());
-            reporter.onSuccess("Report saved to " + config.reportPath());
+            listener.onSuccess("Report saved to " + config.reportPath());
         } catch (IOException e) {
-            reporter.onError("Failed to write report: " + e.getMessage());
+            listener.onError("Failed to write report: " + e.getMessage());
         }
     }
 
