@@ -51,16 +51,20 @@ public class ChangeFigureRole implements IssueFix {
 
     @Override
     public String describe() {
-        int objNum = StructureTree.objNumber(figure);
-        return "Changed Figure to " + newRole.getValue() + " for " + Format.obj(objNum);
+        int objNum = StructureTree.objNum(figure);
+        return "Changed Figure to " + newRole.getValue() + " for " + Format.objNum(objNum);
     }
 
     @Override
     public String describe(DocumentContext ctx) {
-        int objNum = StructureTree.objNumber(figure);
+        int objNum = StructureTree.objNum(figure);
         int pageNum = ctx.getPageNumber(objNum);
         String pageInfo = (pageNum > 0) ? " (" + Format.page(pageNum) + ")" : "";
-        return "Changed Figure to " + newRole.getValue() + " for " + Format.obj(objNum) + pageInfo;
+        return "Changed Figure to "
+                + newRole.getValue()
+                + " for "
+                + Format.objNum(objNum)
+                + pageInfo;
     }
 
     @Override

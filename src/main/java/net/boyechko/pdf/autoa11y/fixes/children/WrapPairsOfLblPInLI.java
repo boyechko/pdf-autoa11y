@@ -54,7 +54,7 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
     public void apply(DocumentContext ctx) throws Exception {
         logger.debug(
                 "Applying WrapPairsOfLblPInLI to L obj. #{} (p. {}) with {} kids",
-                StructureTree.objNumber(parent),
+                StructureTree.objNum(parent),
                 kids.size());
         for (int i = 0; i < kids.size(); i += 2) {
             PdfStructElem lbl = kids.get(i);

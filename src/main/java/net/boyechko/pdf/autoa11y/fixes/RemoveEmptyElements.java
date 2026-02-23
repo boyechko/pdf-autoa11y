@@ -70,7 +70,7 @@ public class RemoveEmptyElements implements IssueFix {
         }
 
         String role = elem.getRole() != null ? elem.getRole().getValue() : "unknown";
-        logger.debug("Removing empty {} (obj. #{})", role, StructureTree.objNumber(elem));
+        logger.debug("Removing empty {} (obj. #{})", role, StructureTree.objNum(elem));
         StructureTree.removeFromParent(elem, parent);
         removedCount++;
 

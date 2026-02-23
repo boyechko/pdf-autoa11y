@@ -187,7 +187,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
                             "Removed OBJR for Widget obj. #{} from {} (obj. #{})",
                             objNumber(),
                             elem.getRole().getValue(),
-                            StructureTree.objNumber(elem));
+                            StructureTree.objNum(elem));
                     return true;
                 }
             } else if (kid instanceof PdfStructElem childElem) {
@@ -243,7 +243,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
     @Override
     public String describe() {
         return "Removed Widget annotation "
-                + Format.obj(objNumber())
+                + Format.objNum(objNumber())
                 + " ("
                 + Format.page(pageNum)
                 + ")";

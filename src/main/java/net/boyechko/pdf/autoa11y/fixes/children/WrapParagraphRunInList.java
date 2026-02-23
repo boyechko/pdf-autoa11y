@@ -44,8 +44,8 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             logger.debug(
                     "Skipping fix: P element obj. #{} not found in any ancestor's K array "
                             + "(stored parent was obj. #{})",
-                    StructureTree.objNumber(firstP),
-                    StructureTree.objNumber(parent));
+                    StructureTree.objNum(firstP),
+                    StructureTree.objNum(parent));
             return;
         }
 
@@ -85,7 +85,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         logger.debug(
                 "Wrapped {} P elements in L > LI > LBody under obj. #{}",
                 kids.size(),
-                StructureTree.objNumber(actualParent));
+                StructureTree.objNum(actualParent));
     }
 
     /**

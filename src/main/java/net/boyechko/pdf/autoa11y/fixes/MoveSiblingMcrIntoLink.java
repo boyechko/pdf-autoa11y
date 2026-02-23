@@ -45,7 +45,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     private final int pageNum;
 
     public MoveSiblingMcrIntoLink(PdfStructElem linkElem, int mcid, int pageNum) {
-        this.linkObjNum = StructureTree.objNumber(linkElem);
+        this.linkObjNum = StructureTree.objNum(linkElem);
         this.mcid = mcid;
         this.pageNum = pageNum;
     }
@@ -137,7 +137,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public String describe() {
-        return "Moved sibling MCR into Link for annotation " + Format.obj(linkObjNum);
+        return "Moved sibling MCR into Link for annotation " + Format.objNum(linkObjNum);
     }
 
     @Override

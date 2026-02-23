@@ -302,7 +302,7 @@ public class RemapLigatures implements IssueFix {
 
     @Override
     public String describe() {
-        return "Remapped ligatures in font " + Format.obj(fontObjNum);
+        return "Remapped ligatures in font " + Format.objNum(fontObjNum);
     }
 
     @Override
@@ -312,7 +312,7 @@ public class RemapLigatures implements IssueFix {
                 + " ligature mapping(s) in font "
                 + fontName
                 + " ("
-                + Format.obj(fontObjNum)
+                + Format.objNum(fontObjNum)
                 + ")";
     }
 
