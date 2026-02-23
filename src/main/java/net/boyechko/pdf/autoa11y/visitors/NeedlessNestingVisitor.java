@@ -26,7 +26,7 @@ import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -64,7 +64,7 @@ public class NeedlessNestingVisitor implements StructureTreeVisitor {
             Issue issue =
                     new Issue(
                             IssueType.NEEDLESS_NESTING,
-                            IssueSeverity.WARNING,
+                            IssueSev.WARNING,
                             "Found " + groupingElementsToFlatten.size() + " grouping elements",
                             fix);
             issues.add(issue);

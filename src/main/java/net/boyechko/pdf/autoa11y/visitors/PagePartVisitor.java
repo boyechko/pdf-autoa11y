@@ -32,7 +32,7 @@ import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -76,7 +76,7 @@ public class PagePartVisitor implements StructureTreeVisitor {
         Issue issue =
                 new Issue(
                         IssueType.PAGE_PARTS_NOT_NORMALIZED,
-                        IssueSeverity.WARNING,
+                        IssueSev.WARNING,
                         "Direct Document children should be grouped into page-level Part elements",
                         fix);
         issues.add(issue);

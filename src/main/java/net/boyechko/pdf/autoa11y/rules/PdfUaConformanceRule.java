@@ -74,11 +74,7 @@ public class PdfUaConformanceRule implements Rule {
                 };
 
         Issue issue =
-                new Issue(
-                        IssueType.FALSE_PDFUA_CONFORMANCE,
-                        IssueSeverity.ERROR,
-                        failedMessage(),
-                        fix);
+                new Issue(IssueType.FALSE_PDFUA_CONFORMANCE, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 

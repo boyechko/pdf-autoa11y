@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,10 +52,7 @@ class AccessibilityReportTest {
     void resolvedIssuesShowResolutionNotes() throws IOException {
         IssueList docIssues = new IssueList();
         Issue langIssue =
-                new Issue(
-                        IssueType.LANGUAGE_NOT_SET,
-                        IssueSeverity.ERROR,
-                        "Document language not set");
+                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
         langIssue.markResolved("Set document language to \"en\"");
         docIssues.add(langIssue);
 
@@ -75,14 +72,14 @@ class AccessibilityReportTest {
         tagIssues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
-                        IssueSeverity.ERROR,
-                        new IssueLocation(3, "Figure"),
+                        IssueSev.ERROR,
+                        new IssueLoc(3, "Figure"),
                         "Figure missing alt text"));
         tagIssues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
-                        IssueSeverity.ERROR,
-                        new IssueLocation(7, "Figure"),
+                        IssueSev.ERROR,
+                        new IssueLoc(7, "Figure"),
                         "Figure missing alt text"));
 
         ProcessingResult result = resultWith(new IssueList(), tagIssues);
@@ -99,15 +96,12 @@ class AccessibilityReportTest {
         IssueList tagIssues = new IssueList();
 
         Issue resolved =
-                new Issue(
-                        IssueType.TAG_WRONG_CHILD,
-                        IssueSeverity.WARNING,
-                        "Wrong child in Document");
+                new Issue(IssueType.TAG_WRONG_CHILD, IssueSev.WARNING, "Wrong child in Document");
         resolved.markResolved("Wrapped in Sect");
         tagIssues.add(resolved);
 
         Issue remaining =
-                new Issue(IssueType.TAG_WRONG_CHILD, IssueSeverity.WARNING, "Wrong child in Table");
+                new Issue(IssueType.TAG_WRONG_CHILD, IssueSev.WARNING, "Wrong child in Table");
         tagIssues.add(remaining);
 
         ProcessingResult result = resultWith(new IssueList(), tagIssues);
@@ -133,12 +127,10 @@ class AccessibilityReportTest {
     @Test
     void documentAndTagSectionsAppearSeparately() throws IOException {
         IssueList docIssues = new IssueList();
-        docIssues.add(
-                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSeverity.ERROR, "Language not set"));
+        docIssues.add(new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Language not set"));
 
         IssueList tagIssues = new IssueList();
-        tagIssues.add(
-                new Issue(IssueType.EMPTY_ELEMENT, IssueSeverity.WARNING, "Empty element found"));
+        tagIssues.add(new Issue(IssueType.EMPTY_ELEMENT, IssueSev.WARNING, "Empty element found"));
 
         ProcessingResult result = resultWith(docIssues, tagIssues);
         String report = generateReport(result);

@@ -28,8 +28,8 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -78,8 +78,8 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
         Issue issue =
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
-                        IssueSeverity.WARNING,
-                        new IssueLocation(ctx.node()),
+                        IssueSev.WARNING,
+                        new IssueLoc(ctx.node()),
                         "Figure without alt text");
         issues.add(issue);
         return true;

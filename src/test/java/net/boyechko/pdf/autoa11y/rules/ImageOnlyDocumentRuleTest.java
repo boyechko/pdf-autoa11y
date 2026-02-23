@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ class ImageOnlyDocumentRuleTest extends PdfTestBase {
 
             assertEquals(1, issues.size(), "Should detect image-only document");
             assertEquals(IssueType.IMAGE_ONLY_DOCUMENT, issues.get(0).type());
-            assertEquals(IssueSeverity.FATAL, issues.get(0).severity());
+            assertEquals(IssueSev.FATAL, issues.get(0).severity());
             assertNull(issues.get(0).fix(), "No automatic fix for image-only documents");
         }
     }

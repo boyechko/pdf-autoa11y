@@ -28,8 +28,8 @@ import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -200,8 +200,8 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
         Issue issue =
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
-                        IssueSeverity.WARNING,
-                        new IssueLocation(ctx.node(), ctx.path()),
+                        IssueSev.WARNING,
+                        new IssueLoc(ctx.node(), ctx.path()),
                         subRun.elements.size()
                                 + " consecutive P elements appear to be a list (indented "
                                 + String.format("%.0f", indent)

@@ -25,7 +25,7 @@ import net.boyechko.pdf.autoa11y.fixes.RemoveEmptyElements;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -65,7 +65,7 @@ public class EmptyElementVisitor implements StructureTreeVisitor {
             Issue issue =
                     new Issue(
                             IssueType.EMPTY_ELEMENT,
-                            IssueSeverity.WARNING,
+                            IssueSev.WARNING,
                             "Found " + emptyElements.size() + " empty structure element(s)",
                             fix);
             issues.add(issue);

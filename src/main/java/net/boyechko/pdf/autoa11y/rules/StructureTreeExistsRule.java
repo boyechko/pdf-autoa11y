@@ -47,7 +47,7 @@ public class StructureTreeExistsRule implements Rule {
             Issue issue =
                     new Issue(
                             IssueType.NO_STRUCT_TREE,
-                            IssueSeverity.FATAL,
+                            IssueSev.FATAL,
                             "This PDF has no structure tree. It must be tagged before"
                                     + " accessibility remediation can proceed.",
                             null);
