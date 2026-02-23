@@ -30,6 +30,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 
 public class PdfAutoA11yGUI extends JFrame {
@@ -41,6 +42,7 @@ public class PdfAutoA11yGUI extends JFrame {
     private JTextField passwordField;
     private File selectedFile;
     private File tempResultFile;
+    private ProcessingResult lastResult;
 
     public PdfAutoA11yGUI() {
         initializeGUI();
@@ -258,6 +260,7 @@ public class PdfAutoA11yGUI extends JFrame {
                     protected void done() {
                         try {
                             ProcessingResult result = get();
+                            lastResult = result;
 
                             if (result.totalIssuesResolved() == 0) {
                                 reporter.onInfo("No changes made; output file not created");
@@ -337,9 +340,22 @@ public class PdfAutoA11yGUI extends JFrame {
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 JOptionPane.showMessageDialog(
                         this, "File saved to: " + targetFile.getAbsolutePath());
+                writeAccessibilityReport(targetFile.toPath());
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
             }
+        }
+    }
+
+    private void writeAccessibilityReport(java.nio.file.Path outputPath) {
+        if (lastResult == null || selectedFile == null) return;
+        String outputName = outputPath.getFileName().toString();
+        String reportName = outputName.replaceFirst("\\.pdf$", ".report.txt");
+        java.nio.file.Path reportPath = outputPath.resolveSibling(reportName);
+        try {
+            AccessibilityReport.write(lastResult, selectedFile.toPath(), outputPath, reportPath);
+        } catch (IOException e) {
+            // Non-critical — don't block the save dialog
         }
     }
 
