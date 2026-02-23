@@ -313,7 +313,7 @@ public class PdfAutoA11yCLI {
     private static void addConsoleAppender(LoggerContext ctx) {
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(ctx);
-        encoder.setPattern("%-5level %-40logger{36} - %msg%n");
+        encoder.setPattern("%-25logger{0} [%-5level] %msg%n");
         encoder.start();
 
         ConsoleAppender<ILoggingEvent> console = new ConsoleAppender<>();
