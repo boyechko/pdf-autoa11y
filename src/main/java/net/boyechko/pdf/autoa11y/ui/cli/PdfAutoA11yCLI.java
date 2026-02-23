@@ -39,6 +39,7 @@ import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.ProcessingReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,6 +191,21 @@ public class PdfAutoA11yCLI {
                 result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
 
         reporter.onSuccess("Output saved to " + config.outputPath().toString());
+
+        writeAccessibilityReport(result, config, reporter);
+    }
+
+    private static void writeAccessibilityReport(
+            ProcessingResult result, CLIConfig config, ProcessingReporter reporter) {
+        String outputName = config.outputPath().getFileName().toString();
+        String reportName = outputName.replaceFirst("\\.pdf$", ".report.txt");
+        Path reportPath = config.outputPath().resolveSibling(reportName);
+        try {
+            AccessibilityReport.write(result, config.inputPath(), config.outputPath(), reportPath);
+            reporter.onSuccess("Report saved to " + reportPath);
+        } catch (IOException e) {
+            reporter.onError("Failed to write report: " + e.getMessage());
+        }
     }
 
     /** Prints the structure tree to the console based on the CLI config. */
