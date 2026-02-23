@@ -18,74 +18,39 @@
 package net.boyechko.pdf.autoa11y.issues;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
-public final class IssueLoc {
-    private final Integer page; // null if document-level
-    private final PdfStructElem element; // may be null if not applicable
-    private final String path; // optional: struct tree path, object id, etc.
+public sealed interface IssueLoc {
+    record None() implements IssueLoc {}
 
-    public IssueLoc() {
-        this(null, null, null);
+    record AtElem(PdfStructElem element) implements IssueLoc {}
+
+    record AtPageNum(int pageNum) implements IssueLoc {}
+
+    record AtObjNum(int objNum, Integer page) implements IssueLoc {}
+
+    static IssueLoc none() {
+        return new None();
     }
 
-    public IssueLoc(String path) {
-        this(null, path, null);
+    static IssueLoc atElem(PdfStructElem e) {
+        return new AtElem(e);
     }
 
-    public IssueLoc(Integer page, String path) {
-        this(page, path, null);
+    static IssueLoc atPageNum(int page) {
+        return new AtPageNum(page);
     }
 
-    public IssueLoc(PdfStructElem element) {
-        this(null, null, element);
+    static IssueLoc atObjNum(int objNum, Integer page) {
+        return new AtObjNum(objNum, page);
     }
 
-    public IssueLoc(PdfStructElem element, String path) {
-        this(null, path, element);
-    }
-
-    public IssueLoc(Integer page, String path, PdfStructElem element) {
-        this.page = page;
-        this.path = path;
-        this.element = element;
-    }
-
-    public Integer page() {
-        return page;
-    }
-
-    public String path() {
-        return path;
-    }
-
-    public PdfStructElem element() {
-        return element;
-    }
-
-    public Integer objectId() {
-        if (element == null || element.getPdfObject() == null) {
-            return null;
-        }
-        int objNum = StructureTree.objNumber(element);
-        return objNum >= 0 ? objNum : null;
-    }
-
-    public String toString() {
-        Integer objId = objectId();
-        String output = "";
-
-        if (objId != null) {
-            output += Format.obj(objId);
-        }
-        if (page != null) {
-            output += " (" + Format.page(page) + ")";
-        }
-        if (path != null) {
-            output += " (" + path + ")";
-        }
-        return output.trim();
+    /** Returns page number if available, null otherwise. */
+    default Integer page() {
+        return switch (this) {
+            case AtPageNum(var pn) -> pn;
+            case AtObjNum(var o, var p) -> p;
+            default -> null;
+        };
     }
 }

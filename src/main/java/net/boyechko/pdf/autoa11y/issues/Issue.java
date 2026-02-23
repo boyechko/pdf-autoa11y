@@ -30,11 +30,11 @@ public final class Issue {
     private String resolutionNote;
 
     public Issue(IssueType type, IssueSev sev, String message) {
-        this(type, sev, new IssueLoc(), message, null);
+        this(type, sev, IssueLoc.none(), message, null);
     }
 
     public Issue(IssueType type, IssueSev sev, String message, IssueFix fix) {
-        this(type, sev, new IssueLoc(), message, fix);
+        this(type, sev, IssueLoc.none(), message, fix);
     }
 
     public Issue(IssueType type, IssueSev sev, IssueLoc where, String message) {
