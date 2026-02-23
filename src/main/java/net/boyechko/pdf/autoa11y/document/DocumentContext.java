@@ -112,7 +112,7 @@ public class DocumentContext {
             }
 
             // Get page number for this element (may inherit from children)
-            int objNum = StructureTree.objNumber(structElem);
+            int objNum = StructureTree.objNum(structElem);
             int pageNum = getPageNumber(structElem, document);
             if (pageNum > 0) {
                 mapping.put(objNum, pageNum);

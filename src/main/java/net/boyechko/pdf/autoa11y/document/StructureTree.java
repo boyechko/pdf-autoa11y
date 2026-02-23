@@ -58,7 +58,7 @@ public final class StructureTree {
     }
 
     /** Returns the PDF object number for a structure element, or -1 if unavailable. */
-    public static int objNumber(PdfStructElem elem) {
+    public static int objNum(PdfStructElem elem) {
         var ref = elem.getPdfObject().getIndirectReference();
         return ref != null ? ref.getObjNumber() : -1;
     }
@@ -104,7 +104,7 @@ public final class StructureTree {
         }
 
         // Check via indirect reference in context cache
-        int objNum = objNumber(elem);
+        int objNum = objNum(elem);
         if (objNum >= 0) {
             int pageNum = ctx.getPageNumber(objNum);
             if (pageNum > 0) return pageNum;
@@ -291,7 +291,7 @@ public final class StructureTree {
         if (kids == null) return null;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
-                if (objNumber(elem) == objNum) return elem;
+                if (objNum(elem) == objNum) return elem;
                 PdfStructElem found = findByObjNumber(elem, objNum);
                 if (found != null) return found;
             }
