@@ -53,7 +53,7 @@ public class IssueList extends ArrayList<Issue> {
 
     /** Returns true if any issue has FATAL severity, meaning processing cannot continue. */
     public boolean hasFatalIssues() {
-        return stream().anyMatch(issue -> issue.severity() == IssueSeverity.FATAL);
+        return stream().anyMatch(issue -> issue.severity() == IssueSev.FATAL);
     }
 
     /**
