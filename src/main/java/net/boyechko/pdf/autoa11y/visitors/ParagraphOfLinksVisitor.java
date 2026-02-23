@@ -22,8 +22,8 @@ import net.boyechko.pdf.autoa11y.fixes.children.ListifyParagraphOfLinks;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -60,8 +60,8 @@ public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
             Issue newIssue =
                     new Issue(
                             IssueType.PARAGRAPH_OF_LINKS,
-                            IssueSeverity.ERROR,
-                            new IssueLocation(ctx.node()),
+                            IssueSev.ERROR,
+                            new IssueLoc(ctx.node()),
                             "Paragraph contains only links",
                             fix);
             issues.add(newIssue);

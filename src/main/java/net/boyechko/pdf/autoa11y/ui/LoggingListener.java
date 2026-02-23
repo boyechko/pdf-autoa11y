@@ -21,7 +21,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,10 +45,10 @@ public class LoggingListener implements ProcessingListener {
     public void onWarning(Issue issue) {
         String message =
                 "ISSUE " + issue.type() + ": " + issue.message() + Format.loc(issue.where());
-        IssueSeverity severity = issue.severity();
-        if (severity == IssueSeverity.INFO) {
+        IssueSev severity = issue.severity();
+        if (severity == IssueSev.INFO) {
             logger.info("{}", message);
-        } else if (severity == IssueSeverity.WARNING) {
+        } else if (severity == IssueSev.WARNING) {
             logger.warn("{}", message);
         } else {
             // ERROR/FATAL

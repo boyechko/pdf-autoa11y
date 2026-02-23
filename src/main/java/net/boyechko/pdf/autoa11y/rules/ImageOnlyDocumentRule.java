@@ -72,7 +72,7 @@ public class ImageOnlyDocumentRule implements Rule {
                         + " It appears to be an image-only document."
                         + " OCR is required before accessibility remediation can proceed.";
 
-        Issue issue = new Issue(IssueType.IMAGE_ONLY_DOCUMENT, IssueSeverity.FATAL, message, null);
+        Issue issue = new Issue(IssueType.IMAGE_ONLY_DOCUMENT, IssueSev.FATAL, message, null);
         return new IssueList(issue);
     }
 

@@ -78,8 +78,7 @@ public class TaggedPdfRule implements Rule {
                     }
                 };
 
-        Issue issue =
-                new Issue(IssueType.NOT_TAGGED_PDF, IssueSeverity.ERROR, failedMessage(), fix);
+        Issue issue = new Issue(IssueType.NOT_TAGGED_PDF, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

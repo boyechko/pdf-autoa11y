@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +50,7 @@ class PdfUaConformanceRuleTest extends PdfTestBase {
             assertEquals(1, issues.size(), "Should detect false PDF/UA claim");
             Issue issue = issues.get(0);
             assertEquals(IssueType.FALSE_PDFUA_CONFORMANCE, issue.type());
-            assertEquals(IssueSeverity.ERROR, issue.severity());
+            assertEquals(IssueSev.ERROR, issue.severity());
             assertNotNull(issue.fix(), "Should have a fix");
         }
     }

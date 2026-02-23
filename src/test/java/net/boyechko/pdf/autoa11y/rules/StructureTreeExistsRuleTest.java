@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +43,7 @@ class StructureTreeExistsRuleTest extends PdfTestBase {
 
             assertEquals(1, issues.size(), "Should detect missing structure tree");
             assertEquals(IssueType.NO_STRUCT_TREE, issues.get(0).type());
-            assertEquals(IssueSeverity.FATAL, issues.get(0).severity());
+            assertEquals(IssueSev.FATAL, issues.get(0).severity());
             assertNull(issues.get(0).fix(), "No automatic fix for missing structure tree");
         }
     }
@@ -74,7 +74,7 @@ class StructureTreeExistsRuleTest extends PdfTestBase {
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Blank untagged document should fail");
-            assertEquals(IssueSeverity.FATAL, issues.get(0).severity());
+            assertEquals(IssueSev.FATAL, issues.get(0).severity());
         }
     }
 }

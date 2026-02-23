@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
 
 /**
  * Formatting utilities for PDF entities in log messages and reports.
@@ -86,7 +86,7 @@ public final class Format {
      * Returns a parenthesized location string for an issue, e.g. {@code " (obj. #42, p. 3)"}.
      * Returns empty string when no location info is available.
      */
-    public static String loc(IssueLocation where) {
+    public static String loc(IssueLoc where) {
         if (where == null) return "";
         Integer objId = where.objectId();
         Integer page = where.page();

@@ -32,8 +32,8 @@ import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueFix;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
@@ -166,8 +166,8 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
         Issue issue =
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
-                        IssueSeverity.WARNING,
-                        new IssueLocation(ctx.node(), ctx.path()),
+                        IssueSev.WARNING,
+                        new IssueLoc(ctx.node(), ctx.path()),
                         run.size() + " elements aligned with vector bullet glyphs",
                         fix);
         issues.add(issue);
@@ -246,8 +246,8 @@ public class BulletGlyphVisitor implements StructureTreeVisitor {
             Issue issue =
                     new Issue(
                             IssueType.BULLET_ALIGNED_KIDS_IN_ELEMENT,
-                            IssueSeverity.WARNING,
-                            new IssueLocation(element, ctx.path()),
+                            IssueSev.WARNING,
+                            new IssueLoc(element, ctx.path()),
                             group.kidIndices().size()
                                     + " raw kids aligned with bullet glyph inside "
                                     + element.getRole().getValue(),

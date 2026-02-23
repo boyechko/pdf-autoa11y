@@ -27,8 +27,8 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.RemapLigatures;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
@@ -77,8 +77,8 @@ public class BadlyMappedLigatureRule implements Rule {
             Issue issue =
                     new Issue(
                             IssueType.LIGATURE_MAPPING_BROKEN,
-                            IssueSeverity.WARNING,
-                            new IssueLocation(
+                            IssueSev.WARNING,
+                            new IssueLoc(
                                     firstPage > 0 ? firstPage : null,
                                     "font " + Format.obj(fontObjNum)),
                             message,

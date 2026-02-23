@@ -71,8 +71,8 @@ public class UnexpectedWidgetRule implements Rule {
                     Issue issue =
                             new Issue(
                                     IssueType.UNEXPECTED_WIDGET,
-                                    IssueSeverity.ERROR,
-                                    new IssueLocation(pageNum, path),
+                                    IssueSev.ERROR,
+                                    new IssueLoc(pageNum, path),
                                     "Unexpected Widget annotation",
                                     fix);
                     issues.add(issue);

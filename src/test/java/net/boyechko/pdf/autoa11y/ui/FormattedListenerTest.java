@@ -22,8 +22,8 @@ import java.io.PrintStream;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issues.Issue;
 import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLocation;
-import net.boyechko.pdf.autoa11y.issues.IssueSeverity;
+import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issues.IssueSev;
 import net.boyechko.pdf.autoa11y.issues.IssueType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -54,12 +54,12 @@ public class FormattedListenerTest {
         Issue missingLanguage =
                 issue(
                         IssueType.LANGUAGE_NOT_SET,
-                        IssueSeverity.ERROR,
+                        IssueSev.ERROR,
                         "Document language (Lang) is not set");
         Issue missingDocumentElement =
                 issue(
                         IssueType.MISSING_DOCUMENT_ELEMENT,
-                        IssueSeverity.ERROR,
+                        IssueSev.ERROR,
                         "Structure tree root has no Document element");
         reporter.onWarning(missingLanguage);
         reporter.onWarning(missingDocumentElement);
@@ -80,19 +80,19 @@ public class FormattedListenerTest {
         groupedNestingIssues.add(
                 issue(
                         IssueType.NEEDLESS_NESTING,
-                        IssueSeverity.WARNING,
+                        IssueSev.WARNING,
                         1,
                         "Found needless Part wrapper #311"));
         groupedNestingIssues.add(
                 issue(
                         IssueType.NEEDLESS_NESTING,
-                        IssueSeverity.WARNING,
+                        IssueSev.WARNING,
                         2,
                         "Found needless Part wrapper #401"));
         groupedNestingIssues.add(
                 issue(
                         IssueType.NEEDLESS_NESTING,
-                        IssueSeverity.WARNING,
+                        IssueSev.WARNING,
                         3,
                         "Found needless Part wrapper #511"));
         reporter.onIssueGroup(IssueType.NEEDLESS_NESTING.groupLabel(), groupedNestingIssues);
@@ -109,7 +109,7 @@ public class FormattedListenerTest {
         Issue invalidSchemaTag =
                 issue(
                         IssueType.TAG_WRONG_CHILD,
-                        IssueSeverity.ERROR,
+                        IssueSev.ERROR,
                         "<Link> not allowed under <Document>");
         reporter.onWarning(invalidSchemaTag);
         reporter.onManualReviewSectionStart();
@@ -119,12 +119,12 @@ public class FormattedListenerTest {
         reporter.onSummary(summaryIssues);
     }
 
-    private Issue issue(IssueType type, IssueSeverity severity, String message) {
+    private Issue issue(IssueType type, IssueSev severity, String message) {
         return new Issue(type, severity, message);
     }
 
-    private Issue issue(IssueType type, IssueSeverity severity, Integer page, String message) {
-        return new Issue(type, severity, new IssueLocation(page, null), message);
+    private Issue issue(IssueType type, IssueSev severity, Integer page, String message) {
+        return new Issue(type, severity, new IssueLoc(page, null), message);
     }
 
     private String normalize(ByteArrayOutputStream buffer) {

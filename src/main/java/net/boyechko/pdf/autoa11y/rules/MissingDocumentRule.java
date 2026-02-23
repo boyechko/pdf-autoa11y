@@ -73,11 +73,7 @@ public class MissingDocumentRule implements Rule {
 
         IssueFix fix = new SetupDocumentStructure();
         Issue issue =
-                new Issue(
-                        IssueType.MISSING_DOCUMENT_ELEMENT,
-                        IssueSeverity.ERROR,
-                        failedMessage(),
-                        fix);
+                new Issue(IssueType.MISSING_DOCUMENT_ELEMENT, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

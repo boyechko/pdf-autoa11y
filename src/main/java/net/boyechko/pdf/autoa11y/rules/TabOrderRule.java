@@ -68,8 +68,7 @@ public class TabOrderRule implements Rule {
                     }
                 };
 
-        Issue issue =
-                new Issue(IssueType.TAB_ORDER_NOT_SET, IssueSeverity.ERROR, failedMessage(), fix);
+        Issue issue = new Issue(IssueType.TAB_ORDER_NOT_SET, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }
