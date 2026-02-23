@@ -126,10 +126,11 @@ public final class PdfCustodian {
 
         try (PdfReader testReader = new PdfReader(inputPath.toString(), readerProps);
                 PdfDocument testDoc = new PdfDocument(testReader)) {
-            logger.debug("PDF Encryption Analysis:");
-            logger.debug("  Encrypted: {}", testReader.isEncrypted());
-            logger.debug("  Permissions: {}", testReader.getPermissions());
-            logger.debug("  Crypto Mode: {}", testReader.getCryptoMode());
+            logger.debug(
+                    "encrypted={} permissions={} mode={}",
+                    testReader.isEncrypted(),
+                    testReader.getPermissions(),
+                    testReader.getCryptoMode());
 
             encryptionInfo =
                     new EncryptionInfo(
