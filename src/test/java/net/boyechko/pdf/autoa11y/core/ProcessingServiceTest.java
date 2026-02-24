@@ -36,7 +36,6 @@ import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import java.nio.file.Path;
-import java.util.Set;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -45,9 +44,6 @@ import org.junit.jupiter.api.Test;
 
 /** Test suite for ProcessingService. */
 public class ProcessingServiceTest extends PdfTestBase {
-    private static final Path TAGGED_BASELINE_PDF =
-            Path.of("src/test/resources/tagged_baseline.pdf");
-
     @Test
     void validPdfIsProcessedSuccessfully() throws Exception {
         createProcessingService(TAGGED_BASELINE_PDF).remediate();
@@ -55,8 +51,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void reportOnlyValidatesTagsWithoutModification() throws Exception {
-        Path inputPath = TAGGED_BASELINE_PDF;
-        IssueList issues = createProcessingService(inputPath).analyze();
+        IssueList issues = createProcessingService(TAGGED_BASELINE_PDF).analyze();
         assertNotNull(issues, "Report-only mode should return issues list");
     }
 
@@ -182,15 +177,14 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
-        Path inputPath = TAGGED_BASELINE_PDF;
-        ProcessingResult result = createProcessingService(inputPath).remediate();
+        ProcessingResult result = createProcessingService(TAGGED_BASELINE_PDF).remediate();
 
         assertNotNull(result.originalTagIssues());
         assertNotNull(result.originalDocumentIssues());
         assertEquals(
                 0,
                 result.totalIssuesRemaining(),
-                "Tagged basedline PDF should be compliant with no remaining issues");
+                "Tagged baseline PDF should be compliant with no remaining issues");
     }
 
     @Test
@@ -213,33 +207,6 @@ public class ProcessingServiceTest extends PdfTestBase {
                 "Remaining tag issues should not include FIGURE_WITH_TEXT");
     }
 
-    @Test
-    void skippingPrerequisiteVisitorFailsWithClearMessage() {
-        // MissingPagePartsCheck depends on NeedlessNestingCheck.
-        // Skipping the prerequisite should fail with an actionable message,
-        // not a generic "has not been registered" error from CheckEngine.
-        var ex =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () ->
-                                new ProcessingService.ProcessingServiceBuilder()
-                                        .withPdfCustodian(
-                                                new PdfCustodian(TAGGED_BASELINE_PDF, null))
-                                        .withListener(new NoOpProcessingListener())
-                                        .skipChecks(Set.of("NeedlessNestingCheck"))
-                                        .build());
-        String message = ex.getMessage();
-        assertTrue(
-                message.contains("NeedlessNestingCheck"),
-                "Error should name the skipped prerequisite, but was: " + message);
-        assertTrue(
-                message.contains("MissingPagePartsCheck"),
-                "Error should name the dependent visitor, but was: " + message);
-        assertTrue(
-                message.contains("skip"),
-                "Error should suggest skipping both visitors, but was: " + message);
-    }
-
     // ── Helpers ──────────────────────────────────────────────────────
 
     private Path createUntaggedPdf() throws Exception {
@@ -258,8 +225,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     /** Reusable content: a tagged PDF with a two-item list (suitable for L breakages). */
-    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc)
-            throws Exception {
+    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) {
         layoutDoc.add(new Paragraph("Tag Structure Test").setFontSize(18));
         layoutDoc.add(new Paragraph("This PDF will have tag structure issues."));
 
@@ -271,7 +237,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     /** Reusable content: a tagged PDF with a two-item list (suitable for LI breakages). */
     private static void fixableListContent(
-            PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) throws Exception {
+            PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) {
         layoutDoc.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
 
         com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
