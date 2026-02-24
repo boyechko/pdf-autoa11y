@@ -27,7 +27,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Walks the PDF structure tree once, invoking multiple visitors at each node. */
+/** Walks the PDF structure tree once, invoking one or more visitors at each node. */
 public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
 

@@ -103,7 +103,9 @@ public class ProcessingService {
         List<Check> checks = ProcessingDefaults.documentChecks();
         this.structTreeChecks =
                 filterVisitors(
-                        ProcessingDefaults.structTreeChecks(), builder.skipChecks, builder.onlyChecks);
+                        ProcessingDefaults.structTreeChecks(),
+                        builder.skipChecks,
+                        builder.onlyChecks);
         if (builder.printStructureTree) {
             structTreeChecks.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
@@ -226,7 +228,7 @@ public class ProcessingService {
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
-                    IssueList issues = checkEngine.runVisitor(ctx, visitor);
+                    IssueList issues = checkEngine.runStructTreeCheck(ctx, visitor);
                     allTagIssues.addAll(issues);
 
                     if (!issues.isEmpty()) {
@@ -312,7 +314,7 @@ public class ProcessingService {
     /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentRules(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
-        for (Check check : checkEngine.getChecks()) {
+        for (Check check : checkEngine.getDocumentChecks()) {
             IssueList ruleIssues = check.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
             if (ruleIssues.isEmpty()) {
@@ -367,7 +369,7 @@ public class ProcessingService {
             return new IssueList();
         }
 
-        IssueList tagIssues = checkEngine.runVisitors(context);
+        IssueList tagIssues = checkEngine.runStructTreeChecks(context);
 
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");

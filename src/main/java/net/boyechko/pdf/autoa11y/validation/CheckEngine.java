@@ -32,74 +32,69 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Orchestrates validation using both structure tree visitors and document-level checks.
- *
- * <p>The engine supports two types of checks:
- *
- * <ul>
- *   <li><b>Visitors</b> ({@link StructTreeChecker}): Run during a single traversal of the structure
- *       tree via {@link StructTreeWalker}. Use for checks that examine tag structure.
- *   <li><b>Rules</b> ({@link Check}): Run independently after the tree walk. Use for document-level
- *       checks (metadata, annotations, pages) that don't need tree traversal.
- * </ul>
- */
+/// Orchestrates validation using both structure tree visitors and document-level checks.
+///
+/// The engine supports two types of checks:
+///
+/// - **Checks that work on the document as a whole** (implement [Check])
+/// - **Checks that walk the structure tree** (extend [StructTreeChecker])
+///
 public class CheckEngine {
     private static final Logger logger = LoggerFactory.getLogger(CheckEngine.class);
 
-    private final List<Check> checks;
-    private final List<Supplier<StructTreeChecker>> visitorSuppliers;
+    private final List<Check> documentChecks;
+    private final List<Supplier<StructTreeChecker>> structTreeChecks;
     private final TagSchema schema;
 
-    public CheckEngine(List<Check> checks) {
-        this(checks, List.of(), null);
+    public CheckEngine(List<Check> documentChecks) {
+        this(documentChecks, List.of(), null);
     }
 
     public CheckEngine(
-            List<Check> checks,
-            List<Supplier<StructTreeChecker>> visitorSuppliers,
+            List<Check> documentChecks,
+            List<Supplier<StructTreeChecker>> structTreeChecks,
             TagSchema schema) {
-        this.checks = List.copyOf(checks);
-        this.visitorSuppliers = List.copyOf(visitorSuppliers);
+        this.documentChecks = List.copyOf(documentChecks);
+        this.structTreeChecks = List.copyOf(structTreeChecks);
         this.schema = schema;
-        validateVisitorPrerequisites();
+        validateCheckPrereqs();
     }
 
-    private void validateVisitorPrerequisites() {
+    private void validateCheckPrereqs() {
         Set<Class<? extends StructTreeChecker>> seen = new HashSet<>();
-        for (Supplier<StructTreeChecker> supplier : visitorSuppliers) {
-            StructTreeChecker visitor = supplier.get();
-            for (Class<? extends StructTreeChecker> prereq : visitor.prerequisites()) {
+        for (Supplier<StructTreeChecker> supplier : structTreeChecks) {
+            StructTreeChecker check = supplier.get();
+            for (Class<? extends StructTreeChecker> prereq : check.prerequisites()) {
                 if (!seen.contains(prereq)) {
                     throw new IllegalArgumentException(
-                            visitor.getClass().getSimpleName()
+                            check.getClass().getSimpleName()
                                     + " requires "
                                     + prereq.getSimpleName()
                                     + " to run first, but it has not been registered"
-                                    + " or appears later in the visitor list");
+                                    + " or appears later in the list of checks");
                 }
             }
-            seen.add(visitor.getClass());
+            seen.add(check.getClass());
         }
     }
 
-    public List<Check> getRules() {
-        return checks;
+    public List<Check> getDocumentChecks() {
+        return documentChecks;
     }
 
-    public List<Supplier<StructTreeChecker>> getVisitorSuppliers() {
-        return visitorSuppliers;
+    public List<Supplier<StructTreeChecker>> getStructTreeChecks() {
+        return structTreeChecks;
     }
 
     public IssueList detectIssues(DocContext ctx) {
         IssueList all = new IssueList();
 
-        if (!visitorSuppliers.isEmpty()) {
-            IssueList visitorIssues = runVisitors(ctx);
-            all.addAll(visitorIssues);
+        if (!structTreeChecks.isEmpty()) {
+            IssueList treeCheckIssues = runStructTreeChecks(ctx);
+            all.addAll(treeCheckIssues);
         }
 
-        for (Check r : checks) {
+        for (Check r : documentChecks) {
             IssueList found = r.findIssues(ctx);
             all.addAll(found);
         }
@@ -107,51 +102,52 @@ public class CheckEngine {
         return all;
     }
 
-    public IssueList runVisitors(DocContext ctx) {
+    public IssueList runStructTreeChecks(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
-            logger.debug("No structure tree found, skipping visitor checks");
+            logger.debug("No structure tree found, skipping structure tree checks");
             return new IssueList();
         }
 
-        List<StructTreeChecker> visitors = instantiateVisitors();
+        List<StructTreeChecker> checks = instantiateStructTreeChecks();
         StructTreeWalker walker = new StructTreeWalker(schema);
-        for (StructTreeChecker visitor : visitors) {
-            walker.addVisitor(visitor);
+        for (StructTreeChecker check : checks) {
+            walker.addVisitor(check);
         }
 
         return walker.walk(root, ctx);
     }
 
-    /** Runs a single visitor in its own tree walk. */
-    public IssueList runSingleVisitor(DocContext ctx, Supplier<StructTreeChecker> visitorSupplier) {
-        return runVisitor(ctx, visitorSupplier.get());
+    /** Runs a single StructTreeCheck in its own tree walk. */
+    public IssueList runSingleStructTreeCheck(
+            DocContext ctx, Supplier<StructTreeChecker> supplier) {
+        return runStructTreeCheck(ctx, supplier.get());
     }
 
-    /** Runs a pre-instantiated visitor in its own tree walk. */
-    public IssueList runVisitor(DocContext ctx, StructTreeChecker visitor) {
+    /** Runs a pre-instantiated StructTreeCheck in its own tree walk. */
+    public IssueList runStructTreeCheck(DocContext ctx, StructTreeChecker check) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
-            logger.debug("No structure tree found, skipping visitor check");
+            logger.debug("No structure tree found, skipping the structure tree check");
             return new IssueList();
         }
 
         StructTreeWalker walker = new StructTreeWalker(schema);
-        walker.addVisitor(visitor);
+        walker.addVisitor(check);
 
         return walker.walk(root, ctx);
     }
 
-    private List<StructTreeChecker> instantiateVisitors() {
-        List<StructTreeChecker> visitors = new ArrayList<>(visitorSuppliers.size());
-        for (Supplier<StructTreeChecker> visitorSupplier : visitorSuppliers) {
-            StructTreeChecker visitor = visitorSupplier.get();
-            if (visitor == null) {
-                throw new IllegalStateException("Visitor supplier returned null");
+    private List<StructTreeChecker> instantiateStructTreeChecks() {
+        List<StructTreeChecker> checks = new ArrayList<>(structTreeChecks.size());
+        for (Supplier<StructTreeChecker> checkSupplier : structTreeChecks) {
+            StructTreeChecker check = checkSupplier.get();
+            if (check == null) {
+                throw new IllegalStateException("StructTreeCheck supplier returned null");
             }
-            visitors.add(visitor);
+            checks.add(check);
         }
-        return visitors;
+        return checks;
     }
 
     public IssueList applyFixes(DocContext ctx, IssueList issuesToFix) {
@@ -173,8 +169,6 @@ public class CheckEngine {
 
             if (isInvalidated) {
                 i.markResolved("Skipped: resolved by higher priority fix");
-                logger.debug(
-                        "Skipping fix {}: invalidated by higher priority fix", fx.describe(ctx));
                 continue;
             }
 
@@ -184,10 +178,6 @@ public class CheckEngine {
                 i.markResolved(fx.describe(ctx));
             } catch (Exception ex) {
                 i.markFailed(fx.describe(ctx) + " failed: " + ex.getMessage());
-                logger.error(
-                        "Error applying fix {}: {}",
-                        fx.getClass().getSimpleName(),
-                        ex.getMessage());
             }
         }
 

@@ -106,8 +106,8 @@ public class FigureWithTextCheckTest extends PdfTestBase {
                     new CheckEngine(
                             List.of(), List.of(FigureWithTextCheck::new), TagSchema.loadDefault());
 
-            IssueList firstRun = engine.runVisitors(context);
-            IssueList secondRun = engine.runVisitors(context);
+            IssueList firstRun = engine.runStructTreeChecks(context);
+            IssueList secondRun = engine.runStructTreeChecks(context);
 
             long firstFigureIssues =
                     firstRun.stream().filter(i -> i.type() == IssueType.FIGURE_WITH_TEXT).count();
