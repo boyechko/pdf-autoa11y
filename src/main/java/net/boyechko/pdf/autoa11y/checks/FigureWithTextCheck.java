@@ -23,7 +23,6 @@ import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -67,7 +66,7 @@ public class FigureWithTextCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.FIGURE_WITH_TEXT,
                             IssueSev.WARNING,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             "Figure contains text: \"" + truncated + "\"",
                             fix);
             issues.add(issue);

@@ -17,20 +17,22 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
-/**
- * Abstract base for checks that walk the PDF structure tree. Subclasses override {@link
- * #enterElement} and/or {@link #leaveElement} to inspect each node, accumulating issues via {@link
- * #getIssues}.
- *
- * <p>Implements {@link Check} so that tree-walking checks and document-level checks share a common
- * interface. The {@link #findIssues} method creates a {@link StructTreeWalker} internally, walks
- * the tree, and returns the collected issues.
- */
+/// Abstract base for checks that walk the PDF structure tree. Subclasses override
+/// [#enterElement] and/or [#leaveElement] to inspect each node, accumulating issues via
+/// [#getIssues]. StructTreeCheck instances are single-run and may hold mutable traversal state.
+// Callers must provide a new instance for each document/traversal.
+///
+/// Implements [Check] so that tree-walking checks and document-level checks share a common
+/// interface. The [#findIssues] method creates a [StructTreeWalker] internally, walks
+/// the tree, and returns the collected issues.
 public abstract class StructTreeCheck implements Check {
 
     public abstract String name();
@@ -63,22 +65,36 @@ public abstract class StructTreeCheck implements Check {
         return walker.walk(root, ctx);
     }
 
+    ///  Called before visiting `ctx` and returns `false` to skip traversing this element's
+    // children.
     public boolean enterElement(StructTreeContext ctx) {
         return true;
     }
 
+    /// Called after `ctx` is visited (and after any children are traversed or skipped).
     public void leaveElement(StructTreeContext ctx) {}
 
+    /// Called once before traversal begins; `ctx` is `null` because no current node exists at root
+    // level.
     public void beforeTraversal(StructTreeContext ctx) {}
 
+    /// Called once after traversal completes.
     public void afterTraversal() {}
 
     public abstract IssueList getIssues();
 
-    /**
-     * Returns checker classes that must run before this checker. The pipeline validates at
-     * construction time that all prerequisites appear earlier in the checker list.
-     */
+    /// Returns an [IssueLoc] for [StructTreeContext#node()] in `ctx`.
+    protected static IssueLoc locAtElem(StructTreeContext ctx) {
+        return IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), ctx.role(), ctx.path());
+    }
+
+    /// Returns an [IssueLoc] for `element` using page/role/path from `ctx`.
+    protected static IssueLoc locAtElem(StructTreeContext ctx, PdfStructElem element) {
+        return IssueLoc.atElem(
+                element, ctx.getPageNumber(), StructTree.mappedRole(element), ctx.path());
+    }
+
+    /// Returns checker classes that must run before this checker.
     public Set<Class<? extends StructTreeCheck>> prerequisites() {
         return Set.of();
     }

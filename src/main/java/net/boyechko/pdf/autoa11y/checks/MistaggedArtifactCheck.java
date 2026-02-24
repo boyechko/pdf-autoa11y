@@ -31,7 +31,6 @@ import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -93,7 +92,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             message,
                             fix);
             issues.add(issue);

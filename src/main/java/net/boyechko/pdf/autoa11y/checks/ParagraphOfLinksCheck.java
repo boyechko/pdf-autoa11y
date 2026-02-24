@@ -22,7 +22,6 @@ import net.boyechko.pdf.autoa11y.fixes.children.ListifyParagraphOfLinks;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -61,7 +60,7 @@ public class ParagraphOfLinksCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.PARAGRAPH_OF_LINKS,
                             IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             "Paragraph contains only links",
                             fix);
             issues.add(newIssue);

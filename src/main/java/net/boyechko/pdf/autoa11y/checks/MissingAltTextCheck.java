@@ -28,7 +28,6 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -79,7 +78,7 @@ public class MissingAltTextCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.WARNING,
-                        IssueLoc.atElem(ctx.node()),
+                        locAtElem(ctx),
                         "Figure without alt text");
         issues.add(issue);
         return true;

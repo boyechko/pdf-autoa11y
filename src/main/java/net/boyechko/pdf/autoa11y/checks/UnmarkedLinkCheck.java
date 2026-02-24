@@ -75,7 +75,7 @@ public class UnmarkedLinkCheck extends DocumentCheck {
                             new Issue(
                                     IssueType.UNMARKED_LINK,
                                     IssueSev.ERROR,
-                                    IssueLoc.atObjNum(objNumber, pageNum),
+                                    IssueLoc.atObj(objNumber, pageNum, IssueLoc.ObjKind.ANNOT),
                                     "Untagged " + description,
                                     fix);
                     issues.add(issue);

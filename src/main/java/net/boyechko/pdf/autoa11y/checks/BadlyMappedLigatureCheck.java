@@ -82,7 +82,10 @@ public class BadlyMappedLigatureCheck extends DocumentCheck {
                     new Issue(
                             IssueType.LIGATURE_MAPPING_BROKEN,
                             IssueSev.WARNING,
-                            IssueLoc.atObjNum(fontObjNum, firstPage > 0 ? firstPage : null),
+                            IssueLoc.atObj(
+                                    fontObjNum,
+                                    firstPage > 0 ? firstPage : null,
+                                    IssueLoc.ObjKind.FONT),
                             message,
                             new RemapLigatures(fontObjNum, fontName, replacements));
             issues.add(issue);
