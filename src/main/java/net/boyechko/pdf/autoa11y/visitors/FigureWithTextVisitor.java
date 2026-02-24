@@ -20,12 +20,12 @@ package net.boyechko.pdf.autoa11y.visitors;
 import com.itextpdf.kernel.pdf.PdfName;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueFix;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLoc;
-import net.boyechko.pdf.autoa11y.issues.IssueSev;
-import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
+import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 

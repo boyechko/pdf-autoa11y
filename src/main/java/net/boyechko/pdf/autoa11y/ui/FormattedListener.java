@@ -31,8 +31,8 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.LoggerFactory;
 
 public class FormattedListener implements ProcessingListener {

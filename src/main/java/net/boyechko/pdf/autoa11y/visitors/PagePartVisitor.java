@@ -29,11 +29,11 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueFix;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSev;
-import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
+import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 

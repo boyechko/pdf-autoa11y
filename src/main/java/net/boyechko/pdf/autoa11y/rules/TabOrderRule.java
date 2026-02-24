@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.rules;
 
 import com.itextpdf.kernel.pdf.*;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.issues.*;
+import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects if the document tab order is set to follow the structure tree order. */

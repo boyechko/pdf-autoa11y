@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
 /** Tests for StructureTreeWalker and visitor infrastructure. */

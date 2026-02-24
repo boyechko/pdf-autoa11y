@@ -19,9 +19,9 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueSev;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

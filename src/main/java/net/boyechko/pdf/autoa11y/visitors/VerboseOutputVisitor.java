@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.visitors;
 
 import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 

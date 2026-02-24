@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
 class RuleEngineTest {

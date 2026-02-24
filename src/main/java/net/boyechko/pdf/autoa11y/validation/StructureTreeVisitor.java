@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.validation;
 
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 /** Visitor interface for PDF structure tree traversal. */
 public interface StructureTreeVisitor {

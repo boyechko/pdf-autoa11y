@@ -28,9 +28,9 @@ import java.util.TreeMap;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
 class BadlyMappedLigatureRuleTest extends PdfTestBase {

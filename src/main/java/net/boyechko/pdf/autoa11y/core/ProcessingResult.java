@@ -1,7 +1,7 @@
 package net.boyechko.pdf.autoa11y.core;
 
 import java.nio.file.Path;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 /**
  * Summary of the processing of a PDF document.

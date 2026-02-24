@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.validation;
 
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 public interface Rule {
     String name();

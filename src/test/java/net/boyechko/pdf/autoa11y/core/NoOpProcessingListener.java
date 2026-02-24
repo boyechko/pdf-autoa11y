@@ -17,8 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 public class NoOpProcessingListener implements ProcessingListener {
     @Override

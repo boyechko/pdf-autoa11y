@@ -24,11 +24,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.RemapLigatures;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
-import net.boyechko.pdf.autoa11y.issues.IssueLoc;
-import net.boyechko.pdf.autoa11y.issues.IssueSev;
-import net.boyechko.pdf.autoa11y.issues.IssueType;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
+import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects fonts whose ToUnicode CMaps map ligatures to truncated text. */

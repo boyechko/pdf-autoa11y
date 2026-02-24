@@ -23,7 +23,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
-import net.boyechko.pdf.autoa11y.issues.*;
+import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects if the Document element is the highest-level element in the structure tree. */
