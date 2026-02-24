@@ -22,31 +22,35 @@ import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/** Detects if the document language is set. */
-public class LanguageSetRule implements Rule {
+/** Detects if the document is marked as tagged PDF. */
+public class TaggedPdfCheck implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Language Set Rule";
+        return "Tagged PDF Check";
     }
 
     @Override
     public String passedMessage() {
-        return "Document-level language attribute is set";
+        return "Document is marked as tagged PDF";
     }
 
     @Override
     public String failedMessage() {
-        return "Document-level language attribute is not set";
+        return "Document is not marked as tagged PDF (Marked flag not set in MarkInfo dictionary)";
     }
 
     @Override
     public IssueList findIssues(DocumentContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
+        PdfDictionary mi = cat.getPdfObject().getAsDictionary(PdfName.MarkInfo);
+        boolean marked =
+                mi != null
+                        && mi.getAsBoolean(PdfName.Marked) instanceof PdfBoolean pb
+                        && Boolean.TRUE.equals(pb.getValue());
 
-        if (cat.getLang() != null) {
-            // Document language is already set
+        if (marked) {
             return new IssueList();
         }
 
@@ -59,19 +63,22 @@ public class LanguageSetRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set document language to English (en-US)";
+                        return "Set Marked flag to true in MarkInfo dictionary";
                     }
 
                     @Override
                     public void apply(DocumentContext c) {
                         PdfCatalog cat2 = c.doc().getCatalog();
-                        cat2.put(
-                                PdfName.Lang,
-                                new PdfString("en-US")); // Default to English if not set
+                        PdfDictionary mi2 = cat2.getPdfObject().getAsDictionary(PdfName.MarkInfo);
+                        if (mi2 == null) {
+                            mi2 = new PdfDictionary();
+                            cat2.getPdfObject().put(PdfName.MarkInfo, mi2);
+                        }
+                        mi2.put(PdfName.Marked, PdfBoolean.TRUE);
                     }
                 };
 
-        Issue issue = new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, failedMessage(), fix);
+        Issue issue = new Issue(IssueType.NOT_TAGGED_PDF, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

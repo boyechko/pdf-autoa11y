@@ -33,7 +33,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
-class MissingDocumentRuleTest extends PdfTestBase {
+class MissingDocumentCheckTest extends PdfTestBase {
 
     @Test
     void detectsMissingDocument() throws Exception {
@@ -47,7 +47,7 @@ class MissingDocumentRuleTest extends PdfTestBase {
             root.addKid(figure);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            MissingDocumentRule rule = new MissingDocumentRule();
+            MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Should detect missing Document wrapper");
@@ -69,7 +69,7 @@ class MissingDocumentRuleTest extends PdfTestBase {
             document.addKid(p);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            MissingDocumentRule rule = new MissingDocumentRule();
+            MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertTrue(issues.isEmpty(), "Should not detect issue when Document is present");
@@ -88,7 +88,7 @@ class MissingDocumentRuleTest extends PdfTestBase {
             root.addKid(p);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            MissingDocumentRule rule = new MissingDocumentRule();
+            MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size());
@@ -120,7 +120,7 @@ class MissingDocumentRuleTest extends PdfTestBase {
             root.addKid(part);
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            MissingDocumentRule rule = new MissingDocumentRule();
+            MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
             Issue issue = issues.get(0);
 

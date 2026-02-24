@@ -32,13 +32,13 @@ import org.slf4j.LoggerFactory;
  * Detects pushbutton Widget annotations that are non-functional remnants from web-to-PDF
  * conversion. These are identified by /FT /Btn with the PushButton flag (bit 17 of /Ff).
  */
-public class UnexpectedWidgetRule implements Rule {
-    private static final Logger logger = LoggerFactory.getLogger(UnexpectedWidgetRule.class);
+public class UnexpectedWidgetCheck implements Rule {
+    private static final Logger logger = LoggerFactory.getLogger(UnexpectedWidgetCheck.class);
     private static final int PUSHBUTTON_FLAG = 0x10000; // bit 17 (PDF spec 1-indexed)
 
     @Override
     public String name() {
-        return "Unexpected Widget Rule";
+        return "Unexpected Widget Check";
     }
 
     @Override

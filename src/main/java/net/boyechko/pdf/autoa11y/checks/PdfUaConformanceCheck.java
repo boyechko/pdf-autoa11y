@@ -28,15 +28,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Detects and strips false PDF/UA conformance claims from XMP metadata. */
-public class PdfUaConformanceRule implements Rule {
-    private static final Logger logger = LoggerFactory.getLogger(PdfUaConformanceRule.class);
+public class PdfUaConformanceCheck implements Rule {
+    private static final Logger logger = LoggerFactory.getLogger(PdfUaConformanceCheck.class);
 
     private static final int P_DOC_SETUP = 10;
     private static final String PDFUAID_NS = "http://www.aiim.org/pdfua/ns/id/";
 
     @Override
     public String name() {
-        return "PDF/UA Conformance Rule";
+        return "PDF/UA Conformance Check";
     }
 
     @Override
