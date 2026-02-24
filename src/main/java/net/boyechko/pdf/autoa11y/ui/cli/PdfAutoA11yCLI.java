@@ -37,13 +37,13 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
-import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
+import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

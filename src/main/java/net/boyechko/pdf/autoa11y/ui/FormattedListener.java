@@ -29,7 +29,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
-import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;

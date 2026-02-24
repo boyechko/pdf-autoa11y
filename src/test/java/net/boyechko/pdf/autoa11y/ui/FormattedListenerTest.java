@@ -19,7 +19,6 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
