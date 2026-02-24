@@ -51,6 +51,11 @@ public abstract class PdfTestBase {
     private String testClassName;
     private String testMethodName;
 
+    // == Common Constants ============================================
+
+    protected static final Path TAGGED_BASELINE_PDF =
+            Path.of("src/test/resources/tagged_baseline.pdf");
+
     // ── Test lifecycle ──────────────────────────────────────────────
 
     @BeforeEach
