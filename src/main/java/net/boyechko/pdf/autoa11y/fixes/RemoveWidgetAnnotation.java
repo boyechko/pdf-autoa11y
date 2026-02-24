@@ -30,12 +30,13 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Removes a pushbutton Widget annotation from the page, AcroForm, and structure tree. Uses raw PDF
- * array manipulation throughout to avoid iText's internal state management which can produce
+ * array manipulation throughout to avoid iText's internal state management, which can produce
  * "Flushed object contains indirect reference which is free" errors when removing annotations via
  * the high-level API.
  */
@@ -77,9 +78,9 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 pageDict.remove(PdfName.Annots);
             }
             pageDict.setModified();
-            logger.debug("Removed Widget annotation obj. #{} from page {}", objNumber(), pageNum);
+            logger.debug("Removed {}", widgetRef());
         } else {
-            logger.warn("Widget annotation obj. #{} not found on page {}", objNumber(), pageNum);
+            logger.warn("{} not found in page annotations", widgetRef());
         }
     }
 
@@ -107,7 +108,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 kids.setModified();
                 parent.setModified();
             }
-            // If parent has no remaining kids, remove parent from /Fields
+            // If the parent has no remaining kids, remove it from /Fields
             if (kids == null || kids.isEmpty()) {
                 removeMatchingEntry(fields, parent);
                 fields.setModified();
@@ -143,7 +144,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
             return false;
         }
         for (int i = 0; i < array.size(); i++) {
-            // Check resolved (dereferenced) entry
+            // Check the resolved (dereferenced) entry
             PdfObject resolved = array.get(i);
             if (resolved != null
                     && target.getIndirectReference().equals(resolved.getIndirectReference())) {
@@ -164,7 +165,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
             return;
         }
         if (!removeObjRefRecursive(docElem)) {
-            logger.debug("OBJR for Widget obj. #{} not found in structure tree", objNumber());
+            logger.debug("OBJR for {} not found in structure tree", widgetRef());
         }
     }
 
@@ -183,11 +184,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
                 PdfObject refObj = objRef.getReferencedObject();
                 if (refObj instanceof PdfDictionary refDict && matchesAnnotation(refDict)) {
                     removeObjRefFromElement(elem, objRef);
-                    logger.debug(
-                            "Removed OBJR for Widget obj. #{} from {} (obj. #{})",
-                            objNumber(),
-                            elem.getRole().getValue(),
-                            StructTree.objNum(elem));
+                    logger.debug("Removed OBJR for {} from {}", widgetRef(), Format.elem(elem));
                     return true;
                 }
             } else if (kid instanceof PdfStructElem childElem) {
@@ -234,19 +231,30 @@ public class RemoveWidgetAnnotation implements IssueFix {
         return candidate.equals(annotDict);
     }
 
-    private int objNumber() {
+    private Integer objNumberOrNull() {
         return annotDict.getIndirectReference() != null
                 ? annotDict.getIndirectReference().getObjNumber()
-                : 0;
+                : null;
+    }
+
+    private IssueLoc widgetLoc() {
+        Integer objNum = objNumberOrNull();
+        if (objNum != null) {
+            return IssueLoc.atObj(objNum, pageNum, IssueLoc.ObjKind.ANNOT);
+        }
+        if (pageNum > 0) {
+            return IssueLoc.atPage(pageNum);
+        }
+        return IssueLoc.none();
+    }
+
+    private String widgetRef() {
+        return "Widget annotation" + Format.loc(widgetLoc());
     }
 
     @Override
     public String describe() {
-        return "Removed Widget annotation "
-                + Format.objNum(objNumber())
-                + " ("
-                + Format.page(pageNum)
-                + ")";
+        return "Removed " + widgetRef();
     }
 
     @Override
