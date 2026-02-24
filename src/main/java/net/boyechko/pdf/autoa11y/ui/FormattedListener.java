@@ -40,7 +40,7 @@ public class FormattedListener implements ProcessingListener {
 
     private static final String SUCCESS = "✓";
     private static final String ERROR = "⛔️";
-    private static final String WARNING = "️✗";
+    private static final String WARNING = "✕";
     private static final String INFO = "○";
 
     private static final String INDENT = "│ ";
