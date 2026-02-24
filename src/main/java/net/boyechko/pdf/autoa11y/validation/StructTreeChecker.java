@@ -27,13 +27,13 @@ public interface StructTreeChecker {
 
     String description();
 
-    default boolean enterElement(VisitorContext ctx) {
+    default boolean enterElement(StructTreeContext ctx) {
         return true;
     }
 
-    default void leaveElement(VisitorContext ctx) {}
+    default void leaveElement(StructTreeContext ctx) {}
 
-    default void beforeTraversal(VisitorContext ctx) {}
+    default void beforeTraversal(StructTreeContext ctx) {}
 
     default void afterTraversal() {}
 

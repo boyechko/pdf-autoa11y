@@ -82,8 +82,8 @@ public class StructTreeWalker {
     private void walkElement(PdfStructElem node, String parentPath, int depth) {
         globalIndex++;
 
-        VisitorContext ctx =
-                VisitorContext.fromNode(node, parentPath, depth, globalIndex, schema, docCtx);
+        StructTreeContext ctx =
+                StructTreeContext.fromNode(node, parentPath, depth, globalIndex, schema, docCtx);
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;

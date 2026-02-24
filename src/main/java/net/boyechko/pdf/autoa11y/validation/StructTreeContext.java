@@ -30,7 +30,7 @@ import net.boyechko.pdf.autoa11y.document.StructureTree;
  * information about the current node, its position in the tree, and relationships to parent and
  * children.
  */
-public record VisitorContext(
+public record StructTreeContext(
         PdfStructElem node,
         String path,
         String role,
@@ -46,7 +46,7 @@ public record VisitorContext(
         DocumentContext docCtx) {
 
     /**
-     * Creates a VisitorContext from a PdfStructElem and internal state.
+     * Creates a StructTreeContext from a PdfStructElem and internal state.
      *
      * @param node The current node being visited.
      * @param parentPath The path to the parent of the current node.
@@ -54,9 +54,9 @@ public record VisitorContext(
      * @param globalIndex The index of the current node in the traversal order.
      * @param schema The schema to use for the current node.
      * @param docCtx The document context.
-     * @return A new VisitorContext.
+     * @return A new StructTreeContext.
      */
-    public static VisitorContext fromNode(
+    public static StructTreeContext fromNode(
             PdfStructElem node,
             String parentPath,
             int depth,
@@ -75,7 +75,7 @@ public record VisitorContext(
         List<PdfStructElem> children = StructureTree.structKidsOf(node);
         List<String> childRoles = children.stream().map(StructureTree::mappedRole).toList();
 
-        return new VisitorContext(
+        return new StructTreeContext(
                 node,
                 path,
                 role,

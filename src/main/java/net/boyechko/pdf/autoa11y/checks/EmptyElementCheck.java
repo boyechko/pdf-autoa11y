@@ -28,7 +28,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /**
  * Detects structure elements with no content (no MCRs, no OBJRs, no children). Uses {@code
@@ -50,7 +50,7 @@ public class EmptyElementCheck implements StructTreeChecker {
     }
 
     @Override
-    public void leaveElement(VisitorContext ctx) {
+    public void leaveElement(StructTreeContext ctx) {
         PdfStructElem node = ctx.node();
         List<IStructureNode> kids = node.getKids();
         if (kids == null || kids.isEmpty()) {

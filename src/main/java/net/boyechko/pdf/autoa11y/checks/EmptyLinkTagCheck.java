@@ -37,7 +37,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Link tags that are missing link description. */
 public class EmptyLinkTagCheck implements StructTreeChecker {
@@ -55,7 +55,7 @@ public class EmptyLinkTagCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         // Get the raw IStructureNode children (includes MCRs, not just PdfStructElems)
         List<IStructureNode> kids = ctx.node().getKids();
         if (kids == null || kids.isEmpty()) {

@@ -27,7 +27,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Figure elements containing text content rather than actual images. */
 public class FigureWithTextCheck implements StructTreeChecker {
@@ -45,7 +45,7 @@ public class FigureWithTextCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (!PdfName.Figure.equals(ctx.node().getRole())) {
             return true;
         }

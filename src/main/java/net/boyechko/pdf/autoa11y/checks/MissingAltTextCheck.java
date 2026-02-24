@@ -32,7 +32,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /**
  * Reports meaningful Figure elements that lack alt text. These are content images large enough to
@@ -53,7 +53,7 @@ public class MissingAltTextCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (!PdfName.Figure.equals(ctx.node().getRole())) {
             return true;
         }
@@ -91,7 +91,7 @@ public class MissingAltTextCheck implements StructTreeChecker {
     }
 
     // TODO: This is a duplicate of the method in MistaggedArtifactCheck
-    private boolean hasImageMcr(VisitorContext ctx, int pageNumber) {
+    private boolean hasImageMcr(StructTreeContext ctx, int pageNumber) {
         for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {
                 continue;

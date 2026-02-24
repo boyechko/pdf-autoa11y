@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Outputs a tabular listing of the structure tree during traversal. */
 public class VerboseOutputVisitor implements StructTreeChecker {
@@ -56,12 +56,12 @@ public class VerboseOutputVisitor implements StructTreeChecker {
     }
 
     @Override
-    public void beforeTraversal(VisitorContext ctx) {
+    public void beforeTraversal(StructTreeContext ctx) {
         printHeader();
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (!headerPrinted) {
             printHeader();
         }
@@ -95,7 +95,7 @@ public class VerboseOutputVisitor implements StructTreeChecker {
                         "-".repeat(CONTENT_SUMMARY_WIDTH)));
     }
 
-    private void printElement(VisitorContext ctx) {
+    private void printElement(StructTreeContext ctx) {
         String paddedIndex = String.format("%" + INDEX_WIDTH + "d", ctx.globalIndex());
         String elementName = INDENT.repeat(ctx.depth()) + "- " + ctx.role();
         int pageNum = ctx.getPageNumber();
