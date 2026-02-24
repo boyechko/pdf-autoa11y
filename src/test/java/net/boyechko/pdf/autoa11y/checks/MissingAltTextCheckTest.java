@@ -33,7 +33,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.Base64;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -51,7 +51,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(1, issues.size(), "Large figure without alt text should be detected");
             assertEquals(IssueType.FIGURE_MISSING_ALT, issues.get(0).type());
             assertNull(issues.get(0).fix(), "Should have no automatic fix");
@@ -65,7 +65,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertTrue(
                     issues.isEmpty(),
                     "Small figure should not be flagged (handled by MistaggedArtifactCheck)");
@@ -79,7 +79,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertTrue(issues.isEmpty(), "Figure with alt text should not be flagged");
         }
     }
@@ -98,7 +98,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertTrue(issues.isEmpty(), "Figure with only text MCRs should not be flagged");
         }
     }

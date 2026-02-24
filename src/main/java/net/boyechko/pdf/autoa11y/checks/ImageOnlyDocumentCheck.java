@@ -24,7 +24,7 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class ImageOnlyDocumentCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         if (ctx.doc().getStructTreeRoot() != null) {
             return new IssueList();
         }

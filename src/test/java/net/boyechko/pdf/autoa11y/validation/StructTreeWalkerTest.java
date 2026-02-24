@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
@@ -80,7 +80,7 @@ class StructTreeWalkerTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(trackingVisitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertTrue(visitedRoles.contains("Document"), "Should visit Document element");
@@ -123,7 +123,7 @@ class StructTreeWalkerTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(pathVisitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertTrue(
@@ -195,7 +195,7 @@ class StructTreeWalkerTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor1);
             walker.addVisitor(visitor2);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         // Both visitors should see the same elements in the same order
@@ -238,7 +238,7 @@ class StructTreeWalkerTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(childRoleVisitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertEquals(2, documentChildRoles.size(), "Document should have 2 children");

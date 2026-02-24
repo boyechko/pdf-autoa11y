@@ -25,7 +25,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -37,7 +37,7 @@ class StructureTreeExistsCheckTest extends PdfTestBase {
     void detectsMissingStructureTree() throws Exception {
         Path ocrPdf = Path.of("src/test/resources/scanned_and_ocred.pdf");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ocrPdf.toString()))) {
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -56,7 +56,7 @@ class StructureTreeExistsCheckTest extends PdfTestBase {
                             layoutDoc.add(new Paragraph("Tagged content"));
                         });
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(taggedPdf.toString()))) {
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -69,7 +69,7 @@ class StructureTreeExistsCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.addNewPage();
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 

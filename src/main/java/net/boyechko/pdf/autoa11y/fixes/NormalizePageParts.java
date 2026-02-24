@@ -29,8 +29,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class NormalizePageParts implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         if (ctx.doc().getNumberOfPages() < 2) {
             return;
         }
@@ -60,7 +60,7 @@ public class NormalizePageParts implements IssueFix {
             return;
         }
 
-        PdfStructElem documentElem = StructureTree.findFirstChild(root, PdfName.Document);
+        PdfStructElem documentElem = StructTree.findFirstChild(root, PdfName.Document);
         if (documentElem == null) {
             return;
         }
@@ -70,7 +70,7 @@ public class NormalizePageParts implements IssueFix {
     }
 
     private Map<Integer, PdfStructElem> createPartsForAllPages(
-            DocumentContext ctx, PdfStructElem documentElem) {
+            DocContext ctx, PdfStructElem documentElem) {
         Map<Integer, PdfStructElem> pageParts = new HashMap<>();
         PdfDocument doc = ctx.doc();
 
@@ -85,7 +85,7 @@ public class NormalizePageParts implements IssueFix {
                 partsCreated++;
                 logger.debug(
                         "Created Part element obj. #{} for page {}",
-                        StructureTree.objNum(partElem),
+                        StructTree.objNum(partElem),
                         pageNum);
             }
             pageParts.put(pageNum, partElem);
@@ -94,9 +94,7 @@ public class NormalizePageParts implements IssueFix {
     }
 
     private void moveContentToParts(
-            DocumentContext ctx,
-            PdfStructElem documentElem,
-            Map<Integer, PdfStructElem> pageParts) {
+            DocContext ctx, PdfStructElem documentElem, Map<Integer, PdfStructElem> pageParts) {
         List<PdfStructElem> elementsToMove = new ArrayList<>();
         List<IStructureNode> kids = documentElem.getKids();
         if (kids == null) {
@@ -110,15 +108,15 @@ public class NormalizePageParts implements IssueFix {
         }
 
         for (PdfStructElem elem : elementsToMove) {
-            int pageNum = StructureTree.determinePageNumber(ctx, elem);
+            int pageNum = StructTree.determinePageNumber(ctx, elem);
             if (pageNum > 0 && pageParts.containsKey(pageNum)) {
                 PdfStructElem targetPart = pageParts.get(pageNum);
-                if (StructureTree.moveElement(documentElem, elem, targetPart)) {
+                if (StructTree.moveElement(documentElem, elem, targetPart)) {
                     elementsMoved++;
                     logger.debug(
                             "Moved {} (obj. #{}) into Part for page {}",
                             elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                            StructureTree.objNum(elem),
+                            StructTree.objNum(elem),
                             pageNum);
                 }
             } else {
@@ -141,7 +139,7 @@ public class NormalizePageParts implements IssueFix {
             }
 
             PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-            if (pg != null && StructureTree.isSamePage(pg, page)) {
+            if (pg != null && StructTree.isSamePage(pg, page)) {
                 return elem;
             }
         }
@@ -167,7 +165,7 @@ public class NormalizePageParts implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 

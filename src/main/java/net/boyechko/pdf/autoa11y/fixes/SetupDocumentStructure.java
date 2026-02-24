@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class SetupDocumentStructure implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null) {
             return;
@@ -54,7 +54,7 @@ public class SetupDocumentStructure implements IssueFix {
         ensureDocumentWrapper(ctx, root);
     }
 
-    private PdfStructElem ensureDocumentWrapper(DocumentContext ctx, PdfStructTreeRoot root) {
+    private PdfStructElem ensureDocumentWrapper(DocContext ctx, PdfStructTreeRoot root) {
         List<IStructureNode> kids = root.getKids();
         if (kids == null || kids.isEmpty()) {
             return root.addKid(new PdfStructElem(ctx.doc(), PdfName.Document));
@@ -117,7 +117,7 @@ public class SetupDocumentStructure implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 }

@@ -21,9 +21,9 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /** Wraps a run of consecutive P elements in L > LI > LBody structure. */
 public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
@@ -33,7 +33,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         if (kids.isEmpty()) {
             return;
         }
@@ -44,8 +44,8 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             logger.debug(
                     "Skipping fix: P element obj. #{} not found in any ancestor's K array "
                             + "(stored parent was obj. #{})",
-                    StructureTree.objNum(firstP),
-                    StructureTree.objNum(parent));
+                    StructTree.objNum(firstP),
+                    StructTree.objNum(parent));
             return;
         }
 
@@ -54,7 +54,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         int insertIndex = -1;
         for (int i = 0; i < parentKids.size(); i++) {
             IStructureNode kid = parentKids.get(i);
-            if (kid instanceof PdfStructElem elem && StructureTree.isSameElement(elem, firstP)) {
+            if (kid instanceof PdfStructElem elem && StructTree.isSameElement(elem, firstP)) {
                 insertIndex = i;
                 break;
             }
@@ -85,7 +85,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         logger.debug(
                 "Wrapped {} P elements in L > LI > LBody under obj. #{}",
                 kids.size(),
-                StructureTree.objNum(actualParent));
+                StructTree.objNum(actualParent));
     }
 
     /**
@@ -99,7 +99,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
         for (int depth = 0; depth < 10 && candidate instanceof PdfStructElem elem; depth++) {
             for (IStructureNode kid : elem.getKids()) {
                 if (kid instanceof PdfStructElem kidElem
-                        && StructureTree.isSameElement(kidElem, target)) {
+                        && StructTree.isSameElement(kidElem, target)) {
                     return elem;
                 }
             }
@@ -114,7 +114,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Retagged suspected list of "
                 + kids.size()
                 + " P elements as a list "

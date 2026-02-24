@@ -20,9 +20,9 @@ package net.boyechko.pdf.autoa11y.fixes.children;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         parent.setRole(PdfName.L);
         for (PdfStructElem kid : kids) {
             PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
@@ -82,12 +82,12 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        int objNum = StructureTree.objNum(parent);
+        int objNum = StructTree.objNum(parent);
         return "Listified P element with links to L element " + Format.objNum(objNum);
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 }

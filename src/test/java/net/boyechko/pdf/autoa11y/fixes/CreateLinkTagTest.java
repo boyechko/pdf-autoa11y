@@ -32,7 +32,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
 class CreateLinkTagTest extends PdfTestBase {
@@ -53,7 +53,7 @@ class CreateLinkTagTest extends PdfTestBase {
             page.addAnnotation(-1, linkAnnot, false);
 
             CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             assertEquals(1, documentElem.getKids().size(), "Document should have one child (Link)");
 
@@ -88,7 +88,7 @@ class CreateLinkTagTest extends PdfTestBase {
                             .setAction(PdfAction.createURI("https://page2.com"));
             page2.addAnnotation(-1, linkAnnot2, false);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
             new CreateLinkTag(linkAnnot2.getPdfObject(), 2).apply(ctx);
@@ -125,7 +125,7 @@ class CreateLinkTagTest extends PdfTestBase {
                     linkAnnot.getPdfObject().containsKey(PdfName.StructParent),
                     "Annotation should not have StructParent before fix");
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
@@ -163,7 +163,7 @@ class CreateLinkTagTest extends PdfTestBase {
             page.addAnnotation(-1, linkAnnot2, false);
             page.addAnnotation(-1, linkAnnot3, false);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
             new CreateLinkTag(linkAnnot2.getPdfObject(), 1).apply(ctx);
@@ -191,7 +191,7 @@ class CreateLinkTagTest extends PdfTestBase {
                             .setAction(PdfAction.createURI("https://example.com"));
             page.addAnnotation(-1, linkAnnot, false);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
             assertThrows(IllegalStateException.class, () -> fix.apply(ctx));
@@ -211,7 +211,7 @@ class CreateLinkTagTest extends PdfTestBase {
                             .setAction(PdfAction.createURI("https://example.com"));
             page.addAnnotation(-1, linkAnnot, false);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(documentElem);
@@ -252,7 +252,7 @@ class CreateLinkTagTest extends PdfTestBase {
                             .setAction(PdfAction.createURI("https://example.com"));
             page2.addAnnotation(-1, linkAnnot, false);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             new CreateLinkTag(linkAnnot.getPdfObject(), 2).apply(ctx);
 
             // The key assertion: verify link is NOT nested under para1 from page 1

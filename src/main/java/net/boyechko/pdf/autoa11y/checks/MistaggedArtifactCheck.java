@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -145,7 +145,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
         boolean foundImageMcid = false;
         Rectangle unionBounds = null;
 
-        for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
+        for (PdfMcr mcr : StructTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {
                 continue;
             }

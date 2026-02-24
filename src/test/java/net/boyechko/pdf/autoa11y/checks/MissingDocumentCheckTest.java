@@ -27,7 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -46,7 +46,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure);
             root.addKid(figure);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -68,7 +68,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
             document.addKid(p);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -87,7 +87,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
             root.addKid(p);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -119,7 +119,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructElem part = new PdfStructElem(pdfDoc, PdfName.Part);
             root.addKid(part);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             MissingDocumentCheck rule = new MissingDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
             Issue issue = issues.get(0);

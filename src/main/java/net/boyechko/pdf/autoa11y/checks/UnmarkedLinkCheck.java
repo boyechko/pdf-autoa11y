@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issue.*;
@@ -45,7 +45,7 @@ public class UnmarkedLinkCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         IssueList issues = new IssueList();
 
         for (int pageNum = 1; pageNum <= ctx.doc().getNumberOfPages(); pageNum++) {

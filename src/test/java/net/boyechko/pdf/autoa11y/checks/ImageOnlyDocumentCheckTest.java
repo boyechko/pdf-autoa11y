@@ -26,7 +26,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -40,7 +40,7 @@ class ImageOnlyDocumentCheckTest extends PdfTestBase {
     @Test
     void detectsImageOnlyDocument() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(IMAGE_ONLY_DOCUMENT.toString()))) {
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -55,7 +55,7 @@ class ImageOnlyDocumentCheckTest extends PdfTestBase {
     void imageOnlyDocumentWithTextIsNotImageOnly() throws Exception {
         try (PdfDocument pdfDoc =
                 new PdfDocument(new PdfReader(SCANNED_AND_OCRED_DOCUMENT.toString()))) {
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -70,7 +70,7 @@ class ImageOnlyDocumentCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.addNewPage();
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
@@ -85,7 +85,7 @@ class ImageOnlyDocumentCheckTest extends PdfTestBase {
                 Document layoutDoc = new Document(pdfDoc)) {
             layoutDoc.add(new Paragraph("This document has text but no tags."));
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 

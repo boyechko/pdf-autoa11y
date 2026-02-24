@@ -28,9 +28,9 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
-import net.boyechko.pdf.autoa11y.document.StructureTree.Node;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -65,7 +65,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
 
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
 
             assertEquals(1, visitor.getIssues().size(), "Should have 1 issue");
             Issue issue = visitor.getIssues().get(0);
@@ -74,11 +74,10 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
                     issue.type(),
                     "Issue type should be PARAGRAPH_OF_LINKS");
 
-            issue.fix().apply(new DocumentContext(pdfDoc));
+            issue.fix().apply(new DocContext(pdfDoc));
 
             Node<String> roleTree =
-                    StructureTree.toRoleTree(
-                            StructureTree.findDocument(pdfDoc.getStructTreeRoot()));
+                    StructTree.toRoleTree(StructTree.findDocument(pdfDoc.getStructTreeRoot()));
             assertEquals(
                     "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",
                     roleTree.toString());
@@ -100,12 +99,12 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
                     layoutDoc.add(p);
                     assertEquals(
                             "Document[P[Link,Span,Link,Span,Link,Span,Link,Span,Link,Span]]",
-                            StructureTree.toRoleTreeString(
-                                    StructureTree.findDocument(pdfDoc.getStructTreeRoot())));
+                            StructTree.toRoleTreeString(
+                                    StructTree.findDocument(pdfDoc.getStructTreeRoot())));
 
                     StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
                     walker.addVisitor(visitor);
-                    walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+                    walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
                     assertEquals(0, visitor.getIssues().size(), "Should have 0 issues");
                 });
     }

@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.*;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 
@@ -42,7 +42,7 @@ public class TabOrderCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         if (ctx.doc().getPage(1).getTabOrder() != null) {
             return new IssueList();
         }
@@ -60,7 +60,7 @@ public class TabOrderCheck implements Check {
                     }
 
                     @Override
-                    public void apply(DocumentContext c) {
+                    public void apply(DocContext c) {
                         int pageCount = c.doc().getNumberOfPages();
                         for (int i = 1; i <= pageCount; i++) {
                             c.doc().getPage(i).setTabOrder(PdfName.S);

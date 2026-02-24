@@ -35,7 +35,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.charset.StandardCharsets;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
 class ConvertToArtifactTest extends PdfTestBase {
@@ -67,7 +67,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                             page.getAnnotations().size(),
                             "Page should have Link annotation before fix");
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(linkElem).apply(ctx);
 
                     assertTrue(
@@ -88,7 +88,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                     PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
                     root.addKid(p);
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(p).apply(ctx);
 
                     assertTrue(
@@ -102,7 +102,7 @@ class ConvertToArtifactTest extends PdfTestBase {
         createStructuredTestPdf(
                 (pdfDoc, firstPage, root, document) -> {
                     PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
 
                     ConvertToArtifact fix = new ConvertToArtifact(p);
                     assertDoesNotThrow(() -> fix.apply(ctx));
@@ -142,7 +142,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                     addMarkedText(
                             firstPage, PdfName.Figure, mcr.getMcid(), "Decorative figure text");
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(figure).apply(ctx);
 
                     assertTrue(
@@ -173,7 +173,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                     child.addKid(mcr);
                     addMarkedText(firstPage, PdfName.P, mcr.getMcid(), "Decorative paragraph text");
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(parent).apply(ctx);
 
                     assertTrue(

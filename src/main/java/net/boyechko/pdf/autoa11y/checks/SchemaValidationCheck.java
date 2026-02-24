@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.child.TagSingleChildFix;
 import net.boyechko.pdf.autoa11y.fixes.children.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -88,7 +88,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
                             IssueLoc.atElem(ctx.node()),
                             String.format(
                                     "%s role is not defined in schema",
-                                    formatRole(StructureTree.mappedRole(ctx.node())))));
+                                    formatRole(StructTree.mappedRole(ctx.node())))));
         }
     }
 

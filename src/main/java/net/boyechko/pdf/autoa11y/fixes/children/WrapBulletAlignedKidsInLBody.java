@@ -25,9 +25,9 @@ import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         /*
          * For moving MCRs between parents, raw K-array manipulation is
          * unavoidable (iText has no MCR-move API). But for struct element
@@ -68,7 +68,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
          * manually, but insert new struct elements via addKid.
          *
          */
-        PdfArray parentK = StructureTree.normalizeKArray(parent);
+        PdfArray parentK = StructTree.normalizeKArray(parent);
         if (parentK == null) {
             return;
         }
@@ -130,7 +130,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         logger.debug(
                 "Wrapped {} raw kids in LBody>P under obj. #{} (bulletY={})",
                 kidIndices.size(),
-                StructureTree.objNum(parent),
+                StructTree.objNum(parent),
                 String.format("%.1f", bulletY));
     }
 
@@ -143,7 +143,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Wrapped "
                 + kidIndices.size()
                 + " bullet-aligned kids in LBody under "

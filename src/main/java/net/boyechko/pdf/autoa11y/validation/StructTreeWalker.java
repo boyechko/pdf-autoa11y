@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class StructTreeWalker {
     private final List<StructTreeChecker> visitors = new ArrayList<>();
 
     private PdfStructTreeRoot root;
-    private DocumentContext docCtx;
+    private DocContext docCtx;
     private int globalIndex;
 
     public StructTreeWalker(TagSchema schema) {
@@ -47,7 +47,7 @@ public class StructTreeWalker {
         return this;
     }
 
-    public IssueList walk(PdfStructTreeRoot root, DocumentContext docCtx) {
+    public IssueList walk(PdfStructTreeRoot root, DocContext docCtx) {
         this.root = root;
         this.docCtx = docCtx;
         this.globalIndex = 0;

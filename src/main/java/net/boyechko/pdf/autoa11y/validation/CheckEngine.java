@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -91,7 +91,7 @@ public class CheckEngine {
         return visitorSuppliers;
     }
 
-    public IssueList detectIssues(DocumentContext ctx) {
+    public IssueList detectIssues(DocContext ctx) {
         IssueList all = new IssueList();
 
         if (!visitorSuppliers.isEmpty()) {
@@ -107,7 +107,7 @@ public class CheckEngine {
         return all;
     }
 
-    public IssueList runVisitors(DocumentContext ctx) {
+    public IssueList runVisitors(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping visitor checks");
@@ -124,13 +124,12 @@ public class CheckEngine {
     }
 
     /** Runs a single visitor in its own tree walk. */
-    public IssueList runSingleVisitor(
-            DocumentContext ctx, Supplier<StructTreeChecker> visitorSupplier) {
+    public IssueList runSingleVisitor(DocContext ctx, Supplier<StructTreeChecker> visitorSupplier) {
         return runVisitor(ctx, visitorSupplier.get());
     }
 
     /** Runs a pre-instantiated visitor in its own tree walk. */
-    public IssueList runVisitor(DocumentContext ctx, StructTreeChecker visitor) {
+    public IssueList runVisitor(DocContext ctx, StructTreeChecker visitor) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping visitor check");
@@ -155,7 +154,7 @@ public class CheckEngine {
         return visitors;
     }
 
-    public IssueList applyFixes(DocumentContext ctx, IssueList issuesToFix) {
+    public IssueList applyFixes(DocContext ctx, IssueList issuesToFix) {
         List<Map.Entry<Issue, IssueFix>> ordered =
                 issuesToFix.stream()
                         .filter(i -> i.fix() != null) // filter nulls first

@@ -17,7 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 public interface Check {
@@ -27,5 +27,5 @@ public interface Check {
 
     String failedMessage();
 
-    IssueList findIssues(DocumentContext ctx);
+    IssueList findIssues(DocContext ctx);
 }

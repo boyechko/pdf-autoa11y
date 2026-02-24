@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
@@ -40,7 +40,7 @@ public final class TreatLblFigureAsBullet extends TagSingleChildFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         PdfStructElem lbl = parent;
         PdfStructElem figure = kid;
         PdfStructElem li = (PdfStructElem) lbl.getParent();
@@ -71,7 +71,7 @@ public final class TreatLblFigureAsBullet extends TagSingleChildFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Replace "
                 + Format.elem(parent, ctx)
                 + " with its "

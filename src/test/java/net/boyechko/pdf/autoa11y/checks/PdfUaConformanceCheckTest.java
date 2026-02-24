@@ -28,7 +28,7 @@ import com.itextpdf.kernel.pdf.WriterProperties;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
@@ -44,7 +44,7 @@ class PdfUaConformanceCheckTest extends PdfTestBase {
         Path pdfPath = createPdfClaimingUa();
 
         try (PdfDocument doc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Should detect false PDF/UA claim");
@@ -64,7 +64,7 @@ class PdfUaConformanceCheckTest extends PdfTestBase {
         try (PdfDocument doc =
                 new PdfDocument(
                         new PdfReader(pdfPath.toString()), new PdfWriter(fixedPath.toString()))) {
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             IssueList issues = rule.findIssues(ctx);
             assertEquals(1, issues.size());
             issues.get(0).fix().apply(ctx);
@@ -86,7 +86,7 @@ class PdfUaConformanceCheckTest extends PdfTestBase {
         }
 
         try (PdfDocument doc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             IssueList issues = rule.findIssues(ctx);
             assertTrue(issues.isEmpty(), "Should pass when no PDF/UA claim");
         }

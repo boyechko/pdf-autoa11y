@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 
@@ -41,7 +41,7 @@ public class StructureTreeExistsCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null) {
             Issue issue =

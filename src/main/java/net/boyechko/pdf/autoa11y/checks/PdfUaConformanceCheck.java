@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.PdfConformance;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.xmp.XMPMeta;
 import java.lang.reflect.Field;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class PdfUaConformanceCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         if (ctx.doc().getConformance().getUAConformance() == null) {
             return new IssueList();
         }
@@ -68,7 +68,7 @@ public class PdfUaConformanceCheck implements Check {
                     }
 
                     @Override
-                    public void apply(DocumentContext c) throws Exception {
+                    public void apply(DocContext c) throws Exception {
                         stripPdfUaXmp(c.doc());
                     }
                 };
