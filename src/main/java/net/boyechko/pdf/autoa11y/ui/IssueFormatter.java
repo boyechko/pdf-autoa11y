@@ -31,9 +31,10 @@ public interface IssueFormatter {
 
     default String formatResolution(Issue issue) {
         IssueMsg resolution = issue.resolution();
-        if (resolution != null) {
-            return format(resolution);
+        if (resolution == null) {
+            throw new IllegalStateException(
+                    "Issue has no resolution payload: " + issue.type() + " :: " + issue.message());
         }
-        return issue.resolutionNote() != null ? issue.resolutionNote() : issue.message();
+        return format(resolution);
     }
 }

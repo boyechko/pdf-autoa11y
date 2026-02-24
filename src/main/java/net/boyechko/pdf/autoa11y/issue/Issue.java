@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.issue;
 
+import java.util.Objects;
+
 /** Represents an accessibility issue found in a PDF document. */
 public final class Issue {
     private final IssueType type;
@@ -78,29 +80,17 @@ public final class Issue {
         return resolved;
     }
 
-    public String resolutionNote() {
-        return resolution != null ? resolution.message() : null;
-    }
-
     public IssueMsg resolution() {
         return resolution;
     }
 
-    public void markResolved(String note) {
-        markResolved(new IssueMsg(note, IssueLoc.none()));
-    }
-
     public void markResolved(IssueMsg resolution) {
         this.resolved = true;
-        this.resolution = resolution;
-    }
-
-    public void markFailed(String note) {
-        markFailed(new IssueMsg(note, IssueLoc.none()));
+        this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 
     public void markFailed(IssueMsg resolution) {
         this.failed = true;
-        this.resolution = resolution;
+        this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 }
