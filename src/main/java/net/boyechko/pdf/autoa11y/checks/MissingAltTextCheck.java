@@ -18,14 +18,8 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
-import java.util.Map;
-import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
@@ -65,7 +59,7 @@ public class MissingAltTextCheck extends StructTreeCheck {
             return true;
         }
 
-        if (!hasImageMcr(ctx, pageNumber)) {
+        if (Content.findImageMcidsForElem(ctx.node(), ctx.docCtx()).isEmpty()) {
             return true;
         }
 
@@ -87,40 +81,5 @@ public class MissingAltTextCheck extends StructTreeCheck {
     @Override
     public IssueList getIssues() {
         return issues;
-    }
-
-    // TODO: This is a duplicate of the method in MistaggedArtifactCheck
-    private boolean hasImageMcr(StructTreeContext ctx, int pageNumber) {
-        for (PdfMcr mcr : StructTree.collectMcrs(ctx.node())) {
-            if (mcr instanceof PdfObjRef) {
-                continue;
-            }
-            int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
-
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                continue;
-            }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
-            if (pageNum <= 0) {
-                continue;
-            }
-
-            Map<Integer, Set<Content.ContentKind>> contentKinds =
-                    ctx.docCtx()
-                            .getOrComputeContentKinds(
-                                    pageNum,
-                                    () ->
-                                            Content.extractContentKindsForPage(
-                                                    ctx.doc().getPage(pageNum)));
-            Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-            if (kinds != null && kinds.contains(Content.ContentKind.IMAGE)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
