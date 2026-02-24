@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.checks.*;
 import net.boyechko.pdf.autoa11y.checks.FigureWithTextCheck;
 import net.boyechko.pdf.autoa11y.validation.Check;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
@@ -41,7 +41,7 @@ public final class ProcessingDefaults {
                 new PdfUaConformanceCheck());
     }
 
-    public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {
+    public static List<Supplier<StructTreeChecker>> visitorSuppliers() {
         return List.of(
                 NeedlessNestingCheck::new,
                 MissingPagePartsCheck::new,

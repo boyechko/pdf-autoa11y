@@ -28,11 +28,11 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /** Detects Part/Sect/Art wrapper elements that add no semantic value. */
-public class NeedlessNestingCheck implements StructureTreeVisitor {
+public class NeedlessNestingCheck implements StructTreeChecker {
 
     private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art", "Div");
 

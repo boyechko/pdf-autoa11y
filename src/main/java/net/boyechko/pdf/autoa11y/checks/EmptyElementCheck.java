@@ -27,14 +27,14 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /**
  * Detects structure elements with no content (no MCRs, no OBJRs, no children). Uses {@code
  * leaveElement()} for bottom-up detection so that leaf-empty elements are found first.
  */
-public class EmptyElementCheck implements StructureTreeVisitor {
+public class EmptyElementCheck implements StructTreeChecker {
 
     private final List<PdfStructElem> emptyElements = new ArrayList<>();
     private final IssueList issues = new IssueList();
