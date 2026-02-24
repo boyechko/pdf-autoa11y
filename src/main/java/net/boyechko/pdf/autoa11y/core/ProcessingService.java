@@ -59,8 +59,8 @@ public class ProcessingService {
         private PdfCustodian custodian;
         private ProcessingListener listener;
         private boolean printStructureTree;
-        private final Set<String> skipVisitors = new HashSet<>();
-        private final Set<String> includeOnlyVisitors = new HashSet<>();
+        private final Set<String> skipChecks = new HashSet<>();
+        private final Set<String> onlyChecks = new HashSet<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -77,13 +77,13 @@ public class ProcessingService {
             return this;
         }
 
-        public ProcessingServiceBuilder skipVisitors(Set<String> visitorClassNames) {
-            skipVisitors.addAll(visitorClassNames);
+        public ProcessingServiceBuilder skipChecks(Set<String> checkClassNames) {
+            skipChecks.addAll(checkClassNames);
             return this;
         }
 
-        public ProcessingServiceBuilder includeOnlyVisitors(Set<String> visitorClassNames) {
-            includeOnlyVisitors.addAll(visitorClassNames);
+        public ProcessingServiceBuilder onlyChecks(Set<String> checkClassNames) {
+            onlyChecks.addAll(checkClassNames);
             return this;
         }
 
@@ -104,8 +104,8 @@ public class ProcessingService {
         this.visitorSuppliers =
                 filterVisitors(
                         ProcessingDefaults.visitorSuppliers(),
-                        builder.skipVisitors,
-                        builder.includeOnlyVisitors);
+                        builder.skipChecks,
+                        builder.onlyChecks);
         if (builder.printStructureTree) {
             visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
@@ -152,7 +152,7 @@ public class ProcessingService {
                                     + " requires "
                                     + prereqName
                                     + ", which was excluded."
-                                    + " To skip both, use: --skip-visitors "
+                                    + " To skip both, use: --skip-checks "
                                     + prereqName
                                     + ","
                                     + visitor.getClass().getSimpleName());

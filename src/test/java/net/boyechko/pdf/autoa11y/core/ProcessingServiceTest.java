@@ -226,7 +226,7 @@ public class ProcessingServiceTest extends PdfTestBase {
                                         .withPdfCustodian(
                                                 new PdfCustodian(TAGGED_BASELINE_PDF, null))
                                         .withListener(new NoOpProcessingListener())
-                                        .skipVisitors(Set.of("NeedlessNestingCheck"))
+                                        .skipChecks(Set.of("NeedlessNestingCheck"))
                                         .build());
         String message = ex.getMessage();
         assertTrue(
