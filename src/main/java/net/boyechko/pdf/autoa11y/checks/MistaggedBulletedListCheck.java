@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * Detects vector bullet glyphs in the content stream and matches them to tagged structure elements
  * by y-position overlap. Elements aligned with bullets are wrapped in L > LI > LBody structure.
  */
-public class MistaggedBulletedListCheck extends StructTreeChecker {
+public class MistaggedBulletedListCheck extends StructTreeCheck {
 
     private static final Logger logger = LoggerFactory.getLogger(MistaggedBulletedListCheck.class);
 

@@ -20,11 +20,11 @@ package net.boyechko.pdf.autoa11y.visitors;
 import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Outputs a tabular listing of the structure tree during traversal. */
-public class VerboseOutputVisitor extends StructTreeChecker {
+public class VerboseOutputVisitor extends StructTreeCheck {
 
     private static final String INDENT = "  ";
     private static final int INDEX_WIDTH = 5;

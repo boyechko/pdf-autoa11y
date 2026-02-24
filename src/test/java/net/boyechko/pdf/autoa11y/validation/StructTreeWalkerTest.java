@@ -50,8 +50,8 @@ class StructTreeWalkerTest extends PdfTestBase {
     void walkerInvokesVisitorForEachElement() throws Exception {
         // Track visited elements
         List<String> visitedRoles = new ArrayList<>();
-        StructTreeChecker trackingVisitor =
-                new StructTreeChecker() {
+        StructTreeCheck trackingVisitor =
+                new StructTreeCheck() {
                     private final IssueList issues = new IssueList();
 
                     @Override
@@ -93,8 +93,8 @@ class StructTreeWalkerTest extends PdfTestBase {
     @Test
     void visitorContextProvidesCorrectPath() throws Exception {
         List<String> paths = new ArrayList<>();
-        StructTreeChecker pathVisitor =
-                new StructTreeChecker() {
+        StructTreeCheck pathVisitor =
+                new StructTreeCheck() {
                     private final IssueList issues = new IssueList();
 
                     @Override
@@ -139,8 +139,8 @@ class StructTreeWalkerTest extends PdfTestBase {
         List<Integer> visitor1Indices = new ArrayList<>();
         List<Integer> visitor2Indices = new ArrayList<>();
 
-        StructTreeChecker visitor1 =
-                new StructTreeChecker() {
+        StructTreeCheck visitor1 =
+                new StructTreeCheck() {
                     private final IssueList issues = new IssueList();
 
                     @Override
@@ -165,8 +165,8 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
                 };
 
-        StructTreeChecker visitor2 =
-                new StructTreeChecker() {
+        StructTreeCheck visitor2 =
+                new StructTreeCheck() {
                     private final IssueList issues = new IssueList();
 
                     @Override
@@ -207,8 +207,8 @@ class StructTreeWalkerTest extends PdfTestBase {
         Path pdfFile = createTestPdf();
 
         List<String> documentChildRoles = new ArrayList<>();
-        StructTreeChecker childRoleVisitor =
-                new StructTreeChecker() {
+        StructTreeCheck childRoleVisitor =
+                new StructTreeCheck() {
                     private final IssueList issues = new IssueList();
 
                     @Override

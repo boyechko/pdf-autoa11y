@@ -34,10 +34,10 @@ class CheckEngineTest {
                         () ->
                                 new CheckEngine(
                                         List.of(),
-                                        List.of(DependentChecker::new, PrereqChecker::new),
+                                        List.of(DependentCheck::new, PrereqCheck::new),
                                         null));
         assertTrue(
-                ex.getMessage().contains("PrereqChecker"),
+                ex.getMessage().contains("PrereqCheck"),
                 "Error should name the missing prerequisite");
     }
 
@@ -46,19 +46,17 @@ class CheckEngineTest {
         assertDoesNotThrow(
                 () ->
                         new CheckEngine(
-                                List.of(),
-                                List.of(PrereqChecker::new, DependentChecker::new),
-                                null));
+                                List.of(), List.of(PrereqCheck::new, DependentCheck::new), null));
     }
 
     @Test
     void acceptsVisitorWithNoPrerequisites() {
-        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqChecker::new), null));
+        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqCheck::new), null));
     }
 
     // --- Stub visitors for testing ---
 
-    static class PrereqChecker extends StructTreeChecker {
+    static class PrereqCheck extends StructTreeCheck {
         @Override
         public String name() {
             return "Prereq";
@@ -75,7 +73,7 @@ class CheckEngineTest {
         }
     }
 
-    static class DependentChecker extends StructTreeChecker {
+    static class DependentCheck extends StructTreeCheck {
         @Override
         public String name() {
             return "Dependent";
@@ -87,8 +85,8 @@ class CheckEngineTest {
         }
 
         @Override
-        public Set<Class<? extends StructTreeChecker>> prerequisites() {
-            return Set.of(PrereqChecker.class);
+        public Set<Class<? extends StructTreeCheck>> prerequisites() {
+            return Set.of(PrereqCheck.class);
         }
 
         @Override

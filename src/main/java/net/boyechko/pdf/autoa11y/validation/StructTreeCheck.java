@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
  * interface. The {@link #findIssues} method creates a {@link StructTreeWalker} internally, walks
  * the tree, and returns the collected issues.
  */
-public abstract class StructTreeChecker implements Check {
+public abstract class StructTreeCheck implements Check {
 
     public abstract String name();
 
@@ -75,7 +75,7 @@ public abstract class StructTreeChecker implements Check {
      * Returns checker classes that must run before this checker. The pipeline validates at
      * construction time that all prerequisites appear earlier in the checker list.
      */
-    public Set<Class<? extends StructTreeChecker>> prerequisites() {
+    public Set<Class<? extends StructTreeCheck>> prerequisites() {
         return Set.of();
     }
 }

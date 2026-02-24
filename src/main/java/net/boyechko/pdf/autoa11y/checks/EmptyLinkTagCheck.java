@@ -36,11 +36,11 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Link tags that are missing link description. */
-public class EmptyLinkTagCheck extends StructTreeChecker {
+public class EmptyLinkTagCheck extends StructTreeCheck {
 
     private final IssueList issues = new IssueList();
 
