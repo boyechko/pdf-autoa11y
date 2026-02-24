@@ -25,13 +25,18 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects Link annotations that are not associated with Link structure elements. */
-public class UnmarkedLinkCheck implements Check {
+public class UnmarkedLinkCheck extends DocumentCheck {
     @Override
     public String name() {
         return "Unmarked Link Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects Link annotations that are not tagged as structure elements";
     }
 
     @Override

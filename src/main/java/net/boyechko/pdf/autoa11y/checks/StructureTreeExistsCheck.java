@@ -20,14 +20,19 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the structure tree root is present. */
-public class StructureTreeExistsCheck implements Check {
+public class StructureTreeExistsCheck extends DocumentCheck {
 
     @Override
     public String name() {
         return "Structure Tree Exists Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects if the document has a structure tree root";
     }
 
     @Override

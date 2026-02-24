@@ -20,15 +20,19 @@ package net.boyechko.pdf.autoa11y.validation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
-/// A checker that checks for a specific kind of issues in the PDF document.
-public interface Check {
-    String name();
+///  A checker for document-level issues.
+public abstract class DocumentCheck implements Check {
+    public abstract String name();
 
-    String description();
+    public abstract String description();
 
-    String passedMessage();
+    public CheckType type() {
+        return CheckType.DOCUMENT;
+    }
 
-    String failedMessage();
+    public abstract String passedMessage();
 
-    IssueList findIssues(DocContext ctx);
+    public abstract String failedMessage();
+
+    public abstract IssueList findIssues(DocContext ctx);
 }

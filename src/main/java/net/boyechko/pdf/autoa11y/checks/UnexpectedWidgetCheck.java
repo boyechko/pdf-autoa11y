@@ -24,7 +24,7 @@ import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.RemoveWidgetAnnotation;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +32,18 @@ import org.slf4j.LoggerFactory;
  * Detects pushbutton Widget annotations that are non-functional remnants from web-to-PDF
  * conversion. These are identified by /FT /Btn with the PushButton flag (bit 17 of /Ff).
  */
-public class UnexpectedWidgetCheck implements Check {
+public class UnexpectedWidgetCheck extends DocumentCheck {
     private static final Logger logger = LoggerFactory.getLogger(UnexpectedWidgetCheck.class);
     private static final int PUSHBUTTON_FLAG = 0x10000; // bit 17 (PDF spec 1-indexed)
 
     @Override
     public String name() {
         return "Unexpected Widget Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects Widget annotation remnants from web-to-PDF conversion";
     }
 
     @Override
