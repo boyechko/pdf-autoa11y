@@ -24,10 +24,12 @@ import net.boyechko.pdf.autoa11y.checks.FigureWithTextCheck;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 
+///  Default document- and structure-tree-level checks.
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
 
-    public static List<Check> rules() {
+    ///  List of default checks that work on the document level.
+    public static List<Check> documentChecks() {
         return List.of(
                 new ImageOnlyDocumentCheck(),
                 new StructureTreeExistsCheck(),
@@ -41,7 +43,8 @@ public final class ProcessingDefaults {
                 new PdfUaConformanceCheck());
     }
 
-    public static List<Supplier<StructTreeChecker>> visitorSuppliers() {
+    ///  List of default checks that work on the structure tree level.
+    public static List<Supplier<StructTreeChecker>> structTreeChecks() {
         return List.of(
                 NeedlessNestingCheck::new,
                 MissingPagePartsCheck::new,

@@ -41,7 +41,7 @@ import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Orchestrates the processing of a PDF document. */
+/// Orchestrates the processing of a PDF document.
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 
@@ -53,7 +53,7 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final CheckEngine checkEngine;
     private final ProcessingListener listener;
-    private final List<Supplier<StructTreeChecker>> visitorSuppliers;
+    private final List<Supplier<StructTreeChecker>> structTreeChecks;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -100,18 +100,16 @@ public class ProcessingService {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
 
-        List<Check> checks = ProcessingDefaults.rules();
-        this.visitorSuppliers =
+        List<Check> checks = ProcessingDefaults.documentChecks();
+        this.structTreeChecks =
                 filterVisitors(
-                        ProcessingDefaults.visitorSuppliers(),
-                        builder.skipChecks,
-                        builder.onlyChecks);
+                        ProcessingDefaults.structTreeChecks(), builder.skipChecks, builder.onlyChecks);
         if (builder.printStructureTree) {
-            visitorSuppliers.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
+            structTreeChecks.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        this.checkEngine = new CheckEngine(checks, visitorSuppliers, schema);
+        this.checkEngine = new CheckEngine(checks, structTreeChecks, schema);
     }
 
     /** Filters the list of visitor suppliers based on the skip and includeOnly sets. */
@@ -217,7 +215,7 @@ public class ProcessingService {
             }
 
             // Steps 1..N: Each visitor in its own pipeline step
-            for (Supplier<StructTreeChecker> supplier : visitorSuppliers) {
+            for (Supplier<StructTreeChecker> supplier : structTreeChecks) {
                 StructTreeChecker visitor = supplier.get();
                 String stepName = sanitizeForFilename(visitor.name());
                 Path output =
@@ -314,7 +312,7 @@ public class ProcessingService {
     /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentRules(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
-        for (Check check : checkEngine.getRules()) {
+        for (Check check : checkEngine.getChecks()) {
             IssueList ruleIssues = check.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
             if (ruleIssues.isEmpty()) {
