@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * Detects vector bullet glyphs in the content stream and matches them to tagged structure elements
  * by y-position overlap. Elements aligned with bullets are wrapped in L > LI > LBody structure.
  */
-public class MistaggedBulletedListCheck implements StructTreeChecker {
+public class MistaggedBulletedListCheck extends StructTreeChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(MistaggedBulletedListCheck.class);
 

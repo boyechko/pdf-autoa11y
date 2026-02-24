@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Child pattern - children don't match required sequence pattern
  * </ol>
  */
-public class SchemaValidationCheck implements StructTreeChecker {
+public class SchemaValidationCheck extends StructTreeChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(SchemaValidationCheck.class);
 

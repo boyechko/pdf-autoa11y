@@ -34,7 +34,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
  * Detects structure elements with no content (no MCRs, no OBJRs, no children). Uses {@code
  * leaveElement()} for bottom-up detection so that leaf-empty elements are found first.
  */
-public class EmptyElementCheck implements StructTreeChecker {
+public class EmptyElementCheck extends StructTreeChecker {
 
     private final List<PdfStructElem> emptyElements = new ArrayList<>();
     private final IssueList issues = new IssueList();

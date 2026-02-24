@@ -58,7 +58,7 @@ class CheckEngineTest {
 
     // --- Stub visitors for testing ---
 
-    static class PrereqChecker implements StructTreeChecker {
+    static class PrereqChecker extends StructTreeChecker {
         @Override
         public String name() {
             return "Prereq";
@@ -75,7 +75,7 @@ class CheckEngineTest {
         }
     }
 
-    static class DependentChecker implements StructTreeChecker {
+    static class DependentChecker extends StructTreeChecker {
         @Override
         public String name() {
             return "Dependent";

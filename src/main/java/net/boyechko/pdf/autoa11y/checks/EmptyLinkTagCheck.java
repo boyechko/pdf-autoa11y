@@ -40,7 +40,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Link tags that are missing link description. */
-public class EmptyLinkTagCheck implements StructTreeChecker {
+public class EmptyLinkTagCheck extends StructTreeChecker {
 
     private final IssueList issues = new IssueList();
 
