@@ -168,7 +168,7 @@ public class MistaggedBulletedListCheck extends StructTreeChecker {
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
                         IssueLoc.atElem(ctx.node()),
-                        run.size() + " elements aligned with vector bullet glyphs",
+                        run.size() + " elements appear to be a list",
                         fix);
         issues.add(issue);
 
