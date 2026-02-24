@@ -21,8 +21,8 @@ import java.util.StringJoiner;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
-/** Renders issue locations with debugging-oriented detail for logs. */
-public final class LogIssueLocFormatter implements IssueLocFormatter {
+/** Renders Issues with debugging-oriented detail for logs. */
+public final class LogIssueFormatter implements IssueFormatter {
 
     @Override
     public String format(IssueLoc where) {

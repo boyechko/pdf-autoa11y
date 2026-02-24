@@ -21,8 +21,8 @@ import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
-/** Strategy interface for rendering issue locations in different output surfaces. */
-public interface IssueLocFormatter {
+/** Strategy interface for rendering Issues in different output surfaces. */
+public interface IssueFormatter {
     String format(IssueLoc where);
 
     default String format(IssueMsg msg) {

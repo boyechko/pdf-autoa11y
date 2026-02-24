@@ -30,14 +30,14 @@ public class LoggingListener implements ProcessingListener {
     private static final Logger logger =
             LoggerFactory.getLogger("net.boyechko.pdf.autoa11y.processing");
 
-    private final IssueLocFormatter issueLocFormatter;
+    private final IssueFormatter issueFormatter;
 
     public LoggingListener() {
-        this(new LogIssueLocFormatter());
+        this(new LogIssueFormatter());
     }
 
-    public LoggingListener(IssueLocFormatter issueLocFormatter) {
-        this.issueLocFormatter = issueLocFormatter;
+    public LoggingListener(IssueFormatter issueFormatter) {
+        this.issueFormatter = issueFormatter;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class LoggingListener implements ProcessingListener {
                         + issue.type()
                         + ": "
                         + issue.message()
-                        + issueLocFormatter.format(issue.where());
+                        + issueFormatter.format(issue.where());
         IssueSev severity = issue.severity();
         if (severity == IssueSev.INFO) {
             logger.info("{}", message);
@@ -71,7 +71,7 @@ public class LoggingListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(Issue issue) {
-        logger.info("FIXED {}: {}", issue.type(), issueLocFormatter.formatResolution(issue));
+        logger.info("FIXED {}: {}", issue.type(), issueFormatter.formatResolution(issue));
     }
 
     @Override

@@ -20,8 +20,8 @@ package net.boyechko.pdf.autoa11y.ui;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
-/** Renders issue locations for user-facing reports and terminal output. */
-public final class UserIssueLocFormatter implements IssueLocFormatter {
+/** Renders Issues for user-facing reports and terminal output. */
+public final class UserIssueFormatter implements IssueFormatter {
 
     @Override
     public String format(IssueLoc where) {
