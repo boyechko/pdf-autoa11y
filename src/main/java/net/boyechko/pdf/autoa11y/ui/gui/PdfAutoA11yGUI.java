@@ -31,6 +31,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
+import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
 import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 
 public class PdfAutoA11yGUI extends JFrame {
@@ -245,7 +246,10 @@ public class PdfAutoA11yGUI extends JFrame {
                                 new ProcessingService.ProcessingServiceBuilder()
                                         .withPdfCustodian(docFactory)
                                         .withListener(reporter)
-                                        .withPrintStructureTree(true)
+                                        .injectStructTreeCheck(
+                                                () ->
+                                                        new StructTreeTablePrinter(
+                                                                reporter::onVerboseOutput))
                                         .build();
 
                         ProcessingResult result = service.remediate();

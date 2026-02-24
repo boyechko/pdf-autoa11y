@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.visitors;
+package net.boyechko.pdf.autoa11y.ui;
 
 import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.document.Content;
@@ -24,7 +24,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Outputs a tabular listing of the structure tree during traversal. */
-public class VerboseOutputVisitor extends StructTreeCheck {
+public class StructTreeTablePrinter extends StructTreeCheck {
 
     private static final String INDENT = "  ";
     private static final int INDEX_WIDTH = 5;
@@ -41,7 +41,7 @@ public class VerboseOutputVisitor extends StructTreeCheck {
     private final Consumer<String> output;
     private boolean headerPrinted = false;
 
-    public VerboseOutputVisitor(Consumer<String> output) {
+    public StructTreeTablePrinter(Consumer<String> output) {
         this.output = output;
     }
 
