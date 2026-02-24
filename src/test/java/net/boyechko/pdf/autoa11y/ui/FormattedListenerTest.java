@@ -22,6 +22,7 @@ import java.io.PrintStream;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Tag;
@@ -65,7 +66,8 @@ public class FormattedListenerTest {
         reporter.onSuccess("Document tab order is set to follow structure tree");
 
         reporter.onFixesSectionStart();
-        missingLanguage.markResolved("Set document language (Lang)");
+        missingLanguage.markResolved(
+                new IssueMsg("Set document language (Lang)", missingLanguage.where()));
         reporter.onIssueFixed(missingLanguage);
 
         reporter.onManualReviewSectionStart();
@@ -98,7 +100,7 @@ public class FormattedListenerTest {
 
         reporter.onFixesSectionStart();
         for (Issue issue : groupedNestingIssues) {
-            issue.markResolved("Flattened needless wrapper");
+            issue.markResolved(new IssueMsg("Flattened needless wrapper", issue.where()));
         }
         reporter.onFixGroup(IssueType.NEEDLESS_NESTING.groupLabel(), groupedNestingIssues);
         summaryIssues.addAll(groupedNestingIssues);

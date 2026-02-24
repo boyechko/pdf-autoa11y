@@ -26,6 +26,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class AccessibilityReportTest {
         IssueList docIssues = new IssueList();
         Issue langIssue =
                 new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
-        langIssue.markResolved("Set document language to \"en\"");
+        langIssue.markResolved(new IssueMsg("Set document language to \"en\"", langIssue.where()));
         docIssues.add(langIssue);
 
         ProcessingResult result = resultWith(docIssues, new IssueList());
@@ -97,7 +98,7 @@ class AccessibilityReportTest {
 
         Issue resolved =
                 new Issue(IssueType.TAG_WRONG_CHILD, IssueSev.WARNING, "Wrong child in Document");
-        resolved.markResolved("Wrapped in Sect");
+        resolved.markResolved(new IssueMsg("Wrapped in Sect", resolved.where()));
         tagIssues.add(resolved);
 
         Issue remaining =
