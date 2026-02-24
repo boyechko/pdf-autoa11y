@@ -46,15 +46,15 @@ import org.slf4j.LoggerFactory;
  *   <li>Child pattern - children don't match required sequence pattern
  * </ol>
  */
-public class SchemaValidationVisitor implements StructureTreeVisitor {
+public class SchemaValidationCheck implements StructureTreeVisitor {
 
-    private static final Logger logger = LoggerFactory.getLogger(SchemaValidationVisitor.class);
+    private static final Logger logger = LoggerFactory.getLogger(SchemaValidationCheck.class);
 
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Schema Validation Visitor";
+        return "Schema Validation Check";
     }
 
     @Override

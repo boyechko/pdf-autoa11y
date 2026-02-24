@@ -42,9 +42,9 @@ import org.slf4j.LoggerFactory;
  * indentation relative to non-run siblings) to identify paragraphs that should be wrapped in list
  * structure.
  */
-public class ParagraphRunVisitor implements StructureTreeVisitor {
+public class ListlikeParagraphsCheck implements StructureTreeVisitor {
 
-    private static final Logger logger = LoggerFactory.getLogger(ParagraphRunVisitor.class);
+    private static final Logger logger = LoggerFactory.getLogger(ListlikeParagraphsCheck.class);
 
     private static final Set<String> CONTAINER_ROLES = Set.of("Part", "Sect", "Div", "Document");
     private static final int MIN_RUN_LENGTH = 3;
@@ -55,7 +55,7 @@ public class ParagraphRunVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Paragraph Run Visitor";
+        return "Listlike Paragraphs Check";
     }
 
     @Override

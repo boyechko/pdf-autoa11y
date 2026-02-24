@@ -40,13 +40,13 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /** Detects Link tags that are missing link description. */
-public class EmptyLinkTagVisitor implements StructureTreeVisitor {
+public class EmptyLinkTagCheck implements StructureTreeVisitor {
 
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Empty Link Tag Visitor";
+        return "Empty Link Tag Check";
     }
 
     @Override

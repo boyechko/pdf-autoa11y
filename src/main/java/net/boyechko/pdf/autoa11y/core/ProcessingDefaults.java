@@ -19,26 +19,8 @@ package net.boyechko.pdf.autoa11y.core;
 
 import java.util.List;
 import java.util.function.Supplier;
-import net.boyechko.pdf.autoa11y.checks.BadlyMappedLigatureCheck;
-import net.boyechko.pdf.autoa11y.checks.BulletGlyphVisitor;
-import net.boyechko.pdf.autoa11y.checks.EmptyElementVisitor;
-import net.boyechko.pdf.autoa11y.checks.EmptyLinkTagVisitor;
-import net.boyechko.pdf.autoa11y.checks.FigureWithTextVisitor;
-import net.boyechko.pdf.autoa11y.checks.ImageOnlyDocumentCheck;
-import net.boyechko.pdf.autoa11y.checks.LanguageSetCheck;
-import net.boyechko.pdf.autoa11y.checks.MissingAltTextVisitor;
-import net.boyechko.pdf.autoa11y.checks.MissingDocumentCheck;
-import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactVisitor;
-import net.boyechko.pdf.autoa11y.checks.NeedlessNestingVisitor;
-import net.boyechko.pdf.autoa11y.checks.PagePartVisitor;
-import net.boyechko.pdf.autoa11y.checks.ParagraphOfLinksVisitor;
-import net.boyechko.pdf.autoa11y.checks.PdfUaConformanceCheck;
-import net.boyechko.pdf.autoa11y.checks.SchemaValidationVisitor;
-import net.boyechko.pdf.autoa11y.checks.StructureTreeExistsCheck;
-import net.boyechko.pdf.autoa11y.checks.TabOrderCheck;
-import net.boyechko.pdf.autoa11y.checks.TaggedPdfCheck;
-import net.boyechko.pdf.autoa11y.checks.UnexpectedWidgetCheck;
-import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkCheck;
+import net.boyechko.pdf.autoa11y.checks.*;
+import net.boyechko.pdf.autoa11y.checks.FigureWithTextCheck;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 
@@ -61,15 +43,15 @@ public final class ProcessingDefaults {
 
     public static List<Supplier<StructureTreeVisitor>> visitorSuppliers() {
         return List.of(
-                NeedlessNestingVisitor::new,
-                PagePartVisitor::new,
-                MistaggedArtifactVisitor::new,
-                FigureWithTextVisitor::new,
-                MissingAltTextVisitor::new,
-                EmptyLinkTagVisitor::new,
-                BulletGlyphVisitor::new,
-                ParagraphOfLinksVisitor::new,
-                EmptyElementVisitor::new,
-                SchemaValidationVisitor::new);
+                NeedlessNestingCheck::new,
+                MissingPagePartsCheck::new,
+                MistaggedArtifactCheck::new,
+                FigureWithTextCheck::new,
+                MissingAltTextCheck::new,
+                EmptyLinkTagCheck::new,
+                MistaggedBulletedListCheck::new,
+                ParagraphOfLinksCheck::new,
+                EmptyElementCheck::new,
+                SchemaValidationCheck::new);
     }
 }

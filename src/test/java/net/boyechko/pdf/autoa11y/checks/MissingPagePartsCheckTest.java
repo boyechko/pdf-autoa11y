@@ -30,7 +30,7 @@ import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
 import org.junit.jupiter.api.Test;
 
-class PagePartVisitorTest extends PdfTestBase {
+class MissingPagePartsCheckTest extends PdfTestBase {
 
     @Test
     void detectsUnbucketedDirectDocumentChildren() throws Exception {
@@ -49,7 +49,7 @@ class PagePartVisitorTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertTrue(
-                    PagePartVisitor.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
                     "Should detect missing page-level Part grouping");
         }
     }
@@ -73,7 +73,7 @@ class PagePartVisitorTest extends PdfTestBase {
             part2.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertFalse(
-                    PagePartVisitor.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
                     "Should not report issue for already normalized structure");
         }
     }
@@ -93,7 +93,7 @@ class PagePartVisitorTest extends PdfTestBase {
             root.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertTrue(
-                    PagePartVisitor.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
                     "Should detect need even without Document element");
         }
     }
@@ -117,7 +117,7 @@ class PagePartVisitorTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
             assertTrue(
-                    PagePartVisitor.needsNormalization(ctx),
+                    MissingPagePartsCheck.needsNormalization(ctx),
                     "Precondition: should need normalization");
 
             NormalizePageParts fix = new NormalizePageParts();
@@ -125,7 +125,7 @@ class PagePartVisitorTest extends PdfTestBase {
 
             DocumentContext freshCtx = new DocumentContext(pdfDoc);
             assertFalse(
-                    PagePartVisitor.needsNormalization(freshCtx),
+                    MissingPagePartsCheck.needsNormalization(freshCtx),
                     "After fix, should not need normalization");
         }
     }

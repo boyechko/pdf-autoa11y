@@ -40,7 +40,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class MissingAltTextVisitorTest extends PdfTestBase {
+class MissingAltTextCheckTest extends PdfTestBase {
     private static final String ONE_PIXEL_PNG_BASE64 =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0s0AAAAASUVORK5CYII=";
 
@@ -49,7 +49,7 @@ class MissingAltTextVisitorTest extends PdfTestBase {
         Path pdfFile = createTaggedImagePdf("large-no-alt.pdf", 200f, null);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new MissingAltTextVisitor());
+            walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
             assertEquals(1, issues.size(), "Large figure without alt text should be detected");
@@ -63,12 +63,12 @@ class MissingAltTextVisitorTest extends PdfTestBase {
         Path pdfFile = createTaggedImagePdf("small-no-alt.pdf", 48f, null);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new MissingAltTextVisitor());
+            walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
             assertTrue(
                     issues.isEmpty(),
-                    "Small figure should not be flagged (handled by MistaggedArtifactVisitor)");
+                    "Small figure should not be flagged (handled by MistaggedArtifactCheck)");
         }
     }
 
@@ -77,7 +77,7 @@ class MissingAltTextVisitorTest extends PdfTestBase {
         Path pdfFile = createTaggedImagePdf("large-with-alt.pdf", 200f, "A photo of a building");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new MissingAltTextVisitor());
+            walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
             assertTrue(issues.isEmpty(), "Figure with alt text should not be flagged");
@@ -86,7 +86,7 @@ class MissingAltTextVisitorTest extends PdfTestBase {
 
     @Test
     void doesNotFlagFigureWithOnlyTextMcrs() throws Exception {
-        // A figure with text content but no image MCR — FigureWithTextVisitor's territory
+        // A figure with text content but no image MCR — FigureWithTextCheck's territory
         Path pdfFile =
                 createTestPdf(
                         testOutputPath("text-figure.pdf"),
@@ -96,7 +96,7 @@ class MissingAltTextVisitorTest extends PdfTestBase {
                         });
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new MissingAltTextVisitor());
+            walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
             assertTrue(issues.isEmpty(), "Figure with only text MCRs should not be flagged");
