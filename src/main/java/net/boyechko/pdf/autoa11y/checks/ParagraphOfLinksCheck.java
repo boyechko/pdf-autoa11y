@@ -34,12 +34,12 @@ public class ParagraphOfLinksCheck extends StructTreeChecker {
 
     @Override
     public String name() {
-        return "Paragraph Of Links Check";
+        return "Paragraph of Links Check";
     }
 
     @Override
     public String description() {
-        return "P elements containing only links should be converted to L elements";
+        return "P element containing only links should be converted to L element";
     }
 
     @Override
