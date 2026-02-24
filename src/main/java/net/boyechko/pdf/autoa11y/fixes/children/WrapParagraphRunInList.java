@@ -68,7 +68,7 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             actualParent.removeKid(p);
         }
 
-        // Create L element and add it at the saved position
+        // Create an L element and add it at the saved position
         PdfStructElem listElem = new PdfStructElem(ctx.doc(), PdfName.L);
         actualParent.addKid(insertIndex, listElem);
 
@@ -115,9 +115,10 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
 
     @Override
     public String describe(DocContext ctx) {
-        return "Retagged suspected list of "
+        return "Wrapped a run of "
                 + kids.size()
-                + " P elements as a list "
-                + Format.elem(parent, ctx);
+                + " P elements in an L > LI > LBody structure ("
+                + Format.page(ctx.getPageNumber(StructTree.objNum(parent)))
+                + ")";
     }
 }
