@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -144,6 +146,39 @@ class AccessibilityReportTest {
                 "Document-Level Issues should appear before Structure Tree Issues");
     }
 
+    @Test
+    void resolvedGroupsUseFixResolvedItemCount() throws IOException {
+        IssueList tagIssues = new IssueList();
+
+        Issue needlessNesting =
+                new Issue(
+                        IssueType.NEEDLESS_NESTING,
+                        IssueSev.WARNING,
+                        "Found grouping wrappers",
+                        new FixedCountIssueFix(49));
+        needlessNesting.markResolved(
+                new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
+        tagIssues.add(needlessNesting);
+
+        Issue pageParts =
+                new Issue(
+                        IssueType.PAGE_PARTS_NOT_NORMALIZED,
+                        IssueSev.WARNING,
+                        "Direct Document children should be grouped into page-level Part elements",
+                        new FixedCountIssueFix(9675));
+        pageParts.markResolved(
+                new IssueMsg(
+                        "Normalized page Parts: created 653 Part(s), moved 9675 element(s)",
+                        IssueLoc.none()));
+        tagIssues.add(pageParts);
+
+        ProcessingResult result = resultWith(new IssueList(), tagIssues);
+        String report = generateReport(result);
+
+        assertContains(report, "[RESOLVED] 49 unnecessary Part/Sect/Art/Div wrappers");
+        assertContains(report, "[RESOLVED] 9675 elements not grouped into page-level Part elements");
+    }
+
     private ProcessingResult resultWith(IssueList docIssues, IssueList tagIssues) {
         IssueList allIssues = new IssueList();
         allIssues.addAll(docIssues);
@@ -179,5 +214,28 @@ class AccessibilityReportTest {
         assertFalse(
                 text.contains(unexpected),
                 "Expected report NOT to contain: \"" + unexpected + "\"\nActual:\n" + text);
+    }
+
+    private static final class FixedCountIssueFix implements IssueFix {
+        private final int resolvedItemCount;
+
+        private FixedCountIssueFix(int resolvedItemCount) {
+            this.resolvedItemCount = resolvedItemCount;
+        }
+
+        @Override
+        public int priority() {
+            return 0;
+        }
+
+        @Override
+        public void apply(DocContext ctx) {
+            // No-op for reporting tests.
+        }
+
+        @Override
+        public int resolvedItemCount() {
+            return resolvedItemCount;
+        }
     }
 }
