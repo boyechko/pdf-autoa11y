@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package net.boyechko.pdf.autoa11y.visitors;
+package net.boyechko.pdf.autoa11y.rules;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -15,10 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.visitors;
+package net.boyechko.pdf.autoa11y.rules;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import net.boyechko.pdf.autoa11y.fixes.children.ListifyParagraphOfLinks;
+import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -28,50 +29,52 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
-    private static final int MIN_LINKS_COUNT = 2;
+/** Detects Figure elements containing text content rather than actual images. */
+public class FigureWithTextVisitor implements StructureTreeVisitor {
+    private static final int MAX_DISPLAY_LENGTH = 30;
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Paragraph Of Links Visitor";
+        return "Figure With Text Visitor";
     }
 
     @Override
     public String description() {
-        return "P elements containing only links should be converted to L elements";
+        return "Figure elements should not contain text content";
     }
 
     @Override
     public boolean enterElement(VisitorContext ctx) {
-        if (ctx.children().size() < MIN_LINKS_COUNT) {
+        if (!PdfName.Figure.equals(ctx.node().getRole())) {
             return true;
         }
 
-        // Skip if the element has non-struct-elem kids (MCRs/OBJRs) that would
-        // be orphaned when we convert Link children to LI > LBody > Link.
-        var allKids = ctx.node().getKids();
-        if (allKids != null && allKids.size() != ctx.children().size()) {
+        int pageNumber = ctx.getPageNumber();
+        if (pageNumber == 0) {
             return true;
         }
 
-        if (ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
-            IssueFix fix = new ListifyParagraphOfLinks(ctx.node(), ctx.children());
-            Issue newIssue =
+        String textContent = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+
+        if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
+            IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);
+            String truncated =
+                    textContent.length() > MAX_DISPLAY_LENGTH
+                            ? textContent.substring(0, MAX_DISPLAY_LENGTH) + "…"
+                            : textContent;
+            Issue issue =
                     new Issue(
-                            IssueType.PARAGRAPH_OF_LINKS,
-                            IssueSev.ERROR,
+                            IssueType.FIGURE_WITH_TEXT,
+                            IssueSev.WARNING,
                             IssueLoc.atElem(ctx.node()),
-                            "Paragraph contains only links",
+                            "Figure contains text: \"" + truncated + "\"",
                             fix);
-            issues.add(newIssue);
+            issues.add(issue);
         }
 
         return true;
     }
-
-    @Override
-    public void leaveElement(VisitorContext ctx) {}
 
     @Override
     public IssueList getIssues() {
