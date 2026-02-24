@@ -71,7 +71,7 @@ public class LoggingListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(Issue issue) {
-        logger.info("FIXED {}: {}", issue.type(), issue.resolutionNote());
+        logger.info("FIXED {}: {}", issue.type(), issueLocFormatter.formatResolution(issue));
     }
 
     @Override
