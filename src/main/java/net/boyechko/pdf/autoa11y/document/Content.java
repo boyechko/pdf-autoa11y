@@ -25,6 +25,7 @@ import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.geom.Vector;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +60,9 @@ public final class Content {
         TEXT,
         IMAGE
     }
+
+    /** MCIDs are only unique on each page. */
+    public record PageMcid(int pageNum, int mcid) {}
 
     private Content() {}
 
@@ -81,6 +86,47 @@ public final class Content {
         }
 
         return result;
+    }
+
+    /**
+     * Finds all image MCIDs referenced by a structure element (including descendant MCRs),
+     * returning a list of unique entries.
+     */
+    public static List<PageMcid> findImageMcidsForElem(PdfStructElem elem, DocContext ctx) {
+        LinkedHashSet<PageMcid> results = new LinkedHashSet<>();
+        if (elem == null || ctx == null) {
+            return List.of();
+        }
+
+        for (PdfMcr mcr : StructTree.collectMcrs(elem)) {
+            if (mcr instanceof PdfObjRef) {
+                continue;
+            }
+            int mcid = mcr.getMcid();
+            if (mcid < 0) {
+                continue;
+            }
+
+            PdfDictionary pageDict = mcr.getPageObject();
+            if (pageDict == null) {
+                continue;
+            }
+            int pageNum = ctx.doc().getPageNumber(pageDict);
+            if (pageNum <= 0) {
+                continue;
+            }
+
+            Map<Integer, Set<ContentKind>> contentKinds =
+                    ctx.getOrComputeContentKinds(
+                            pageNum,
+                            () -> Content.extractContentKindsForPage(ctx.doc().getPage(pageNum)));
+            Set<ContentKind> kinds = contentKinds.get(mcid);
+            if (kinds != null && kinds.contains(ContentKind.IMAGE)) {
+                results.add(new PageMcid(pageNum, mcid));
+            }
+        }
+
+        return List.copyOf(results);
     }
 
     /** Listener that tracks whether each MCID contains text, images, or both. */

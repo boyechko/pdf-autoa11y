@@ -141,7 +141,12 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             return false;
         }
 
-        boolean foundImageMcid = false;
+        Set<Content.PageMcid> imageMcids =
+                Set.copyOf(Content.findImageMcidsForElem(ctx.node(), ctx.docCtx()));
+        if (imageMcids.isEmpty()) {
+            return false;
+        }
+
         Rectangle unionBounds = null;
 
         for (PdfMcr mcr : StructTree.collectMcrs(ctx.node())) {
@@ -168,7 +173,9 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 return false;
             }
 
-            foundImageMcid = foundImageMcid || hasImageContent(ctx, pageNum, mcid);
+            if (!imageMcids.contains(new Content.PageMcid(pageNum, mcid))) {
+                continue;
+            }
 
             Map<Integer, Rectangle> boundsByMcid =
                     ctx.docCtx()
@@ -184,19 +191,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             }
         }
 
-        return foundImageMcid && unionBounds != null && !isMeaningfulSize(unionBounds);
-    }
-
-    private boolean hasImageContent(StructTreeContext ctx, int pageNum, int mcid) {
-        Map<Integer, Set<Content.ContentKind>> contentKinds =
-                ctx.docCtx()
-                        .getOrComputeContentKinds(
-                                pageNum,
-                                () ->
-                                        Content.extractContentKindsForPage(
-                                                ctx.doc().getPage(pageNum)));
-        Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-        return kinds != null && kinds.contains(Content.ContentKind.IMAGE);
+        return unionBounds != null && !isMeaningfulSize(unionBounds);
     }
 
     public static boolean isMeaningfulSize(Rectangle bounds) {
