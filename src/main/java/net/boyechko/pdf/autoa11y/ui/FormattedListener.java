@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class FormattedListener implements ProcessingListener {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
-    private final IssueLocFormatter issueLocFormatter;
+    private final IssueFormatter issueFormatter;
 
     private static final String SUCCESS = "✓";
     private static final String ERROR = "⛔️";
@@ -53,14 +53,14 @@ public class FormattedListener implements ProcessingListener {
     private final ListAppender<ILoggingEvent> logBuffer;
 
     public FormattedListener(PrintStream output, VerbosityLevel verbosity) {
-        this(output, verbosity, new UserIssueLocFormatter());
+        this(output, verbosity, new UserIssueFormatter());
     }
 
     public FormattedListener(
-            PrintStream output, VerbosityLevel verbosity, IssueLocFormatter issueLocFormatter) {
+            PrintStream output, VerbosityLevel verbosity, IssueFormatter issueFormatter) {
         this.output = output;
         this.verbosity = verbosity;
-        this.issueLocFormatter = issueLocFormatter;
+        this.issueFormatter = issueFormatter;
         Logger appLogger = (Logger) LoggerFactory.getLogger("net.boyechko.pdf.autoa11y");
         logBuffer = new ListAppender<>();
         logBuffer.start();
@@ -103,7 +103,7 @@ public class FormattedListener implements ProcessingListener {
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
                 printLine(
-                        issue.message() + issueLocFormatter.format(issue.where()),
+                        issue.message() + issueFormatter.format(issue.where()),
                         WARNING,
                         VerbosityLevel.VERBOSE);
             }
@@ -125,8 +125,7 @@ public class FormattedListener implements ProcessingListener {
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : resolvedIssues) {
-                printLine(
-                        issueLocFormatter.formatResolution(issue), SUCCESS, VerbosityLevel.VERBOSE);
+                printLine(issueFormatter.formatResolution(issue), SUCCESS, VerbosityLevel.VERBOSE);
             }
         }
     }
@@ -159,8 +158,7 @@ public class FormattedListener implements ProcessingListener {
                     printEmptyLine();
                     onSubsection("Manual review needed");
                     for (Issue issue : allIssues.getRemainingIssues()) {
-                        printLine(
-                                issue.message() + issueLocFormatter.format(issue.where()), WARNING);
+                        printLine(issue.message() + issueFormatter.format(issue.where()), WARNING);
                     }
                 }
             }
@@ -175,7 +173,7 @@ public class FormattedListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(Issue issue) {
-        onSuccess(issueLocFormatter.formatResolution(issue));
+        onSuccess(issueFormatter.formatResolution(issue));
     }
 
     @Override
@@ -185,7 +183,7 @@ public class FormattedListener implements ProcessingListener {
 
     @Override
     public void onWarning(Issue issue) {
-        printLine(issue.message() + issueLocFormatter.format(issue.where()), WARNING);
+        printLine(issue.message() + issueFormatter.format(issue.where()), WARNING);
     }
 
     @Override

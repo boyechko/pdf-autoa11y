@@ -36,7 +36,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
  * as a remediation audit trail: what was found, what was fixed, and what remains.
  */
 public final class AccessibilityReport {
-    private static final IssueLocFormatter ISSUE_LOC_FORMATTER = new UserIssueLocFormatter();
+    private static final IssueFormatter ISSUE_FORMATTER = new UserIssueFormatter();
 
     private AccessibilityReport() {}
 
@@ -144,11 +144,11 @@ public final class AccessibilityReport {
 
         if (showResolutionNotes) {
             for (Issue issue : issues) {
-                out.println("  -> " + ISSUE_LOC_FORMATTER.formatResolution(issue));
+                out.println("  -> " + ISSUE_FORMATTER.formatResolution(issue));
             }
         } else {
             for (Issue issue : issues) {
-                out.println("  - " + issue.message() + ISSUE_LOC_FORMATTER.format(issue.where()));
+                out.println("  - " + issue.message() + ISSUE_FORMATTER.format(issue.where()));
             }
         }
     }
