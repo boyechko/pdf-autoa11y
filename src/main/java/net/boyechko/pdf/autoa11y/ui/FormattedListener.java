@@ -139,12 +139,12 @@ public class FormattedListener implements ProcessingListener {
             if (detected == 0 && resolved == 0) {
                 printLine(
                         "Checked "
-                                + ProcessingDefaults.rules().size()
+                                + ProcessingDefaults.documentChecks().size()
                                 + " document-level rules and found no issues",
                         SUCCESS);
                 printLine(
                         "Checked "
-                                + ProcessingDefaults.visitorSuppliers().size()
+                                + ProcessingDefaults.structTreeChecks().size()
                                 + " structure tree rules and found no issues",
                         SUCCESS);
             } else {

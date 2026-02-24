@@ -21,7 +21,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
-/** Interface for reporting progress and results of the processing. */
+/// Interface for reporting progress and results of the processing.
 public interface ProcessingListener {
     void onPhaseStart(String phaseName);
 
