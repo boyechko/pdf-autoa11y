@@ -73,8 +73,8 @@ public class UnexpectedWidgetCheck extends DocumentCheck {
                                     : -1;
                     IssueLoc loc =
                             objNum >= 0
-                                    ? IssueLoc.atObjNum(objNum, pageNum)
-                                    : IssueLoc.atPageNum(pageNum);
+                                    ? IssueLoc.atObj(objNum, pageNum, IssueLoc.ObjKind.ANNOT)
+                                    : IssueLoc.atPage(pageNum);
                     Issue issue =
                             new Issue(
                                     IssueType.UNEXPECTED_WIDGET,

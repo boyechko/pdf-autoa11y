@@ -28,7 +28,6 @@ import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -201,7 +200,7 @@ public class ListlikeParagraphsCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        IssueLoc.atElem(ctx.node()),
+                        locAtElem(ctx),
                         subRun.elements.size()
                                 + " consecutive P elements appear to be a list (indented "
                                 + String.format("%.0f", indent)

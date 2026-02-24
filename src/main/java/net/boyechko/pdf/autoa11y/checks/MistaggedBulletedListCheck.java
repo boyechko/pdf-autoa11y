@@ -32,7 +32,6 @@ import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -167,7 +166,7 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        IssueLoc.atElem(ctx.node()),
+                        locAtElem(ctx),
                         run.size() + " elements appear to be a list",
                         fix);
         issues.add(issue);
@@ -247,7 +246,7 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.BULLET_ALIGNED_KIDS_IN_ELEMENT,
                             IssueSev.WARNING,
-                            IssueLoc.atElem(element),
+                            locAtElem(ctx, element),
                             group.kidIndices().size()
                                     + " raw kids aligned with bullet glyph inside "
                                     + element.getRole().getValue(),

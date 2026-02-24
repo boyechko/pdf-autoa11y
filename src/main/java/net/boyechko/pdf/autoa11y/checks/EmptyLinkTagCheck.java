@@ -39,7 +39,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
-/** Detects Link tags that are missing link description. */
+/** Detects Link tags that are missing link descriptions. */
 public class EmptyLinkTagCheck extends StructTreeCheck {
 
     private final IssueList issues = new IssueList();
@@ -107,7 +107,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.EMPTY_LINK_TAG,
                             IssueSev.WARNING,
-                            IssueLoc.atPageNum(pageNum),
+                            IssueLoc.atPage(pageNum),
                             "Link element (after/inside "
                                     + prev.getRole().getValue()
                                     + ") is missing link description",

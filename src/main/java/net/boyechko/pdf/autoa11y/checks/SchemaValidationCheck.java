@@ -25,7 +25,6 @@ import net.boyechko.pdf.autoa11y.fixes.children.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.PatternMatcher;
@@ -85,7 +84,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.TAG_UNKNOWN_ROLE,
                             IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             String.format(
                                     "%s role is not defined in schema",
                                     formatRole(StructTree.mappedRole(ctx.node())))));
@@ -104,11 +103,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             + " but is "
                             + formatRole(ctx.parentRole());
             issues.add(
-                    new Issue(
-                            IssueType.TAG_WRONG_PARENT,
-                            IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
-                            message));
+                    new Issue(IssueType.TAG_WRONG_PARENT, IssueSev.ERROR, locAtElem(ctx), message));
         }
     }
 
@@ -129,7 +124,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
                             IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             message));
         }
 
@@ -144,7 +139,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
                             IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             message));
         }
     }
@@ -167,7 +162,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                         new Issue(
                                 IssueType.TAG_WRONG_CHILD,
                                 IssueSev.ERROR,
-                                IssueLoc.atElem(ctx.children().get(i)),
+                                locAtElem(ctx, ctx.children().get(i)),
                                 message,
                                 fix));
 
@@ -194,7 +189,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_PATTERN,
                             IssueSev.ERROR,
-                            IssueLoc.atElem(ctx.node()),
+                            locAtElem(ctx),
                             message));
         }
     }
