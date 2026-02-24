@@ -173,4 +173,9 @@ public class NormalizePageParts implements IssueFix {
     public String groupLabel() {
         return "page-level Part elements created";
     }
+
+    @Override
+    public int resolvedItemCount() {
+        return elementsMoved;
+    }
 }

@@ -254,7 +254,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     @Override
     public String describe() {
-        return "Removed " + widgetRef();
+        return "Removed Widget annotation";
     }
 
     @Override

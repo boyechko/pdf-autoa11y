@@ -123,4 +123,9 @@ public class FlattenNesting implements IssueFix {
     public String describe(DocContext ctx) {
         return describe();
     }
+
+    @Override
+    public int resolvedItemCount() {
+        return flattened;
+    }
 }
