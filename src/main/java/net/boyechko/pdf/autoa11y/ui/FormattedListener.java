@@ -125,9 +125,8 @@ public class FormattedListener implements ProcessingListener {
 
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : resolvedIssues) {
-                if (issue.resolutionNote() != null) {
-                    printLine(issue.resolutionNote(), SUCCESS, VerbosityLevel.VERBOSE);
-                }
+                printLine(
+                        issueLocFormatter.formatResolution(issue), SUCCESS, VerbosityLevel.VERBOSE);
             }
         }
     }
@@ -176,7 +175,7 @@ public class FormattedListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(Issue issue) {
-        onSuccess(issue.resolutionNote());
+        onSuccess(issueLocFormatter.formatResolution(issue));
     }
 
     @Override

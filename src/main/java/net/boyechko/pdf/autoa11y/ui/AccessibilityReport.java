@@ -144,9 +144,7 @@ public final class AccessibilityReport {
 
         if (showResolutionNotes) {
             for (Issue issue : issues) {
-                if (issue.resolutionNote() != null) {
-                    out.println("  -> " + issue.resolutionNote());
-                }
+                out.println("  -> " + ISSUE_LOC_FORMATTER.formatResolution(issue));
             }
         } else {
             for (Issue issue : issues) {

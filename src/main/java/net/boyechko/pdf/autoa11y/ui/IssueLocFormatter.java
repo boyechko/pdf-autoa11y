@@ -17,9 +17,23 @@
  */
 package net.boyechko.pdf.autoa11y.ui;
 
+import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Strategy interface for rendering issue locations in different output surfaces. */
 public interface IssueLocFormatter {
     String format(IssueLoc where);
+
+    default String format(IssueMsg msg) {
+        return msg.message() + format(msg.where());
+    }
+
+    default String formatResolution(Issue issue) {
+        IssueMsg resolution = issue.resolution();
+        if (resolution != null) {
+            return format(resolution);
+        }
+        return issue.resolutionNote() != null ? issue.resolutionNote() : issue.message();
+    }
 }
