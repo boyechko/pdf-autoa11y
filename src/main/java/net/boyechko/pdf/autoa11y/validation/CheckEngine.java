@@ -29,6 +29,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,16 +165,21 @@ public class CheckEngine {
                     appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
 
             if (isInvalidated) {
-                i.markResolved("Skipped: resolved by higher priority fix");
+                i.markResolved(new IssueMsg("Skipped: resolved by higher priority fix", i.where()));
                 continue;
             }
 
             try {
                 fx.apply(ctx);
                 appliedFixes.add(fx);
-                i.markResolved(fx.describe(ctx));
+                IssueMsg resolution = fx.describeLocated(ctx);
+                i.markResolved(resolution);
             } catch (Exception ex) {
-                i.markFailed(fx.describe(ctx) + " failed: " + ex.getMessage());
+                IssueMsg resolution = fx.describeLocated(ctx);
+                i.markFailed(
+                        new IssueMsg(
+                                resolution.message() + " failed: " + ex.getMessage(),
+                                resolution.where()));
             }
         }
 

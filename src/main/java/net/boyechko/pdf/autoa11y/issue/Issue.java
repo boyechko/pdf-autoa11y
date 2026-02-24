@@ -27,7 +27,7 @@ public final class Issue {
 
     private boolean resolved;
     private boolean failed;
-    private String resolutionNote;
+    private IssueMsg resolution;
 
     public Issue(IssueType type, IssueSev sev, String message) {
         this(type, sev, IssueLoc.none(), message, null);
@@ -79,16 +79,28 @@ public final class Issue {
     }
 
     public String resolutionNote() {
-        return resolutionNote;
+        return resolution != null ? resolution.message() : null;
+    }
+
+    public IssueMsg resolution() {
+        return resolution;
     }
 
     public void markResolved(String note) {
+        markResolved(new IssueMsg(note, IssueLoc.none()));
+    }
+
+    public void markResolved(IssueMsg resolution) {
         this.resolved = true;
-        this.resolutionNote = note;
+        this.resolution = resolution;
     }
 
     public void markFailed(String note) {
+        markFailed(new IssueMsg(note, IssueLoc.none()));
+    }
+
+    public void markFailed(IssueMsg resolution) {
         this.failed = true;
-        this.resolutionNote = note;
+        this.resolution = resolution;
     }
 }
