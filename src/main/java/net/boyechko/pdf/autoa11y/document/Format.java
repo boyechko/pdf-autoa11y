@@ -92,13 +92,16 @@ public final class Format {
             case IssueLoc.None n -> "";
             case IssueLoc.AtPage(var pageNum) -> " (" + page(pageNum) + ")";
             case IssueLoc.AtObj(var objNum, var pageNum, var kind) -> {
-                String s = " (" + objNum(objNum);
+                String s = " (" + typedObj(kind, objNum);
                 if (pageNum != null) s += ", " + page(pageNum);
                 yield s + ")";
             }
             case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) -> {
                 int objNum = StructTree.objNum(element);
                 if (objNum < 0 && pageNum == null) {
+                    if (role != null && !role.isBlank()) {
+                        yield " (" + role + ")";
+                    }
                     yield "";
                 }
                 String s = " (";
@@ -130,5 +133,16 @@ public final class Format {
      */
     public static String loc(int objNum, int pageNum) {
         return " (" + objNum(objNum) + ", " + page(pageNum) + ")";
+    }
+
+    private static String typedObj(IssueLoc.ObjKind kind, int objNum) {
+        IssueLoc.ObjKind resolvedKind = kind != null ? kind : IssueLoc.ObjKind.GENERIC;
+        return switch (resolvedKind) {
+            case ANNOT -> "annot " + objNum(objNum);
+            case STRUCT_ELEM -> "struct " + objNum(objNum);
+            case FONT -> "font " + objNum(objNum);
+            case XOBJECT -> "xobject " + objNum(objNum);
+            case GENERIC -> objNum(objNum);
+        };
     }
 }
