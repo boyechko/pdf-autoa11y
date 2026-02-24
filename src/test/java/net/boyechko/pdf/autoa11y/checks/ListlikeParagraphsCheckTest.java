@@ -37,7 +37,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class ParagraphRunVisitorTest extends PdfTestBase {
+class ListlikeParagraphsCheckTest extends PdfTestBase {
 
     private Path createTestPdfWithParagraphRun(
             int numParagraphs,
@@ -87,7 +87,7 @@ class ParagraphRunVisitorTest extends PdfTestBase {
         // 1 heading + 2 first-line-indent paragraphs = 3 P elements, all at same edge.
         // They form one run, but no non-run siblings exist → no reference → skipped.
         Path pdfFile = createTestPdfWithParagraphRun(0, "text", 0, 0, 0);
-        ParagraphRunVisitor visitor = new ParagraphRunVisitor();
+        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
@@ -105,7 +105,7 @@ class ParagraphRunVisitorTest extends PdfTestBase {
         // indent = 30pt > 10pt threshold → detected.
         String paragraphText = "These paragraphs are indented relative to the heading.";
         Path pdfFile = createTestPdfWithParagraphRun(5, paragraphText, 0, 30, 0);
-        ParagraphRunVisitor visitor = new ParagraphRunVisitor();
+        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
@@ -124,7 +124,7 @@ class ParagraphRunVisitorTest extends PdfTestBase {
         // Paragraphs are LESS indented than heading → negative indent → not detected.
         String paragraphText = "These paragraphs are not indented relative to the heading.";
         Path pdfFile = createTestPdfWithParagraphRun(5, paragraphText, 30, 0, 0);
-        ParagraphRunVisitor visitor = new ParagraphRunVisitor();
+        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());

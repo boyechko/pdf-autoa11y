@@ -28,13 +28,13 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-public class ParagraphOfLinksVisitor implements StructureTreeVisitor {
+public class ParagraphOfLinksCheck implements StructureTreeVisitor {
     private static final int MIN_LINKS_COUNT = 2;
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Paragraph Of Links Visitor";
+        return "Paragraph Of Links Check";
     }
 
     @Override

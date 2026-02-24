@@ -427,6 +427,6 @@ public class PdfAutoA11yCLI {
                 + "  java PdfAutoA11yCLI -r -t document.pdf\n"
                 + "  java PdfAutoA11yCLI --dump-tree document.pdf\n"
                 + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf\n"
-                + "  java PdfAutoA11yCLI --skip-visitors=NeedlessNestingVisitor,PagePartVisitor document.pdf";
+                + "  java PdfAutoA11yCLI --skip-visitors=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
     }
 }

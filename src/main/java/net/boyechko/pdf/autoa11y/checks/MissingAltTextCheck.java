@@ -39,12 +39,12 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
  * convey information but without descriptions for screen readers. No automatic fix — these need
  * human-written alt text.
  */
-public class MissingAltTextVisitor implements StructureTreeVisitor {
+public class MissingAltTextCheck implements StructureTreeVisitor {
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Missing Alt Text Visitor";
+        return "Missing Alt Text Check";
     }
 
     @Override
@@ -71,7 +71,7 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
         }
 
         Rectangle bounds = Content.getBoundsForElement(ctx.node(), ctx.docCtx(), pageNumber);
-        if (bounds == null || !MistaggedArtifactVisitor.isMeaningfulSize(bounds)) {
+        if (bounds == null || !MistaggedArtifactCheck.isMeaningfulSize(bounds)) {
             return true;
         }
 
@@ -90,7 +90,7 @@ public class MissingAltTextVisitor implements StructureTreeVisitor {
         return issues;
     }
 
-    // TODO: This is a duplicate of the method in MistaggedArtifactVisitor
+    // TODO: This is a duplicate of the method in MistaggedArtifactCheck
     private boolean hasImageMcr(VisitorContext ctx, int pageNumber) {
         for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {

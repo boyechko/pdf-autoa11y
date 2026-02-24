@@ -107,7 +107,7 @@ public class ConvertToArtifact implements IssueFix {
         return false;
     }
 
-    // TODO: This is a duplicate of the method in MistaggedArtifactVisitor?
+    // TODO: This is a duplicate of the method in MistaggedArtifactCheck?
     private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocumentContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
         List<PdfMcr> mcrs = StructureTree.collectMcrs(elem);

@@ -41,7 +41,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class EmptyLinkTagVisitorTest extends PdfTestBase {
+class EmptyLinkTagCheckTest extends PdfTestBase {
 
     @Test
     void detectsAndMovesSiblingMcrIntoLink() throws Exception {
@@ -74,7 +74,7 @@ class EmptyLinkTagVisitorTest extends PdfTestBase {
             DocumentContext ctx = new DocumentContext(pdfDoc);
             ctx.getOrComputeMcidBounds(1, () -> Map.of(mcr.getMcid(), mcrRect));
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new EmptyLinkTagVisitor());
+            walker.addVisitor(new EmptyLinkTagCheck());
             IssueList issues = walker.walk(root, ctx);
 
             assertEquals(1, issues.size(), "Expected one missing-content Link issue");

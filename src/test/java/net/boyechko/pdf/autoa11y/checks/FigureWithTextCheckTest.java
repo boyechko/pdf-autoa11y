@@ -46,9 +46,9 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-public class FigureWithTextVisitorTest extends PdfTestBase {
+public class FigureWithTextCheckTest extends PdfTestBase {
     private Path createTestPdf() throws Exception {
-        String filename = "FigureWithTextVisitorTest.pdf";
+        String filename = "FigureWithTextCheckTest.pdf";
         OutputStream outputStream = testOutputStream(filename);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(outputStream))) {
             pdfDoc.setTagged();
@@ -86,7 +86,7 @@ public class FigureWithTextVisitorTest extends PdfTestBase {
         assertTrue(Files.exists(pdfFile), "PDF file should exist");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new FigureWithTextVisitor());
+            walker.addVisitor(new FigureWithTextCheck());
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
             assertTrue(issues.size() > 0, "Should create at least 1 issue for Figure");
             assertTrue(
@@ -104,9 +104,7 @@ public class FigureWithTextVisitorTest extends PdfTestBase {
             DocumentContext context = new DocumentContext(pdfDoc);
             CheckEngine engine =
                     new CheckEngine(
-                            List.of(),
-                            List.of(FigureWithTextVisitor::new),
-                            TagSchema.loadDefault());
+                            List.of(), List.of(FigureWithTextCheck::new), TagSchema.loadDefault());
 
             IssueList firstRun = engine.runVisitors(context);
             IssueList secondRun = engine.runVisitors(context);

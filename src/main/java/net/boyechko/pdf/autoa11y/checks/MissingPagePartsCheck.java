@@ -39,10 +39,10 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /**
  * Detects when direct Document children should be grouped into page-level Part containers. Runs
- * after NeedlessNestingVisitor so that pre-existing Part wrappers (without /Pg) have already been
+ * after NeedlessNestingCheck so that pre-existing Part wrappers (without /Pg) have already been
  * flattened.
  */
-public class PagePartVisitor implements StructureTreeVisitor {
+public class MissingPagePartsCheck implements StructureTreeVisitor {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
 
     private DocumentContext docCtx;
@@ -50,7 +50,7 @@ public class PagePartVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Page Part Visitor";
+        return "Missing Page Parts Check";
     }
 
     @Override
@@ -84,7 +84,7 @@ public class PagePartVisitor implements StructureTreeVisitor {
 
     @Override
     public Set<Class<? extends StructureTreeVisitor>> prerequisites() {
-        return Set.of(NeedlessNestingVisitor.class);
+        return Set.of(NeedlessNestingCheck.class);
     }
 
     @Override

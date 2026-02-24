@@ -38,7 +38,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /** Visitor that detects tagged content that should be artifacts. */
-public class MistaggedArtifactVisitor implements StructureTreeVisitor {
+public class MistaggedArtifactCheck implements StructureTreeVisitor {
 
     private static final Pattern FOOTER_URL_TIMESTAMP =
             Pattern.compile(
@@ -70,7 +70,7 @@ public class MistaggedArtifactVisitor implements StructureTreeVisitor {
 
     @Override
     public String name() {
-        return "Mistagged Artifact Visitor";
+        return "Mistagged Artifact Check";
     }
 
     @Override

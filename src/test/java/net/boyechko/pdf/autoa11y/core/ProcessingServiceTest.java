@@ -215,7 +215,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void skippingPrerequisiteVisitorFailsWithClearMessage() {
-        // PagePartVisitor depends on NeedlessNestingVisitor.
+        // MissingPagePartsCheck depends on NeedlessNestingCheck.
         // Skipping the prerequisite should fail with an actionable message,
         // not a generic "has not been registered" error from CheckEngine.
         var ex =
@@ -226,14 +226,14 @@ public class ProcessingServiceTest extends PdfTestBase {
                                         .withPdfCustodian(
                                                 new PdfCustodian(TAGGED_BASELINE_PDF, null))
                                         .withListener(new NoOpProcessingListener())
-                                        .skipVisitors(Set.of("NeedlessNestingVisitor"))
+                                        .skipVisitors(Set.of("NeedlessNestingCheck"))
                                         .build());
         String message = ex.getMessage();
         assertTrue(
-                message.contains("NeedlessNestingVisitor"),
+                message.contains("NeedlessNestingCheck"),
                 "Error should name the skipped prerequisite, but was: " + message);
         assertTrue(
-                message.contains("PagePartVisitor"),
+                message.contains("MissingPagePartsCheck"),
                 "Error should name the dependent visitor, but was: " + message);
         assertTrue(
                 message.contains("skip"),

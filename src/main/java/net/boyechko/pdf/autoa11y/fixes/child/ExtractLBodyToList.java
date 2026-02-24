@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Extracts an LBody element from under a non-LI parent (e.g., P) and places it into a proper L > LI
  * > LBody structure. Uses the /T metadata on the LBody --- bullet y-position put there by
- * BulletGlyphVisitor --- to determine insertion order within the L element.
+ * MistaggedBulletedListCheck --- to determine insertion order within the L element.
  */
 public final class ExtractLBodyToList extends TagSingleChildFix {
 

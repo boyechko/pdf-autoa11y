@@ -37,7 +37,7 @@ import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-public class ParagraphOfLinksVisitorTest extends PdfTestBase {
+public class ParagraphOfLinksCheckTest extends PdfTestBase {
     private Path createTestPdf() throws Exception {
         return createTestPdf(
                 (pdfDoc, layoutDoc) -> {
@@ -51,7 +51,7 @@ public class ParagraphOfLinksVisitorTest extends PdfTestBase {
 
     @Test
     void detectsAndFixesParagraphOfLinks() throws Exception {
-        ParagraphOfLinksVisitor visitor = new ParagraphOfLinksVisitor();
+        ParagraphOfLinksCheck visitor = new ParagraphOfLinksCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
@@ -88,7 +88,7 @@ public class ParagraphOfLinksVisitorTest extends PdfTestBase {
 
     @Test
     void ignoresParagraphsWithIntermixedLinks() throws Exception {
-        ParagraphOfLinksVisitor visitor = new ParagraphOfLinksVisitor();
+        ParagraphOfLinksCheck visitor = new ParagraphOfLinksCheck();
 
         createTestPdf(
                 (pdfDoc, layoutDoc) -> {

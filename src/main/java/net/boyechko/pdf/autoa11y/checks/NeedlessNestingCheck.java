@@ -17,11 +17,12 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.fixes.RemoveEmptyElements;
+import java.util.Set;
+import net.boyechko.pdf.autoa11y.fixes.FlattenNesting;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -30,43 +31,41 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
-/**
- * Detects structure elements with no content (no MCRs, no OBJRs, no children). Uses {@code
- * leaveElement()} for bottom-up detection so that leaf-empty elements are found first.
- */
-public class EmptyElementVisitor implements StructureTreeVisitor {
+/** Detects Part/Sect/Art wrapper elements that add no semantic value. */
+public class NeedlessNestingCheck implements StructureTreeVisitor {
 
-    private final List<PdfStructElem> emptyElements = new ArrayList<>();
+    private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art", "Div");
+
+    private final List<PdfStructElem> groupingElementsToFlatten = new ArrayList<>();
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Empty Element Visitor";
+        return "Needless Nesting Check";
     }
 
     @Override
     public String description() {
-        return "Structure elements should contain content";
+        return "Grouping elements should not be overused";
     }
 
     @Override
-    public void leaveElement(VisitorContext ctx) {
-        PdfStructElem node = ctx.node();
-        List<IStructureNode> kids = node.getKids();
-        if (kids == null || kids.isEmpty()) {
-            emptyElements.add(node);
+    public boolean enterElement(VisitorContext ctx) {
+        if (GROUPING_ROLES.contains(ctx.role()) && !isPageContainer(ctx.node())) {
+            groupingElementsToFlatten.add(ctx.node());
         }
+        return true;
     }
 
     @Override
     public void afterTraversal() {
-        if (!emptyElements.isEmpty()) {
-            IssueFix fix = new RemoveEmptyElements(emptyElements);
+        if (!groupingElementsToFlatten.isEmpty()) {
+            IssueFix fix = new FlattenNesting(groupingElementsToFlatten);
             Issue issue =
                     new Issue(
-                            IssueType.EMPTY_ELEMENT,
+                            IssueType.NEEDLESS_NESTING,
                             IssueSev.WARNING,
-                            "Found " + emptyElements.size() + " empty structure element(s)",
+                            "Found " + groupingElementsToFlatten.size() + " grouping elements",
                             fix);
             issues.add(issue);
         }
@@ -75,5 +74,13 @@ public class EmptyElementVisitor implements StructureTreeVisitor {
     @Override
     public IssueList getIssues() {
         return issues;
+    }
+
+    private boolean isPageContainer(PdfStructElem elem) {
+        // Part with /Pg is a page-level container.
+        if (!PdfName.Part.equals(elem.getRole())) {
+            return false;
+        }
+        return elem.getPdfObject().containsKey(PdfName.Pg);
     }
 }
