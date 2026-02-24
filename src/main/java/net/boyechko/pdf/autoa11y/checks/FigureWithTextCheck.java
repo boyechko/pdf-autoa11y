@@ -30,7 +30,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Figure elements containing text content rather than actual images. */
-public class FigureWithTextCheck implements StructTreeChecker {
+public class FigureWithTextCheck extends StructTreeChecker {
     private static final int MAX_DISPLAY_LENGTH = 30;
     private final IssueList issues = new IssueList();
 

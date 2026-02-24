@@ -28,7 +28,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
-public class ParagraphOfLinksCheck implements StructTreeChecker {
+public class ParagraphOfLinksCheck extends StructTreeChecker {
     private static final int MIN_LINKS_COUNT = 2;
     private final IssueList issues = new IssueList();
 

@@ -32,7 +32,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Part/Sect/Art wrapper elements that add no semantic value. */
-public class NeedlessNestingCheck implements StructTreeChecker {
+public class NeedlessNestingCheck extends StructTreeChecker {
 
     private static final Set<String> GROUPING_ROLES = Set.of("Part", "Sect", "Art", "Div");
 

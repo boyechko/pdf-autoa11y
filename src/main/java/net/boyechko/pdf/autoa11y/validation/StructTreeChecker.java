@@ -17,33 +17,65 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
-/** Visitor interface for PDF structure tree traversal. */
-public interface StructTreeChecker {
+/**
+ * Abstract base for checks that walk the PDF structure tree. Subclasses override {@link
+ * #enterElement} and/or {@link #leaveElement} to inspect each node, accumulating issues via {@link
+ * #getIssues}.
+ *
+ * <p>Implements {@link Check} so that tree-walking checks and document-level checks share a common
+ * interface. The {@link #findIssues} method creates a {@link StructTreeWalker} internally, walks
+ * the tree, and returns the collected issues.
+ */
+public abstract class StructTreeChecker implements Check {
 
-    String name();
+    public abstract String name();
 
-    String description();
+    public abstract String description();
 
-    default boolean enterElement(StructTreeContext ctx) {
+    @Override
+    public String passedMessage() {
+        return name() + ": no issues";
+    }
+
+    @Override
+    public String failedMessage() {
+        return name() + ": issues found";
+    }
+
+    @Override
+    public IssueList findIssues(DocContext ctx) {
+        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            return new IssueList();
+        }
+
+        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        walker.addVisitor(this);
+        return walker.walk(root, ctx);
+    }
+
+    public boolean enterElement(StructTreeContext ctx) {
         return true;
     }
 
-    default void leaveElement(StructTreeContext ctx) {}
+    public void leaveElement(StructTreeContext ctx) {}
 
-    default void beforeTraversal(StructTreeContext ctx) {}
+    public void beforeTraversal(StructTreeContext ctx) {}
 
-    default void afterTraversal() {}
+    public void afterTraversal() {}
 
-    IssueList getIssues();
+    public abstract IssueList getIssues();
 
     /**
-     * Returns visitor classes that must run before this visitor. The pipeline validates at
-     * construction time that all prerequisites appear earlier in the visitor list.
+     * Returns checker classes that must run before this checker. The pipeline validates at
+     * construction time that all prerequisites appear earlier in the checker list.
      */
-    default Set<Class<? extends StructTreeChecker>> prerequisites() {
+    public Set<Class<? extends StructTreeChecker>> prerequisites() {
         return Set.of();
     }
 }

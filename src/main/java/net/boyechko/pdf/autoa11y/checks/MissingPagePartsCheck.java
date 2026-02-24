@@ -42,7 +42,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
  * after NeedlessNestingCheck so that pre-existing Part wrappers (without /Pg) have already been
  * flattened.
  */
-public class MissingPagePartsCheck implements StructTreeChecker {
+public class MissingPagePartsCheck extends StructTreeChecker {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
 
     private DocContext docCtx;

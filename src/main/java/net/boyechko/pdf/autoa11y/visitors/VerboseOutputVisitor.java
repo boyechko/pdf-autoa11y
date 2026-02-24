@@ -24,7 +24,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Outputs a tabular listing of the structure tree during traversal. */
-public class VerboseOutputVisitor implements StructTreeChecker {
+public class VerboseOutputVisitor extends StructTreeChecker {
 
     private static final String INDENT = "  ";
     private static final int INDEX_WIDTH = 5;

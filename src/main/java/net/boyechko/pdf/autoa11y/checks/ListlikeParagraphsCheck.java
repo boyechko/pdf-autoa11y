@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * indentation relative to non-run siblings) to identify paragraphs that should be wrapped in list
  * structure.
  */
-public class ListlikeParagraphsCheck implements StructTreeChecker {
+public class ListlikeParagraphsCheck extends StructTreeChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(ListlikeParagraphsCheck.class);
 

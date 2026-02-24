@@ -39,7 +39,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
  * convey information but without descriptions for screen readers. No automatic fix — these need
  * human-written alt text.
  */
-public class MissingAltTextCheck implements StructTreeChecker {
+public class MissingAltTextCheck extends StructTreeChecker {
     private final IssueList issues = new IssueList();
 
     @Override
