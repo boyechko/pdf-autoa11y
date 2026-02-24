@@ -90,14 +90,35 @@ public final class Format {
         return switch (where) {
             case null -> "";
             case IssueLoc.None n -> "";
-            case IssueLoc.AtElem(var e) -> {
-                int n = StructTree.objNum(e);
-                yield n >= 0 ? " (" + objNum(n) + ")" : "";
+            case IssueLoc.AtPage(var pageNum) -> " (" + page(pageNum) + ")";
+            case IssueLoc.AtObj(var objNum, var pageNum, var kind) -> {
+                String s = " (" + objNum(objNum);
+                if (pageNum != null) s += ", " + page(pageNum);
+                yield s + ")";
             }
-            case IssueLoc.AtPageNum(var pn) -> " (" + page(pn) + ")";
-            case IssueLoc.AtObjNum(var o, var p) -> {
-                String s = " (" + objNum(o);
-                if (p != null) s += ", " + page(p);
+            case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) -> {
+                int objNum = StructTree.objNum(element);
+                if (objNum < 0 && pageNum == null) {
+                    yield "";
+                }
+                String s = " (";
+                if (objNum >= 0) {
+                    s += objNum(objNum);
+                    if (pageNum != null) s += ", " + page(pageNum);
+                } else {
+                    s += page(pageNum);
+                }
+                yield s + ")";
+            }
+            case IssueLoc.AtMcid(
+                    var pageNum,
+                    var mcid,
+                    var ownerObjNum,
+                    var role,
+                    var structPath) -> {
+                String s = " (" + mcid(mcid);
+                s += ", " + page(pageNum);
+                if (ownerObjNum != null) s += ", " + objNum(ownerObjNum);
                 yield s + ")";
             }
         };

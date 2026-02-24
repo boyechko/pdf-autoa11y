@@ -73,13 +73,13 @@ class AccessibilityReportTest {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
-                        IssueLoc.atPageNum(3),
+                        IssueLoc.atPage(3),
                         "Figure missing alt text"));
         tagIssues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
-                        IssueLoc.atPageNum(7),
+                        IssueLoc.atPage(7),
                         "Figure missing alt text"));
 
         ProcessingResult result = resultWith(new IssueList(), tagIssues);
