@@ -20,10 +20,10 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.pdf.*;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.Check;
 
 /** Detects if the document tab order is set to follow the structure tree order. */
-public class TabOrderCheck implements Rule {
+public class TabOrderCheck implements Check {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override

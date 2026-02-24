@@ -41,7 +41,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.RuleEngine;
+import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
@@ -102,8 +102,8 @@ public class FigureWithTextVisitorTest extends PdfTestBase {
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             DocumentContext context = new DocumentContext(pdfDoc);
-            RuleEngine engine =
-                    new RuleEngine(
+            CheckEngine engine =
+                    new CheckEngine(
                             List.of(),
                             List.of(FigureWithTextVisitor::new),
                             TagSchema.loadDefault());

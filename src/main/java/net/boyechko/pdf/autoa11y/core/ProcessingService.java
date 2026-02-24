@@ -33,8 +33,8 @@ import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.Rule;
-import net.boyechko.pdf.autoa11y.validation.RuleEngine;
+import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
@@ -51,7 +51,7 @@ public class ProcessingService {
     private static final Path PIPELINE_TEMP_DIR = resolvePipelineTempDir();
 
     private final PdfCustodian custodian;
-    private final RuleEngine ruleEngine;
+    private final CheckEngine checkEngine;
     private final ProcessingListener listener;
     private final List<Supplier<StructureTreeVisitor>> visitorSuppliers;
 
@@ -100,7 +100,7 @@ public class ProcessingService {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
 
-        List<Rule> rules = ProcessingDefaults.rules();
+        List<Check> checks = ProcessingDefaults.rules();
         this.visitorSuppliers =
                 filterVisitors(
                         ProcessingDefaults.visitorSuppliers(),
@@ -111,7 +111,7 @@ public class ProcessingService {
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        this.ruleEngine = new RuleEngine(rules, visitorSuppliers, schema);
+        this.checkEngine = new CheckEngine(checks, visitorSuppliers, schema);
     }
 
     /** Filters the list of visitor suppliers based on the skip and includeOnly sets. */
@@ -230,7 +230,7 @@ public class ProcessingService {
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocumentContext ctx = new DocumentContext(doc);
                     listener.onDetectedSectionStart();
-                    IssueList issues = ruleEngine.runVisitor(ctx, visitor);
+                    IssueList issues = checkEngine.runVisitor(ctx, visitor);
                     allTagIssues.addAll(issues);
 
                     if (!issues.isEmpty()) {
@@ -316,11 +316,11 @@ public class ProcessingService {
     /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentRules(DocumentContext ctx) {
         IssueList allDocIssues = new IssueList();
-        for (Rule rule : ruleEngine.getRules()) {
-            IssueList ruleIssues = rule.findIssues(ctx);
+        for (Check check : checkEngine.getRules()) {
+            IssueList ruleIssues = check.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
             if (ruleIssues.isEmpty()) {
-                listener.onSuccess(rule.passedMessage());
+                listener.onSuccess(check.passedMessage());
             } else {
                 reportIssuesGrouped(ruleIssues);
             }
@@ -336,7 +336,7 @@ public class ProcessingService {
         if (issues.isEmpty()) {
             return new IssueList();
         }
-        IssueList applied = ruleEngine.applyFixes(ctx, issues);
+        IssueList applied = checkEngine.applyFixes(ctx, issues);
         if (!applied.isEmpty()) {
             listener.onFixesSectionStart();
         }
@@ -371,7 +371,7 @@ public class ProcessingService {
             return new IssueList();
         }
 
-        IssueList tagIssues = ruleEngine.runVisitors(context);
+        IssueList tagIssues = checkEngine.runVisitors(context);
 
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");

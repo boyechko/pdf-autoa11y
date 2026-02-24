@@ -24,10 +24,10 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.Check;
 
 /** Detects if the Document element is the highest-level element in the structure tree. */
-public class MissingDocumentCheck implements Rule {
+public class MissingDocumentCheck implements Check {
 
     @Override
     public String name() {

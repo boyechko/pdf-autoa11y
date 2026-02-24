@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.validation;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
-public interface Rule {
+public interface Check {
     String name();
 
     String passedMessage();

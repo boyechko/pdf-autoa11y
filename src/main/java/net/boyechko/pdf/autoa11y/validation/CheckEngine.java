@@ -33,33 +33,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Orchestrates validation using both structure tree visitors and document-level rules.
+ * Orchestrates validation using both structure tree visitors and document-level checks.
  *
  * <p>The engine supports two types of checks:
  *
  * <ul>
  *   <li><b>Visitors</b> ({@link StructureTreeVisitor}): Run during a single traversal of the
  *       structure tree via {@link StructureTreeWalker}. Use for checks that examine tag structure.
- *   <li><b>Rules</b> ({@link Rule}): Run independently after the tree walk. Use for document-level
+ *   <li><b>Rules</b> ({@link Check}): Run independently after the tree walk. Use for document-level
  *       checks (metadata, annotations, pages) that don't need tree traversal.
  * </ul>
  */
-public class RuleEngine {
-    private static final Logger logger = LoggerFactory.getLogger(RuleEngine.class);
+public class CheckEngine {
+    private static final Logger logger = LoggerFactory.getLogger(CheckEngine.class);
 
-    private final List<Rule> rules;
+    private final List<Check> checks;
     private final List<Supplier<StructureTreeVisitor>> visitorSuppliers;
     private final TagSchema schema;
 
-    public RuleEngine(List<Rule> rules) {
-        this(rules, List.of(), null);
+    public CheckEngine(List<Check> checks) {
+        this(checks, List.of(), null);
     }
 
-    public RuleEngine(
-            List<Rule> rules,
+    public CheckEngine(
+            List<Check> checks,
             List<Supplier<StructureTreeVisitor>> visitorSuppliers,
             TagSchema schema) {
-        this.rules = List.copyOf(rules);
+        this.checks = List.copyOf(checks);
         this.visitorSuppliers = List.copyOf(visitorSuppliers);
         this.schema = schema;
         validateVisitorPrerequisites();
@@ -83,8 +83,8 @@ public class RuleEngine {
         }
     }
 
-    public List<Rule> getRules() {
-        return rules;
+    public List<Check> getRules() {
+        return checks;
     }
 
     public List<Supplier<StructureTreeVisitor>> getVisitorSuppliers() {
@@ -99,7 +99,7 @@ public class RuleEngine {
             all.addAll(visitorIssues);
         }
 
-        for (Rule r : rules) {
+        for (Check r : checks) {
             IssueList found = r.findIssues(ctx);
             all.addAll(found);
         }

@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * content on their pages. These documents require OCR before any accessibility remediation can
  * proceed.
  */
-public class ImageOnlyDocumentCheck implements Rule {
+public class ImageOnlyDocumentCheck implements Check {
     private static final Logger logger = LoggerFactory.getLogger(ImageOnlyDocumentCheck.class);
 
     @Override
