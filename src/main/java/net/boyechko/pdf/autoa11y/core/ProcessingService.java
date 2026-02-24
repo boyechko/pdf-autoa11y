@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,7 +38,6 @@ import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
-import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +58,9 @@ public class ProcessingService {
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
         private ProcessingListener listener;
-        private boolean printStructureTree;
         private final Set<String> skipChecks = new HashSet<>();
         private final Set<String> onlyChecks = new HashSet<>();
+        private final List<Supplier<StructTreeCheck>> injectedStructTreeChecks = new ArrayList<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -72,11 +72,6 @@ public class ProcessingService {
             return this;
         }
 
-        public ProcessingServiceBuilder withPrintStructureTree(boolean printStructureTree) {
-            this.printStructureTree = printStructureTree;
-            return this;
-        }
-
         public ProcessingServiceBuilder skipChecks(Set<String> checkClassNames) {
             skipChecks.addAll(checkClassNames);
             return this;
@@ -84,6 +79,11 @@ public class ProcessingService {
 
         public ProcessingServiceBuilder onlyChecks(Set<String> checkClassNames) {
             onlyChecks.addAll(checkClassNames);
+            return this;
+        }
+
+        public ProcessingServiceBuilder injectStructTreeCheck(Supplier<StructTreeCheck> supplier) {
+            injectedStructTreeChecks.add(Objects.requireNonNull(supplier, "supplier"));
             return this;
         }
 
@@ -100,15 +100,13 @@ public class ProcessingService {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
 
-        List<Check> documentChecks = ProcessingDefaults.documentChecks();
+        List<Check> documentChecks = new ArrayList<>(ProcessingDefaults.documentChecks());
         this.structTreeChecks =
                 filterVisitors(
                         ProcessingDefaults.structTreeChecks(),
                         builder.skipChecks,
                         builder.onlyChecks);
-        if (builder.printStructureTree) {
-            structTreeChecks.add(() -> new VerboseOutputVisitor(listener::onVerboseOutput));
-        }
+        structTreeChecks.addAll(builder.injectedStructTreeChecks);
 
         TagSchema schema = TagSchema.loadDefault();
         this.checkEngine = new CheckEngine(documentChecks, structTreeChecks, schema);
@@ -416,8 +414,8 @@ public class ProcessingService {
         }
     }
 
-    /// Cleans up the pipeline directory and temporary files if the [KEEP_PIPELINE_TEMPS] flag
-    /// is false.
+    /// Cleans up the pipeline directory and temporary files if the [#KEEP_PIPELINE_TEMPS] flag is
+    // false.
     private static void cleanupPipelineDir(Path pipelineDir, List<Path> tempFiles) {
         if (KEEP_PIPELINE_TEMPS) {
             logger.debug("Pipeline temps kept at: {}", pipelineDir);

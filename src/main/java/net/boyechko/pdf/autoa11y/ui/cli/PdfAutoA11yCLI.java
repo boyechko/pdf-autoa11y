@@ -43,6 +43,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
+import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
 import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,14 +118,17 @@ public class PdfAutoA11yCLI {
 
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
-            ProcessingService service =
+            ProcessingService.ProcessingServiceBuilder serviceBuilder =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
                             .withListener(listener)
-                            .withPrintStructureTree(config.printStructureTree())
                             .skipChecks(config.skipChecks())
-                            .onlyChecks(config.onlyChecks())
-                            .build();
+                            .onlyChecks(config.onlyChecks());
+            if (config.printStructureTree()) {
+                serviceBuilder.injectStructTreeCheck(
+                        () -> new StructTreeTablePrinter(listener::onVerboseOutput));
+            }
+            ProcessingService service = serviceBuilder.build();
 
             if (config.analyzeOnly()) {
                 service.analyze();
