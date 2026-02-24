@@ -64,8 +64,8 @@ public class PdfAutoA11yCLI {
             Path reportPath,
             VerbosityLevel verbosity,
             boolean printStructureTree,
-            Set<String> skipVisitors,
-            Set<String> includeOnlyVisitors) {
+            Set<String> skipChecks,
+            Set<String> onlyChecks) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -122,8 +122,8 @@ public class PdfAutoA11yCLI {
                             .withPdfCustodian(docFactory)
                             .withListener(listener)
                             .withPrintStructureTree(config.printStructureTree())
-                            .skipVisitors(config.skipVisitors())
-                            .includeOnlyVisitors(config.includeOnlyVisitors())
+                            .skipChecks(config.skipChecks())
+                            .onlyChecks(config.onlyChecks())
                             .build();
 
             if (config.analyzeOnly()) {
@@ -223,12 +223,10 @@ public class PdfAutoA11yCLI {
             } else if (args[i].startsWith("-r=")) {
                 b.reportPath = Paths.get(args[i].substring("-r=".length()));
                 b.generateReport = true;
-            } else if (args[i].startsWith("--skip-visitors=")) {
-                b.skipVisitors =
-                        parseCommaSeparated(args[i].substring("--skip-visitors=".length()));
-            } else if (args[i].startsWith("--include-visitors=")) {
-                b.includeOnlyVisitors =
-                        parseCommaSeparated(args[i].substring("--include-visitors=".length()));
+            } else if (args[i].startsWith("--skip-checks=")) {
+                b.skipChecks = parseCommaSeparated(args[i].substring("--skip-checks=".length()));
+            } else if (args[i].startsWith("--only-checks=")) {
+                b.onlyChecks = parseCommaSeparated(args[i].substring("--only-checks=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
@@ -238,20 +236,18 @@ public class PdfAutoA11yCLI {
                             throw new CLIException("Password not specified after -p");
                         }
                     }
-                    case "--skip-visitors" -> {
+                    case "--skip-checks" -> {
                         if (i + 1 < args.length) {
-                            b.skipVisitors = parseCommaSeparated(args[++i]);
+                            b.skipChecks = parseCommaSeparated(args[++i]);
                         } else {
-                            throw new CLIException(
-                                    "Visitor names not specified after --skip-visitors");
+                            throw new CLIException("Check names not specified after --skip-checks");
                         }
                     }
-                    case "--include-visitors" -> {
+                    case "--only-checks" -> {
                         if (i + 1 < args.length) {
-                            b.includeOnlyVisitors = parseCommaSeparated(args[++i]);
+                            b.onlyChecks = parseCommaSeparated(args[++i]);
                         } else {
-                            throw new CLIException(
-                                    "Visitor names not specified after --include-visitors");
+                            throw new CLIException("Check names not specified after --only-checks");
                         }
                     }
                     case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
@@ -334,8 +330,8 @@ public class PdfAutoA11yCLI {
         Path reportPath;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
         boolean printStructureTree;
-        Set<String> skipVisitors = Set.of();
-        Set<String> includeOnlyVisitors = Set.of();
+        Set<String> skipChecks = Set.of();
+        Set<String> onlyChecks = Set.of();
 
         CLIConfig build() throws CLIException {
             if (inputPath == null) {
@@ -361,8 +357,8 @@ public class PdfAutoA11yCLI {
                     reportPath,
                     verbosity,
                     printStructureTree,
-                    skipVisitors,
-                    includeOnlyVisitors);
+                    skipChecks,
+                    onlyChecks);
         }
 
         private void resolveOutputPath(String baseName) {
@@ -420,13 +416,13 @@ public class PdfAutoA11yCLI {
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save accessibility report (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
-                + "  --skip-visitors <names>     Skip specific visitors (comma-separated class names)\n"
-                + "  --include-visitors <names>  Run only these visitors (comma-separated class names)\n"
+                + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
+                + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
                 + "  java PdfAutoA11yCLI -r -t document.pdf\n"
                 + "  java PdfAutoA11yCLI --dump-tree document.pdf\n"
                 + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf\n"
-                + "  java PdfAutoA11yCLI --skip-visitors=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
+                + "  java PdfAutoA11yCLI --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
     }
 }
