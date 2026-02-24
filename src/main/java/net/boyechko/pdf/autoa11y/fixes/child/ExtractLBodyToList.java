@@ -24,9 +24,9 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         // Find the container parent (Part/Sect/Div/Document) of the P
         IStructureNode container = parent.getParent();
         if (!(container instanceof PdfStructElem containerElem)) {
@@ -68,7 +68,7 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
         }
 
         // Find the P's index in the container's kids
-        int parentIndex = StructureTree.findKidIndex(containerElem, parent);
+        int parentIndex = StructTree.findKidIndex(containerElem, parent);
         if (parentIndex < 0) {
             logger.debug("Cannot extract LBody: P not found in container's kids");
             return;
@@ -90,7 +90,7 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
         // If no L exists, create one and insert after P
         if (listElem == null) {
             listElem = new PdfStructElem(ctx.doc(), PdfName.L);
-            StructureTree.addKidToParent(containerElem, listIndex, listElem);
+            StructTree.addKidToParent(containerElem, listIndex, listElem);
         }
 
         // Remove the LBody from P
@@ -107,8 +107,8 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
 
         logger.debug(
                 "Extracted LBody from obj. #{} into L obj. #{} at position {}",
-                StructureTree.objNum(parent),
-                StructureTree.objNum(listElem),
+                StructTree.objNum(parent),
+                StructTree.objNum(listElem),
                 insertPos);
     }
 
@@ -116,25 +116,24 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
      * Determines where to insert the new LI in the L element based on visual y-position. PDF
      * y-coordinates increase upward, so higher y = earlier in document = earlier in list.
      */
-    private int findInsertPosition(
-            PdfStructElem listElem, PdfStructElem lBody, DocumentContext ctx) {
+    private int findInsertPosition(PdfStructElem listElem, PdfStructElem lBody, DocContext ctx) {
         // Read the bullet y-position from /T metadata
         PdfString tValue = lBody.getPdfObject().getAsString(PdfName.T);
         if (tValue == null) {
             // No metadata — append at end
-            return StructureTree.structKidsOf(listElem).size();
+            return StructTree.structKidsOf(listElem).size();
         }
 
         float bulletY;
         try {
             bulletY = Float.parseFloat(tValue.getValue());
         } catch (NumberFormatException e) {
-            return StructureTree.structKidsOf(listElem).size();
+            return StructTree.structKidsOf(listElem).size();
         }
 
         // Compare against bounds of existing LI elements in the L
-        int pageNum = StructureTree.determinePageNumber(ctx, lBody);
-        List<PdfStructElem> existingLIs = StructureTree.structKidsOf(listElem);
+        int pageNum = StructTree.determinePageNumber(ctx, lBody);
+        List<PdfStructElem> existingLIs = StructTree.structKidsOf(listElem);
 
         for (int i = 0; i < existingLIs.size(); i++) {
             PdfStructElem existingLI = existingLIs.get(i);
@@ -159,7 +158,7 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Extracted LBody from " + Format.elem(parent, ctx) + " into list";
     }
 }

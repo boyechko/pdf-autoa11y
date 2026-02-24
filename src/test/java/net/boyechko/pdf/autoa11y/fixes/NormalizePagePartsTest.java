@@ -29,8 +29,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
 class NormalizePagePartsTest extends PdfTestBase {
@@ -52,7 +52,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(p2);
 
             NormalizePageParts fix = new NormalizePageParts();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
             PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
@@ -78,7 +78,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             root.addKid(document);
 
             NormalizePageParts fix = new NormalizePageParts();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
             PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
@@ -86,12 +86,10 @@ class NormalizePagePartsTest extends PdfTestBase {
             assertNotNull(part2, "Part for page 2 should exist");
 
             assertTrue(
-                    StructureTree.isSamePage(
-                            part1.getPdfObject().getAsDictionary(PdfName.Pg), page1),
+                    StructTree.isSamePage(part1.getPdfObject().getAsDictionary(PdfName.Pg), page1),
                     "/Pg for part 1 should reference page 1");
             assertTrue(
-                    StructureTree.isSamePage(
-                            part2.getPdfObject().getAsDictionary(PdfName.Pg), page2),
+                    StructTree.isSamePage(part2.getPdfObject().getAsDictionary(PdfName.Pg), page2),
                     "/Pg for part 2 should reference page 2");
 
             assertEquals("p. 1", part1.getPdfObject().getAsString(PdfName.T).getValue());
@@ -115,7 +113,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             sect.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
             NormalizePageParts fix = new NormalizePageParts();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> docKids = document.getKids();
             assertEquals(
@@ -145,7 +143,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             NormalizePageParts fix = new NormalizePageParts();
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             fix.apply(ctx);
             fix.apply(ctx);
 
@@ -186,7 +184,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page3));
 
             NormalizePageParts fix = new NormalizePageParts();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             // Existing Part for page 1 should still be there
             PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
@@ -233,7 +231,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page2));
 
             NormalizePageParts fix = new NormalizePageParts();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
             List<IStructureNode> part1Kids = part1.getKids();

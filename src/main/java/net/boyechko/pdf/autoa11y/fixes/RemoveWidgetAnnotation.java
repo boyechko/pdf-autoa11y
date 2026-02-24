@@ -26,9 +26,9 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,14 +57,14 @@ public class RemoveWidgetAnnotation implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         removeFromPageAnnots(ctx);
         removeFromAcroForm(ctx);
         removeObjRefFromStructureTree(ctx);
     }
 
     /** Removes this annotation from the page's /Annots array directly. */
-    private void removeFromPageAnnots(DocumentContext ctx) {
+    private void removeFromPageAnnots(DocContext ctx) {
         PdfDictionary pageDict = ctx.doc().getPage(pageNum).getPdfObject();
         PdfArray annots = pageDict.getAsArray(PdfName.Annots);
         if (annots == null) {
@@ -88,7 +88,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
      * removes from the parent's /Kids. For merged field+widget dicts, removes from /Fields. Cleans
      * up empty parent fields and the AcroForm itself.
      */
-    private void removeFromAcroForm(DocumentContext ctx) {
+    private void removeFromAcroForm(DocContext ctx) {
         PdfDictionary catalog = ctx.doc().getCatalog().getPdfObject();
         PdfDictionary acroForm = catalog.getAsDictionary(PdfName.AcroForm);
         if (acroForm == null) {
@@ -154,12 +154,12 @@ public class RemoveWidgetAnnotation implements IssueFix {
         return false;
     }
 
-    private void removeObjRefFromStructureTree(DocumentContext ctx) {
+    private void removeObjRefFromStructureTree(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null) {
             return;
         }
-        PdfStructElem docElem = StructureTree.findDocument(root);
+        PdfStructElem docElem = StructTree.findDocument(root);
         if (docElem == null) {
             return;
         }
@@ -187,7 +187,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
                             "Removed OBJR for Widget obj. #{} from {} (obj. #{})",
                             objNumber(),
                             elem.getRole().getValue(),
-                            StructureTree.objNum(elem));
+                            StructTree.objNum(elem));
                     return true;
                 }
             } else if (kid instanceof PdfStructElem childElem) {
@@ -201,7 +201,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
 
     /** Removes a specific OBJR entry from a structure element's /K array. */
     private void removeObjRefFromElement(PdfStructElem elem, PdfObjRef objRef) {
-        PdfArray kArray = StructureTree.normalizeKArray(elem);
+        PdfArray kArray = StructTree.normalizeKArray(elem);
         if (kArray == null) {
             return;
         }
@@ -250,7 +250,7 @@ public class RemoveWidgetAnnotation implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 

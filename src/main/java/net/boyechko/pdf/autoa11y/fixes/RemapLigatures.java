@@ -35,7 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
@@ -77,7 +77,7 @@ public class RemapLigatures implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         PdfObject fontObj = ctx.doc().getPdfObject(fontObjNum);
         if (!(fontObj instanceof PdfDictionary fontDict)) {
             return;
@@ -306,7 +306,7 @@ public class RemapLigatures implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Remapped "
                 + replacementByCode.size()
                 + " ligature mapping(s) in font "

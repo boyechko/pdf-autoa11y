@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +52,7 @@ class TagSingleChildFixTest extends PdfTestBase {
                             .map(k -> (PdfStructElem) k)
                             .toList();
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             IssueFix fix = TreatLblFigureAsBullet.tryCreate(figure, lbl);
             assertNotNull(fix, "Fix should be created for Lbl[Figure] pattern");
@@ -89,7 +89,7 @@ class TagSingleChildFixTest extends PdfTestBase {
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
             l.addKid(div);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             IssueFix fix = WrapInLI.tryCreate(div, l);
             assertNotNull(fix, "Fix should be created for L[Div] pattern");
@@ -139,7 +139,7 @@ class TagSingleChildFixTest extends PdfTestBase {
             PdfStructElem paragraph = new PdfStructElem(pdfDoc, PdfName.P);
             li.addKid(paragraph);
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
 
             IssueFix fix = WrapInLBody.tryCreate(paragraph, li);
             assertNotNull(fix, "Fix should be created for LI[P] pattern");

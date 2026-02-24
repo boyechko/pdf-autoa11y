@@ -44,10 +44,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +70,11 @@ public class ConvertToArtifact implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         artifactElement(element, ctx);
     }
 
-    private void artifactElement(PdfStructElem element, DocumentContext ctx) throws IOException {
+    private void artifactElement(PdfStructElem element, DocContext ctx) throws IOException {
         IStructureNode parent = element.getParent();
         if (parent == null) {
             logger.debug("Element already has no parent, skipping");
@@ -90,7 +90,7 @@ public class ConvertToArtifact implements IssueFix {
         Map<PdfPage, Set<Integer>> mcidsByPage = collectMcidsByPage(element, ctx);
         removeAnnotationsForElement(element, ctx);
         rewriteMcidsAsArtifacts(mcidsByPage);
-        StructureTree.removeFromParent(element, parent);
+        StructTree.removeFromParent(element, parent);
     }
 
     private boolean isAttachedToParent(PdfStructElem elem, IStructureNode parent) {
@@ -99,8 +99,7 @@ public class ConvertToArtifact implements IssueFix {
             return false;
         }
         for (IStructureNode kid : parentKids) {
-            if (kid instanceof PdfStructElem kidElem
-                    && StructureTree.isSameElement(kidElem, elem)) {
+            if (kid instanceof PdfStructElem kidElem && StructTree.isSameElement(kidElem, elem)) {
                 return true;
             }
         }
@@ -108,9 +107,9 @@ public class ConvertToArtifact implements IssueFix {
     }
 
     // TODO: This is a duplicate of the method in MistaggedArtifactCheck?
-    private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocumentContext ctx) {
+    private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
-        List<PdfMcr> mcrs = StructureTree.collectMcrs(elem);
+        List<PdfMcr> mcrs = StructTree.collectMcrs(elem);
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
             if (mcid < 0) {
@@ -276,8 +275,8 @@ public class ConvertToArtifact implements IssueFix {
      * Walks the structure element's subtree, collects all PdfObjRef children, filters to Link
      * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
      */
-    private void removeAnnotationsForElement(PdfStructElem elem, DocumentContext ctx) {
-        List<PdfObjRef> objRefs = StructureTree.collectObjRefs(elem);
+    private void removeAnnotationsForElement(PdfStructElem elem, DocContext ctx) {
+        List<PdfObjRef> objRefs = StructTree.collectObjRefs(elem);
 
         logger.trace("Found {} object ref(s) in {}", objRefs.size(), Format.elem(elem));
 
@@ -297,7 +296,7 @@ public class ConvertToArtifact implements IssueFix {
      * falls back to a full-document scan. Delegates actual removal to {@link
      * #removeMatchingAnnotationsFromPage}.
      */
-    private void findAndRemoveAnnotation(PdfDictionary annotDict, DocumentContext ctx) {
+    private void findAndRemoveAnnotation(PdfDictionary annotDict, DocContext ctx) {
         int annotObjNum =
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
@@ -387,14 +386,14 @@ public class ConvertToArtifact implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Artifacted " + Format.elem(element, ctx);
     }
 
     @Override
     public boolean invalidates(IssueFix otherFix) {
         if (otherFix instanceof ConvertToArtifact other) {
-            return StructureTree.isDescendantOf(other.element, this.element);
+            return StructTree.isDescendantOf(other.element, this.element);
         }
         return false;
     }

@@ -40,7 +40,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
@@ -187,7 +187,7 @@ public class PdfAutoA11yCLI {
                     System.err.println("✗ PDF has no structure tree");
                     System.exit(1);
                 }
-                PdfStructElem docElem = StructureTree.findDocument(root);
+                PdfStructElem docElem = StructTree.findDocument(root);
                 if (docElem == null) {
                     System.err.println("✗ Structure tree has no Document element");
                     System.exit(1);
@@ -198,9 +198,9 @@ public class PdfAutoA11yCLI {
                         PdfPage page = pdfDoc.getPage(i);
                         contentKinds.putAll(Content.extractContentKindsForPage(page));
                     }
-                    System.out.print(StructureTree.toDetailedTreeString(docElem, contentKinds));
+                    System.out.print(StructTree.toDetailedTreeString(docElem, contentKinds));
                 } else {
-                    System.out.print(StructureTree.toIndentedTreeString(docElem));
+                    System.out.print(StructTree.toIndentedTreeString(docElem));
                 }
             }
         } catch (Exception e) {

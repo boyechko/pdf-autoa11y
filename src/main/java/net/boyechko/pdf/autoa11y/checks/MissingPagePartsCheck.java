@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -45,7 +45,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 public class MissingPagePartsCheck implements StructTreeChecker {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
 
-    private DocumentContext docCtx;
+    private DocContext docCtx;
     private final IssueList issues = new IssueList();
 
     @Override
@@ -92,7 +92,7 @@ public class MissingPagePartsCheck implements StructTreeChecker {
         return issues;
     }
 
-    static boolean needsNormalization(DocumentContext ctx) {
+    static boolean needsNormalization(DocContext ctx) {
         if (ctx.doc().getNumberOfPages() < MINIMUM_NUMBER_OF_PAGES) {
             return false;
         }
@@ -107,7 +107,7 @@ public class MissingPagePartsCheck implements StructTreeChecker {
             return false;
         }
 
-        PdfStructElem documentElem = StructureTree.findFirstChild(root, PdfName.Document);
+        PdfStructElem documentElem = StructTree.findFirstChild(root, PdfName.Document);
         if (documentElem == null) {
             return rootKids.stream().anyMatch(kid -> kid instanceof PdfStructElem);
         }
@@ -124,7 +124,7 @@ public class MissingPagePartsCheck implements StructTreeChecker {
 
         for (IStructureNode kid : documentKids) {
             if (kid instanceof PdfStructElem elem && !PdfName.Part.equals(elem.getRole())) {
-                int pageNum = StructureTree.determinePageNumber(ctx, elem);
+                int pageNum = StructTree.determinePageNumber(ctx, elem);
                 if (pageNum > 0) {
                     return true;
                 }

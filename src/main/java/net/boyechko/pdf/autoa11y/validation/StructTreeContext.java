@@ -22,8 +22,8 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
  * Immutable context passed to visitors during structure tree traversal. Contains pre-computed
@@ -43,7 +43,7 @@ public record StructTreeContext(
         int depth,
         /** Index in traversal order (1-based). */
         int globalIndex,
-        DocumentContext docCtx) {
+        DocContext docCtx) {
 
     /**
      * Creates a StructTreeContext from a PdfStructElem and internal state.
@@ -62,18 +62,18 @@ public record StructTreeContext(
             int depth,
             int globalIndex,
             TagSchema schema,
-            DocumentContext docCtx) {
+            DocContext docCtx) {
         // TODO: Update callers to use mappedRole, then change to PdfName.
-        String role = StructureTree.mappedRole(node);
-        String mappedRole = StructureTree.mappedRole(node);
+        String role = StructTree.mappedRole(node);
+        String mappedRole = StructTree.mappedRole(node);
         String path = parentPath + role + "[" + globalIndex + "]";
         TagSchema.Rule schemaRule = schema != null ? schema.roles.get(role) : null;
 
-        PdfStructElem parent = StructureTree.parentOf(node);
-        String parentRole = parent != null ? StructureTree.mappedRole(parent) : null;
+        PdfStructElem parent = StructTree.parentOf(node);
+        String parentRole = parent != null ? StructTree.mappedRole(parent) : null;
 
-        List<PdfStructElem> children = StructureTree.structKidsOf(node);
-        List<String> childRoles = children.stream().map(StructureTree::mappedRole).toList();
+        List<PdfStructElem> children = StructTree.structKidsOf(node);
+        List<String> childRoles = children.stream().map(StructTree::mappedRole).toList();
 
         return new StructTreeContext(
                 node,
@@ -101,7 +101,7 @@ public record StructTreeContext(
             return doc().getPageNumber(pg);
         }
 
-        int objNum = StructureTree.objNum(node);
+        int objNum = StructTree.objNum(node);
         if (objNum >= 0) {
             return docCtx.getPageNumber(objNum);
         }
@@ -110,7 +110,7 @@ public record StructTreeContext(
     }
 
     public int getObjNum() {
-        return StructureTree.objNum(node);
+        return StructTree.objNum(node);
     }
 
     public boolean hasRole(String roleName) {

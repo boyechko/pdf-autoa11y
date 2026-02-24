@@ -21,9 +21,9 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class FlattenNesting implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         // Process in reverse order to handle nested wrappers correctly
         for (int i = elementsToFlatten.size() - 1; i >= 0; i--) {
             PdfStructElem wrapper = elementsToFlatten.get(i);
@@ -63,13 +63,13 @@ public class FlattenNesting implements IssueFix {
 
         List<PdfStructElem> childrenToMove = collectStructElemChildren(wrapper);
         if (childrenToMove.isEmpty()) {
-            StructureTree.removeFromParent(wrapper, parentNode);
+            StructTree.removeFromParent(wrapper, parentNode);
             flattened++;
             return;
         }
 
         // Find wrapper's position among parent's kids
-        int wrapperIndex = StructureTree.findKidIndex(parentNode, wrapper);
+        int wrapperIndex = StructTree.findKidIndex(parentNode, wrapper);
         if (wrapperIndex < 0) {
             logger.debug("Could not find {} in parent kids", Format.elem(wrapper));
             return;
@@ -78,7 +78,7 @@ public class FlattenNesting implements IssueFix {
         // Remove wrapper from parent, then promote children at the same position.
         // Using iText's addKid/removeKid API (not raw K-array manipulation) so that
         // iText's internal caches stay consistent with the actual tree structure.
-        StructureTree.removeFromParent(wrapper, parentNode);
+        StructTree.removeFromParent(wrapper, parentNode);
         promoteChildren(wrapper, childrenToMove, wrapperIndex, parentNode);
 
         flattened++;
@@ -110,7 +110,7 @@ public class FlattenNesting implements IssueFix {
         for (int i = 0; i < children.size(); i++) {
             PdfStructElem child = children.get(i);
             wrapper.removeKid(child);
-            StructureTree.addKidToParent(newParent, insertIndex + i, child);
+            StructTree.addKidToParent(newParent, insertIndex + i, child);
         }
     }
 
@@ -120,7 +120,7 @@ public class FlattenNesting implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 }

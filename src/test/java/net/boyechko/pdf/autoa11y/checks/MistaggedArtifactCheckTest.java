@@ -36,7 +36,7 @@ import java.nio.file.Path;
 import java.util.Base64;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -133,7 +133,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
 
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(1, issues.size());
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
         }
@@ -147,7 +147,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
                 new PdfDocument(
                         new PdfReader(inputFile.toString()),
                         new PdfWriter(outputFile.toString()))) {
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             PdfStructElem p =
                     (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0).getKids().get(1);
             ConvertToArtifact fix = new ConvertToArtifact(p);
@@ -165,7 +165,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(
                     1, issues.size(), "Tiny tagged image should be flagged as mistagged artifact");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
@@ -183,7 +183,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(1, issues.size(), "Decorative figure without alt text should be flagged");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
             assertTrue(issues.get(0).message().contains("Decorative image"));
@@ -198,7 +198,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(0, issues.size(), "Meaningful-size figure should not be auto-artifacted");
         }
     }
@@ -211,7 +211,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
 
-            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(0, issues.size(), "Figure with alt text should not be flagged");
         }
     }

@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.RemapLigatures;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -50,7 +50,7 @@ public class BadlyMappedLigatureCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         IssueList issues = new IssueList();
 
         Map<Integer, Integer> firstPageByFontObjNum = new LinkedHashMap<>();
@@ -87,7 +87,7 @@ public class BadlyMappedLigatureCheck implements Check {
     }
 
     private void collectType0Fonts(
-            DocumentContext ctx,
+            DocContext ctx,
             Map<Integer, PdfDictionary> fontsByObjNum,
             Map<Integer, Integer> firstPageByFontObjNum) {
         for (int pageNum = 1; pageNum <= ctx.doc().getNumberOfPages(); pageNum++) {

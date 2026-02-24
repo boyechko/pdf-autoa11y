@@ -27,7 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
 class SetupDocumentStructureTest extends PdfTestBase {
@@ -43,7 +43,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             root.addKid(new PdfStructElem(pdfDoc, new PdfName("P")));
 
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> rootKids = root.getKids();
             assertEquals(1, rootKids.size(), "Root should contain only Document");
@@ -69,7 +69,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             document.addKid(heading);
 
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            fix.apply(new DocumentContext(pdfDoc));
+            fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> rootKids = root.getKids();
             assertEquals(1, rootKids.size(), "Existing Document should be kept");
@@ -89,7 +89,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
 
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             fix.apply(ctx);
             fix.apply(ctx);
 
@@ -106,7 +106,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             pdfDoc.addNewPage();
 
             SetupDocumentStructure fix = new SetupDocumentStructure();
-            assertDoesNotThrow(() -> fix.apply(new DocumentContext(pdfDoc)));
+            assertDoesNotThrow(() -> fix.apply(new DocContext(pdfDoc)));
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             List<IStructureNode> rootKids = root.getKids();

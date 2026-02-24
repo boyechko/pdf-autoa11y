@@ -23,8 +23,8 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
 class WrapParagraphRunInListTest extends PdfTestBase {
@@ -39,17 +39,16 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals(
-                            "Document[P, P, P]", StructureTree.toRoleTree(document).toString());
+                    assertEquals("Document[P, P, P]", StructTree.toRoleTree(document).toString());
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
                             new WrapParagraphRunInList(document, List.of(p1, p2, p3));
                     fix.apply(ctx);
 
                     assertEquals(
                             "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
-                            StructureTree.toRoleTree(document).toString());
+                            StructTree.toRoleTree(document).toString());
                 });
     }
 
@@ -63,17 +62,16 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals(
-                            "Document[P, P, P]", StructureTree.toRoleTree(document).toString());
+                    assertEquals("Document[P, P, P]", StructTree.toRoleTree(document).toString());
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
                             new WrapParagraphRunInList(document, List.of(p1, p2, p3));
                     fix.apply(ctx);
 
                     assertEquals(
                             "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
-                            StructureTree.toRoleTree(document).toString());
+                            StructTree.toRoleTree(document).toString());
                 });
     }
 }

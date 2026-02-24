@@ -25,7 +25,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -92,7 +92,7 @@ public class MissingAltTextCheck implements StructTreeChecker {
 
     // TODO: This is a duplicate of the method in MistaggedArtifactCheck
     private boolean hasImageMcr(StructTreeContext ctx, int pageNumber) {
-        for (PdfMcr mcr : StructureTree.collectMcrs(ctx.node())) {
+        for (PdfMcr mcr : StructTree.collectMcrs(ctx.node())) {
             if (mcr instanceof PdfObjRef) {
                 continue;
             }

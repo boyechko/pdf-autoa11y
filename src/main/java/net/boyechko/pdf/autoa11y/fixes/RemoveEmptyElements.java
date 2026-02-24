@@ -21,8 +21,8 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class RemoveEmptyElements implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) {
+    public void apply(DocContext ctx) {
         removedCount = 0;
         for (PdfStructElem elem : elements) {
             removeIfEmpty(elem);
@@ -70,8 +70,8 @@ public class RemoveEmptyElements implements IssueFix {
         }
 
         String role = elem.getRole() != null ? elem.getRole().getValue() : "unknown";
-        logger.debug("Removing empty {} (obj. #{})", role, StructureTree.objNum(elem));
-        StructureTree.removeFromParent(elem, parent);
+        logger.debug("Removing empty {} (obj. #{})", role, StructTree.objNum(elem));
+        StructTree.removeFromParent(elem, parent);
         removedCount++;
 
         // Cascade: if parent is now empty, remove it too

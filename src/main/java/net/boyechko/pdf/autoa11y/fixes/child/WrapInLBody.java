@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes.child;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
@@ -42,7 +42,7 @@ public final class WrapInLBody extends TagSingleChildFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
         parent.addKid(newLBody);
         parent.removeKid(kid);
@@ -55,7 +55,7 @@ public final class WrapInLBody extends TagSingleChildFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Wrapped " + getKidRole() + " in LBody under " + Format.elem(parent, ctx);
     }
 }

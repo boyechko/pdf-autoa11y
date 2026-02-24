@@ -141,7 +141,7 @@ class StructTreeTest extends PdfTestBase {
             p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(p);
 
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             assertEquals(1, StructTree.determinePageNumber(ctx, p));
         }
     }
@@ -160,7 +160,7 @@ class StructTreeTest extends PdfTestBase {
             p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             div.addKid(p);
 
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             // Div has no /Pg, but its child P does
             assertEquals(1, StructTree.determinePageNumber(ctx, div));
         }
@@ -176,7 +176,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
             root.addKid(div);
 
-            DocumentContext ctx = new DocumentContext(doc);
+            DocContext ctx = new DocContext(doc);
             assertEquals(0, StructTree.determinePageNumber(ctx, div));
         }
     }

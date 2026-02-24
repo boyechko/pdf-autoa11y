@@ -20,9 +20,9 @@ package net.boyechko.pdf.autoa11y.fixes.children;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Wraps pairs of Lbl,LBody elements in an LI structure. */
@@ -51,10 +51,10 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         logger.debug(
                 "Applying WrapPairsOfLblLBodyInLI to L obj. #"
-                        + StructureTree.objNum(parent)
+                        + StructTree.objNum(parent)
                         + " with "
                         + kids.size()
                         + " kids");
@@ -79,7 +79,7 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return "Wrapped pairs of Lbl/LBody in LI elements for " + Format.elem(parent, ctx);
     }
 }

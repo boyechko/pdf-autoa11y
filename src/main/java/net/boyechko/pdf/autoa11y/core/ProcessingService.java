@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -198,7 +198,7 @@ public class ProcessingService {
             tempFiles.add(current);
             listener.onPhaseStart("Document rules");
             try (PdfDocument doc = custodian.decryptToTemp(current)) {
-                DocumentContext ctx = new DocumentContext(doc);
+                DocContext ctx = new DocContext(doc);
                 listener.onDetectedSectionStart();
                 IssueList docIssues = runDocumentRules(ctx);
                 allDocIssues.addAll(docIssues);
@@ -226,7 +226,7 @@ public class ProcessingService {
 
                 listener.onPhaseStart(visitor.name());
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
-                    DocumentContext ctx = new DocumentContext(doc);
+                    DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
                     IssueList issues = checkEngine.runVisitor(ctx, visitor);
                     allTagIssues.addAll(issues);
@@ -280,7 +280,7 @@ public class ProcessingService {
 
     public IssueList analyze() throws Exception {
         try (PdfDocument pdfDoc = custodian.openForReading()) {
-            DocumentContext context = new DocumentContext(pdfDoc);
+            DocContext context = new DocContext(pdfDoc);
 
             IssueList documentIssues = detectDocumentIssuesForAnalysis(context);
             if (documentIssues.hasFatalIssues()) {
@@ -312,7 +312,7 @@ public class ProcessingService {
     }
 
     /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
-    private IssueList runDocumentRules(DocumentContext ctx) {
+    private IssueList runDocumentRules(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
         for (Check check : checkEngine.getRules()) {
             IssueList ruleIssues = check.findIssues(ctx);
@@ -330,7 +330,7 @@ public class ProcessingService {
     }
 
     /** Applies fixes and reports results. Returns the applied fixes. */
-    private IssueList applyFixes(DocumentContext ctx, IssueList issues) {
+    private IssueList applyFixes(DocContext ctx, IssueList issues) {
         if (issues.isEmpty()) {
             return new IssueList();
         }
@@ -353,14 +353,14 @@ public class ProcessingService {
 
     // == Analysis helpers =============================================
 
-    private IssueList detectDocumentIssuesForAnalysis(DocumentContext context) {
+    private IssueList detectDocumentIssuesForAnalysis(DocContext context) {
         listener.onPhaseStart("Detecting document-level issues");
         IssueList docIssues = runDocumentRules(context);
         listener.onInfo("Found " + docIssues.size() + " issues");
         return docIssues;
     }
 
-    private IssueList detectTagIssuesForAnalysis(DocumentContext context) {
+    private IssueList detectTagIssuesForAnalysis(DocContext context) {
         listener.onPhaseStart("Detecting structure tree issues");
 
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();

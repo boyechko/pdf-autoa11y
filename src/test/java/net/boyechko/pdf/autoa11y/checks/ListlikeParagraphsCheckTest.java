@@ -30,7 +30,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -92,7 +92,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertTrue(visitor.getIssues().isEmpty(), "Should have no issues");
@@ -110,7 +110,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertEquals(1, visitor.getIssues().size(), "Should have 1 issue");
@@ -129,7 +129,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
 
         assertTrue(

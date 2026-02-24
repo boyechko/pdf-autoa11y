@@ -24,8 +24,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
 public class ListifyParagraphOfLinksTest extends PdfTestBase {
@@ -41,10 +41,10 @@ public class ListifyParagraphOfLinksTest extends PdfTestBase {
                     }
                     assertEquals(
                             "Document[P[Link, Link, Link, Link, Link]]",
-                            StructureTree.toRoleTree(document).toString(),
+                            StructTree.toRoleTree(document).toString(),
                             "Document should have P child with 5 Link children before fix");
 
-                    DocumentContext ctx = new DocumentContext(pdfDoc);
+                    DocContext ctx = new DocContext(pdfDoc);
                     List<PdfStructElem> kids =
                             p.getKids().stream()
                                     .map(kid -> (PdfStructElem) kid)
@@ -53,7 +53,7 @@ public class ListifyParagraphOfLinksTest extends PdfTestBase {
 
                     assertEquals(
                             "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",
-                            StructureTree.toRoleTree(document).toString(),
+                            StructTree.toRoleTree(document).toString(),
                             "Document should have P child converted to L with 5 LI children after fix");
                 });
     }

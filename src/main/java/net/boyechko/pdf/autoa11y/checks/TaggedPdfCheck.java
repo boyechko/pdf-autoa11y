@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.*;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 
@@ -42,7 +42,7 @@ public class TaggedPdfCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
         PdfDictionary mi = cat.getPdfObject().getAsDictionary(PdfName.MarkInfo);
         boolean marked =
@@ -67,7 +67,7 @@ public class TaggedPdfCheck implements Check {
                     }
 
                     @Override
-                    public void apply(DocumentContext c) {
+                    public void apply(DocContext c) {
                         PdfCatalog cat2 = c.doc().getCatalog();
                         PdfDictionary mi2 = cat2.getPdfObject().getAsDictionary(PdfName.MarkInfo);
                         if (mi2 == null) {

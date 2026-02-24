@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -182,7 +182,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
         if (referenceLeft < 0) {
             logger.debug(
                     "No reference left edge for P sub-run under obj. #{}, skipping",
-                    StructureTree.objNum(ctx.node()));
+                    StructTree.objNum(ctx.node()));
             return;
         }
 
@@ -190,7 +190,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
         if (indent < INDENT_THRESHOLD) {
             logger.debug(
                     "P sub-run under obj. #{} indent {}pt < threshold {}pt, skipping",
-                    StructureTree.objNum(ctx.node()),
+                    StructTree.objNum(ctx.node()),
                     String.format("%.1f", indent),
                     INDENT_THRESHOLD);
             return;
@@ -212,7 +212,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
         logger.debug(
                 "Detected suspected list of {} elements under obj. #{} (indent {}pt) on page {}",
                 subRun.elements.size(),
-                StructureTree.objNum(ctx.node()),
+                StructTree.objNum(ctx.node()),
                 String.format("%.1f", indent),
                 pageNum);
     }

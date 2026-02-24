@@ -17,19 +17,19 @@
  */
 package net.boyechko.pdf.autoa11y.issue;
 
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 
 /** Represents a fix for an accessibility issue found in a PDF document. */
 public interface IssueFix {
     int priority();
 
-    void apply(DocumentContext ctx) throws Exception;
+    void apply(DocContext ctx) throws Exception;
 
     default String describe() {
         return getClass().getSimpleName();
     }
 
-    default String describe(DocumentContext ctx) {
+    default String describe(DocContext ctx) {
         return describe();
     }
 

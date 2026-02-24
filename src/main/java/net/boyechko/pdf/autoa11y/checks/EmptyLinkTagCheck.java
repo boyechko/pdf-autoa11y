@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Geometry;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -70,14 +70,14 @@ public class EmptyLinkTagCheck implements StructTreeChecker {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!linkElem.getRole().equals(PdfName.Link) || StructureTree.hasMcr(linkElem)) {
+            if (!linkElem.getRole().equals(PdfName.Link) || StructTree.hasMcr(linkElem)) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
                 continue;
             }
 
-            PdfObjRef objRef = StructureTree.findFirstObjRef(linkElem);
+            PdfObjRef objRef = StructTree.findFirstObjRef(linkElem);
             if (objRef == null) {
                 continue;
             }

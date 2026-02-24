@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.*;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
 
@@ -42,7 +42,7 @@ public class LanguageSetCheck implements Check {
     }
 
     @Override
-    public IssueList findIssues(DocumentContext ctx) {
+    public IssueList findIssues(DocContext ctx) {
         PdfCatalog cat = ctx.doc().getCatalog();
 
         if (cat.getLang() != null) {
@@ -63,7 +63,7 @@ public class LanguageSetCheck implements Check {
                     }
 
                     @Override
-                    public void apply(DocumentContext c) {
+                    public void apply(DocContext c) {
                         PdfCatalog cat2 = c.doc().getCatalog();
                         cat2.put(
                                 PdfName.Lang,

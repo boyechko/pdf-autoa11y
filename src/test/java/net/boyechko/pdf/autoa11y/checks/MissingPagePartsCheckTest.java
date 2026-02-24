@@ -26,7 +26,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +49,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertTrue(
-                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocContext(pdfDoc)),
                     "Should detect missing page-level Part grouping");
         }
     }
@@ -73,7 +73,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
             part2.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertFalse(
-                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocContext(pdfDoc)),
                     "Should not report issue for already normalized structure");
         }
     }
@@ -93,7 +93,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
             root.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
             assertTrue(
-                    MissingPagePartsCheck.needsNormalization(new DocumentContext(pdfDoc)),
+                    MissingPagePartsCheck.needsNormalization(new DocContext(pdfDoc)),
                     "Should detect need even without Document element");
         }
     }
@@ -115,7 +115,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page1));
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             assertTrue(
                     MissingPagePartsCheck.needsNormalization(ctx),
                     "Precondition: should need normalization");
@@ -123,7 +123,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
             NormalizePageParts fix = new NormalizePageParts();
             fix.apply(ctx);
 
-            DocumentContext freshCtx = new DocumentContext(pdfDoc);
+            DocContext freshCtx = new DocContext(pdfDoc);
             assertFalse(
                     MissingPagePartsCheck.needsNormalization(freshCtx),
                     "After fix, should not need normalization");

@@ -28,7 +28,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
 class FlattenNestingTest extends PdfTestBase {
@@ -60,8 +60,7 @@ class FlattenNestingTest extends PdfTestBase {
                     sectToFlatten.getPdfObject().getAsArray(PdfName.K),
                     "Sect should start with a single-object /K entry");
 
-            new FlattenNesting(List.of(sectToFlatten, divToFlatten))
-                    .apply(new DocumentContext(pdfDoc));
+            new FlattenNesting(List.of(sectToFlatten, divToFlatten)).apply(new DocContext(pdfDoc));
 
             List<IStructureNode> partKids = part.getKids();
             assertTrue(

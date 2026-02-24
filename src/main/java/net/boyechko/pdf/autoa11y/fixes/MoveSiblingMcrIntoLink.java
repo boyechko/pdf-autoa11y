@@ -27,10 +27,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     private final int pageNum;
 
     public MoveSiblingMcrIntoLink(PdfStructElem linkElem, int mcid, int pageNum) {
-        this.linkObjNum = StructureTree.objNum(linkElem);
+        this.linkObjNum = StructTree.objNum(linkElem);
         this.mcid = mcid;
         this.pageNum = pageNum;
     }
@@ -56,7 +56,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         if (linkObjNum <= 0 || mcid < 0) {
             return;
         }
@@ -65,16 +65,16 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             return;
         }
 
-        PdfStructElem linkElem = StructureTree.findByObjNumber(root, linkObjNum);
+        PdfStructElem linkElem = StructTree.findByObjNumber(root, linkObjNum);
         if (linkElem == null) {
             logger.debug("Link element not found for obj. #{}", linkObjNum);
             return;
         }
-        if (StructureTree.hasMcr(linkElem)) {
+        if (StructTree.hasMcr(linkElem)) {
             return;
         }
 
-        PdfObjRef objRef = StructureTree.findFirstObjRef(linkElem);
+        PdfObjRef objRef = StructTree.findFirstObjRef(linkElem);
         if (objRef == null) {
             return;
         }
@@ -103,8 +103,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             return;
         }
 
-        int resolvedPageNum =
-                pageNum > 0 ? pageNum : StructureTree.determinePageNumber(ctx, linkElem);
+        int resolvedPageNum = pageNum > 0 ? pageNum : StructTree.determinePageNumber(ctx, linkElem);
         if (resolvedPageNum <= 0 || resolvedPageNum > ctx.doc().getNumberOfPages()) {
             return;
         }
@@ -128,7 +127,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     private int findIndex(List<IStructureNode> kids, PdfStructElem target) {
         for (int i = 0; i < kids.size(); i++) {
             IStructureNode kid = kids.get(i);
-            if (kid instanceof PdfStructElem elem && StructureTree.isSameElement(elem, target)) {
+            if (kid instanceof PdfStructElem elem && StructTree.isSameElement(elem, target)) {
                 return i;
             }
         }
@@ -141,7 +140,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         String text = ctx.getMcidText(pageNum, mcid);
         if (text.isEmpty()) {
             return describe();

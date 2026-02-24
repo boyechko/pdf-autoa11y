@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -42,7 +42,7 @@ class BadlyMappedLigatureCheckTest extends PdfTestBase {
         Path inputPath = CATALOG_P1_PDF;
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath.toString()))) {
             BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
-            IssueList issues = rule.findIssues(new DocumentContext(pdfDoc));
+            IssueList issues = rule.findIssues(new DocContext(pdfDoc));
 
             assertFalse(issues.isEmpty(), "Should detect broken ligature mappings");
             Issue issue = issues.get(0);
@@ -61,7 +61,7 @@ class BadlyMappedLigatureCheckTest extends PdfTestBase {
                         new PdfReader(inputPath.toString()),
                         new PdfWriter(outputPath.toString()))) {
             BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
-            DocumentContext ctx = new DocumentContext(pdfDoc);
+            DocContext ctx = new DocContext(pdfDoc);
             IssueList issues = rule.findIssues(ctx);
             assertFalse(issues.isEmpty(), "Expected at least one ligature-mapping issue");
 
@@ -106,7 +106,7 @@ class BadlyMappedLigatureCheckTest extends PdfTestBase {
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testPdf.toString()))) {
             BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
-            IssueList issues = rule.findIssues(new DocumentContext(pdfDoc));
+            IssueList issues = rule.findIssues(new DocContext(pdfDoc));
             assertTrue(
                     issues.isEmpty(), "Simple test PDF should not trigger ligature mapping rule");
         }

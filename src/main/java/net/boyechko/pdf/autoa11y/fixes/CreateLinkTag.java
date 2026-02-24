@@ -32,9 +32,9 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkCheck;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.DocumentContext;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +59,9 @@ public class CreateLinkTag implements IssueFix {
     }
 
     @Override
-    public void apply(DocumentContext ctx) throws Exception {
+    public void apply(DocContext ctx) throws Exception {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        PdfStructElem documentElem = StructureTree.findFirstChild(root, PdfName.Document);
+        PdfStructElem documentElem = StructTree.findFirstChild(root, PdfName.Document);
         if (documentElem == null) {
             throw new IllegalStateException("No Document element found");
         }
@@ -110,7 +110,7 @@ public class CreateLinkTag implements IssueFix {
     }
 
     private PdfStructElem findBestParentForAnnotation(
-            DocumentContext ctx, PdfStructElem partElem, PdfPage page, PdfAnnotation annotation) {
+            DocContext ctx, PdfStructElem partElem, PdfPage page, PdfAnnotation annotation) {
         Rectangle annotBounds = Geometry.getAnnotationBounds(annotation.getPdfObject());
         if (annotBounds == null) {
             return null;
@@ -192,7 +192,7 @@ public class CreateLinkTag implements IssueFix {
 
     // TODO: Move to a utility class or @Content
     private Rectangle collectBounds(
-            DocumentContext ctx,
+            DocContext ctx,
             PdfStructElem elem,
             PdfPage targetPage,
             Map<Integer, Rectangle> mcidBounds,
@@ -200,7 +200,7 @@ public class CreateLinkTag implements IssueFix {
             Map<PdfStructElem, Integer> elemDepths,
             int depth) {
         PdfDictionary elemPg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (elemPg != null && !StructureTree.isSamePage(elemPg, targetPage)) {
+        if (elemPg != null && !StructTree.isSamePage(elemPg, targetPage)) {
             return null;
         }
 
@@ -258,7 +258,7 @@ public class CreateLinkTag implements IssueFix {
     }
 
     @Override
-    public String describe(DocumentContext ctx) {
+    public String describe(DocContext ctx) {
         return describe();
     }
 

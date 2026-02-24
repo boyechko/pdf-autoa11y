@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructureTree;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.children.WrapBulletAlignedKidsInLBody;
 import net.boyechko.pdf.autoa11y.fixes.children.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -175,7 +175,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
         logger.debug(
                 "Detected {} elements with bullet glyphs under obj. #{} on page {}",
                 run.size(),
-                StructureTree.objNum(ctx.node()),
+                StructTree.objNum(ctx.node()),
                 ctx.getPageNumber());
     }
 
@@ -257,7 +257,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
             logger.debug(
                     "Found {} bullet-aligned raw kids in obj. #{} (bulletY={})",
                     group.kidIndices().size(),
-                    StructureTree.objNum(element),
+                    StructTree.objNum(element),
                     String.format("%.1f", group.bulletY()));
         }
     }
