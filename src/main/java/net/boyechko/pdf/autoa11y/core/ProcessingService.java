@@ -100,7 +100,7 @@ public class ProcessingService {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
 
-        List<Check> checks = ProcessingDefaults.documentChecks();
+        List<Check> documentChecks = ProcessingDefaults.documentChecks();
         this.structTreeChecks =
                 filterVisitors(
                         ProcessingDefaults.structTreeChecks(),
@@ -111,10 +111,10 @@ public class ProcessingService {
         }
 
         TagSchema schema = TagSchema.loadDefault();
-        this.checkEngine = new CheckEngine(checks, structTreeChecks, schema);
+        this.checkEngine = new CheckEngine(documentChecks, structTreeChecks, schema);
     }
 
-    /** Filters the list of visitor suppliers based on the skip and includeOnly sets. */
+    /// Filters the list of visitor suppliers based on the skip and includeOnly sets.
     private static ArrayList<Supplier<StructTreeChecker>> filterVisitors(
             List<Supplier<StructTreeChecker>> defaults, Set<String> skip, Set<String> includeOnly) {
         if (skip.isEmpty() && includeOnly.isEmpty()) {
@@ -151,20 +151,14 @@ public class ProcessingService {
                             visitor.getClass().getSimpleName()
                                     + " requires "
                                     + prereqName
-                                    + ", which was excluded."
-                                    + " To skip both, use: --skip-checks "
-                                    + prereqName
-                                    + ","
-                                    + visitor.getClass().getSimpleName());
+                                    + ", which was excluded.");
                 }
             }
         }
     }
 
-    /**
-     * Remediates the PDF using a sequential pipeline. Each rule/visitor runs as its own step,
-     * reading the previous step's output file.
-     */
+    /// Remediates the PDF using a sequential pipeline. Each rule/visitor runs as its own step,
+    /// reading the previous step's output file.
     public ProcessingResult remediate() throws Exception {
         Path pipelineDir = PIPELINE_TEMP_DIR.resolve(custodian.getInputPath().getFileName());
         if (!Files.exists(pipelineDir)) {
@@ -176,7 +170,6 @@ public class ProcessingService {
                                 try {
                                     Files.delete(path);
                                 } catch (Exception e) {
-                                    logger.error("Error deleting pipeline temp file", e);
                                     throw new RuntimeException(
                                             "Error deleting pipeline temp file", e);
                                 }
@@ -192,15 +185,15 @@ public class ProcessingService {
         try {
             int stepNum = 0;
 
-            // Step 0: Document-level rules (decrypt original → first temp)
+            // Step 0: Document-level checks (decrypt original → first temp)
             Path current =
-                    pipelineDir.resolve(String.format("step%02d_document-rules.pdf", stepNum++));
+                    pipelineDir.resolve(String.format("step%02d_document-checks.pdf", stepNum++));
             tempFiles.add(current);
-            listener.onPhaseStart("Document rules");
+            listener.onPhaseStart("Document checks");
             try (PdfDocument doc = custodian.decryptToTemp(current)) {
                 DocContext ctx = new DocContext(doc);
                 listener.onDetectedSectionStart();
-                IssueList docIssues = runDocumentRules(ctx);
+                IssueList docIssues = runDocumentChecks(ctx);
                 allDocIssues.addAll(docIssues);
 
                 if (allDocIssues.hasFatalIssues()) {
@@ -216,19 +209,19 @@ public class ProcessingService {
                 }
             }
 
-            // Steps 1..N: Each visitor in its own pipeline step
+            // Steps 1..N: Each StructTreeChecker in its own pipeline step
             for (Supplier<StructTreeChecker> supplier : structTreeChecks) {
-                StructTreeChecker visitor = supplier.get();
-                String stepName = sanitizeForFilename(visitor.name());
+                StructTreeChecker check = supplier.get();
+                String stepName = sanitizeForFilename(check.name());
                 Path output =
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
                 tempFiles.add(output);
 
-                listener.onPhaseStart(visitor.name());
+                listener.onPhaseStart(check.name());
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
-                    IssueList issues = checkEngine.runStructTreeCheck(ctx, visitor);
+                    IssueList issues = checkEngine.runStructTreeCheck(ctx, check);
                     allTagIssues.addAll(issues);
 
                     if (!issues.isEmpty()) {
@@ -299,7 +292,7 @@ public class ProcessingService {
     // == Pipeline helpers =============================================
 
     private static Path resolvePipelineTempDir() {
-        // 1. Explicit JVM flag:  -Dautoa11y.pipeline.dir=/my/path
+        // 1. Explicit JVM flag: -Dautoa11y.pipeline.dir=/my/path
         String sysProp = System.getProperty("autoa11y.pipeline.dir");
         if (sysProp != null) return Path.of(sysProp);
 
@@ -311,8 +304,8 @@ public class ProcessingService {
         return Path.of("/tmp/pdf-autoa11y/pipeline");
     }
 
-    /** Runs all document rules, reporting per-rule pass/fail. Stops early on FATAL issues. */
-    private IssueList runDocumentRules(DocContext ctx) {
+    /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
+    private IssueList runDocumentChecks(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
         for (Check check : checkEngine.getDocumentChecks()) {
             IssueList ruleIssues = check.findIssues(ctx);
@@ -355,7 +348,7 @@ public class ProcessingService {
 
     private IssueList detectDocumentIssuesForAnalysis(DocContext context) {
         listener.onPhaseStart("Detecting document-level issues");
-        IssueList docIssues = runDocumentRules(context);
+        IssueList docIssues = runDocumentChecks(context);
         listener.onInfo("Found " + docIssues.size() + " issues");
         return docIssues;
     }
@@ -402,7 +395,7 @@ public class ProcessingService {
         }
     }
 
-    /** Given a list of fixes, report them grouped by the fix type. */
+    /// Given a list of fixes, report them grouped by the fix type.
     private void reportFixesGrouped(IssueList appliedFixes) {
         Map<Class<?>, List<Issue>> grouped =
                 appliedFixes.stream()
@@ -423,13 +416,11 @@ public class ProcessingService {
         }
     }
 
-    /**
-     * Cleans up the pipeline directory and temporary files if the {@link#KEEP_PIPELINE_TEMPS} flag
-     * is false.
-     */
+    /// Cleans up the pipeline directory and temporary files if the [KEEP_PIPELINE_TEMPS] flag
+    /// is false.
     private static void cleanupPipelineDir(Path pipelineDir, List<Path> tempFiles) {
         if (KEEP_PIPELINE_TEMPS) {
-            logger.info("Pipeline temps kept at: {}", pipelineDir);
+            logger.debug("Pipeline temps kept at: {}", pipelineDir);
             return;
         }
         for (Path temp : tempFiles) {
