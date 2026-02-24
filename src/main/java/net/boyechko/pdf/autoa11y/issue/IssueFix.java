@@ -44,4 +44,13 @@ public interface IssueFix {
     default boolean invalidates(IssueFix otherFix) {
         return false;
     }
+
+    /**
+     * Returns how many items this fix resolved for report group headlines.
+     *
+     * <p>A non-positive value means "use the default issue count".
+     */
+    default int resolvedItemCount() {
+        return 0;
+    }
 }
