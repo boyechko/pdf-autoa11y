@@ -29,7 +29,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public class FormattedListener implements ProcessingListener {
     private final PrintStream output;
     private final VerbosityLevel verbosity;
+    private final IssueLocFormatter issueLocFormatter;
 
     private static final String SUCCESS = "✓";
     private static final String ERROR = "⛔️";
@@ -53,8 +53,14 @@ public class FormattedListener implements ProcessingListener {
     private final ListAppender<ILoggingEvent> logBuffer;
 
     public FormattedListener(PrintStream output, VerbosityLevel verbosity) {
+        this(output, verbosity, new UserIssueLocFormatter());
+    }
+
+    public FormattedListener(
+            PrintStream output, VerbosityLevel verbosity, IssueLocFormatter issueLocFormatter) {
         this.output = output;
         this.verbosity = verbosity;
+        this.issueLocFormatter = issueLocFormatter;
         Logger appLogger = (Logger) LoggerFactory.getLogger("net.boyechko.pdf.autoa11y");
         logBuffer = new ListAppender<>();
         logBuffer.start();
@@ -97,7 +103,7 @@ public class FormattedListener implements ProcessingListener {
         if (verbosity.isAtLeast(VerbosityLevel.VERBOSE)) {
             for (Issue issue : issues) {
                 printLine(
-                        issue.message() + Format.loc(issue.where()),
+                        issue.message() + issueLocFormatter.format(issue.where()),
                         WARNING,
                         VerbosityLevel.VERBOSE);
             }
@@ -154,7 +160,8 @@ public class FormattedListener implements ProcessingListener {
                     printEmptyLine();
                     onSubsection("Manual review needed");
                     for (Issue issue : allIssues.getRemainingIssues()) {
-                        printLine(issue.message() + Format.loc(issue.where()), WARNING);
+                        printLine(
+                                issue.message() + issueLocFormatter.format(issue.where()), WARNING);
                     }
                 }
             }
@@ -179,7 +186,7 @@ public class FormattedListener implements ProcessingListener {
 
     @Override
     public void onWarning(Issue issue) {
-        printLine(issue.message() + Format.loc(issue.where()), WARNING);
+        printLine(issue.message() + issueLocFormatter.format(issue.where()), WARNING);
     }
 
     @Override

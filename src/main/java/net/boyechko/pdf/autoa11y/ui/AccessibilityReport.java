@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -37,6 +36,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
  * as a remediation audit trail: what was found, what was fixed, and what remains.
  */
 public final class AccessibilityReport {
+    private static final IssueLocFormatter ISSUE_LOC_FORMATTER = new UserIssueLocFormatter();
 
     private AccessibilityReport() {}
 
@@ -150,7 +150,7 @@ public final class AccessibilityReport {
             }
         } else {
             for (Issue issue : issues) {
-                out.println("  - " + issue.message() + Format.loc(issue.where()));
+                out.println("  - " + issue.message() + ISSUE_LOC_FORMATTER.format(issue.where()));
             }
         }
     }
