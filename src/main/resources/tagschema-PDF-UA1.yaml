@@ -66,7 +66,7 @@ roles:
     allowed_children: [Caption, LI]
 
   Lbl:
-    allowed_children: [Span]
+    allowed_children: [Span, Figure]
 
   LBody:
     allowed_children: [Code, Figure, Formula, L, Link, Note, Quote, P, Reference, Span]
