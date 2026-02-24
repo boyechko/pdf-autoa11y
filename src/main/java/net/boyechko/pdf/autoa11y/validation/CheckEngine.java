@@ -102,40 +102,36 @@ public class CheckEngine {
         return all;
     }
 
-    public IssueList runStructTreeChecks(DocContext ctx) {
+    private IssueList walkStructTree(DocContext ctx, List<StructTreeChecker> checks) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping structure tree checks");
             return new IssueList();
         }
 
-        List<StructTreeChecker> checks = instantiateStructTreeChecks();
         StructTreeWalker walker = new StructTreeWalker(schema);
         for (StructTreeChecker check : checks) {
             walker.addVisitor(check);
         }
-
         return walker.walk(root, ctx);
     }
 
-    /** Runs a single StructTreeCheck in its own tree walk. */
-    public IssueList runSingleStructTreeCheck(
-            DocContext ctx, Supplier<StructTreeChecker> supplier) {
-        return runStructTreeCheck(ctx, supplier.get());
+    public IssueList runStructTreeChecks(DocContext ctx) {
+        return walkStructTree(ctx, instantiateStructTreeChecks());
     }
 
-    /** Runs a pre-instantiated StructTreeCheck in its own tree walk. */
-    public IssueList runStructTreeCheck(DocContext ctx, StructTreeChecker check) {
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        if (root == null || root.getKids() == null) {
-            logger.debug("No structure tree found, skipping the structure tree check");
-            return new IssueList();
+    /// Run a single StructTreeChecker, instantiating it from the supplier.
+    public IssueList runStructTreeCheck(DocContext ctx, Supplier<StructTreeChecker> checkSupplier) {
+        StructTreeChecker check = checkSupplier.get();
+        if (check == null) {
+            throw new IllegalStateException("StructTreeCheck supplier returned null");
         }
+        return runStructTreeCheck(ctx, check);
+    }
 
-        StructTreeWalker walker = new StructTreeWalker(schema);
-        walker.addVisitor(check);
-
-        return walker.walk(root, ctx);
+    /// Run a single StructTreeChecker instance.
+    public IssueList runStructTreeCheck(DocContext ctx, StructTreeChecker check) {
+        return walkStructTree(ctx, List.of(check));
     }
 
     private List<StructTreeChecker> instantiateStructTreeChecks() {
