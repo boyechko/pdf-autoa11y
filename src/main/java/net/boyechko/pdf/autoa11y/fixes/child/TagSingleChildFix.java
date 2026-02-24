@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.fixes.child;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Base class for fixes that involve a single child element. */
 public abstract class TagSingleChildFix implements IssueFix {

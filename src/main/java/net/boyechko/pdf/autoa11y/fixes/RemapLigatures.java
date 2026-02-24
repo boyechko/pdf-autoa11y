@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Repairs broken ligature mappings in a font's ToUnicode CMap. */
 public class RemapLigatures implements IssueFix {

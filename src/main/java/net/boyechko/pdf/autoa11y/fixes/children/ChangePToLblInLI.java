@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.issues.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Changes a P element to a Lbl in an LI structure. */
 public final class ChangePToLblInLI extends TagMultipleChildrenFix {

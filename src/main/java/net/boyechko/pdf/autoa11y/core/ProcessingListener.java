@@ -18,8 +18,8 @@
 package net.boyechko.pdf.autoa11y.core;
 
 import java.util.List;
-import net.boyechko.pdf.autoa11y.issues.Issue;
-import net.boyechko.pdf.autoa11y.issues.IssueList;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 /** Interface for reporting progress and results of the processing. */
 public interface ProcessingListener {

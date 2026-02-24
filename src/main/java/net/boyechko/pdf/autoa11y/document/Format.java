@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.issues.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
 /**
  * Formatting utilities for PDF entities in log messages and reports.
