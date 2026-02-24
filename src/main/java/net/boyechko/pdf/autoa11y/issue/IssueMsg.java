@@ -17,31 +17,5 @@
  */
 package net.boyechko.pdf.autoa11y.issue;
 
-import net.boyechko.pdf.autoa11y.document.DocContext;
-
-/** Represents a fix for an accessibility issue found in a PDF document. */
-public interface IssueFix {
-    int priority();
-
-    void apply(DocContext ctx) throws Exception;
-
-    default String describe() {
-        return getClass().getSimpleName();
-    }
-
-    default String describe(DocContext ctx) {
-        return describe();
-    }
-
-    default IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.none());
-    }
-
-    default String groupLabel() {
-        return getClass().getSimpleName();
-    }
-
-    default boolean invalidates(IssueFix otherFix) {
-        return false;
-    }
-}
+/** Message text paired with an optional location for interface-specific rendering. */
+public record IssueMsg(String message, IssueLoc where) {}
