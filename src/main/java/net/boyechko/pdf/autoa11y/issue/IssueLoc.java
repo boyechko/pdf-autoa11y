@@ -18,6 +18,7 @@
 package net.boyechko.pdf.autoa11y.issue;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
@@ -60,6 +61,16 @@ public sealed interface IssueLoc {
 
     static IssueLoc atElem(PdfStructElem element, Integer pageNum, String role, String structPath) {
         return new AtElem(element, pageNum, role, structPath);
+    }
+
+    static IssueLoc atElem(DocContext ctx, PdfStructElem element) {
+        if (ctx == null || element == null) {
+            return none();
+        }
+        int pageNum = StructTree.determinePageNumber(ctx, element);
+        Integer maybePage = pageNum > 0 ? pageNum : null;
+        String role = element.getRole() != null ? element.getRole().getValue() : null;
+        return new AtElem(element, maybePage, role, null);
     }
 
     static IssueLoc atMcid(
