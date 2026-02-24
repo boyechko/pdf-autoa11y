@@ -24,14 +24,19 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the Document element is the highest-level element in the structure tree. */
-public class MissingDocumentCheck implements Check {
+public class MissingDocumentCheck extends DocumentCheck {
 
     @Override
     public String name() {
         return "Missing Document Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects if the structure tree root contains a Document element as the single child";
     }
 
     @Override

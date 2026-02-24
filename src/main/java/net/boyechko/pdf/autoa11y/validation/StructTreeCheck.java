@@ -37,6 +37,10 @@ public abstract class StructTreeCheck implements Check {
 
     public abstract String description();
 
+    public CheckType type() {
+        return CheckType.STRUCT_TREE;
+    }
+
     @Override
     public String passedMessage() {
         return name() + ": no issues";

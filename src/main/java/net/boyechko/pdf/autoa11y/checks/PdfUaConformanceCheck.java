@@ -23,12 +23,12 @@ import com.itextpdf.kernel.xmp.XMPMeta;
 import java.lang.reflect.Field;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Detects and strips false PDF/UA conformance claims from XMP metadata. */
-public class PdfUaConformanceCheck implements Check {
+public class PdfUaConformanceCheck extends DocumentCheck {
     private static final Logger logger = LoggerFactory.getLogger(PdfUaConformanceCheck.class);
 
     private static final int P_DOC_SETUP = 10;
@@ -37,6 +37,11 @@ public class PdfUaConformanceCheck implements Check {
     @Override
     public String name() {
         return "PDF/UA Conformance Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects and strips false PDF/UA conformance claims from XMP metadata";
     }
 
     @Override

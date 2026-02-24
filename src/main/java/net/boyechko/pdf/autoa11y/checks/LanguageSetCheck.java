@@ -20,15 +20,20 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.pdf.*;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.*;
-import net.boyechko.pdf.autoa11y.validation.Check;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the document language is set. */
-public class LanguageSetCheck implements Check {
+public class LanguageSetCheck extends DocumentCheck {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
         return "Language Set Check";
+    }
+
+    @Override
+    public String description() {
+        return "Detects if the document language is set";
     }
 
     @Override
