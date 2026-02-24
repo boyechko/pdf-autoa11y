@@ -20,10 +20,20 @@ package net.boyechko.pdf.autoa11y.core;
 import java.util.List;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.rules.BadlyMappedLigatureRule;
+import net.boyechko.pdf.autoa11y.rules.BulletGlyphVisitor;
+import net.boyechko.pdf.autoa11y.rules.EmptyElementVisitor;
+import net.boyechko.pdf.autoa11y.rules.EmptyLinkTagVisitor;
+import net.boyechko.pdf.autoa11y.rules.FigureWithTextVisitor;
 import net.boyechko.pdf.autoa11y.rules.ImageOnlyDocumentRule;
 import net.boyechko.pdf.autoa11y.rules.LanguageSetRule;
+import net.boyechko.pdf.autoa11y.rules.MissingAltTextVisitor;
 import net.boyechko.pdf.autoa11y.rules.MissingDocumentRule;
+import net.boyechko.pdf.autoa11y.rules.MistaggedArtifactVisitor;
+import net.boyechko.pdf.autoa11y.rules.NeedlessNestingVisitor;
+import net.boyechko.pdf.autoa11y.rules.PagePartVisitor;
+import net.boyechko.pdf.autoa11y.rules.ParagraphOfLinksVisitor;
 import net.boyechko.pdf.autoa11y.rules.PdfUaConformanceRule;
+import net.boyechko.pdf.autoa11y.rules.SchemaValidationVisitor;
 import net.boyechko.pdf.autoa11y.rules.StructureTreeExistsRule;
 import net.boyechko.pdf.autoa11y.rules.TabOrderRule;
 import net.boyechko.pdf.autoa11y.rules.TaggedPdfRule;
@@ -31,16 +41,6 @@ import net.boyechko.pdf.autoa11y.rules.UnexpectedWidgetRule;
 import net.boyechko.pdf.autoa11y.rules.UnmarkedLinkRule;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
-import net.boyechko.pdf.autoa11y.visitors.BulletGlyphVisitor;
-import net.boyechko.pdf.autoa11y.visitors.EmptyElementVisitor;
-import net.boyechko.pdf.autoa11y.visitors.EmptyLinkTagVisitor;
-import net.boyechko.pdf.autoa11y.visitors.FigureWithTextVisitor;
-import net.boyechko.pdf.autoa11y.visitors.MissingAltTextVisitor;
-import net.boyechko.pdf.autoa11y.visitors.MistaggedArtifactVisitor;
-import net.boyechko.pdf.autoa11y.visitors.NeedlessNestingVisitor;
-import net.boyechko.pdf.autoa11y.visitors.PagePartVisitor;
-import net.boyechko.pdf.autoa11y.visitors.ParagraphOfLinksVisitor;
-import net.boyechko.pdf.autoa11y.visitors.SchemaValidationVisitor;
 
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
