@@ -175,8 +175,40 @@ class AccessibilityReportTest {
         ProcessingResult result = resultWith(new IssueList(), tagIssues);
         String report = generateReport(result);
 
-        assertContains(report, "[RESOLVED] 49 unnecessary Part/Sect/Art/Div wrappers");
-        assertContains(report, "[RESOLVED] 9675 elements not grouped into page-level Part elements");
+        assertContains(report, " 653 Part(s)");
+        assertContains(report, " 49 grouping");
+        assertContains(report, " 9675 element(s)");
+    }
+
+    @Test
+    void summaryIncludesResolvedBreakdownLines() throws IOException {
+        IssueList docIssues = new IssueList();
+        Issue langIssue =
+                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
+        langIssue.markResolved(new IssueMsg("Set document language to \"en\"", IssueLoc.none()));
+        docIssues.add(langIssue);
+
+        IssueList tagIssues = new IssueList();
+        Issue nestingIssue =
+                new Issue(
+                        IssueType.NEEDLESS_NESTING,
+                        IssueSev.WARNING,
+                        "Found grouping wrappers",
+                        new FixedCountIssueFix(49));
+        nestingIssue.markResolved(
+                new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
+        tagIssues.add(nestingIssue);
+
+        ProcessingResult result = resultWith(docIssues, tagIssues);
+        String report = generateReport(result);
+
+        assertContains(report, "Resolved Breakdown");
+        assertContains(report, IssueType.LANGUAGE_NOT_SET.groupLabel());
+        assertContains(report, " 49 ");
+        assertContains(report, IssueType.NEEDLESS_NESTING.groupLabel());
+        assertTrue(
+                report.indexOf("Resolved Breakdown") < report.indexOf("Document-Level Issues"),
+                "Resolved Breakdown should appear in summary before detailed sections");
     }
 
     private ProcessingResult resultWith(IssueList docIssues, IssueList tagIssues) {
