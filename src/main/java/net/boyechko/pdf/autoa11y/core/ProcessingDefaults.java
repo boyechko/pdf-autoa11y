@@ -39,13 +39,13 @@ import net.boyechko.pdf.autoa11y.checks.TabOrderCheck;
 import net.boyechko.pdf.autoa11y.checks.TaggedPdfCheck;
 import net.boyechko.pdf.autoa11y.checks.UnexpectedWidgetCheck;
 import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkCheck;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
 
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
 
-    public static List<Rule> rules() {
+    public static List<Check> rules() {
         return List.of(
                 new ImageOnlyDocumentCheck(),
                 new StructureTreeExistsCheck(),

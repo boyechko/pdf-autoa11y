@@ -29,10 +29,10 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.Rule;
+import net.boyechko.pdf.autoa11y.validation.Check;
 
 /** Detects fonts whose ToUnicode CMaps map ligatures to truncated text. */
-public class BadlyMappedLigatureCheck implements Rule {
+public class BadlyMappedLigatureCheck implements Check {
 
     @Override
     public String name() {

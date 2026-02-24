@@ -217,7 +217,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     void skippingPrerequisiteVisitorFailsWithClearMessage() {
         // PagePartVisitor depends on NeedlessNestingVisitor.
         // Skipping the prerequisite should fail with an actionable message,
-        // not a generic "has not been registered" error from RuleEngine.
+        // not a generic "has not been registered" error from CheckEngine.
         var ex =
                 assertThrows(
                         IllegalArgumentException.class,

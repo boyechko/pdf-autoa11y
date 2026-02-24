@@ -24,7 +24,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
-class RuleEngineTest {
+class CheckEngineTest {
 
     @Test
     void rejectsVisitorBeforeItsPrerequisite() {
@@ -32,7 +32,7 @@ class RuleEngineTest {
                 assertThrows(
                         IllegalArgumentException.class,
                         () ->
-                                new RuleEngine(
+                                new CheckEngine(
                                         List.of(),
                                         List.of(DependentVisitor::new, PrereqVisitor::new),
                                         null));
@@ -45,7 +45,7 @@ class RuleEngineTest {
     void acceptsVisitorAfterItsPrerequisite() {
         assertDoesNotThrow(
                 () ->
-                        new RuleEngine(
+                        new CheckEngine(
                                 List.of(),
                                 List.of(PrereqVisitor::new, DependentVisitor::new),
                                 null));
@@ -53,7 +53,7 @@ class RuleEngineTest {
 
     @Test
     void acceptsVisitorWithNoPrerequisites() {
-        assertDoesNotThrow(() -> new RuleEngine(List.of(), List.of(PrereqVisitor::new), null));
+        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqVisitor::new), null));
     }
 
     // --- Stub visitors for testing ---
