@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li><b>Visitors</b> ({@link StructTreeChecker}): Run during a single traversal of the structure
- *       tree via {@link StructureTreeWalker}. Use for checks that examine tag structure.
+ *       tree via {@link StructTreeWalker}. Use for checks that examine tag structure.
  *   <li><b>Rules</b> ({@link Check}): Run independently after the tree walk. Use for document-level
  *       checks (metadata, annotations, pages) that don't need tree traversal.
  * </ul>
@@ -115,7 +115,7 @@ public class CheckEngine {
         }
 
         List<StructTreeChecker> visitors = instantiateVisitors();
-        StructureTreeWalker walker = new StructureTreeWalker(schema);
+        StructTreeWalker walker = new StructTreeWalker(schema);
         for (StructTreeChecker visitor : visitors) {
             walker.addVisitor(visitor);
         }
@@ -137,7 +137,7 @@ public class CheckEngine {
             return new IssueList();
         }
 
-        StructureTreeWalker walker = new StructureTreeWalker(schema);
+        StructTreeWalker walker = new StructTreeWalker(schema);
         walker.addVisitor(visitor);
 
         return walker.walk(root, ctx);

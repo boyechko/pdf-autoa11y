@@ -33,7 +33,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
@@ -90,7 +90,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }
@@ -108,7 +108,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }
@@ -127,7 +127,7 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }

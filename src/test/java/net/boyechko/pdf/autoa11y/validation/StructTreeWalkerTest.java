@@ -31,8 +31,8 @@ import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
-/** Tests for StructureTreeWalker and visitor infrastructure. */
-class StructureTreeWalkerTest extends PdfTestBase {
+/** Tests for StructTreeWalker and visitor infrastructure. */
+class StructTreeWalkerTest extends PdfTestBase {
     private Path createTestPdf() throws Exception {
         String filename = "document-with-two-paragraphs.pdf";
         OutputStream outputStream = testOutputStream(filename);
@@ -78,7 +78,7 @@ class StructureTreeWalkerTest extends PdfTestBase {
 
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(trackingVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }
@@ -121,7 +121,7 @@ class StructureTreeWalkerTest extends PdfTestBase {
 
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(pathVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }
@@ -192,7 +192,7 @@ class StructureTreeWalkerTest extends PdfTestBase {
                 };
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor1);
             walker.addVisitor(visitor2);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
@@ -236,7 +236,7 @@ class StructureTreeWalkerTest extends PdfTestBase {
                 };
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(childRoleVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
         }
