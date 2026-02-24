@@ -32,7 +32,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
-class ImageOnlyDocumentRuleTest extends PdfTestBase {
+class ImageOnlyDocumentCheckTest extends PdfTestBase {
     private static final Path IMAGE_ONLY_DOCUMENT = Path.of("src/test/resources/image_only.pdf");
     private static final Path SCANNED_AND_OCRED_DOCUMENT =
             Path.of("src/test/resources/scanned_and_ocred.pdf");
@@ -41,7 +41,7 @@ class ImageOnlyDocumentRuleTest extends PdfTestBase {
     void detectsImageOnlyDocument() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(IMAGE_ONLY_DOCUMENT.toString()))) {
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            ImageOnlyDocumentRule rule = new ImageOnlyDocumentRule();
+            ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Should detect image-only document");
@@ -56,7 +56,7 @@ class ImageOnlyDocumentRuleTest extends PdfTestBase {
         try (PdfDocument pdfDoc =
                 new PdfDocument(new PdfReader(SCANNED_AND_OCRED_DOCUMENT.toString()))) {
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            ImageOnlyDocumentRule rule = new ImageOnlyDocumentRule();
+            ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertTrue(
@@ -71,7 +71,7 @@ class ImageOnlyDocumentRuleTest extends PdfTestBase {
             pdfDoc.addNewPage();
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            ImageOnlyDocumentRule rule = new ImageOnlyDocumentRule();
+            ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertTrue(issues.isEmpty(), "Blank document should not be flagged as image-only");
@@ -86,7 +86,7 @@ class ImageOnlyDocumentRuleTest extends PdfTestBase {
             layoutDoc.add(new Paragraph("This document has text but no tags."));
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            ImageOnlyDocumentRule rule = new ImageOnlyDocumentRule();
+            ImageOnlyDocumentCheck rule = new ImageOnlyDocumentCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertTrue(

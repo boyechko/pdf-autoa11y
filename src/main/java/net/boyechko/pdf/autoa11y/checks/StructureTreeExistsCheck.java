@@ -23,11 +23,11 @@ import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects if the structure tree root is present. */
-public class StructureTreeExistsRule implements Rule {
+public class StructureTreeExistsCheck implements Rule {
 
     @Override
     public String name() {
-        return "Structure Tree Exists Rule";
+        return "Structure Tree Exists Check";
     }
 
     @Override

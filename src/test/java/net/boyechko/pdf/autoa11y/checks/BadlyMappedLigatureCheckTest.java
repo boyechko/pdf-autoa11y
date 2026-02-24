@@ -33,7 +33,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
-class BadlyMappedLigatureRuleTest extends PdfTestBase {
+class BadlyMappedLigatureCheckTest extends PdfTestBase {
     private static final Path CATALOG_P1_PDF =
             Path.of("src/test/resources/UWBothellCatalog202425_001.pdf");
 
@@ -41,7 +41,7 @@ class BadlyMappedLigatureRuleTest extends PdfTestBase {
     void detectsBrokenLigatureMappingsInCatalogSample() throws Exception {
         Path inputPath = CATALOG_P1_PDF;
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(inputPath.toString()))) {
-            BadlyMappedLigatureRule rule = new BadlyMappedLigatureRule();
+            BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
             IssueList issues = rule.findIssues(new DocumentContext(pdfDoc));
 
             assertFalse(issues.isEmpty(), "Should detect broken ligature mappings");
@@ -60,7 +60,7 @@ class BadlyMappedLigatureRuleTest extends PdfTestBase {
                 new PdfDocument(
                         new PdfReader(inputPath.toString()),
                         new PdfWriter(outputPath.toString()))) {
-            BadlyMappedLigatureRule rule = new BadlyMappedLigatureRule();
+            BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
             DocumentContext ctx = new DocumentContext(pdfDoc);
             IssueList issues = rule.findIssues(ctx);
             assertFalse(issues.isEmpty(), "Expected at least one ligature-mapping issue");
@@ -105,7 +105,7 @@ class BadlyMappedLigatureRuleTest extends PdfTestBase {
                         });
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testPdf.toString()))) {
-            BadlyMappedLigatureRule rule = new BadlyMappedLigatureRule();
+            BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();
             IssueList issues = rule.findIssues(new DocumentContext(pdfDoc));
             assertTrue(
                     issues.isEmpty(), "Simple test PDF should not trigger ligature mapping rule");

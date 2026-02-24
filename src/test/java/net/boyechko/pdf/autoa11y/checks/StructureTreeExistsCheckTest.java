@@ -31,14 +31,14 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
-class StructureTreeExistsRuleTest extends PdfTestBase {
+class StructureTreeExistsCheckTest extends PdfTestBase {
 
     @Test
     void detectsMissingStructureTree() throws Exception {
         Path ocrPdf = Path.of("src/test/resources/scanned_and_ocred.pdf");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(ocrPdf.toString()))) {
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            StructureTreeExistsRule rule = new StructureTreeExistsRule();
+            StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Should detect missing structure tree");
@@ -57,7 +57,7 @@ class StructureTreeExistsRuleTest extends PdfTestBase {
                         });
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(taggedPdf.toString()))) {
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            StructureTreeExistsRule rule = new StructureTreeExistsRule();
+            StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertTrue(issues.isEmpty(), "Tagged document should pass");
@@ -70,7 +70,7 @@ class StructureTreeExistsRuleTest extends PdfTestBase {
             pdfDoc.addNewPage();
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
-            StructureTreeExistsRule rule = new StructureTreeExistsRule();
+            StructureTreeExistsCheck rule = new StructureTreeExistsCheck();
             IssueList issues = rule.findIssues(ctx);
 
             assertEquals(1, issues.size(), "Blank untagged document should fail");

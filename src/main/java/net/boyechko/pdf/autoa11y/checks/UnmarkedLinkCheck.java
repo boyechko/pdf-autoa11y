@@ -28,10 +28,10 @@ import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects Link annotations that are not associated with Link structure elements. */
-public class UnmarkedLinkRule implements Rule {
+public class UnmarkedLinkCheck implements Rule {
     @Override
     public String name() {
-        return "Unmarked Link Rule";
+        return "Unmarked Link Check";
     }
 
     @Override
@@ -63,7 +63,7 @@ public class UnmarkedLinkRule implements Rule {
 
                     String uri = getAnnotationUri(annotDict);
                     int objNumber = annotDict.getIndirectReference().getObjNumber();
-                    String description = UnmarkedLinkRule.buildDescription(objNumber, uri);
+                    String description = UnmarkedLinkCheck.buildDescription(objNumber, uri);
 
                     IssueFix fix = new CreateLinkTag(annotDict, pageNum);
                     Issue issue =

@@ -35,9 +35,9 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
-class PdfUaConformanceRuleTest extends PdfTestBase {
+class PdfUaConformanceCheckTest extends PdfTestBase {
 
-    private final PdfUaConformanceRule rule = new PdfUaConformanceRule();
+    private final PdfUaConformanceCheck rule = new PdfUaConformanceCheck();
 
     @Test
     void detectsFalsePdfUaClaim() throws Exception {
@@ -100,7 +100,7 @@ class PdfUaConformanceRuleTest extends PdfTestBase {
                 PdfConformance.class,
                 field.getType(),
                 "PdfDocument.pdfConformance field type changed — update"
-                        + " PdfUaConformanceRule.clearCachedConformance()");
+                        + " PdfUaConformanceCheck.clearCachedConformance()");
     }
 
     private Path createPdfClaimingUa() throws Exception {

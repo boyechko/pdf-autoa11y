@@ -22,28 +22,31 @@ import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
-/** Detects if the document tab order is set to follow the structure tree order. */
-public class TabOrderRule implements Rule {
+/** Detects if the document language is set. */
+public class LanguageSetCheck implements Rule {
     private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
-        return "Tab Order Rule";
+        return "Language Set Check";
     }
 
     @Override
     public String passedMessage() {
-        return "Document tab order is set to follow the structure tree";
+        return "Document-level language attribute is set";
     }
 
     @Override
     public String failedMessage() {
-        return "Document tab order is not set to follow the structure tree";
+        return "Document-level language attribute is not set";
     }
 
     @Override
     public IssueList findIssues(DocumentContext ctx) {
-        if (ctx.doc().getPage(1).getTabOrder() != null) {
+        PdfCatalog cat = ctx.doc().getCatalog();
+
+        if (cat.getLang() != null) {
+            // Document language is already set
             return new IssueList();
         }
 
@@ -56,19 +59,19 @@ public class TabOrderRule implements Rule {
 
                     @Override
                     public String describe() {
-                        return "Set document tab order to follow the structure tree";
+                        return "Set document language to English (en-US)";
                     }
 
                     @Override
                     public void apply(DocumentContext c) {
-                        int pageCount = c.doc().getNumberOfPages();
-                        for (int i = 1; i <= pageCount; i++) {
-                            c.doc().getPage(i).setTabOrder(PdfName.S);
-                        }
+                        PdfCatalog cat2 = c.doc().getCatalog();
+                        cat2.put(
+                                PdfName.Lang,
+                                new PdfString("en-US")); // Default to English if not set
                     }
                 };
 
-        Issue issue = new Issue(IssueType.TAB_ORDER_NOT_SET, IssueSev.ERROR, failedMessage(), fix);
+        Issue issue = new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);
     }
 }

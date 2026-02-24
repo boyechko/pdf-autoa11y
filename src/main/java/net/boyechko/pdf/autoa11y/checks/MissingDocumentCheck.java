@@ -27,11 +27,11 @@ import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.Rule;
 
 /** Detects if the Document element is the highest-level element in the structure tree. */
-public class MissingDocumentRule implements Rule {
+public class MissingDocumentCheck implements Rule {
 
     @Override
     public String name() {
-        return "Missing Document Rule";
+        return "Missing Document Check";
     }
 
     @Override

@@ -35,12 +35,12 @@ import org.slf4j.LoggerFactory;
  * content on their pages. These documents require OCR before any accessibility remediation can
  * proceed.
  */
-public class ImageOnlyDocumentRule implements Rule {
-    private static final Logger logger = LoggerFactory.getLogger(ImageOnlyDocumentRule.class);
+public class ImageOnlyDocumentCheck implements Rule {
+    private static final Logger logger = LoggerFactory.getLogger(ImageOnlyDocumentCheck.class);
 
     @Override
     public String name() {
-        return "Image Only Document Rule";
+        return "Image Only Document Check";
     }
 
     @Override

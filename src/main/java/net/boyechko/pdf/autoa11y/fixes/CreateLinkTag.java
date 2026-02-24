@@ -30,7 +30,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkRule;
+import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkCheck;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
@@ -248,12 +248,12 @@ public class CreateLinkTag implements IssueFix {
 
     @Override
     public String describe() {
-        String uri = UnmarkedLinkRule.getAnnotationUri(annotDict);
+        String uri = UnmarkedLinkCheck.getAnnotationUri(annotDict);
         int objNumber =
                 annotDict.getIndirectReference() != null
                         ? annotDict.getIndirectReference().getObjNumber()
                         : 0;
-        String baseDescription = UnmarkedLinkRule.buildDescription(objNumber, uri);
+        String baseDescription = UnmarkedLinkCheck.buildDescription(objNumber, uri);
         return "Created tag for " + baseDescription;
     }
 
