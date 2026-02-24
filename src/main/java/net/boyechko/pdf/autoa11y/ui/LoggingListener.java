@@ -18,7 +18,6 @@
 package net.boyechko.pdf.autoa11y.ui;
 
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
@@ -30,6 +29,16 @@ public class LoggingListener implements ProcessingListener {
 
     private static final Logger logger =
             LoggerFactory.getLogger("net.boyechko.pdf.autoa11y.processing");
+
+    private final IssueLocFormatter issueLocFormatter;
+
+    public LoggingListener() {
+        this(new LogIssueLocFormatter());
+    }
+
+    public LoggingListener(IssueLocFormatter issueLocFormatter) {
+        this.issueLocFormatter = issueLocFormatter;
+    }
 
     @Override
     public void onPhaseStart(String phaseName) {
@@ -44,7 +53,11 @@ public class LoggingListener implements ProcessingListener {
     @Override
     public void onWarning(Issue issue) {
         String message =
-                "ISSUE " + issue.type() + ": " + issue.message() + Format.loc(issue.where());
+                "ISSUE "
+                        + issue.type()
+                        + ": "
+                        + issue.message()
+                        + issueLocFormatter.format(issue.where());
         IssueSev severity = issue.severity();
         if (severity == IssueSev.INFO) {
             logger.info("{}", message);
