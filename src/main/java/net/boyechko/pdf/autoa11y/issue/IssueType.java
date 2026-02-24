@@ -25,7 +25,7 @@ public enum IssueType {
     // Document-level issues
     FALSE_PDFUA_CONFORMANCE("false PDF/UA conformance claim"),
     LANGUAGE_NOT_SET("language not set"),
-    NOT_TAGGED_PDF("PDF not tagged"),
+    NOT_TAGGED_PDF("PDF not marked as tagged"),
     NO_STRUCT_TREE("structure tree missing"),
     TAB_ORDER_NOT_SET("tab order not set"),
     LIGATURE_MAPPING_BROKEN("fonts with broken ligature mappings"),
@@ -38,15 +38,15 @@ public enum IssueType {
     TAG_WRONG_CHILD_PATTERN("tags with wrong child pattern"),
     FIGURE_WITH_TEXT("Figure elements containing text"),
     FIGURE_MISSING_ALT("images missing alt text"),
-    EMPTY_LINK_TAG("empty link tags"),
+    EMPTY_LINK_TAG("Link elements without description"),
 
     // Structure Issues
-    MISSING_DOCUMENT_ELEMENT("structure tree root has no Document element"),
+    MISSING_DOCUMENT_ELEMENT("no Document element under /StructTreeRoot"),
     PAGE_PARTS_NOT_NORMALIZED("elements not grouped into page-level Part elements"),
-    NEEDLESS_NESTING("unnecessary Part/Sect/Art/Div wrappers"),
+    NEEDLESS_NESTING("unnecessary Part/Sect/Art/Div grouping elements"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("Link annotations not tagged"),
-    UNEXPECTED_WIDGET("unexpected Widget annotations"),
+    UNEXPECTED_WIDGET("non-functional Widget annotations"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
