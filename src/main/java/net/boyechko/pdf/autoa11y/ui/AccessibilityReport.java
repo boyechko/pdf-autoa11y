@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -58,7 +59,7 @@ public final class AccessibilityReport {
 
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(reportPath))) {
             writeHeader(out, inputPath, outputPath);
-            writeSummary(out, result);
+            writeSummary(out, result, result.originalDocumentIssues(), result.originalTagIssues());
 
             if (result.totalIssuesDetected() == 0) {
                 out.println("No accessibility issues were detected.");
@@ -85,13 +86,52 @@ public final class AccessibilityReport {
         out.println();
     }
 
-    private static void writeSummary(PrintWriter out, ProcessingResult result) {
+    private static void writeSummary(
+            PrintWriter out,
+            ProcessingResult result,
+            IssueList documentIssues,
+            IssueList tagIssues) {
         out.println("Summary");
         out.println("-------");
         out.println("Issues detected:  " + result.totalIssuesDetected());
         out.println("Issues resolved:  " + result.totalIssuesResolved());
         out.println("Issues remaining: " + result.totalIssuesRemaining());
         out.println();
+        writeResolvedSummary(out, documentIssues, tagIssues);
+        out.println();
+    }
+
+    private static void writeResolvedSummary(
+            PrintWriter out, IssueList documentIssues, IssueList tagIssues) {
+        if (documentIssues.isEmpty() && tagIssues.isEmpty()) {
+            return;
+        }
+
+        Map<IssueType, List<Issue>> grouped =
+                Stream.concat(documentIssues.stream(), tagIssues.stream())
+                        .collect(
+                                Collectors.groupingBy(
+                                        Issue::type, LinkedHashMap::new, Collectors.toList()));
+
+        List<Map.Entry<IssueType, List<Issue>>> resolvedGroups =
+                grouped.entrySet().stream()
+                        .filter(e -> e.getValue().stream().anyMatch(Issue::isResolved))
+                        .toList();
+
+        if (resolvedGroups.isEmpty()) {
+            return;
+        }
+
+        out.println("Resolved Breakdown");
+        out.println("------------------");
+        for (Map.Entry<IssueType, List<Issue>> entry : resolvedGroups) {
+            List<Issue> resolved = entry.getValue().stream().filter(Issue::isResolved).toList();
+            out.println(
+                    "[RESOLVED] "
+                            + displayCount(resolved, true)
+                            + " "
+                            + entry.getKey().groupLabel());
+        }
     }
 
     /**
