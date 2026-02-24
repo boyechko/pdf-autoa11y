@@ -17,8 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
-import static net.boyechko.pdf.autoa11y.document.StructureTree.Node.branch;
-import static net.boyechko.pdf.autoa11y.document.StructureTree.Node.leaf;
+import static net.boyechko.pdf.autoa11y.document.StructTree.Node.branch;
+import static net.boyechko.pdf.autoa11y.document.StructTree.Node.leaf;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfArray;
@@ -31,10 +31,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.StructureTree.Node;
+import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import org.junit.jupiter.api.Test;
 
-class StructureTreeTest extends PdfTestBase {
+class StructTreeTest extends PdfTestBase {
 
     /* iText's wrapper pattern: When you call getKids() on a structure node,
      * iText doesn't return the same Java objects you originally added. It
@@ -54,7 +54,7 @@ class StructureTreeTest extends PdfTestBase {
             root.addKid(div);
             root.addKid(document);
 
-            PdfStructElem found = StructureTree.findFirstChild(root, PdfName.Document);
+            PdfStructElem found = StructTree.findFirstChild(root, PdfName.Document);
             assertNotNull(found);
             assertSame(document.getPdfObject(), found.getPdfObject());
         }
@@ -72,7 +72,7 @@ class StructureTreeTest extends PdfTestBase {
             root.addKid(div1);
             root.addKid(div2);
 
-            PdfStructElem found = StructureTree.findFirstChild(root, PdfName.Div);
+            PdfStructElem found = StructTree.findFirstChild(root, PdfName.Div);
             assertSame(div1.getPdfObject(), found.getPdfObject());
         }
     }
@@ -87,7 +87,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
             root.addKid(div);
 
-            PdfStructElem found = StructureTree.findFirstChild(root, PdfName.Document);
+            PdfStructElem found = StructTree.findFirstChild(root, PdfName.Document);
             assertNull(found);
         }
     }
@@ -104,7 +104,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
             document.addKid(part);
 
-            PdfStructElem found = StructureTree.findFirstChild(document, PdfName.Part);
+            PdfStructElem found = StructTree.findFirstChild(document, PdfName.Part);
             assertSame(part.getPdfObject(), found.getPdfObject());
         }
     }
@@ -115,7 +115,7 @@ class StructureTreeTest extends PdfTestBase {
             doc.setTagged();
             PdfPage page = doc.addNewPage();
 
-            assertTrue(StructureTree.isSamePage(page.getPdfObject(), page));
+            assertTrue(StructTree.isSamePage(page.getPdfObject(), page));
         }
     }
 
@@ -126,7 +126,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfPage page1 = doc.addNewPage();
             PdfPage page2 = doc.addNewPage();
 
-            assertFalse(StructureTree.isSamePage(page1.getPdfObject(), page2));
+            assertFalse(StructTree.isSamePage(page1.getPdfObject(), page2));
         }
     }
 
@@ -142,7 +142,7 @@ class StructureTreeTest extends PdfTestBase {
             root.addKid(p);
 
             DocumentContext ctx = new DocumentContext(doc);
-            assertEquals(1, StructureTree.determinePageNumber(ctx, p));
+            assertEquals(1, StructTree.determinePageNumber(ctx, p));
         }
     }
 
@@ -162,7 +162,7 @@ class StructureTreeTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(doc);
             // Div has no /Pg, but its child P does
-            assertEquals(1, StructureTree.determinePageNumber(ctx, div));
+            assertEquals(1, StructTree.determinePageNumber(ctx, div));
         }
     }
 
@@ -177,7 +177,7 @@ class StructureTreeTest extends PdfTestBase {
             root.addKid(div);
 
             DocumentContext ctx = new DocumentContext(doc);
-            assertEquals(0, StructureTree.determinePageNumber(ctx, div));
+            assertEquals(0, StructTree.determinePageNumber(ctx, div));
         }
     }
 
@@ -195,7 +195,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
             document.addKid(p);
 
-            boolean moved = StructureTree.moveElement(document, p, part);
+            boolean moved = StructTree.moveElement(document, p, part);
 
             assertTrue(moved);
             // p should now be under part, not document
@@ -222,7 +222,7 @@ class StructureTreeTest extends PdfTestBase {
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K), "/K should not be an array");
 
-            boolean moved = StructureTree.moveElement(document, p, part);
+            boolean moved = StructTree.moveElement(document, p, part);
 
             assertTrue(moved);
             List<IStructureNode> partKids = part.getKids();
@@ -245,7 +245,7 @@ class StructureTreeTest extends PdfTestBase {
             // orphan — not a child of document
             PdfStructElem orphan = new PdfStructElem(doc, new PdfName("P"));
 
-            boolean moved = StructureTree.moveElement(document, orphan, part);
+            boolean moved = StructTree.moveElement(document, orphan, part);
             assertFalse(moved);
         }
     }
@@ -262,7 +262,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
             document.addKid(p);
 
-            StructureTree.removeFromParent(p, document);
+            StructTree.removeFromParent(p, document);
 
             List<IStructureNode> kids = document.getKids();
             assertTrue(kids == null || kids.isEmpty());
@@ -279,7 +279,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
             root.addKid(div);
 
-            StructureTree.removeFromParent(div, root);
+            StructTree.removeFromParent(div, root);
 
             List<IStructureNode> kids = root.getKids();
             assertTrue(kids == null || kids.isEmpty());
@@ -300,7 +300,7 @@ class StructureTreeTest extends PdfTestBase {
             document.addKid(p1);
             document.addKid(p2);
 
-            PdfArray kArray = StructureTree.getKArray(document);
+            PdfArray kArray = StructTree.getKArray(document);
             assertNotNull(kArray);
             assertEquals(2, kArray.size());
         }
@@ -316,7 +316,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
 
-            PdfArray kArray = StructureTree.getKArray(root);
+            PdfArray kArray = StructTree.getKArray(root);
             assertNotNull(kArray);
             assertTrue(kArray.size() > 0);
         }
@@ -336,7 +336,7 @@ class StructureTreeTest extends PdfTestBase {
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K));
             assertNull(
-                    StructureTree.getKArray(document),
+                    StructTree.getKArray(document),
                     "Read-only getter should not normalize single-object /K");
         }
     }
@@ -355,10 +355,10 @@ class StructureTreeTest extends PdfTestBase {
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K));
 
-            PdfArray normalized = StructureTree.normalizeKArray(document);
+            PdfArray normalized = StructTree.normalizeKArray(document);
             assertNotNull(normalized);
             assertEquals(1, normalized.size());
-            assertEquals(0, StructureTree.findIndexInKArray(normalized, p));
+            assertEquals(0, StructTree.findIndexInKArray(normalized, p));
         }
     }
 
@@ -376,9 +376,9 @@ class StructureTreeTest extends PdfTestBase {
             document.addKid(p1);
             document.addKid(p2);
 
-            PdfArray kArray = StructureTree.getKArray(document);
-            assertEquals(0, StructureTree.findIndexInKArray(kArray, p1));
-            assertEquals(1, StructureTree.findIndexInKArray(kArray, p2));
+            PdfArray kArray = StructTree.getKArray(document);
+            assertEquals(0, StructTree.findIndexInKArray(kArray, p1));
+            assertEquals(1, StructTree.findIndexInKArray(kArray, p2));
         }
     }
 
@@ -398,9 +398,9 @@ class StructureTreeTest extends PdfTestBase {
 
             PdfStructElem orphan = new PdfStructElem(doc, new PdfName("H1"));
 
-            PdfArray kArray = StructureTree.getKArray(document);
+            PdfArray kArray = StructTree.getKArray(document);
             assertNotNull(kArray);
-            assertEquals(-1, StructureTree.findIndexInKArray(kArray, orphan));
+            assertEquals(-1, StructTree.findIndexInKArray(kArray, orphan));
         }
     }
 
@@ -422,7 +422,7 @@ class StructureTreeTest extends PdfTestBase {
             p.addKid(span);
 
             Node<String> expected = branch("Document", leaf("H1"), branch("P", leaf("Span")));
-            assertEquals(expected, StructureTree.toRoleTree(document));
+            assertEquals(expected, StructTree.toRoleTree(document));
         }
     }
 
@@ -442,7 +442,7 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
             p.addKid(span);
 
-            PdfStructElem descendant = (PdfStructElem) StructureTree.getDescendant(root, 0, 1);
+            PdfStructElem descendant = (PdfStructElem) StructTree.getDescendant(root, 0, 1);
             assertSame(p.getPdfObject(), descendant.getPdfObject());
         }
     }
@@ -457,8 +457,8 @@ class StructureTreeTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
 
-            assertEquals(doc, StructureTree.pdfDocumentFor(document));
-            assertEquals(doc, StructureTree.pdfDocumentFor((IStructureNode) document));
+            assertEquals(doc, StructTree.pdfDocumentFor(document));
+            assertEquals(doc, StructTree.pdfDocumentFor((IStructureNode) document));
         }
     }
 }

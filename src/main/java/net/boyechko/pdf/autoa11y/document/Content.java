@@ -307,7 +307,7 @@ public final class Content {
     }
 
     /** Gets the text content for all MCRs within a structure element. */
-    public static String getTextForElement(PdfStructElem node, DocumentContext ctx, int pageNum) {
+    public static String getTextForElement(PdfStructElem node, DocContext ctx, int pageNum) {
         return getTextForElement(node, ctx.getMcidText(pageNum));
     }
 
@@ -397,7 +397,7 @@ public final class Content {
     }
 
     /** Gets the bounding box for a single MCR by its MCID. */
-    public static Rectangle getBoundsForMcid(DocumentContext ctx, int pageNum, int mcid) {
+    public static Rectangle getBoundsForMcid(DocContext ctx, int pageNum, int mcid) {
         Map<Integer, Rectangle> mcidBounds =
                 ctx.getOrComputeMcidBounds(
                         pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
@@ -405,14 +405,13 @@ public final class Content {
     }
 
     /** Gets the union bounding box for all MCRs within a structure element. */
-    public static Rectangle getBoundsForElement(
-            PdfStructElem node, DocumentContext ctx, int pageNum) {
+    public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
         Map<Integer, Rectangle> mcidBounds =
                 ctx.getOrComputeMcidBounds(
                         pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
 
         Rectangle result = null;
-        for (PdfMcr mcr : StructureTree.collectMcrs(node)) {
+        for (PdfMcr mcr : StructTree.collectMcrs(node)) {
             if (mcr instanceof PdfObjRef) {
                 continue;
             }

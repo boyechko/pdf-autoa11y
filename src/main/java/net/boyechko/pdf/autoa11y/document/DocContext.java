@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /** Provides access to the document and its structure. */
-public class DocumentContext {
+public class DocContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
@@ -37,7 +37,7 @@ public class DocumentContext {
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
     private final Map<Integer, Map<Integer, Set<Content.ContentKind>>> contentKindsCache;
 
-    public DocumentContext(PdfDocument doc) {
+    public DocContext(PdfDocument doc) {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
@@ -112,7 +112,7 @@ public class DocumentContext {
             }
 
             // Get page number for this element (may inherit from children)
-            int objNum = StructureTree.objNum(structElem);
+            int objNum = StructTree.objNum(structElem);
             int pageNum = getPageNumber(structElem, document);
             if (pageNum > 0) {
                 mapping.put(objNum, pageNum);

@@ -37,10 +37,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Utilities for navigating and manipulating the PDF structure tree. */
-public final class StructureTree {
-    private static final Logger logger = LoggerFactory.getLogger(StructureTree.class);
+public final class StructTree {
+    private static final Logger logger = LoggerFactory.getLogger(StructTree.class);
 
-    private StructureTree() {}
+    private StructTree() {}
 
     /** Returns the PDF document for the given structure element. */
     public static PdfDocument pdfDocumentFor(PdfStructElem n) {
@@ -96,7 +96,7 @@ public final class StructureTree {
     }
 
     /** Determines the page number for a structure element, using cache then recursion. */
-    public static int determinePageNumber(DocumentContext ctx, PdfStructElem elem) {
+    public static int determinePageNumber(DocContext ctx, PdfStructElem elem) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
             int pageNum = ctx.doc().getPageNumber(pg);

@@ -33,7 +33,7 @@ public final class Format {
     /** Returns a short label for a structure element: role and object number. */
     public static String elem(PdfStructElem elem) {
         String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructureTree.objNum(elem);
+        int objNum = StructTree.objNum(elem);
         return objNum >= 0 ? role + " (obj. #" + objNum + ")" : role;
     }
 
@@ -44,15 +44,15 @@ public final class Format {
      */
     public static String elem(PdfStructElem elem, int pageNum) {
         String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructureTree.objNum(elem);
+        int objNum = StructTree.objNum(elem);
         if (objNum < 0) return role;
         if (pageNum > 0) return role + " (obj. #" + objNum + ", p. " + pageNum + ")";
         return role + " (obj. #" + objNum + ")";
     }
 
     /** Returns a short label for a structure element, resolving the page via {@code ctx}. */
-    public static String elem(PdfStructElem elem, DocumentContext ctx) {
-        int objNum = StructureTree.objNum(elem);
+    public static String elem(PdfStructElem elem, DocContext ctx) {
+        int objNum = StructTree.objNum(elem);
         int pageNum = ctx.getPageNumber(objNum);
         return elem(elem, pageNum);
     }
@@ -91,7 +91,7 @@ public final class Format {
             case null -> "";
             case IssueLoc.None n -> "";
             case IssueLoc.AtElem(var e) -> {
-                int n = StructureTree.objNum(e);
+                int n = StructTree.objNum(e);
                 yield n >= 0 ? " (" + objNum(n) + ")" : "";
             }
             case IssueLoc.AtPageNum(var pn) -> " (" + page(pn) + ")";
