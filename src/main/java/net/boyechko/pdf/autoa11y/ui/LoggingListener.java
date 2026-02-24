@@ -17,17 +17,22 @@
  */
 package net.boyechko.pdf.autoa11y.ui;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** A {@link ProcessingListener} that routes all events through SLF4J. */
 public class LoggingListener implements ProcessingListener {
 
-    private static final Logger logger =
+    private static final String CONSOLE_APPENDER_NAME = "AUTOA11Y_CONSOLE";
+
+    private static final org.slf4j.Logger logger =
             LoggerFactory.getLogger("net.boyechko.pdf.autoa11y.processing");
 
     private final IssueFormatter issueFormatter;
@@ -38,6 +43,34 @@ public class LoggingListener implements ProcessingListener {
 
     public LoggingListener(IssueFormatter issueFormatter) {
         this.issueFormatter = issueFormatter;
+    }
+
+    /** Creates a {@link LoggingListener} and ensures logs are emitted to stdout. */
+    public static LoggingListener withConsoleOutput() {
+        ensureConsoleAppender();
+        return new LoggingListener();
+    }
+
+    private static void ensureConsoleAppender() {
+        LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
+        ch.qos.logback.classic.Logger root = ctx.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+
+        if (root.getAppender(CONSOLE_APPENDER_NAME) != null) {
+            return;
+        }
+
+        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+        encoder.setContext(ctx);
+        encoder.setPattern("%-30logger{0} [%-5level] %msg%n");
+        encoder.start();
+
+        ConsoleAppender<ILoggingEvent> console = new ConsoleAppender<>();
+        console.setName(CONSOLE_APPENDER_NAME);
+        console.setContext(ctx);
+        console.setEncoder(encoder);
+        console.start();
+
+        root.addAppender(console);
     }
 
     @Override
