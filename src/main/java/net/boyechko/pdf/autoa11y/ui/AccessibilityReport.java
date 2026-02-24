@@ -140,7 +140,7 @@ public final class AccessibilityReport {
             String groupLabel,
             List<Issue> issues,
             boolean showResolutionNotes) {
-        out.println(status + " " + issues.size() + " " + groupLabel);
+        out.println(status + " " + displayCount(issues, showResolutionNotes) + " " + groupLabel);
 
         if (showResolutionNotes) {
             for (Issue issue : issues) {
@@ -151,5 +151,18 @@ public final class AccessibilityReport {
                 out.println("  - " + issue.message() + ISSUE_FORMATTER.format(issue.where()));
             }
         }
+    }
+
+    private static int displayCount(List<Issue> issues, boolean showResolutionNotes) {
+        if (!showResolutionNotes) {
+            return issues.size();
+        }
+
+        int count = 0;
+        for (Issue issue : issues) {
+            int resolvedItemCount = issue.fix() != null ? issue.fix().resolvedItemCount() : 0;
+            count += resolvedItemCount > 0 ? resolvedItemCount : 1;
+        }
+        return count;
     }
 }
