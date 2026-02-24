@@ -32,7 +32,7 @@ public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
 
     private final TagSchema schema;
-    private final List<StructTreeChecker> visitors = new ArrayList<>();
+    private final List<StructTreeCheck> visitors = new ArrayList<>();
 
     private PdfStructTreeRoot root;
     private DocContext docCtx;
@@ -42,7 +42,7 @@ public class StructTreeWalker {
         this.schema = schema;
     }
 
-    public StructTreeWalker addVisitor(StructTreeChecker visitor) {
+    public StructTreeWalker addVisitor(StructTreeCheck visitor) {
         visitors.add(visitor);
         return this;
     }
@@ -52,7 +52,7 @@ public class StructTreeWalker {
         this.docCtx = docCtx;
         this.globalIndex = 0;
 
-        for (StructTreeChecker visitor : visitors) {
+        for (StructTreeCheck visitor : visitors) {
             // No node context exists at the root level.
             visitor.beforeTraversal(null);
         }
@@ -60,7 +60,7 @@ public class StructTreeWalker {
         walkRoot();
 
         IssueList allIssues = new IssueList();
-        for (StructTreeChecker visitor : visitors) {
+        for (StructTreeCheck visitor : visitors) {
             visitor.afterTraversal();
             allIssues.addAll(visitor.getIssues());
         }
@@ -87,7 +87,7 @@ public class StructTreeWalker {
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;
-        for (StructTreeChecker visitor : visitors) {
+        for (StructTreeCheck visitor : visitors) {
             try {
                 if (!visitor.enterElement(ctx)) {
                     continueToChildren = false;
@@ -107,7 +107,7 @@ public class StructTreeWalker {
             }
         }
 
-        for (StructTreeChecker visitor : visitors) {
+        for (StructTreeCheck visitor : visitors) {
             try {
                 visitor.leaveElement(ctx);
             } catch (Exception e) {

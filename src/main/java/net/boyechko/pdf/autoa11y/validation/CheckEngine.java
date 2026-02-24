@@ -32,18 +32,18 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// Orchestrates validation using both structure tree visitors and document-level checks.
+/// Orchestrates validation using both document-level and structure tree checks.
 ///
 /// The engine supports two types of checks:
 ///
-/// - **Checks that work on the document as a whole** (implement [Check])
-/// - **Checks that walk the structure tree** (extend [StructTreeChecker])
+/// - **Checks that work on the document as a whole** (extend [DocumentCheck])
+/// - **Checks that walk the structure tree** (extend [StructTreeCheck])
 ///
 public class CheckEngine {
     private static final Logger logger = LoggerFactory.getLogger(CheckEngine.class);
 
     private final List<Check> documentChecks;
-    private final List<Supplier<StructTreeChecker>> structTreeChecks;
+    private final List<Supplier<StructTreeCheck>> structTreeChecks;
     private final TagSchema schema;
 
     public CheckEngine(List<Check> documentChecks) {
@@ -52,7 +52,7 @@ public class CheckEngine {
 
     public CheckEngine(
             List<Check> documentChecks,
-            List<Supplier<StructTreeChecker>> structTreeChecks,
+            List<Supplier<StructTreeCheck>> structTreeChecks,
             TagSchema schema) {
         this.documentChecks = List.copyOf(documentChecks);
         this.structTreeChecks = List.copyOf(structTreeChecks);
@@ -61,10 +61,10 @@ public class CheckEngine {
     }
 
     private void validateCheckPrereqs() {
-        Set<Class<? extends StructTreeChecker>> seen = new HashSet<>();
-        for (Supplier<StructTreeChecker> supplier : structTreeChecks) {
-            StructTreeChecker check = supplier.get();
-            for (Class<? extends StructTreeChecker> prereq : check.prerequisites()) {
+        Set<Class<? extends StructTreeCheck>> seen = new HashSet<>();
+        for (Supplier<StructTreeCheck> supplier : structTreeChecks) {
+            StructTreeCheck check = supplier.get();
+            for (Class<? extends StructTreeCheck> prereq : check.prerequisites()) {
                 if (!seen.contains(prereq)) {
                     throw new IllegalArgumentException(
                             check.getClass().getSimpleName()
@@ -82,7 +82,7 @@ public class CheckEngine {
         return documentChecks;
     }
 
-    public List<Supplier<StructTreeChecker>> getStructTreeChecks() {
+    public List<Supplier<StructTreeCheck>> getStructTreeChecks() {
         return structTreeChecks;
     }
 
@@ -102,7 +102,7 @@ public class CheckEngine {
         return all;
     }
 
-    private IssueList walkStructTree(DocContext ctx, List<StructTreeChecker> checks) {
+    private IssueList walkStructTree(DocContext ctx, List<StructTreeCheck> checks) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping structure tree checks");
@@ -110,7 +110,7 @@ public class CheckEngine {
         }
 
         StructTreeWalker walker = new StructTreeWalker(schema);
-        for (StructTreeChecker check : checks) {
+        for (StructTreeCheck check : checks) {
             walker.addVisitor(check);
         }
         return walker.walk(root, ctx);
@@ -120,24 +120,24 @@ public class CheckEngine {
         return walkStructTree(ctx, instantiateStructTreeChecks());
     }
 
-    /// Run a single StructTreeChecker, instantiating it from the supplier.
-    public IssueList runStructTreeCheck(DocContext ctx, Supplier<StructTreeChecker> checkSupplier) {
-        StructTreeChecker check = checkSupplier.get();
+    /// Run a single StructTreeCheck, instantiating it from the supplier.
+    public IssueList runStructTreeCheck(DocContext ctx, Supplier<StructTreeCheck> checkSupplier) {
+        StructTreeCheck check = checkSupplier.get();
         if (check == null) {
             throw new IllegalStateException("StructTreeCheck supplier returned null");
         }
         return runStructTreeCheck(ctx, check);
     }
 
-    /// Run a single StructTreeChecker instance.
-    public IssueList runStructTreeCheck(DocContext ctx, StructTreeChecker check) {
+    /// Run a single StructTreeCheck instance.
+    public IssueList runStructTreeCheck(DocContext ctx, StructTreeCheck check) {
         return walkStructTree(ctx, List.of(check));
     }
 
-    private List<StructTreeChecker> instantiateStructTreeChecks() {
-        List<StructTreeChecker> checks = new ArrayList<>(structTreeChecks.size());
-        for (Supplier<StructTreeChecker> checkSupplier : structTreeChecks) {
-            StructTreeChecker check = checkSupplier.get();
+    private List<StructTreeCheck> instantiateStructTreeChecks() {
+        List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
+        for (Supplier<StructTreeCheck> checkSupplier : structTreeChecks) {
+            StructTreeCheck check = checkSupplier.get();
             if (check == null) {
                 throw new IllegalStateException("StructTreeCheck supplier returned null");
             }

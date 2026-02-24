@@ -34,11 +34,11 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Visitor that detects tagged content that should be artifacts. */
-public class MistaggedArtifactCheck extends StructTreeChecker {
+public class MistaggedArtifactCheck extends StructTreeCheck {
 
     private static final Pattern FOOTER_URL_TIMESTAMP =
             Pattern.compile(

@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.checks.*;
 import net.boyechko.pdf.autoa11y.checks.FigureWithTextCheck;
 import net.boyechko.pdf.autoa11y.validation.Check;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 
 ///  Default document- and structure-tree-level checks.
 public final class ProcessingDefaults {
@@ -44,7 +44,7 @@ public final class ProcessingDefaults {
     }
 
     ///  List of default checks that work on the structure tree level.
-    public static List<Supplier<StructTreeChecker>> structTreeChecks() {
+    public static List<Supplier<StructTreeCheck>> structTreeChecks() {
         return List.of(
                 NeedlessNestingCheck::new,
                 MissingPagePartsCheck::new,

@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.validation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
-/// Check for some feature in the PDF document [DocContext].
+/// A checker that checks for a specific kind of issues in the PDF document.
 public interface Check {
     String name();
 

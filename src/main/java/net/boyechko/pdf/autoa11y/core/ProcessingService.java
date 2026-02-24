@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.CheckEngine;
-import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.visitors.VerboseOutputVisitor;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final CheckEngine checkEngine;
     private final ProcessingListener listener;
-    private final List<Supplier<StructTreeChecker>> structTreeChecks;
+    private final List<Supplier<StructTreeCheck>> structTreeChecks;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -115,14 +115,14 @@ public class ProcessingService {
     }
 
     /// Filters the list of visitor suppliers based on the skip and includeOnly sets.
-    private static ArrayList<Supplier<StructTreeChecker>> filterVisitors(
-            List<Supplier<StructTreeChecker>> defaults, Set<String> skip, Set<String> includeOnly) {
+    private static ArrayList<Supplier<StructTreeCheck>> filterVisitors(
+            List<Supplier<StructTreeCheck>> defaults, Set<String> skip, Set<String> includeOnly) {
         if (skip.isEmpty() && includeOnly.isEmpty()) {
             return new ArrayList<>(defaults);
         }
-        ArrayList<Supplier<StructTreeChecker>> filtered = new ArrayList<>();
+        ArrayList<Supplier<StructTreeCheck>> filtered = new ArrayList<>();
         Set<String> removedNames = new HashSet<>();
-        for (Supplier<StructTreeChecker> supplier : defaults) {
+        for (Supplier<StructTreeCheck> supplier : defaults) {
             String className = supplier.get().getClass().getSimpleName();
             if (!includeOnly.isEmpty()) {
                 if (includeOnly.contains(className)) {
@@ -141,10 +141,10 @@ public class ProcessingService {
     }
 
     private static void validateNoMissingPrerequisites(
-            List<Supplier<StructTreeChecker>> visitors, Set<String> removedNames) {
-        for (Supplier<StructTreeChecker> supplier : visitors) {
-            StructTreeChecker visitor = supplier.get();
-            for (Class<? extends StructTreeChecker> prereq : visitor.prerequisites()) {
+            List<Supplier<StructTreeCheck>> visitors, Set<String> removedNames) {
+        for (Supplier<StructTreeCheck> supplier : visitors) {
+            StructTreeCheck visitor = supplier.get();
+            for (Class<? extends StructTreeCheck> prereq : visitor.prerequisites()) {
                 String prereqName = prereq.getSimpleName();
                 if (removedNames.contains(prereqName)) {
                     throw new IllegalArgumentException(
@@ -209,9 +209,9 @@ public class ProcessingService {
                 }
             }
 
-            // Steps 1..N: Each StructTreeChecker in its own pipeline step
-            for (Supplier<StructTreeChecker> supplier : structTreeChecks) {
-                StructTreeChecker check = supplier.get();
+            // Steps 1..N: Each StructTreeCheck in its own pipeline step
+            for (Supplier<StructTreeCheck> supplier : structTreeChecks) {
+                StructTreeCheck check = supplier.get();
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
