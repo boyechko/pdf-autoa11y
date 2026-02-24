@@ -34,7 +34,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /**
@@ -42,7 +42,7 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
  * after NeedlessNestingCheck so that pre-existing Part wrappers (without /Pg) have already been
  * flattened.
  */
-public class MissingPagePartsCheck implements StructureTreeVisitor {
+public class MissingPagePartsCheck implements StructTreeChecker {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
 
     private DocumentContext docCtx;
@@ -83,7 +83,7 @@ public class MissingPagePartsCheck implements StructureTreeVisitor {
     }
 
     @Override
-    public Set<Class<? extends StructureTreeVisitor>> prerequisites() {
+    public Set<Class<? extends StructTreeChecker>> prerequisites() {
         return Set.of(NeedlessNestingCheck.class);
     }
 

@@ -32,7 +32,7 @@ public class StructureTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructureTreeWalker.class);
 
     private final TagSchema schema;
-    private final List<StructureTreeVisitor> visitors = new ArrayList<>();
+    private final List<StructTreeChecker> visitors = new ArrayList<>();
 
     private PdfStructTreeRoot root;
     private DocumentContext docCtx;
@@ -42,7 +42,7 @@ public class StructureTreeWalker {
         this.schema = schema;
     }
 
-    public StructureTreeWalker addVisitor(StructureTreeVisitor visitor) {
+    public StructureTreeWalker addVisitor(StructTreeChecker visitor) {
         visitors.add(visitor);
         return this;
     }
@@ -52,7 +52,7 @@ public class StructureTreeWalker {
         this.docCtx = docCtx;
         this.globalIndex = 0;
 
-        for (StructureTreeVisitor visitor : visitors) {
+        for (StructTreeChecker visitor : visitors) {
             // No node context exists at the root level.
             visitor.beforeTraversal(null);
         }
@@ -60,7 +60,7 @@ public class StructureTreeWalker {
         walkRoot();
 
         IssueList allIssues = new IssueList();
-        for (StructureTreeVisitor visitor : visitors) {
+        for (StructTreeChecker visitor : visitors) {
             visitor.afterTraversal();
             allIssues.addAll(visitor.getIssues());
         }
@@ -87,7 +87,7 @@ public class StructureTreeWalker {
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;
-        for (StructureTreeVisitor visitor : visitors) {
+        for (StructTreeChecker visitor : visitors) {
             try {
                 if (!visitor.enterElement(ctx)) {
                     continueToChildren = false;
@@ -107,7 +107,7 @@ public class StructureTreeWalker {
             }
         }
 
-        for (StructureTreeVisitor visitor : visitors) {
+        for (StructTreeChecker visitor : visitors) {
             try {
                 visitor.leaveElement(ctx);
             } catch (Exception e) {

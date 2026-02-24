@@ -34,10 +34,10 @@ class CheckEngineTest {
                         () ->
                                 new CheckEngine(
                                         List.of(),
-                                        List.of(DependentVisitor::new, PrereqVisitor::new),
+                                        List.of(DependentChecker::new, PrereqChecker::new),
                                         null));
         assertTrue(
-                ex.getMessage().contains("PrereqVisitor"),
+                ex.getMessage().contains("PrereqChecker"),
                 "Error should name the missing prerequisite");
     }
 
@@ -47,18 +47,18 @@ class CheckEngineTest {
                 () ->
                         new CheckEngine(
                                 List.of(),
-                                List.of(PrereqVisitor::new, DependentVisitor::new),
+                                List.of(PrereqChecker::new, DependentChecker::new),
                                 null));
     }
 
     @Test
     void acceptsVisitorWithNoPrerequisites() {
-        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqVisitor::new), null));
+        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqChecker::new), null));
     }
 
     // --- Stub visitors for testing ---
 
-    static class PrereqVisitor implements StructureTreeVisitor {
+    static class PrereqChecker implements StructTreeChecker {
         @Override
         public String name() {
             return "Prereq";
@@ -75,7 +75,7 @@ class CheckEngineTest {
         }
     }
 
-    static class DependentVisitor implements StructureTreeVisitor {
+    static class DependentChecker implements StructTreeChecker {
         @Override
         public String name() {
             return "Dependent";
@@ -87,8 +87,8 @@ class CheckEngineTest {
         }
 
         @Override
-        public Set<Class<? extends StructureTreeVisitor>> prerequisites() {
-            return Set.of(PrereqVisitor.class);
+        public Set<Class<? extends StructTreeChecker>> prerequisites() {
+            return Set.of(PrereqChecker.class);
         }
 
         @Override

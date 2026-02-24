@@ -38,8 +38,8 @@ import org.slf4j.LoggerFactory;
  * <p>The engine supports two types of checks:
  *
  * <ul>
- *   <li><b>Visitors</b> ({@link StructureTreeVisitor}): Run during a single traversal of the
- *       structure tree via {@link StructureTreeWalker}. Use for checks that examine tag structure.
+ *   <li><b>Visitors</b> ({@link StructTreeChecker}): Run during a single traversal of the structure
+ *       tree via {@link StructureTreeWalker}. Use for checks that examine tag structure.
  *   <li><b>Rules</b> ({@link Check}): Run independently after the tree walk. Use for document-level
  *       checks (metadata, annotations, pages) that don't need tree traversal.
  * </ul>
@@ -48,7 +48,7 @@ public class CheckEngine {
     private static final Logger logger = LoggerFactory.getLogger(CheckEngine.class);
 
     private final List<Check> checks;
-    private final List<Supplier<StructureTreeVisitor>> visitorSuppliers;
+    private final List<Supplier<StructTreeChecker>> visitorSuppliers;
     private final TagSchema schema;
 
     public CheckEngine(List<Check> checks) {
@@ -57,7 +57,7 @@ public class CheckEngine {
 
     public CheckEngine(
             List<Check> checks,
-            List<Supplier<StructureTreeVisitor>> visitorSuppliers,
+            List<Supplier<StructTreeChecker>> visitorSuppliers,
             TagSchema schema) {
         this.checks = List.copyOf(checks);
         this.visitorSuppliers = List.copyOf(visitorSuppliers);
@@ -66,10 +66,10 @@ public class CheckEngine {
     }
 
     private void validateVisitorPrerequisites() {
-        Set<Class<? extends StructureTreeVisitor>> seen = new HashSet<>();
-        for (Supplier<StructureTreeVisitor> supplier : visitorSuppliers) {
-            StructureTreeVisitor visitor = supplier.get();
-            for (Class<? extends StructureTreeVisitor> prereq : visitor.prerequisites()) {
+        Set<Class<? extends StructTreeChecker>> seen = new HashSet<>();
+        for (Supplier<StructTreeChecker> supplier : visitorSuppliers) {
+            StructTreeChecker visitor = supplier.get();
+            for (Class<? extends StructTreeChecker> prereq : visitor.prerequisites()) {
                 if (!seen.contains(prereq)) {
                     throw new IllegalArgumentException(
                             visitor.getClass().getSimpleName()
@@ -87,7 +87,7 @@ public class CheckEngine {
         return checks;
     }
 
-    public List<Supplier<StructureTreeVisitor>> getVisitorSuppliers() {
+    public List<Supplier<StructTreeChecker>> getVisitorSuppliers() {
         return visitorSuppliers;
     }
 
@@ -114,9 +114,9 @@ public class CheckEngine {
             return new IssueList();
         }
 
-        List<StructureTreeVisitor> visitors = instantiateVisitors();
+        List<StructTreeChecker> visitors = instantiateVisitors();
         StructureTreeWalker walker = new StructureTreeWalker(schema);
-        for (StructureTreeVisitor visitor : visitors) {
+        for (StructTreeChecker visitor : visitors) {
             walker.addVisitor(visitor);
         }
 
@@ -125,12 +125,12 @@ public class CheckEngine {
 
     /** Runs a single visitor in its own tree walk. */
     public IssueList runSingleVisitor(
-            DocumentContext ctx, Supplier<StructureTreeVisitor> visitorSupplier) {
+            DocumentContext ctx, Supplier<StructTreeChecker> visitorSupplier) {
         return runVisitor(ctx, visitorSupplier.get());
     }
 
     /** Runs a pre-instantiated visitor in its own tree walk. */
-    public IssueList runVisitor(DocumentContext ctx, StructureTreeVisitor visitor) {
+    public IssueList runVisitor(DocumentContext ctx, StructTreeChecker visitor) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
             logger.debug("No structure tree found, skipping visitor check");
@@ -143,10 +143,10 @@ public class CheckEngine {
         return walker.walk(root, ctx);
     }
 
-    private List<StructureTreeVisitor> instantiateVisitors() {
-        List<StructureTreeVisitor> visitors = new ArrayList<>(visitorSuppliers.size());
-        for (Supplier<StructureTreeVisitor> visitorSupplier : visitorSuppliers) {
-            StructureTreeVisitor visitor = visitorSupplier.get();
+    private List<StructTreeChecker> instantiateVisitors() {
+        List<StructTreeChecker> visitors = new ArrayList<>(visitorSuppliers.size());
+        for (Supplier<StructTreeChecker> visitorSupplier : visitorSuppliers) {
+            StructTreeChecker visitor = visitorSupplier.get();
             if (visitor == null) {
                 throw new IllegalStateException("Visitor supplier returned null");
             }

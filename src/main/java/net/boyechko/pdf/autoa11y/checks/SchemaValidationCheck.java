@@ -29,7 +29,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.PatternMatcher;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Child pattern - children don't match required sequence pattern
  * </ol>
  */
-public class SchemaValidationCheck implements StructureTreeVisitor {
+public class SchemaValidationCheck implements StructTreeChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(SchemaValidationCheck.class);
 

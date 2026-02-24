@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 
 /**
@@ -39,7 +39,7 @@ import net.boyechko.pdf.autoa11y.validation.VisitorContext;
  * convey information but without descriptions for screen readers. No automatic fix — these need
  * human-written alt text.
  */
-public class MissingAltTextCheck implements StructureTreeVisitor {
+public class MissingAltTextCheck implements StructTreeChecker {
     private final IssueList issues = new IssueList();
 
     @Override

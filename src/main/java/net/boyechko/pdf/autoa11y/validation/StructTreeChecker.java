@@ -21,7 +21,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
 /** Visitor interface for PDF structure tree traversal. */
-public interface StructureTreeVisitor {
+public interface StructTreeChecker {
 
     String name();
 
@@ -43,7 +43,7 @@ public interface StructureTreeVisitor {
      * Returns visitor classes that must run before this visitor. The pipeline validates at
      * construction time that all prerequisites appear earlier in the visitor list.
      */
-    default Set<Class<? extends StructureTreeVisitor>> prerequisites() {
+    default Set<Class<? extends StructTreeChecker>> prerequisites() {
         return Set.of();
     }
 }

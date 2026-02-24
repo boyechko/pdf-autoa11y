@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeVisitor;
+import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
 import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * indentation relative to non-run siblings) to identify paragraphs that should be wrapped in list
  * structure.
  */
-public class ListlikeParagraphsCheck implements StructureTreeVisitor {
+public class ListlikeParagraphsCheck implements StructTreeChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(ListlikeParagraphsCheck.class);
 
