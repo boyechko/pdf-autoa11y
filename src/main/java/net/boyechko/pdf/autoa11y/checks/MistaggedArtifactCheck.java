@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Visitor that detects tagged content that should be artifacts. */
 public class MistaggedArtifactCheck implements StructTreeChecker {
@@ -79,7 +79,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (!CHECKABLE_ROLES.contains(ctx.role())) {
             return true;
         }
@@ -108,7 +108,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
         return issues;
     }
 
-    private ArtifactKind detectArtifactKind(VisitorContext ctx, String textContent) {
+    private ArtifactKind detectArtifactKind(StructTreeContext ctx, String textContent) {
         if (matchesTextArtifactPattern(textContent)) {
             return ArtifactKind.TEXT_PATTERN;
         }
@@ -132,7 +132,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
      * Detects decorative images that should be artifacts: elements with no text content, image MCR
      * content, no alt text (for Figures), and bounds below meaningful-size thresholds.
      */
-    private boolean matchesDecorativeImage(VisitorContext ctx, String textContent) {
+    private boolean matchesDecorativeImage(StructTreeContext ctx, String textContent) {
         if (textContent != null && !textContent.isBlank()) {
             return false;
         }
@@ -188,7 +188,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
         return foundImageMcid && unionBounds != null && !isMeaningfulSize(unionBounds);
     }
 
-    private boolean hasImageContent(VisitorContext ctx, int pageNum, int mcid) {
+    private boolean hasImageContent(StructTreeContext ctx, int pageNum, int mcid) {
         Map<Integer, Set<Content.ContentKind>> contentKinds =
                 ctx.docCtx()
                         .getOrComputeContentKinds(
@@ -215,7 +215,7 @@ public class MistaggedArtifactCheck implements StructTreeChecker {
         return "Tagged content should be artifact: \"" + truncated + "\"";
     }
 
-    private String getTextContent(VisitorContext ctx) {
+    private String getTextContent(StructTreeContext ctx) {
         int pageNumber = ctx.getPageNumber();
         if (pageNumber == 0) {
             return "";

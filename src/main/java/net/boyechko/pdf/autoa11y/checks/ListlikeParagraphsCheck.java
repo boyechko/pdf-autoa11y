@@ -32,7 +32,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
     }
 
     @Override
-    public void leaveElement(VisitorContext ctx) {
+    public void leaveElement(StructTreeContext ctx) {
         if (!CONTAINER_ROLES.contains(ctx.role())) {
             return;
         }
@@ -111,7 +111,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
      * whole run (e.g., the last few elements aren't indented), splits it into contiguous sub-runs
      * of elements sharing the same left edge and checks each sub-run independently.
      */
-    private void checkRunForListFeatures(VisitorContext ctx, List<Integer> runIndices) {
+    private void checkRunForListFeatures(StructTreeContext ctx, List<Integer> runIndices) {
         int pageNum = ctx.getPageNumber();
         if (pageNum <= 0) {
             return;
@@ -175,7 +175,7 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
     }
 
     /** Checks a sub-run against reference siblings for indentation and creates an issue. */
-    private void checkSubRunForListFeatures(VisitorContext ctx, SubRun subRun, int pageNum) {
+    private void checkSubRunForListFeatures(StructTreeContext ctx, SubRun subRun, int pageNum) {
         float runMedianLeft = median(subRun.leftEdges);
         float referenceLeft = getReferenceLeftEdge(ctx, subRun.indices, pageNum);
 
@@ -224,7 +224,8 @@ public class ListlikeParagraphsCheck implements StructTreeChecker {
      * Gets the minimum left edge from non-run siblings (H1, H2, other P elements, etc.) to use as a
      * reference for indentation comparison.
      */
-    private float getReferenceLeftEdge(VisitorContext ctx, List<Integer> runIndices, int pageNum) {
+    private float getReferenceLeftEdge(
+            StructTreeContext ctx, List<Integer> runIndices, int pageNum) {
         Set<Integer> runIndexSet = Set.copyOf(runIndices);
         float minLeft = -1;
 

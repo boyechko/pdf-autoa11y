@@ -36,7 +36,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +85,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
     }
 
     @Override
-    public void leaveElement(VisitorContext ctx) {
+    public void leaveElement(StructTreeContext ctx) {
         if (!CONTAINER_ROLES.contains(ctx.role())) {
             return;
         }
@@ -119,7 +119,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
     }
 
     private void findBulletMatchedRuns(
-            VisitorContext ctx, List<Content.BulletPosition> bullets, int pageNum) {
+            StructTreeContext ctx, List<Content.BulletPosition> bullets, int pageNum) {
         List<PdfStructElem> currentRun = new ArrayList<>();
 
         for (int i = 0; i < ctx.children().size(); i++) {
@@ -157,7 +157,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
         return bullets.stream().anyMatch(b -> b.y() >= bottom && b.y() <= top);
     }
 
-    private void emitRunIfLongEnough(VisitorContext ctx, List<PdfStructElem> run) {
+    private void emitRunIfLongEnough(StructTreeContext ctx, List<PdfStructElem> run) {
         if (run.size() < MIN_RUN_LENGTH) {
             return;
         }
@@ -187,7 +187,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
      * becomes a WrapBulletAlignedKidsInLBody fix.
      */
     private void findBulletAlignedKidsInElement(
-            VisitorContext ctx,
+            StructTreeContext ctx,
             PdfStructElem element,
             List<Content.BulletPosition> bullets,
             int pageNum) {
@@ -263,7 +263,7 @@ public class MistaggedBulletedListCheck implements StructTreeChecker {
     }
 
     /** Computes bounds for a single raw kid (MCR or struct element). */
-    private Rectangle boundsForRawKid(IStructureNode kid, VisitorContext ctx, int pageNum) {
+    private Rectangle boundsForRawKid(IStructureNode kid, StructTreeContext ctx, int pageNum) {
         if (kid instanceof PdfObjRef) {
             return null;
         } else if (kid instanceof PdfMcr mcr) {

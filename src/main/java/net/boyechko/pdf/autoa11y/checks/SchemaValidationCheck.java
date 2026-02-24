@@ -30,8 +30,8 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.PatternMatcher;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         validateUnknownRole(ctx);
         validateParentRule(ctx);
         validateChildCount(ctx);
@@ -78,7 +78,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
         return issues;
     }
 
-    private void validateUnknownRole(VisitorContext ctx) {
+    private void validateUnknownRole(StructTreeContext ctx) {
         /* If the schema rule is null, the role is not defined in the schema. */
         if (ctx.schemaRule() == null) {
             issues.add(
@@ -92,7 +92,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
         }
     }
 
-    private void validateParentRule(VisitorContext ctx) {
+    private void validateParentRule(StructTreeContext ctx) {
         TagSchema.Rule rule = ctx.schemaRule();
         if (rule == null || rule.getParentMustBe() == null) return;
         if (ctx.parentRole() == null) return;
@@ -112,7 +112,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
         }
     }
 
-    private void validateChildCount(VisitorContext ctx) {
+    private void validateChildCount(StructTreeContext ctx) {
         TagSchema.Rule rule = ctx.schemaRule();
         if (rule == null) return;
 
@@ -149,7 +149,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
         }
     }
 
-    private void validateAllowedChildren(VisitorContext ctx) {
+    private void validateAllowedChildren(StructTreeContext ctx) {
         TagSchema.Rule rule = ctx.schemaRule();
         if (rule == null || rule.getAllowedChildren() == null) return;
         if (rule.getAllowedChildren().isEmpty()) return;
@@ -178,7 +178,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
         }
     }
 
-    private void validateChildPattern(VisitorContext ctx) {
+    private void validateChildPattern(StructTreeContext ctx) {
         TagSchema.Rule rule = ctx.schemaRule();
         if (rule == null || rule.getChildPattern() == null) return;
 
@@ -200,7 +200,7 @@ public class SchemaValidationCheck implements StructTreeChecker {
     }
 
     private IssueFix createChildFix(
-            VisitorContext ctx, int childIndex, boolean multiFixCreated, String childRole) {
+            StructTreeContext ctx, int childIndex, boolean multiFixCreated, String childRole) {
         if (multiFixCreated) {
             logger.debug(
                     "Fix already created for parent {}; no further fix for kid {}",

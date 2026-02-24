@@ -26,7 +26,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 public class ParagraphOfLinksCheck implements StructTreeChecker {
     private static final int MIN_LINKS_COUNT = 2;
@@ -43,7 +43,7 @@ public class ParagraphOfLinksCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (ctx.children().size() < MIN_LINKS_COUNT) {
             return true;
         }
@@ -71,7 +71,7 @@ public class ParagraphOfLinksCheck implements StructTreeChecker {
     }
 
     @Override
-    public void leaveElement(VisitorContext ctx) {}
+    public void leaveElement(StructTreeContext ctx) {}
 
     @Override
     public IssueList getIssues() {

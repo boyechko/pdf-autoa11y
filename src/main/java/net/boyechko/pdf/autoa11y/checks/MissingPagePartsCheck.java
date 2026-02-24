@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeChecker;
-import net.boyechko.pdf.autoa11y.validation.VisitorContext;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /**
  * Detects when direct Document children should be grouped into page-level Part containers. Runs
@@ -59,7 +59,7 @@ public class MissingPagePartsCheck implements StructTreeChecker {
     }
 
     @Override
-    public boolean enterElement(VisitorContext ctx) {
+    public boolean enterElement(StructTreeContext ctx) {
         if (docCtx == null) {
             docCtx = ctx.docCtx();
         }
