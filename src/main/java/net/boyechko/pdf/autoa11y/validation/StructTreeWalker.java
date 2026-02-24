@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Walks the PDF structure tree once, invoking multiple visitors at each node. */
-public class StructureTreeWalker {
-    private static final Logger logger = LoggerFactory.getLogger(StructureTreeWalker.class);
+public class StructTreeWalker {
+    private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
 
     private final TagSchema schema;
     private final List<StructTreeChecker> visitors = new ArrayList<>();
@@ -38,11 +38,11 @@ public class StructureTreeWalker {
     private DocumentContext docCtx;
     private int globalIndex;
 
-    public StructureTreeWalker(TagSchema schema) {
+    public StructTreeWalker(TagSchema schema) {
         this.schema = schema;
     }
 
-    public StructureTreeWalker addVisitor(StructTreeChecker visitor) {
+    public StructTreeWalker addVisitor(StructTreeChecker visitor) {
         visitors.add(visitor);
         return this;
     }

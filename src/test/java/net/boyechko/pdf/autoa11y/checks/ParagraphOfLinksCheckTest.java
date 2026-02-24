@@ -33,7 +33,7 @@ import net.boyechko.pdf.autoa11y.document.StructureTree;
 import net.boyechko.pdf.autoa11y.document.StructureTree.Node;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +63,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
             }
             layoutDoc.add(p);
 
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(visitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
 
@@ -103,7 +103,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
                             StructureTree.toRoleTreeString(
                                     StructureTree.findDocument(pdfDoc.getStructTreeRoot())));
 
-                    StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+                    StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
                     walker.addVisitor(visitor);
                     walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
                     assertEquals(0, visitor.getIssues().size(), "Should have 0 issues");

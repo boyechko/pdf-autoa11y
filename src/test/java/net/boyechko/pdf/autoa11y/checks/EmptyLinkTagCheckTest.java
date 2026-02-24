@@ -37,7 +37,7 @@ import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
@@ -73,7 +73,7 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
 
             DocumentContext ctx = new DocumentContext(pdfDoc);
             ctx.getOrComputeMcidBounds(1, () -> Map.of(mcr.getMcid(), mcrRect));
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new EmptyLinkTagCheck());
             IssueList issues = walker.walk(root, ctx);
 

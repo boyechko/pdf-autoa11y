@@ -36,7 +36,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocumentContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructureTreeWalker;
+import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
     void detectsLargeFigureWithoutAltText() throws Exception {
         Path pdfFile = createTaggedImagePdf("large-no-alt.pdf", 200f, null);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
@@ -62,7 +62,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
     void doesNotFlagSmallFigure() throws Exception {
         Path pdfFile = createTaggedImagePdf("small-no-alt.pdf", 48f, null);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
@@ -76,7 +76,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
     void doesNotFlagFigureWithAltText() throws Exception {
         Path pdfFile = createTaggedImagePdf("large-with-alt.pdf", 200f, "A photo of a building");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
@@ -95,7 +95,7 @@ class MissingAltTextCheckTest extends PdfTestBase {
                                     new com.itextpdf.layout.element.Paragraph("Some text content"));
                         });
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructureTreeWalker walker = new StructureTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocumentContext(pdfDoc));
