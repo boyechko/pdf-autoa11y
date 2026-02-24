@@ -19,9 +19,6 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -111,7 +108,7 @@ public class PdfAutoA11yCLI {
         try {
             ProcessingListener listener;
             if (config.verbosity() == VerbosityLevel.DEBUG) {
-                listener = new LoggingListener();
+                listener = LoggingListener.withConsoleOutput();
             } else {
                 listener = new FormattedListener(System.out, config.verbosity());
             }
@@ -289,29 +286,6 @@ public class PdfAutoA11yCLI {
                 };
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
         ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.toLevel(level));
-
-        if (verbosity == VerbosityLevel.DEBUG) {
-            addConsoleAppender(ctx);
-        }
-    }
-
-    /**
-     * Adds a console appender to the root logger. Needed in {@code -vv} mode because {@code
-     * logback.xml} declares no console appender ({@link FormattedListener} captures logs via {@code
-     * ListAppender} instead). When using {@link LoggingListener}, logs must flow to stdout.
-     */
-    private static void addConsoleAppender(LoggerContext ctx) {
-        PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-        encoder.setContext(ctx);
-        encoder.setPattern("%-25logger{0} [%-5level] %msg%n");
-        encoder.start();
-
-        ConsoleAppender<ILoggingEvent> console = new ConsoleAppender<>();
-        console.setContext(ctx);
-        console.setEncoder(encoder);
-        console.start();
-
-        ctx.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(console);
     }
 
     private static Logger logger() {

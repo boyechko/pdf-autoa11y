@@ -74,9 +74,6 @@ public final class LogIssueFormatter implements IssueFormatter {
         if (role != null && !role.isBlank()) {
             joiner.add("role=" + role);
         }
-        if (structPath != null && !structPath.isBlank()) {
-            joiner.add("path=" + structPath);
-        }
         return joiner.length() > 0 ? joiner.toString() : "elem";
     }
 
@@ -90,9 +87,6 @@ public final class LogIssueFormatter implements IssueFormatter {
         }
         if (role != null && !role.isBlank()) {
             joiner.add("role=" + role);
-        }
-        if (structPath != null && !structPath.isBlank()) {
-            joiner.add("path=" + structPath);
         }
         return joiner.toString();
     }

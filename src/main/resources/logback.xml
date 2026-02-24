@@ -6,8 +6,8 @@
     No console appender is declared here. FormattedListener attaches a
     ListAppender programmatically and drains captured logs into the phase
     box so that log output never interleaves with the box-drawing UI.
-    In -vv mode, PdfAutoA11yCLI adds a ConsoleAppender programmatically
-    so that logs flow to stdout alongside LoggingListener events.
+    In -vv mode, LoggingListener adds a ConsoleAppender programmatically
+    so that logs flow to stdout.
   -->
 
   <!-- iText font subsystem is very chatty at WARN; keep it at ERROR -->
