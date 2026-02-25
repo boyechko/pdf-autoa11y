@@ -24,6 +24,8 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +90,11 @@ public class RemoveEmptyElements implements IssueFix {
     @Override
     public String describe() {
         return "Removed " + removedCount + " empty structure element(s)";
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.none());
     }
 
     @Override

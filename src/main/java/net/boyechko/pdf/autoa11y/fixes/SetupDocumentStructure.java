@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,5 +121,10 @@ public class SetupDocumentStructure implements IssueFix {
     @Override
     public String describe(DocContext ctx) {
         return describe();
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.none());
     }
 }

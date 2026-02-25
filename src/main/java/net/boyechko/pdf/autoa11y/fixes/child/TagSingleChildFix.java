@@ -18,7 +18,10 @@
 package net.boyechko.pdf.autoa11y.fixes.child;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Base class for fixes that involve a single child element. */
 public abstract class TagSingleChildFix implements IssueFix {
@@ -55,6 +58,11 @@ public abstract class TagSingleChildFix implements IssueFix {
     @Override
     public String describe() {
         return "Fix a single child, " + getKidRole() + ", under its parent " + getParentRole();
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, parent));
     }
 
     public PdfStructElem getKid() {

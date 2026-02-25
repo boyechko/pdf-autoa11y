@@ -21,7 +21,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Changes a P element to a Lbl in an LI structure. */
@@ -56,11 +55,11 @@ public final class ChangePToLblInLI extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        return "Changed P to Lbl in " + Format.elem(parent);
+        return "Changed P to Lbl in LI";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return "Changed P to Lbl in " + Format.elem(parent, ctx);
+        return describe();
     }
 }

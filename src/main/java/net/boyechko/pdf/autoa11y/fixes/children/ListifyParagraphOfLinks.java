@@ -21,8 +21,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +80,7 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        int objNum = StructTree.objNum(parent);
-        return "Listified P element with links to L element " + Format.objNum(objNum);
+        return "Changed paragraph of links into a list";
     }
 
     @Override

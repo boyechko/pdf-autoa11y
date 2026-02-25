@@ -25,7 +25,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
@@ -154,11 +153,11 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Extracted LBody from " + Format.elem(parent) + " into list";
+        return "Extracted LBody into list";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return "Extracted LBody from " + Format.elem(parent, ctx) + " into list";
+        return describe();
     }
 }

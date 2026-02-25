@@ -21,7 +21,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
@@ -75,11 +74,11 @@ public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
 
     @Override
     public String describe() {
-        return "Wrapped pairs of Lbl/LBody in LI elements for " + Format.elem(parent);
+        return "Wrapped pairs of Lbl/LBody in LI elements";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return "Wrapped pairs of Lbl/LBody in LI elements for " + Format.elem(parent, ctx);
+        return describe();
     }
 }

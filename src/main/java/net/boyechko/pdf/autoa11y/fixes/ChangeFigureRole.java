@@ -20,9 +20,9 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Changes the role of a Figure element to a specified role. */
 public class ChangeFigureRole implements IssueFix {
@@ -51,20 +51,17 @@ public class ChangeFigureRole implements IssueFix {
 
     @Override
     public String describe() {
-        int objNum = StructTree.objNum(figure);
-        return "Changed Figure to " + newRole.getValue() + " for " + Format.objNum(objNum);
+        return "Changed Figure to " + newRole.getValue();
     }
 
     @Override
     public String describe(DocContext ctx) {
-        int objNum = StructTree.objNum(figure);
-        int pageNum = ctx.getPageNumber(objNum);
-        String pageInfo = (pageNum > 0) ? " (" + Format.page(pageNum) + ")" : "";
-        return "Changed Figure to "
-                + newRole.getValue()
-                + " for "
-                + Format.objNum(objNum)
-                + pageInfo;
+        return describe();
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, figure));
     }
 
     @Override
