@@ -21,7 +21,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */
@@ -63,19 +62,11 @@ public final class TreatLblFigureAsBullet extends TagSingleChildFix {
 
     @Override
     public String describe() {
-        return "Replace "
-                + Format.elem(parent)
-                + " with its "
-                + Format.elem(kid)
-                + " as a bullet label";
+        return "Converted Figure in Lbl to bullet label";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return "Replace "
-                + Format.elem(parent, ctx)
-                + " with its "
-                + Format.elem(kid)
-                + " as a bullet label";
+        return describe();
     }
 }

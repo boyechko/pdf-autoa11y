@@ -28,10 +28,11 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +137,7 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
 
     @Override
     public String describe() {
-        return "Moved sibling MCR into Link for annotation " + Format.objNum(linkObjNum);
+        return "Moved sibling MCR into Link";
     }
 
     @Override
@@ -147,5 +148,22 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
         }
         String truncated = text.length() > 30 ? text.substring(0, 29) + "…" : text;
         return "Moved sibling MCR \"" + truncated + "\" into Link";
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        if (pageNum > 0 && mcid >= 0) {
+            return new IssueMsg(
+                    describe(ctx), IssueLoc.atMcid(pageNum, mcid, linkObjNum, "Link", null));
+        }
+        if (linkObjNum > 0) {
+            return new IssueMsg(
+                    describe(ctx),
+                    IssueLoc.atObj(
+                            linkObjNum,
+                            pageNum > 0 ? pageNum : null,
+                            IssueLoc.ObjKind.STRUCT_ELEM));
+        }
+        return new IssueMsg(describe(ctx), IssueLoc.none());
     }
 }

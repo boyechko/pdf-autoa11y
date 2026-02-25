@@ -22,7 +22,6 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /** Wraps a run of consecutive P elements in L > LI > LBody structure. */
@@ -115,10 +114,6 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
 
     @Override
     public String describe(DocContext ctx) {
-        return "Wrapped a run of "
-                + kids.size()
-                + " P elements in an L > LI > LBody structure ("
-                + Format.page(ctx.getPageNumber(StructTree.objNum(parent)))
-                + ")";
+        return describe();
     }
 }

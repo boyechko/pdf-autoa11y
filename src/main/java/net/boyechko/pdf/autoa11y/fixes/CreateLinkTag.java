@@ -36,6 +36,8 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -248,18 +250,33 @@ public class CreateLinkTag implements IssueFix {
 
     @Override
     public String describe() {
-        String uri = UnmarkedLinkCheck.getAnnotationUri(annotDict);
-        int objNumber =
-                annotDict.getIndirectReference() != null
-                        ? annotDict.getIndirectReference().getObjNumber()
-                        : 0;
-        String baseDescription = UnmarkedLinkCheck.buildDescription(objNumber, uri);
-        return "Created tag for " + baseDescription;
+        return "Created tag for unmarked Link annotation";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return describe();
+        String uri = UnmarkedLinkCheck.getAnnotationUri(annotDict);
+        if (uri == null || uri.isBlank()) {
+            return describe();
+        }
+        String displayUri = uri.length() > 30 ? uri.substring(0, 29) + "…" : uri;
+        return describe() + " to " + displayUri;
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        int objNumber =
+                annotDict.getIndirectReference() != null
+                        ? annotDict.getIndirectReference().getObjNumber()
+                        : 0;
+        if (objNumber > 0) {
+            return new IssueMsg(
+                    describe(ctx), IssueLoc.atObj(objNumber, pageNum, IssueLoc.ObjKind.ANNOT));
+        }
+        if (pageNum > 0) {
+            return new IssueMsg(describe(ctx), IssueLoc.atPage(pageNum));
+        }
+        return new IssueMsg(describe(ctx), IssueLoc.none());
     }
 
     @Override

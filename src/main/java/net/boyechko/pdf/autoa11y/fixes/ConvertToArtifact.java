@@ -49,6 +49,8 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -382,12 +384,17 @@ public class ConvertToArtifact implements IssueFix {
 
     @Override
     public String describe() {
-        return "Artifacted " + Format.elem(element);
+        return "Converted element to artifact";
     }
 
     @Override
     public String describe(DocContext ctx) {
-        return "Artifacted " + Format.elem(element, ctx);
+        return describe();
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, element));
     }
 
     @Override

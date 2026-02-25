@@ -21,8 +21,11 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.child.TagSingleChildFix;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +73,11 @@ public abstract class TagMultipleChildrenFix implements IssueFix {
 
     public String getParentRole() {
         return parent.getRole().getValue();
+    }
+
+    @Override
+    public IssueMsg describeLocated(DocContext ctx) {
+        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, parent));
     }
 
     @Override
