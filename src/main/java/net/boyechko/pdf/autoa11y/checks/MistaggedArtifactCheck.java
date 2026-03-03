@@ -22,6 +22,15 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -38,19 +47,27 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Visitor that detects tagged content that should be artifacts. */
 public class MistaggedArtifactCheck extends StructTreeCheck {
+    @Override
+    public String name() {
+        return "Mistagged Artifact Check";
+    }
 
-    private static final Pattern FOOTER_URL_TIMESTAMP =
-            Pattern.compile(
-                    "https?://[^\\s]+.*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]",
-                    Pattern.CASE_INSENSITIVE);
+    @Override
+    public String description() {
+        return "Decorative or noisy content should be artifacted";
+    }
 
-    private static final Pattern TIMESTAMP_ONLY =
-            Pattern.compile(
-                    "^\\s*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]\\s*$",
-                    Pattern.CASE_INSENSITIVE);
+    /** Classpath resource containing built-in text artifact patterns. */
+    static final String DEFAULT_PATTERNS_RESOURCE = "/artifact_patterns.txt";
 
-    private static final Pattern PAGE_NUMBER =
-            Pattern.compile("^\\s*(Page\\s+)?\\d+\\s*(of\\s+\\d+)?\\s*$", Pattern.CASE_INSENSITIVE);
+    /**
+     * Optional system property for loading extra text artifact patterns from a file.
+     *
+     * <p>Expected file format: one rule per line as either {@code name=regex} or bare {@code
+     * regex}. Empty lines and lines starting with {@code #} are ignored.
+     */
+    public static final String TEXT_ARTIFACT_PATTERN_FILE_PROPERTY =
+            "autoa11y.mistaggedArtifact.patternFile";
 
     // Images above both thresholds are meaningful content images, not decorative
     static final float MEANINGFUL_MIN_WIDTH = 144f; // 2 inches
@@ -60,6 +77,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             Set.of("P", "Link", "Span", "Figure", "Lbl", "LBody");
 
     private final IssueList issues = new IssueList();
+    private final List<TextArtifactRule> textArtifactRules;
 
     private enum ArtifactKind {
         NONE,
@@ -67,14 +85,19 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         DECORATIVE_IMAGE
     }
 
-    @Override
-    public String name() {
-        return "Mistagged Artifact Check";
+    /** Loads built-in patterns from classpath, plus optional extras from system property. */
+    public MistaggedArtifactCheck() {
+        this(loadDefaultPlusConfigured());
     }
 
-    @Override
-    public String description() {
-        return "Decorative or noisy content should be artifacted";
+    /** Uses extra rules from the given pattern file (no built-in defaults). */
+    public MistaggedArtifactCheck(Path textArtifactPatternFile) {
+        this(loadTextArtifactRules(textArtifactPatternFile));
+    }
+
+    MistaggedArtifactCheck(List<TextArtifactRule> textArtifactRules) {
+        this.textArtifactRules =
+                textArtifactRules == null ? List.of() : List.copyOf(textArtifactRules);
     }
 
     @Override
@@ -121,10 +144,12 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         if (textContent == null || textContent.isEmpty()) {
             return false;
         }
-
-        return FOOTER_URL_TIMESTAMP.matcher(textContent).find()
-                || TIMESTAMP_ONLY.matcher(textContent).matches()
-                || PAGE_NUMBER.matcher(textContent).matches();
+        for (TextArtifactRule rule : textArtifactRules) {
+            if (rule.pattern().matcher(textContent).find()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -215,5 +240,116 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             return "";
         }
         return Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+    }
+
+    private static List<TextArtifactRule> loadTextArtifactRules(Path patternFile) {
+        if (patternFile == null) {
+            return List.of();
+        }
+
+        try {
+            List<String> lines = Files.readAllLines(patternFile);
+            ArrayList<TextArtifactRule> loaded = new ArrayList<>();
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i).trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String name = "line-" + (i + 1);
+                String regex = line;
+                int eq = line.indexOf('=');
+                if (eq > 0) {
+                    name = line.substring(0, eq).trim();
+                    regex = line.substring(eq + 1).trim();
+                }
+                if (name.isEmpty() || regex.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Invalid text artifact rule at " + patternFile + ":" + (i + 1));
+                }
+                loaded.add(textRule(name, regex));
+            }
+            return loaded;
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    "Failed to load text artifact rules from "
+                            + patternFile
+                            + ": "
+                            + e.getMessage(),
+                    e);
+        }
+    }
+
+    private static List<TextArtifactRule> loadDefaultPlusConfigured() {
+        List<TextArtifactRule> rules =
+                new ArrayList<>(loadTextArtifactRulesFromResource(DEFAULT_PATTERNS_RESOURCE));
+        Path extraFile = configuredPatternFile();
+        if (extraFile != null) {
+            rules.addAll(loadTextArtifactRules(extraFile));
+        }
+        return rules;
+    }
+
+    private static List<TextArtifactRule> loadTextArtifactRulesFromResource(String resourcePath) {
+        try (InputStream in = MistaggedArtifactCheck.class.getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                throw new IllegalArgumentException("Resource not found: " + resourcePath);
+            }
+            List<String> lines =
+                    new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                            .lines()
+                            .toList();
+            ArrayList<TextArtifactRule> loaded = new ArrayList<>();
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i).trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String name = "line-" + (i + 1);
+                String regex = line;
+                int eq = line.indexOf('=');
+                if (eq > 0) {
+                    name = line.substring(0, eq).trim();
+                    regex = line.substring(eq + 1).trim();
+                }
+                if (name.isEmpty() || regex.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Invalid text artifact rule at " + resourcePath + ":" + (i + 1));
+                }
+                loaded.add(textRule(name, regex));
+            }
+            return loaded;
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    "Failed to load text artifact rules from "
+                            + resourcePath
+                            + ": "
+                            + e.getMessage(),
+                    e);
+        }
+    }
+
+    private static Path configuredPatternFile() {
+        String configuredPath = System.getProperty(TEXT_ARTIFACT_PATTERN_FILE_PROPERTY);
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return null;
+        }
+        return Path.of(configuredPath);
+    }
+
+    static TextArtifactRule textRule(String name, String regex) {
+        return new TextArtifactRule(name, Pattern.compile(regex, Pattern.CASE_INSENSITIVE));
+    }
+
+    record TextArtifactRule(String name, Pattern pattern) {
+        TextArtifactRule {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("name must not be blank");
+            }
+            if (pattern == null) {
+                throw new IllegalArgumentException("pattern must not be null");
+            }
+        }
     }
 }

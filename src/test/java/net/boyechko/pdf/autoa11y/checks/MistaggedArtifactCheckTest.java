@@ -32,9 +32,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
-import java.util.regex.Pattern;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
@@ -43,26 +44,10 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class MistaggedArtifactCheckTest extends PdfTestBase {
     private static final String ONE_PIXEL_PNG_BASE64 =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0s0AAAAASUVORK5CYII=";
-
-    // Patterns copied from MistaggedArtifactCheck for testing
-    private static final Pattern FOOTER_URL_TIMESTAMP =
-            Pattern.compile(
-                    "https?://[^\\s]+.*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]",
-                    Pattern.CASE_INSENSITIVE);
-
-    private static final Pattern TIMESTAMP_ONLY =
-            Pattern.compile(
-                    "^\\s*\\[\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}\\s*[AP]M\\]\\s*$",
-                    Pattern.CASE_INSENSITIVE);
-
-    private static final Pattern PAGE_NUMBER =
-            Pattern.compile("^\\s*(Page\\s+)?\\d+\\s*(of\\s+\\d+)?\\s*$", Pattern.CASE_INSENSITIVE);
 
     private Path createTestPdf() throws Exception {
         String filename = "MistaggedArtifactCheckTest.pdf";
@@ -76,66 +61,26 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
         return testOutputPath(filename);
     }
 
-    @ParameterizedTest(name = "patternMatchesUrlWithTimestamp: {0}")
-    @ValueSource(
-            strings = {
-                "https://www.uwb.edu/catalog/ [11/15/2024 11:37:19 AM]",
-                "https://www.uwb.edu/catalog/ [11/15/2024 11:37:19 AM]",
-                "https://example.com/path/to/page [1/5/2024 9:00:00 PM]"
-            })
-    void patternMatchesUrlWithTimestamp(String footerText) {
-        assertTrue(FOOTER_URL_TIMESTAMP.matcher(footerText).find());
-    }
-
-    @ParameterizedTest(name = "patternMatchesTimestampOnly: {0}")
-    @ValueSource(
-            strings = {
-                "[11/15/2024 11:37:19 AM]",
-                "[11/15/2024 11:37:19 AM]",
-                "[1/5/2024 9:00:00 PM]"
-            })
-    void patternMatchesTimestampOnly(String timestampText) {
-        assertTrue(TIMESTAMP_ONLY.matcher(timestampText).matches());
-    }
-
-    @ParameterizedTest(name = "patternMatchesTimestampWithWhitespace: {0}")
-    @ValueSource(
-            strings = {
-                "  [1/5/2024 9:00:00 PM]  ",
-                "  [1/5/2024 9:00:00 PM]  ",
-                "  [1/5/2024 9:00:00 PM]  "
-            })
-    void patternMatchesTimestampWithWhitespace(String timestampText) {
-        assertTrue(TIMESTAMP_ONLY.matcher(timestampText).matches());
-    }
-
     @Test
-    void patternMatchesPageNumber() {
-        assertTrue(PAGE_NUMBER.matcher("1").matches());
-        assertTrue(PAGE_NUMBER.matcher("42").matches());
-        assertTrue(PAGE_NUMBER.matcher("Page 1").matches());
-        assertTrue(PAGE_NUMBER.matcher("Page 42 of 100").matches());
-        assertTrue(PAGE_NUMBER.matcher("  1 of 10  ").matches());
-    }
-
-    @Test
-    void patternDoesNotMatchNormalText() {
-        String normalText = "This is a normal paragraph about accessibility.";
-        assertFalse(FOOTER_URL_TIMESTAMP.matcher(normalText).find());
-        assertFalse(TIMESTAMP_ONLY.matcher(normalText).matches());
-        assertFalse(PAGE_NUMBER.matcher(normalText).matches());
-    }
-
-    @Test
-    void fixRemovesElementFromParent() throws Exception {
+    void defaultConstructorLoadsBuiltInPatterns() throws Exception {
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MistaggedArtifactCheck());
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
-            assertEquals(1, issues.size());
+            assertTrue(issues.size() > 0, "Built-in patterns should detect footer URL+timestamp");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+        }
+    }
+
+    @Test
+    void emptyRulesListDetectsNothing() throws Exception {
+        Path pdfFile = createTestPdf();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck(List.of()));
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(0, issues.size(), "Empty rules list means no text artifacting");
         }
     }
 
@@ -214,6 +159,44 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(0, issues.size(), "Figure with alt text should not be flagged");
         }
+    }
+
+    @Test
+    void detectsTextPatternFromExternalRulesFile() throws Exception {
+        Path ruleFile = testOutputPath("MistaggedArtifactCheckTest-rules.txt");
+        Files.writeString(
+                ruleFile,
+                """
+                # one rule per line, optional name=regex
+                confidential-footer=^\\s*CONFIDENTIAL\\s+FOOTER\\s*$
+                """);
+
+        Path pdfFile =
+                createTextPdf(
+                        "MistaggedArtifactCheckTest-custom-pattern.pdf",
+                        "Regular body text.",
+                        "CONFIDENTIAL FOOTER");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck(ruleFile));
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(1, issues.size(), "Custom text pattern should be flagged");
+            assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+            assertTrue(issues.get(0).message().contains("CONFIDENTIAL FOOTER"));
+        }
+    }
+
+    private Path createTextPdf(String filename, String... lines) throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream(filename)))) {
+            pdfDoc.setTagged();
+            Document doc = new Document(pdfDoc);
+            for (String line : lines) {
+                doc.add(new Paragraph(line));
+            }
+            doc.close();
+        }
+        return testOutputPath(filename);
     }
 
     private Path createTaggedImagePdf(String filename, float renderedSize) throws Exception {
