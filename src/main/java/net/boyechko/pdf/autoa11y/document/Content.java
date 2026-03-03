@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,13 +90,14 @@ public final class Content {
     }
 
     /**
-     * Finds all image MCIDs referenced by a structure element (including descendant MCRs),
-     * returning a list of unique entries.
+     * Returns the content kinds for each MCR in a structure element (including descendants), keyed
+     * by page-scoped MCID.
      */
-    public static List<PageMcid> findImageMcidsForElem(PdfStructElem elem, DocContext ctx) {
-        LinkedHashSet<PageMcid> results = new LinkedHashSet<>();
+    public static Map<PageMcid, Set<ContentKind>> findMcidsForElem(
+            PdfStructElem elem, DocContext ctx) {
+        Map<PageMcid, Set<ContentKind>> results = new LinkedHashMap<>();
         if (elem == null || ctx == null) {
-            return List.of();
+            return results;
         }
 
         for (PdfMcr mcr : StructTree.collectMcrs(elem)) {
@@ -122,12 +123,12 @@ public final class Content {
                             pageNum,
                             () -> Content.extractContentKindsForPage(ctx.doc().getPage(pageNum)));
             Set<ContentKind> kinds = contentKinds.get(mcid);
-            if (kinds != null && kinds.contains(ContentKind.IMAGE)) {
-                results.add(new PageMcid(pageNum, mcid));
+            if (kinds != null && !kinds.isEmpty()) {
+                results.put(new PageMcid(pageNum, mcid), Set.copyOf(kinds));
             }
         }
 
-        return List.copyOf(results);
+        return results;
     }
 
     /** Listener that tracks whether each MCID contains text, images, or both. */
@@ -524,12 +525,18 @@ public final class Content {
                 if (mcid >= 0) {
                     addBounds(bounds, mcid, rectFromImage(imageInfo));
                 }
+            } else if (type == EventType.RENDER_PATH) {
+                PathRenderInfo pathInfo = (PathRenderInfo) data;
+                int mcid = pathInfo.getMcid();
+                if (mcid >= 0 && pathInfo.getOperation() != PathRenderInfo.NO_OP) {
+                    addBounds(bounds, mcid, rectFromPath(pathInfo));
+                }
             }
         }
 
         @Override
         public Set<EventType> getSupportedEvents() {
-            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE);
+            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE, EventType.RENDER_PATH);
         }
     }
 
@@ -555,6 +562,29 @@ public final class Content {
                 ascent.getEndPoint(),
                 descent.getStartPoint(),
                 descent.getEndPoint());
+    }
+
+    /** Computes the bounding box for a path render info using CTM-transformed base points. */
+    private static Rectangle rectFromPath(PathRenderInfo info) {
+        Path path = info.getPath();
+        if (path == null) {
+            return null;
+        }
+        Matrix ctm = info.getCtm();
+        List<Vector> transformed = new ArrayList<>();
+        for (Subpath subpath : path.getSubpaths()) {
+            Point start = subpath.getStartPoint();
+            if (start != null) {
+                transformed.add(
+                        new Vector((float) start.getX(), (float) start.getY(), 1).cross(ctm));
+            }
+            for (IShape seg : subpath.getSegments()) {
+                for (Point pt : seg.getBasePoints()) {
+                    transformed.add(new Vector((float) pt.getX(), (float) pt.getY(), 1).cross(ctm));
+                }
+            }
+        }
+        return transformed.isEmpty() ? null : rectFromPoints(transformed.toArray(Vector[]::new));
     }
 
     /** Computes the bounding box for an image render info. */

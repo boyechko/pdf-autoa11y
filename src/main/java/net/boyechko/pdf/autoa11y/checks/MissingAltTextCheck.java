@@ -59,7 +59,10 @@ public class MissingAltTextCheck extends StructTreeCheck {
             return true;
         }
 
-        if (Content.findImageMcidsForElem(ctx.node(), ctx.docCtx()).isEmpty()) {
+        boolean hasImage =
+                Content.findMcidsForElem(ctx.node(), ctx.docCtx()).values().stream()
+                        .anyMatch(kinds -> kinds.contains(Content.ContentKind.IMAGE));
+        if (!hasImage) {
             return true;
         }
 

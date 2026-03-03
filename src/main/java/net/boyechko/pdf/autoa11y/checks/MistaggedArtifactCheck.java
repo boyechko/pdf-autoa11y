@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,7 +83,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     private enum ArtifactKind {
         NONE,
         TEXT_PATTERN,
-        DECORATIVE_IMAGE
+        DECORATIVE_GRAPHIC
     }
 
     /** Loads built-in patterns from classpath, plus optional extras from system property. */
@@ -134,8 +135,8 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         if (matchesTextArtifactPattern(textContent)) {
             return ArtifactKind.TEXT_PATTERN;
         }
-        if (matchesDecorativeImage(ctx, textContent)) {
-            return ArtifactKind.DECORATIVE_IMAGE;
+        if (matchesDecorativeGraphic(ctx, textContent)) {
+            return ArtifactKind.DECORATIVE_GRAPHIC;
         }
         return ArtifactKind.NONE;
     }
@@ -153,10 +154,11 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     /**
-     * Detects decorative images that should be artifacts: elements with no text content, image MCR
-     * content, no alt text (for Figures), and bounds below meaningful-size thresholds.
+     * Detects decorative graphics that should be artifacts: elements with no text content,
+     * image/path MCR content, no alt text (for Figures), and bounds below meaningful-size
+     * thresholds.
      */
-    private boolean matchesDecorativeImage(StructTreeContext ctx, String textContent) {
+    private boolean matchesDecorativeGraphic(StructTreeContext ctx, String textContent) {
         if (textContent != null && !textContent.isBlank()) {
             return false;
         }
@@ -166,9 +168,18 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             return false;
         }
 
-        Set<Content.PageMcid> imageMcids =
-                Set.copyOf(Content.findImageMcidsForElem(ctx.node(), ctx.docCtx()));
-        if (imageMcids.isEmpty()) {
+        Map<Content.PageMcid, Set<Content.ContentKind>> mcidKinds =
+                Content.findMcidsForElem(ctx.node(), ctx.docCtx());
+        Set<Content.PageMcid> decorativeMcids = new HashSet<>();
+        for (var entry : mcidKinds.entrySet()) {
+            Set<Content.ContentKind> kinds = entry.getValue();
+            if (!kinds.contains(Content.ContentKind.TEXT)
+                    && (kinds.contains(Content.ContentKind.IMAGE)
+                            || kinds.contains(Content.ContentKind.PATH))) {
+                decorativeMcids.add(entry.getKey());
+            }
+        }
+        if (decorativeMcids.isEmpty()) {
             return false;
         }
 
@@ -192,13 +203,13 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            // Any text in any MCR means this isn't a pure image element
+            // Any text in any MCR means this isn't a pure decorative element
             String mcidText = ctx.docCtx().getMcidText(pageNum, mcid);
             if (mcidText != null && !mcidText.isBlank()) {
                 return false;
             }
 
-            if (!imageMcids.contains(new Content.PageMcid(pageNum, mcid))) {
+            if (!decorativeMcids.contains(new Content.PageMcid(pageNum, mcid))) {
                 continue;
             }
 
@@ -226,8 +237,8 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     private String artifactMessage(ArtifactKind artifactKind, String textContent) {
-        if (artifactKind == ArtifactKind.DECORATIVE_IMAGE) {
-            return "Decorative image should be artifact";
+        if (artifactKind == ArtifactKind.DECORATIVE_GRAPHIC) {
+            return "Decorative graphic should be artifact";
         }
         String safeText = textContent != null ? textContent : "";
         String truncated = safeText.length() > 40 ? safeText.substring(0, 39) + "…" : safeText;

@@ -8,7 +8,7 @@ Document
     Figure
       [image &1]
   P
-    [text &2]
+    [text+path &2]
   P
     [text &4]
   H1
