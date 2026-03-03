@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -250,6 +251,29 @@ public final class StructTree {
             }
         }
         return -1;
+    }
+
+    /** Removes an MCR entry with the given MCID from an element's K array. */
+    public static boolean removeMcr(PdfStructElem elem, int mcid) {
+        PdfArray kArray = normalizeKArray(elem);
+        if (kArray == null) {
+            return false;
+        }
+        for (int i = kArray.size() - 1; i >= 0; i--) {
+            PdfObject obj = kArray.get(i);
+            if (obj instanceof PdfNumber num && num.intValue() == mcid) {
+                kArray.remove(i);
+                return true;
+            }
+            if (obj instanceof PdfDictionary dict) {
+                PdfNumber mcidNum = dict.getAsNumber(PdfName.MCID);
+                if (mcidNum != null && mcidNum.intValue() == mcid) {
+                    kArray.remove(i);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Gets the underlying PdfDictionary for any structure node. */
