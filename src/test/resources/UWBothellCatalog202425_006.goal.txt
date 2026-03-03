@@ -6,11 +6,11 @@ Document
       <link #88>
       <link #87>
       P
-        [image &1]
+        [image+path &1]
         Link
           <link #85>
           [text &2]
-        [image &3]
+        [image+path &3]
         Link
           <link #83>
           [text &4]

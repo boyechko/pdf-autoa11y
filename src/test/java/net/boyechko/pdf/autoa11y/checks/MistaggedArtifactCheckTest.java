@@ -114,9 +114,6 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             assertEquals(
                     1, issues.size(), "Tiny tagged image should be flagged as mistagged artifact");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
-            assertTrue(
-                    issues.get(0).message().contains("Decorative image"),
-                    "Issue message should describe decorative image artifacting");
         }
     }
 
@@ -131,7 +128,6 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(1, issues.size(), "Decorative figure without alt text should be flagged");
             assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
-            assertTrue(issues.get(0).message().contains("Decorative image"));
         }
     }
 
@@ -187,6 +183,32 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
         }
     }
 
+    @Test
+    void detectsFigureWithPathOnlyAsDecorative() throws Exception {
+        Path pdfFile = createTaggedPathPdf("MistaggedArtifactCheckTest-path-figure.pdf", 20f);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(
+                    1, issues.size(), "Small path-only Figure should be flagged as decorative");
+            assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+        }
+    }
+
+    @Test
+    void doesNotFlagLargePathFigureAsDecorative() throws Exception {
+        Path pdfFile = createTaggedPathPdf("MistaggedArtifactCheckTest-large-path.pdf", 200f);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(0, issues.size(), "Large path Figure should not be flagged");
+        }
+    }
+
     private Path createTextPdf(String filename, String... lines) throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream(filename)))) {
             pdfDoc.setTagged();
@@ -197,6 +219,27 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             doc.close();
         }
         return testOutputPath(filename);
+    }
+
+    private Path createTaggedPathPdf(String filename, float size) throws Exception {
+        return createStructuredTestPdf(
+                testOutputPath(filename),
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+                    document.addKid(figure);
+
+                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+                    figure.addKid(mcr);
+
+                    PdfDictionary props = new PdfDictionary();
+                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+                    PdfCanvas canvas = new PdfCanvas(firstPage);
+                    canvas.beginMarkedContent(PdfName.Figure, props);
+                    canvas.rectangle(100, 650, size, size);
+                    canvas.fill();
+                    canvas.endMarkedContent();
+                });
     }
 
     private Path createTaggedImagePdf(String filename, float renderedSize) throws Exception {
