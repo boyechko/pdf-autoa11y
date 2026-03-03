@@ -67,6 +67,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             strings = {
                 "UWBothellCatalog202425_001.pdf",
                 "UWBothellCatalog202425_006.pdf",
+                "UWBothellCatalog202425_005.pdf",
             })
     @Tag("GoalDriven")
     void remediateAndCompareToGoal(String pdfName) throws Exception {

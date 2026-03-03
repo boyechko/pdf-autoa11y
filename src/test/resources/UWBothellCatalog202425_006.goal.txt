@@ -6,7 +6,6 @@ Document
       <link #88>
       <link #87>
       P
-        [image+path &1]
         Link
           <link #85>
           [text &2]
