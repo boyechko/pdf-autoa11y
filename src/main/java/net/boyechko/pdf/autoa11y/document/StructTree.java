@@ -570,13 +570,12 @@ public final class StructTree {
         }
         boolean hasText = kinds.contains(Content.ContentKind.TEXT);
         boolean hasImage = kinds.contains(Content.ContentKind.IMAGE);
-        if (hasText && hasImage) {
-            mcrLabel += "text+image";
-        } else if (hasText) {
-            mcrLabel += "text";
-        } else {
-            mcrLabel += "image";
-        }
+        boolean hasPath = kinds.contains(Content.ContentKind.PATH);
+        List<String> labels = new ArrayList<>();
+        if (hasText) labels.add("text");
+        if (hasImage) labels.add("image");
+        if (hasPath) labels.add("path");
+        mcrLabel += labels.isEmpty() ? "unknown" : String.join("+", labels);
         return mcrLabel + " &" + mcid;
     }
 

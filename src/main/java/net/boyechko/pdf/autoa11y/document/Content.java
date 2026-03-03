@@ -58,7 +58,8 @@ public final class Content {
     /** The kind of content found in a marked content section. */
     public enum ContentKind {
         TEXT,
-        IMAGE
+        IMAGE,
+        PATH
     }
 
     /** MCIDs are only unique on each page. */
@@ -158,12 +159,20 @@ public final class Content {
                             .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
                             .add(ContentKind.IMAGE);
                 }
+            } else if (type == EventType.RENDER_PATH) {
+                PathRenderInfo pathInfo = (PathRenderInfo) data;
+                int mcid = pathInfo.getMcid();
+                if (mcid >= 0 && pathInfo.getOperation() != PathRenderInfo.NO_OP) {
+                    kindsByMcid
+                            .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
+                            .add(ContentKind.PATH);
+                }
             }
         }
 
         @Override
         public Set<EventType> getSupportedEvents() {
-            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE);
+            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE, EventType.RENDER_PATH);
         }
     }
 
