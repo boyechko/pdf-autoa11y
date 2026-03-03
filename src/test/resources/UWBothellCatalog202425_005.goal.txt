@@ -1,0 +1,8 @@
+Document
+  P
+    Link
+--- Page 1 ---
+      <link #42>
+      [text &2]
+  P
+    [text &4]
