@@ -70,9 +70,10 @@ class ConvertToArtifactTest extends PdfTestBase {
                     DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(linkElem).apply(ctx);
 
-                    assertTrue(
+                    // Element remains in tree but MCRs are stripped; pipeline cleanup removes it
+                    assertFalse(
                             document.getKids() == null || document.getKids().isEmpty(),
-                            "Link should be removed from Document");
+                            "Element stays in tree (RemoveEmptyElements cleans up later)");
                     assertTrue(
                             page.getAnnotations().isEmpty(),
                             "Link annotation should be removed from page");
@@ -91,9 +92,10 @@ class ConvertToArtifactTest extends PdfTestBase {
                     DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(p).apply(ctx);
 
-                    assertTrue(
+                    // Element stays in tree; RemoveEmptyElements cleans up later
+                    assertFalse(
                             root.getKids() == null || root.getKids().isEmpty(),
-                            "Root should have no kids after removal");
+                            "Element stays in tree (RemoveEmptyElements cleans up later)");
                 });
     }
 
@@ -145,9 +147,10 @@ class ConvertToArtifactTest extends PdfTestBase {
                     DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(figure).apply(ctx);
 
+                    // Element stays in tree; MCR entries are stripped
                     assertTrue(
-                            document.getKids() == null || document.getKids().isEmpty(),
-                            "Figure should be removed from Document");
+                            figure.getKids() == null || figure.getKids().isEmpty(),
+                            "Figure's MCR entries should be stripped");
 
                     String pageContent =
                             new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
@@ -176,9 +179,10 @@ class ConvertToArtifactTest extends PdfTestBase {
                     DocContext ctx = new DocContext(pdfDoc);
                     new ConvertToArtifact(parent).apply(ctx);
 
+                    // Element stays in tree; descendant MCR entries are stripped
                     assertTrue(
-                            document.getKids() == null || document.getKids().isEmpty(),
-                            "Parent subtree should be removed from Document");
+                            child.getKids() == null || child.getKids().isEmpty(),
+                            "Child's MCR entries should be stripped");
 
                     String pageContent =
                             new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);

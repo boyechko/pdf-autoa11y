@@ -20,6 +20,8 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import java.io.BufferedReader;
@@ -30,13 +32,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -80,12 +82,6 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     private final IssueList issues = new IssueList();
     private final List<TextArtifactRule> textArtifactRules;
 
-    private enum ArtifactKind {
-        NONE,
-        TEXT_PATTERN,
-        DECORATIVE_GRAPHIC
-    }
-
     /** Loads built-in patterns from classpath, plus optional extras from system property. */
     public MistaggedArtifactCheck() {
         this(loadDefaultPlusConfigured());
@@ -108,37 +104,27 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         }
 
         String textContent = getTextContent(ctx);
-        ArtifactKind artifactKind = detectArtifactKind(ctx, textContent);
-        if (artifactKind != ArtifactKind.NONE) {
+        if (matchesTextArtifactPattern(textContent)) {
             IssueFix fix = new ConvertToArtifact(ctx.node());
-            String message = artifactMessage(artifactKind, textContent);
-            Issue issue =
+            String truncated =
+                    textContent.length() > 40 ? textContent.substring(0, 39) + "…" : textContent;
+            issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
                             locAtElem(ctx),
-                            message,
-                            fix);
-            issues.add(issue);
+                            "Tagged content should be artifact: \"" + truncated + "\"",
+                            fix));
             return false;
         }
 
+        detectDecorativeMcrs(ctx);
         return true;
     }
 
     @Override
     public IssueList getIssues() {
         return issues;
-    }
-
-    private ArtifactKind detectArtifactKind(StructTreeContext ctx, String textContent) {
-        if (matchesTextArtifactPattern(textContent)) {
-            return ArtifactKind.TEXT_PATTERN;
-        }
-        if (matchesDecorativeGraphic(ctx, textContent)) {
-            return ArtifactKind.DECORATIVE_GRAPHIC;
-        }
-        return ArtifactKind.NONE;
     }
 
     private boolean matchesTextArtifactPattern(String textContent) {
@@ -153,40 +139,20 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         return false;
     }
 
-    /**
-     * Detects decorative graphics that should be artifacts: elements with no text content,
-     * image/path MCR content, no alt text (for Figures), and bounds below meaningful-size
-     * thresholds.
-     */
-    private boolean matchesDecorativeGraphic(StructTreeContext ctx, String textContent) {
-        if (textContent != null && !textContent.isBlank()) {
-            return false;
-        }
-
+    /** Detects individual decorative MCRs (images/paths without text, below size thresholds). */
+    private void detectDecorativeMcrs(StructTreeContext ctx) {
         boolean isFigure = PdfName.Figure.equals(ctx.node().getRole());
         if (isFigure && ctx.node().getAlt() != null) {
-            return false;
+            return;
         }
 
-        Map<Content.PageMcid, Set<Content.ContentKind>> mcidKinds =
-                Content.findMcidsForElem(ctx.node(), ctx.docCtx());
-        Set<Content.PageMcid> decorativeMcids = new HashSet<>();
-        for (var entry : mcidKinds.entrySet()) {
-            Set<Content.ContentKind> kinds = entry.getValue();
-            if (!kinds.contains(Content.ContentKind.TEXT)
-                    && (kinds.contains(Content.ContentKind.IMAGE)
-                            || kinds.contains(Content.ContentKind.PATH))) {
-                decorativeMcids.add(entry.getKey());
-            }
-        }
-        if (decorativeMcids.isEmpty()) {
-            return false;
+        List<IStructureNode> kids = ctx.node().getKids();
+        if (kids == null) {
+            return;
         }
 
-        Rectangle unionBounds = null;
-
-        for (PdfMcr mcr : StructTree.collectMcrs(ctx.node())) {
-            if (mcr instanceof PdfObjRef) {
+        for (IStructureNode kid : kids) {
+            if (!(kid instanceof PdfMcr mcr) || kid instanceof PdfObjRef) {
                 continue;
             }
             int mcid = mcr.getMcid();
@@ -203,13 +169,23 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            // Any text in any MCR means this isn't a pure decorative element
             String mcidText = ctx.docCtx().getMcidText(pageNum, mcid);
             if (mcidText != null && !mcidText.isBlank()) {
-                return false;
+                continue;
             }
 
-            if (!decorativeMcids.contains(new Content.PageMcid(pageNum, mcid))) {
+            Map<Integer, Set<Content.ContentKind>> contentKinds =
+                    ctx.docCtx()
+                            .getOrComputeContentKinds(
+                                    pageNum,
+                                    () ->
+                                            Content.extractContentKindsForPage(
+                                                    ctx.doc().getPage(pageNum)));
+            Set<Content.ContentKind> kinds = contentKinds.get(mcid);
+            if (kinds == null
+                    || kinds.contains(Content.ContentKind.TEXT)
+                    || (!kinds.contains(Content.ContentKind.IMAGE)
+                            && !kinds.contains(Content.ContentKind.PATH))) {
                 continue;
             }
 
@@ -219,30 +195,28 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                                     pageNum,
                                     () -> Content.extractBoundsForPage(ctx.doc().getPage(pageNum)));
             Rectangle bounds = boundsByMcid.get(mcid);
-            if (bounds != null) {
-                unionBounds =
-                        unionBounds == null
-                                ? bounds
-                                : Rectangle.getCommonRectangle(unionBounds, bounds);
+            if (bounds != null && isMeaningfulSize(bounds)) {
+                continue;
             }
-        }
 
-        return unionBounds != null && !isMeaningfulSize(unionBounds);
+            PdfPage page = ctx.doc().getPage(pageNum);
+            Map<PdfPage, Set<Integer>> targetMcids = new LinkedHashMap<>();
+            targetMcids.computeIfAbsent(page, k -> new LinkedHashSet<>()).add(mcid);
+            IssueFix fix = new ConvertToArtifact(ctx.node(), targetMcids);
+            issues.add(
+                    new Issue(
+                            IssueType.MISTAGGED_ARTIFACT,
+                            IssueSev.WARNING,
+                            locAtElem(ctx),
+                            "Decorative graphic MCR should be artifact",
+                            fix));
+        }
     }
 
     public static boolean isMeaningfulSize(Rectangle bounds) {
         float width = Math.abs(bounds.getWidth());
         float height = Math.abs(bounds.getHeight());
         return width > MEANINGFUL_MIN_WIDTH && height > MEANINGFUL_MIN_HEIGHT;
-    }
-
-    private String artifactMessage(ArtifactKind artifactKind, String textContent) {
-        if (artifactKind == ArtifactKind.DECORATIVE_GRAPHIC) {
-            return "Decorative graphic should be artifact";
-        }
-        String safeText = textContent != null ? textContent : "";
-        String truncated = safeText.length() > 40 ? safeText.substring(0, 39) + "…" : safeText;
-        return "Tagged content should be artifact: \"" + truncated + "\"";
     }
 
     private String getTextContent(StructTreeContext ctx) {
