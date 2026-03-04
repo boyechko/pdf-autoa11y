@@ -31,7 +31,6 @@ import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.canvas.parser.util.PdfCanvasParser;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -54,16 +53,27 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Converts a tagged element to an artifact. */
+/**
+ * Converts tagged MCRs to artifacts by rewriting their content stream markers and removing them
+ * from the structure tree. Can target all MCRs in an element or specific MCIDs.
+ */
 public class ConvertToArtifact implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ConvertToArtifact.class);
     private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
     private static final byte[] ARTIFACT_BMC = "/Artifact BMC".getBytes(StandardCharsets.US_ASCII);
 
     private final PdfStructElem element;
+    private final Map<PdfPage, Set<Integer>> targetMcids;
 
+    /** Targets all MCRs in the element (computed at apply-time). */
     public ConvertToArtifact(PdfStructElem element) {
+        this(element, null);
+    }
+
+    /** Targets specific MCIDs within the element. */
+    public ConvertToArtifact(PdfStructElem element, Map<PdfPage, Set<Integer>> targetMcids) {
         this.element = element;
+        this.targetMcids = targetMcids;
     }
 
     @Override
@@ -73,43 +83,46 @@ public class ConvertToArtifact implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        artifactElement(element, ctx);
+        boolean targetAll = targetMcids == null;
+        Map<PdfPage, Set<Integer>> mcidsByPage =
+                targetAll ? collectMcidsByPage(element, ctx) : targetMcids;
+
+        logger.trace(
+                "Artifacting {} MCIDs in {}", targetAll ? "all" : "targeted", Format.elem(element));
+
+        if (targetAll) {
+            removeAnnotationsForElement(element, ctx);
+        }
+        if (!mcidsByPage.isEmpty()) {
+            rewriteMcidsAsArtifacts(mcidsByPage);
+            removeMcrEntries(mcidsByPage);
+        }
     }
 
-    private void artifactElement(PdfStructElem element, DocContext ctx) throws IOException {
-        IStructureNode parent = element.getParent();
-        if (parent == null) {
-            logger.debug("Element already has no parent, skipping");
-            return;
+    /** Removes MCR entries from the element's subtree for all rewritten MCIDs. */
+    private void removeMcrEntries(Map<PdfPage, Set<Integer>> mcidsByPage) {
+        Set<Integer> allMcids = new LinkedHashSet<>();
+        for (Set<Integer> mcids : mcidsByPage.values()) {
+            allMcids.addAll(mcids);
         }
-        if (!isAttachedToParent(element, parent)) {
-            logger.debug("Element is already detached from parent, skipping");
-            return;
-        }
-
-        logger.trace("Artifacting {}", Format.elem(element));
-
-        Map<PdfPage, Set<Integer>> mcidsByPage = collectMcidsByPage(element, ctx);
-        removeAnnotationsForElement(element, ctx);
-        rewriteMcidsAsArtifacts(mcidsByPage);
-        StructTree.removeFromParent(element, parent);
+        removeMcrEntriesFromSubtree(element, allMcids);
     }
 
-    private boolean isAttachedToParent(PdfStructElem elem, IStructureNode parent) {
-        List<IStructureNode> parentKids = parent.getKids();
-        if (parentKids == null || parentKids.isEmpty()) {
-            return false;
+    private static void removeMcrEntriesFromSubtree(PdfStructElem elem, Set<Integer> mcids) {
+        for (int mcid : mcids) {
+            StructTree.removeMcr(elem, mcid);
         }
-        for (IStructureNode kid : parentKids) {
-            if (kid instanceof PdfStructElem kidElem && StructTree.isSameElement(kidElem, elem)) {
-                return true;
+        if (elem.getKids() != null) {
+            for (var kid : elem.getKids()) {
+                if (kid instanceof PdfStructElem childElem) {
+                    removeMcrEntriesFromSubtree(childElem, mcids);
+                }
             }
         }
-        return false;
     }
 
-    // TODO: This is a duplicate of the method in MistaggedArtifactCheck?
-    private Map<PdfPage, Set<Integer>> collectMcidsByPage(PdfStructElem elem, DocContext ctx) {
+    private static Map<PdfPage, Set<Integer>> collectMcidsByPage(
+            PdfStructElem elem, DocContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
         List<PdfMcr> mcrs = StructTree.collectMcrs(elem);
         for (PdfMcr mcr : mcrs) {
@@ -157,8 +170,10 @@ public class ConvertToArtifact implements IssueFix {
                 Set<Integer> missing = new LinkedHashSet<>(targetMcids);
                 missing.removeAll(rewrittenMcids);
                 int pageNum = page.getDocument().getPageNumber(page);
-                throw new IllegalStateException(
-                        "Failed to artifact MCIDs " + missing + " on page " + pageNum);
+                logger.debug(
+                        "MCIDs {} on page {} not found in content stream (already rewritten?)",
+                        missing,
+                        pageNum);
             }
         }
     }
@@ -400,6 +415,14 @@ public class ConvertToArtifact implements IssueFix {
     @Override
     public boolean invalidates(IssueFix otherFix) {
         if (otherFix instanceof ConvertToArtifact other) {
+            boolean sameOrDescendant =
+                    StructTree.isSameElement(other.element, this.element)
+                            || StructTree.isDescendantOf(other.element, this.element);
+            // Whole-element fix invalidates any fix on same/descendant element
+            if (this.targetMcids == null && sameOrDescendant) {
+                return true;
+            }
+            // Targeted fix only invalidates descendant whole-element fixes
             return StructTree.isDescendantOf(other.element, this.element);
         }
         return false;
