@@ -8,25 +8,46 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ## Added
-- New visitor, `BulletGlyphVisitor`, which allows building a cache of
-  artifacted bullet point locations to be used by `WrapParagraphInList` fix to
-  convert paragraphs to list items.
-- New visitor, `EmptyElementVisitor`, that cleans up empty structural elements
-  at the end of processing.
-- New rule, `UnexpectedWidgetRule`, that checks for misplaced widgets and
-  removes them via `RemoveWidgetAnnotation`.
+- Added detection for image-only PDFs and other fatal document-level problems so
+  remediation can stop early when OCR or manual intervention is required.
+- Added checks for unexpected widget annotations, missing figure alt text, and
+  unverified PDF/UA conformance claims.
+- Added stronger remediation for mistagged bulleted lists, including fixes for
+  bullet-aligned content that should be converted into proper list structure.
+- Added cleanup for empty structural elements at the end of processing.
+- Added an accessibility report output (`-r/--report`) so processing results can
+  be saved as an audit trail.
+- Added CLI options to skip checks or run only selected checks.
+- Added configurable per-input pipeline temp directories via
+  `AUTOA11Y_PIPELINE_DIR` or `-Dautoa11y.pipeline.dir=...`.
+- Added a "Resolved Breakdown" section to the accessibility report summary.
 
 ## Changed
-- Updated `--dump-tree-detailed` option to include object numbers for object
-  references (OBJRs).
-- Updated the `ProcessingService` to apply fixes added to the pipeline after the
-  second analysis phase.
-- Updated `ParagraphOfLinksVisitor` to only care about elements containing more
-  than `MIN_LINKS_COUNT` (default: 2) links.
+- Improved CLI and report output to make issue locations, resolutions, and
+  summaries clearer and easier to scan.
+- Updated structure-tree dump output to show object-reference details more
+  clearly.
+- Refined paragraph-of-links detection to avoid reporting shorter sequences that
+  do not meet the minimum threshold.
+- Expanded mistagged-artifact detection to handle path content and individual
+  marked-content references more precisely.
+- Standardized the tool's terminology around "checks" in the CLI and
+  documentation.
+- Upgraded iText PDF from `9.3.0` to `9.5.0`.
 
 ## Fixed
-- Tag schema allows inline structural elements (ILSEs) as children for `LBody`
-  element.
+- Fixed fatal-issue handling so processing stops sooner and reports those
+  failures more accurately.
+- Fixed widget-removal remediation to also remove annotations from `/AcroForm`.
+- Fixed PDF/UA metadata handling so the tool no longer adds conformance claims
+  automatically.
+- Fixed detailed structure-tree output to preserve `/K` order more reliably.
+- Fixed output-file handling so CLI output is copied safely from temporary
+  pipeline files.
+- Fixed tag-schema validation for several valid structures, including inline
+  elements under `LBody`, `Figure` under `Lbl`, and `Form` under `P`.
+- Fixed several paragraph/list remediation edge cases, including handling for
+  marked-content references inside paragraph-of-links patterns.
 
 ## [0.7.0] - 2026-02-17
 
