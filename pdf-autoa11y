@@ -1,11 +1,44 @@
 #!/bin/bash
 # pdf-autoa11y
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+# Resolve symlinks to find the real script location.
+SOURCE="$0"
+while [ -L "$SOURCE" ]; do
+    DIR="$(cd "$(dirname "$SOURCE")" && pwd -P)"
+    SOURCE="$(readlink "$SOURCE")"
+    # If readlink returned a relative path, resolve it against the dir.
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd -P)"
+CLASSES_DIR="$SCRIPT_DIR/target/classes"
+CLASSPATH_FILE="$SCRIPT_DIR/target/classpath.txt"
+COMPILE_STAMP="$SCRIPT_DIR/target/.compile-stamp"
+SRC_DIR="$SCRIPT_DIR/src/main"
 
-if [ "$SCRIPT_DIR/src/main/java" -nt "$SCRIPT_DIR/target/classes" ] || [ ! -d "$SCRIPT_DIR/target/classes" ]; then
-    (cd "$SCRIPT_DIR" && mvn -q compile)
+compile() {
+    (
+        cd "$SCRIPT_DIR" || exit 1
+        mvn -q -DskipTests compile dependency:build-classpath \
+            -Dmdep.outputFile=target/classpath.txt
+    ) && touch "$COMPILE_STAMP"
+}
+
+# Bootstrap from scratch if build artifacts are missing.
+if [ ! -d "$CLASSES_DIR" ] || [ ! -f "$CLASSPATH_FILE" ]; then
+    echo "Bootstrapping compiled classes and dependency classpath..." >&2
+    if ! compile; then
+        echo "Failed to bootstrap. Cannot run." >&2
+        exit 1
+    fi
+# Recompile if any source file is newer than the last successful compile.
+elif [ -d "$SRC_DIR" ] && \
+     [ -n "$(find "$SRC_DIR" -type f \( -name '*.java' -o -name '*.yaml' \) \
+            -newer "$COMPILE_STAMP" -print -quit 2>/dev/null)" ]; then
+    echo "Source files changed since last compile. Recompiling..." >&2
+    if ! compile; then
+        echo "Warning: recompilation failed; running last good build." >&2
+    fi
 fi
 
-java -cp "$SCRIPT_DIR/target/classes:$(cd "$SCRIPT_DIR" && mvn -q dependency:build-classpath -Dmdep.outputFile=/dev/stdout)" \
-    net.boyechko.pdf.autoa11y.ui.cli.PdfAutoA11yCLI "$@" 2>&1
+java -cp "$CLASSES_DIR:$(cat "$CLASSPATH_FILE")" \
+    net.boyechko.pdf.autoa11y.ui.cli.PdfAutoA11yCLI "$@"
