@@ -65,6 +65,17 @@ public final class Content {
     /** MCIDs are only unique on each page. */
     public record PageMcid(int pageNum, int mcid) {}
 
+    /** Font and text for a contiguous run of same-font text within an MCID. */
+    public record TextSpan(String fontName, float fontSize, String text) {}
+
+    /** Aggregated text and font spans for a single MCID. */
+    public record McidContent(String text, List<TextSpan> spans) {
+        /** Returns the font of the first span, typically the dominant/heading font. */
+        public TextSpan dominantFont() {
+            return spans.isEmpty() ? null : spans.getFirst();
+        }
+    }
+
     private Content() {}
 
     // == Content kind extraction =========================================
@@ -334,32 +345,35 @@ public final class Content {
         }
     }
 
-    // == Text extraction =================================================
+    // == Text and font extraction ========================================
 
-    /** Extracts text for all MCIDs on a page in a single content-stream pass. */
-    public static Map<Integer, String> extractTextForPage(PdfPage page) {
-        Map<Integer, String> result = new HashMap<>();
+    /** Extracts text with font information for all MCIDs on a page. */
+    public static Map<Integer, McidContent> extractContentForPage(PdfPage page) {
         if (page == null) {
-            return result;
+            return Map.of();
         }
 
         try {
-            McidTextListener listener = new McidTextListener();
+            McidContentListener listener = new McidContentListener();
             PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
             processor.processPageContent(page);
-
-            for (Map.Entry<Integer, StringBuilder> entry : listener.textByMcid.entrySet()) {
-                String cleaned = cleanExtractedText(entry.getValue().toString());
-                if (!cleaned.isEmpty()) {
-                    result.put(entry.getKey(), cleaned);
-                }
-            }
+            return listener.buildResults();
         } catch (Exception e) {
             int pageNum = page.getDocument().getPageNumber(page);
-            logger.debug("Failed to extract MCID text for page {}: {}", pageNum, e.getMessage());
+            logger.debug("Failed to extract MCID content for page {}: {}", pageNum, e.getMessage());
         }
 
-        return result;
+        return Map.of();
+    }
+
+    /** Extracts text for all MCIDs on a page (convenience wrapper). */
+    public static Map<Integer, String> extractTextForPage(PdfPage page) {
+        Map<Integer, McidContent> content = extractContentForPage(page);
+        Map<Integer, String> textOnly = new HashMap<>();
+        for (Map.Entry<Integer, McidContent> entry : content.entrySet()) {
+            textOnly.put(entry.getKey(), entry.getValue().text());
+        }
+        return textOnly;
     }
 
     /** Gets the text content for all MCRs within a structure element. */
@@ -392,9 +406,9 @@ public final class Content {
         return combinedText.toString();
     }
 
-    /** Collects text for every MCID encountered on a page. */
-    private static class McidTextListener implements IEventListener {
-        private final Map<Integer, StringBuilder> textByMcid = new HashMap<>();
+    /** Collects text spans with font information for every MCID on a page. */
+    private static class McidContentListener implements IEventListener {
+        private final Map<Integer, SpanAccumulator> accumulators = new HashMap<>();
 
         @Override
         public void eventOccurred(IEventData data, EventType type) {
@@ -404,20 +418,86 @@ public final class Content {
                 if (mcid != null && mcid >= 0) {
                     String text = textInfo.getText();
                     if (text != null && !text.trim().isEmpty()) {
-                        StringBuilder sb =
-                                textByMcid.computeIfAbsent(mcid, k -> new StringBuilder());
-                        if (sb.length() > 0) {
-                            sb.append(" ");
-                        }
-                        sb.append(text);
+                        String fontName = extractFontName(textInfo);
+                        float fontSize = textInfo.getFontSize();
+                        accumulators
+                                .computeIfAbsent(mcid, k -> new SpanAccumulator())
+                                .add(fontName, fontSize, text);
                     }
                 }
             }
         }
 
+        Map<Integer, McidContent> buildResults() {
+            Map<Integer, McidContent> results = new HashMap<>();
+            for (Map.Entry<Integer, SpanAccumulator> entry : accumulators.entrySet()) {
+                McidContent content = entry.getValue().build();
+                if (!content.text().isEmpty()) {
+                    results.put(entry.getKey(), content);
+                }
+            }
+            return results;
+        }
+
         @Override
         public Set<EventType> getSupportedEvents() {
             return Set.of(EventType.RENDER_TEXT);
+        }
+    }
+
+    /** Accumulates text spans, merging consecutive runs of the same font. */
+    private static class SpanAccumulator {
+        private static final float FONT_SIZE_TOLERANCE = 0.01f;
+        private final List<TextSpan> completedSpans = new ArrayList<>();
+        private String currentFontName;
+        private float currentFontSize;
+        private StringBuilder currentText = new StringBuilder();
+
+        void add(String fontName, float fontSize, String text) {
+            boolean sameFont =
+                    currentFontName != null
+                            && currentFontName.equals(fontName)
+                            && Math.abs(currentFontSize - fontSize) < FONT_SIZE_TOLERANCE;
+            if (!sameFont) {
+                flush();
+                currentFontName = fontName;
+                currentFontSize = fontSize;
+            }
+
+            if (currentText.length() > 0) {
+                currentText.append(" ");
+            }
+            currentText.append(text);
+        }
+
+        private void flush() {
+            if (currentText.length() > 0 && currentFontName != null) {
+                completedSpans.add(
+                        new TextSpan(currentFontName, currentFontSize, currentText.toString()));
+                currentText = new StringBuilder();
+            }
+        }
+
+        McidContent build() {
+            flush();
+            StringBuilder combined = new StringBuilder();
+            for (TextSpan span : completedSpans) {
+                if (combined.length() > 0) {
+                    combined.append(" ");
+                }
+                combined.append(span.text());
+            }
+            String cleaned = cleanExtractedText(combined.toString());
+            return new McidContent(cleaned, List.copyOf(completedSpans));
+        }
+    }
+
+    /** Extracts the PostScript font name from a text render event. */
+    private static String extractFontName(TextRenderInfo info) {
+        try {
+            return info.getFont().getFontProgram().getFontNames().getFontName();
+        } catch (NullPointerException e) {
+            return "unknown";
         }
     }
 

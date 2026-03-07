@@ -33,6 +33,7 @@ public class DocContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
+    private final Map<Integer, Map<Integer, Content.McidContent>> mcidContentCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
     private final Map<Integer, Map<Integer, Set<Content.ContentKind>>> contentKindsCache;
@@ -41,6 +42,7 @@ public class DocContext {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
+        this.mcidContentCache = new HashMap<>();
         this.mcidTextCache = new HashMap<>();
         this.bulletPositionCache = new HashMap<>();
         this.contentKindsCache = new HashMap<>();
@@ -67,10 +69,22 @@ public class DocContext {
         return bulletPositionCache.computeIfAbsent(pageNum, k -> supplier.get());
     }
 
+    /** Returns text with font information for all MCIDs on a page, extracting on first access. */
+    public Map<Integer, Content.McidContent> getMcidContent(int pageNum) {
+        return mcidContentCache.computeIfAbsent(
+                pageNum, k -> Content.extractContentForPage(doc.getPage(pageNum)));
+    }
+
     /** Returns all MCID text for a page, extracting on first access. */
     public Map<Integer, String> getMcidText(int pageNum) {
         return mcidTextCache.computeIfAbsent(
-                pageNum, k -> Content.extractTextForPage(doc.getPage(pageNum)));
+                pageNum,
+                k -> {
+                    Map<Integer, Content.McidContent> content = getMcidContent(pageNum);
+                    Map<Integer, String> text = new HashMap<>();
+                    content.forEach((mcid, mc) -> text.put(mcid, mc.text()));
+                    return text;
+                });
     }
 
     /**
