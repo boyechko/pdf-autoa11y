@@ -28,7 +28,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 /// Abstract base for checks that walk the PDF structure tree. Subclasses override
 /// [#enterElement] and/or [#leaveElement] to inspect each node, accumulating issues via
 /// [#getIssues]. StructTreeCheck instances are single-run and may hold mutable traversal state.
-// Callers must provide a new instance for each document/traversal.
+/// Callers must provide a new instance for each document/traversal.
 ///
 /// Implements [Check] so that tree-walking checks and document-level checks share a common
 /// interface. The [#findIssues] method creates a [StructTreeWalker] internally, walks
@@ -65,8 +65,8 @@ public abstract class StructTreeCheck implements Check {
         return walker.walk(root, ctx);
     }
 
-    ///  Called before visiting `ctx` and returns `false` to skip traversing this element's
-    // children.
+    /// Called before visiting `ctx` and returns `false` to skip traversing this element's
+    /// children.
     public boolean enterElement(StructTreeContext ctx) {
         return true;
     }
@@ -75,7 +75,7 @@ public abstract class StructTreeCheck implements Check {
     public void leaveElement(StructTreeContext ctx) {}
 
     /// Called once before traversal begins; `ctx` is `null` because no current node exists at root
-    // level.
+    /// level.
     public void beforeTraversal(StructTreeContext ctx) {}
 
     /// Called once after traversal completes.
