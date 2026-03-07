@@ -95,3 +95,24 @@ references IssueFix.
 # Adding New Rules/Fixes
 
 1. Ensure fixes are idempotent
+
+## Changelog Discipline
+
+When a change is user-visible, contributor-visible, or affects documented
+behavior, consider whether `CHANGELOG.md` should be updated.
+
+Examples that usually warrant a changelog entry:
+- new checks, fixes, CLI options, reports, or workflows
+- behavior changes that affect output, remediation, validation, or defaults
+- bug fixes with user-visible impact
+- dependency upgrades with meaningful behavioral or compatibility impact
+
+Changelog entries should follow Keep a Changelog style:
+- prefer high-level, user-facing summaries
+- group entries under `Added`, `Changed`, `Fixed`, or `Removed`
+- avoid raw commit-log wording and internal refactor details unless they are
+  externally relevant
+
+Before wrapping up substantial work, explicitly state either:
+- that `CHANGELOG.md` was updated
+- or why no changelog entry is needed
