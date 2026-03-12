@@ -26,8 +26,11 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.fixes.ReorderStructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
@@ -170,6 +173,87 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             assertFalse(
                     issues.isEmpty(),
                     "Same-page elements with reversed MCIDs should be out of order");
+        }
+    }
+
+    @Test
+    void fixReordersChildrenToMatchReadingOrder() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+            PdfPage page3 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+
+            // Add in reverse page order: page3, page2, page1
+            PdfStructElem p3 = new PdfStructElem(doc, PdfName.P, page3);
+            PdfStructElem p2 = new PdfStructElem(doc, PdfName.P, page2);
+            PdfStructElem p1 = new PdfStructElem(doc, PdfName.P, page1);
+            document.addKid(p3);
+            document.addKid(p2);
+            document.addKid(p1);
+
+            addMcr(page3, p3);
+            addMcr(page2, p2);
+            addMcr(page1, p1);
+
+            DocContext ctx = new DocContext(doc);
+
+            // Precondition: out of order
+            IssueList issues = new StructTreeOrderCheck().findIssues(ctx);
+            assertFalse(issues.isEmpty(), "Precondition: should detect out-of-order");
+
+            // Apply fix
+            new ReorderStructTree().apply(ctx);
+
+            // Verify children are now in page order
+            List<PdfStructElem> kids = StructTree.structKidsOf(document);
+            assertEquals(3, kids.size());
+            assertTrue(
+                    StructTree.isSameElement(kids.get(0), p1),
+                    "First child should be page-1 element");
+            assertTrue(
+                    StructTree.isSameElement(kids.get(1), p2),
+                    "Second child should be page-2 element");
+            assertTrue(
+                    StructTree.isSameElement(kids.get(2), p3),
+                    "Third child should be page-3 element");
+
+            // Re-check: should now be clean
+            IssueList afterIssues = new StructTreeOrderCheck().findIssues(new DocContext(doc));
+            assertTrue(afterIssues.isEmpty(), "After fix, no order issues should remain");
+        }
+    }
+
+    @Test
+    void fixIsIdempotentOnAlreadyOrderedTree() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem p1 = new PdfStructElem(doc, PdfName.P, page1);
+            PdfStructElem p2 = new PdfStructElem(doc, PdfName.P, page2);
+            document.addKid(p1);
+            document.addKid(p2);
+
+            addMcr(page1, p1);
+            addMcr(page2, p2);
+
+            DocContext ctx = new DocContext(doc);
+            new ReorderStructTree().apply(ctx);
+
+            // Order should be unchanged
+            List<PdfStructElem> kids = StructTree.structKidsOf(document);
+            assertTrue(StructTree.isSameElement(kids.get(0), p1));
+            assertTrue(StructTree.isSameElement(kids.get(1), p2));
         }
     }
 

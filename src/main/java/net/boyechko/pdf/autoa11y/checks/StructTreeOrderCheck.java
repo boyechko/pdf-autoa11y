@@ -23,7 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.fixes.ReorderStructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -37,7 +39,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 public class StructTreeOrderCheck extends StructTreeCheck {
 
     /** Position of an element's earliest content in the document's reading flow. */
-    record ReadingPosition(int page, int mcid) implements Comparable<ReadingPosition> {
+    public record ReadingPosition(int page, int mcid) implements Comparable<ReadingPosition> {
         static final ReadingPosition MAX =
                 new ReadingPosition(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
@@ -75,12 +77,13 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     @Override
     public void afterTraversal() {
         if (outOfOrderCount > 0) {
+            IssueFix fix = new ReorderStructTree(cache);
             issues.add(
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,
                             IssueSev.WARNING,
                             outOfOrderCount + " elements have children out of reading order",
-                            null));
+                            fix));
         }
     }
 
@@ -90,7 +93,8 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     }
 
     /** Checks whether children are already sorted by reading position. */
-    static boolean isInOrder(List<PdfStructElem> children, Map<Integer, ReadingPosition> cache) {
+    public static boolean isInOrder(
+            List<PdfStructElem> children, Map<Integer, ReadingPosition> cache) {
         ReadingPosition prev = null;
         for (PdfStructElem child : children) {
             ReadingPosition key = readingPositionOf(child, cache);
@@ -103,7 +107,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     }
 
     /** Returns the reading position of an element, computing and caching if needed. */
-    static ReadingPosition readingPositionOf(
+    public static ReadingPosition readingPositionOf(
             PdfStructElem elem, Map<Integer, ReadingPosition> cache) {
         int objNum = StructTree.objNum(elem);
         if (objNum >= 0) {
