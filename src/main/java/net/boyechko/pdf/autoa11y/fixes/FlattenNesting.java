@@ -63,7 +63,7 @@ public class FlattenNesting implements IssueFix {
             return;
         }
 
-        List<PdfStructElem> childrenToMove = collectStructElemChildren(wrapper);
+        List<PdfStructElem> childrenToMove = StructTree.structKidsOf(wrapper);
         if (childrenToMove.isEmpty()) {
             StructTree.removeFromParent(wrapper, parentNode);
             flattened++;
@@ -89,19 +89,6 @@ public class FlattenNesting implements IssueFix {
                 Format.elem(wrapper),
                 childrenToMove.size(),
                 wrapperIndex);
-    }
-
-    private List<PdfStructElem> collectStructElemChildren(PdfStructElem elem) {
-        List<PdfStructElem> children = new ArrayList<>();
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return children;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem childElem) {
-                children.add(childElem);
-            }
-        }
-        return children;
     }
 
     private void promoteChildren(
