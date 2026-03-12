@@ -7,7 +7,11 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
-## Added
+### Added
+- Added structure tree order check and fix (`StructTreeOrderCheck` /
+  `ReorderStructTree`) that detects and corrects siblings out of reading order
+  by sorting them based on their first marked-content appearance (page number,
+  then MCID within page).
 - Added detection for image-only PDFs and other fatal document-level problems so
   remediation can stop early when OCR or manual intervention is required.
 - Added checks for unexpected widget annotations, missing figure alt text, and
@@ -22,7 +26,7 @@ Versioning](https://semver.org/).
   `AUTOA11Y_PIPELINE_DIR` or `-Dautoa11y.pipeline.dir=...`.
 - Added a "Resolved Breakdown" section to the accessibility report summary.
 
-## Changed
+### Changed
 - Improved CLI and report output to make issue locations, resolutions, and
   summaries clearer and easier to scan.
 - Updated structure-tree dump output to show object-reference details more
@@ -35,7 +39,7 @@ Versioning](https://semver.org/).
   documentation.
 - Upgraded iText PDF from `9.3.0` to `9.5.0`.
 
-## Fixed
+### Fixed
 - Fixed fatal-issue handling so processing stops sooner and reports those
   failures more accurately.
 - Fixed widget-removal remediation to also remove annotations from `/AcroForm`.
