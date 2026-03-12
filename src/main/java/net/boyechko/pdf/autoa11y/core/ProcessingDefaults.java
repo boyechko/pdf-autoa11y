@@ -34,6 +34,7 @@ public final class ProcessingDefaults {
                 new ImageOnlyDocumentCheck(),
                 new StructureTreeExistsCheck(),
                 new MissingDocumentCheck(),
+                new StructTreeOrderCheck(),
                 new UnmarkedLinkCheck(),
                 new UnexpectedWidgetCheck(),
                 new BadlyMappedLigatureCheck(),

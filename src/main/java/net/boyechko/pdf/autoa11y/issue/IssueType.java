@@ -43,6 +43,7 @@ public enum IssueType {
     // Structure Issues
     MISSING_DOCUMENT_ELEMENT("no Document element under /StructTreeRoot"),
     PAGE_PARTS_NOT_NORMALIZED("elements not grouped into page-level Part elements"),
+    STRUCT_TREE_OUT_OF_ORDER("structure tree siblings out of reading order"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art/Div grouping elements"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
     UNMARKED_LINK("Link annotations not tagged"),
