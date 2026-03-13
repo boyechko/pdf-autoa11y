@@ -117,7 +117,6 @@ public class StructTreeOrderCheck extends StructTreeCheck {
 
         ReadingPosition key =
                 StructTree.collectMcrs(elem).stream()
-                        .filter(mcr -> mcr.getMcid() >= 0) // Exclude OBJRs (annotations)
                         .map(mcr -> new ReadingPosition(StructTree.pageOf(mcr), mcr.getMcid()))
                         .min(Comparator.naturalOrder())
                         .orElse(ReadingPosition.MAX);

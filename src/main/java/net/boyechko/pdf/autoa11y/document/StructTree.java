@@ -374,12 +374,12 @@ public final class StructTree {
         return result;
     }
 
-    /** Recursively collects all MCR descendants of an element (including OBJR entries). */
+    /** Recursively collects all MCR descendants of an element, excluding OBJRs. */
     private static void collectMcrs(PdfStructElem elem, List<PdfMcr> result) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
         for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr) {
+            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
                 result.add(mcr);
             } else if (kid instanceof PdfStructElem childElem) {
                 collectMcrs(childElem, result);
