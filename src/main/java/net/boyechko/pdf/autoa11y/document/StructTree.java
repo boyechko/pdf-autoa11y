@@ -510,15 +510,9 @@ public final class StructTree {
         }
     }
 
+    /** Returns the page number for any MCR or OBJR (since PdfObjRef extends PdfMcr). */
     public static int pageOf(PdfMcr mcr) {
         PdfDictionary pageObj = mcr.getPageObject();
-        if (pageObj == null) return 0;
-        PdfDocument doc = pageObj.getIndirectReference().getDocument();
-        return doc.getPageNumber(pageObj);
-    }
-
-    public static int pageOf(PdfObjRef objRef) {
-        PdfDictionary pageObj = objRef.getPageObject();
         if (pageObj == null) return 0;
         PdfDocument doc = pageObj.getIndirectReference().getDocument();
         return doc.getPageNumber(pageObj);
