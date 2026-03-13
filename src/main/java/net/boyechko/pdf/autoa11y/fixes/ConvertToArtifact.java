@@ -127,9 +127,6 @@ public class ConvertToArtifact implements IssueFix {
         List<PdfMcr> mcrs = StructTree.collectMcrs(elem);
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
             PdfDictionary pageDict = mcr.getPageObject();
             if (pageDict == null) {
                 logger.debug("Skipping MCID {} with no page dictionary", mcid);

@@ -37,7 +37,6 @@ import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,13 +111,7 @@ public final class Content {
         }
 
         for (PdfMcr mcr : StructTree.collectMcrs(elem)) {
-            if (mcr instanceof PdfObjRef) {
-                continue;
-            }
             int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
 
             PdfDictionary pageDict = mcr.getPageObject();
             if (pageDict == null) {
@@ -548,13 +541,7 @@ public final class Content {
 
         Rectangle result = null;
         for (PdfMcr mcr : StructTree.collectMcrs(node)) {
-            if (mcr instanceof PdfObjRef) {
-                continue;
-            }
             int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
             Rectangle bounds = mcidBounds.get(mcid);
             if (bounds != null) {
                 result = Geometry.union(result, bounds);
