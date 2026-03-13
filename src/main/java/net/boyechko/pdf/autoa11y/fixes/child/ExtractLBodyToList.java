@@ -120,19 +120,19 @@ public final class ExtractLBodyToList extends TagSingleChildFix {
         PdfString tValue = lBody.getPdfObject().getAsString(PdfName.T);
         if (tValue == null) {
             // No metadata — append at end
-            return StructTree.structKidsOf(listElem).size();
+            return StructTree.childrenOf(listElem, PdfStructElem.class).size();
         }
 
         float bulletY;
         try {
             bulletY = Float.parseFloat(tValue.getValue());
         } catch (NumberFormatException e) {
-            return StructTree.structKidsOf(listElem).size();
+            return StructTree.childrenOf(listElem, PdfStructElem.class).size();
         }
 
         // Compare against bounds of existing LI elements in the L
         int pageNum = StructTree.determinePageNumber(ctx, lBody);
-        List<PdfStructElem> existingLIs = StructTree.structKidsOf(listElem);
+        List<PdfStructElem> existingLIs = StructTree.childrenOf(listElem, PdfStructElem.class);
 
         for (int i = 0; i < existingLIs.size(); i++) {
             PdfStructElem existingLI = existingLIs.get(i);

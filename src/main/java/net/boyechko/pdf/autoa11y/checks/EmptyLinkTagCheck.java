@@ -70,14 +70,16 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!linkElem.getRole().equals(PdfName.Link) || StructTree.hasMcr(linkElem)) {
+            if (!linkElem.getRole().equals(PdfName.Link)
+                    || !StructTree.childrenOf(linkElem, PdfMcr.class).isEmpty()) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
                 continue;
             }
 
-            PdfObjRef objRef = StructTree.findFirstObjRef(linkElem);
+            List<PdfObjRef> objRefs = StructTree.childrenOf(linkElem, PdfObjRef.class);
+            PdfObjRef objRef = objRefs.isEmpty() ? null : objRefs.getFirst();
             if (objRef == null) {
                 continue;
             }

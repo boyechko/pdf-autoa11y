@@ -63,7 +63,7 @@ public class FlattenNesting implements IssueFix {
             return;
         }
 
-        List<PdfStructElem> childrenToMove = StructTree.structKidsOf(wrapper);
+        List<PdfStructElem> childrenToMove = StructTree.childrenOf(wrapper, PdfStructElem.class);
         if (childrenToMove.isEmpty()) {
             StructTree.removeFromParent(wrapper, parentNode);
             flattened++;

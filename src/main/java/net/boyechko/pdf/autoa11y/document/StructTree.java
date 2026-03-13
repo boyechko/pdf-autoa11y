@@ -323,68 +323,54 @@ public final class StructTree {
         return null;
     }
 
-    /** Checks whether an element contains any MCR (marked content reference) children. */
-    public static boolean hasMcr(PdfStructElem elem) {
+    // --- Children and descendants by type ---
+
+    /**
+     * Returns direct children of an element matching the given type. When {@code type} is {@code
+     * PdfMcr.class}, OBJRs (which extend PdfMcr but have mcid &lt; 0) are excluded.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T extends IStructureNode> List<T> childrenOf(PdfStructElem elem, Class<T> type) {
         List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return false;
+        if (kids == null) return List.of();
+
+        List<T> out = new ArrayList<>();
         for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
-                return true;
+            if (type.isInstance(kid) && !isExcludedMcr(kid, type)) {
+                out.add((T) kid);
             }
         }
-        return false;
+        return out;
     }
 
-    /** Finds the first OBJR (object reference) child of an element. */
-    public static PdfObjRef findFirstObjRef(PdfStructElem elem) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return null;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfObjRef objRef) {
-                return objRef;
-            }
-        }
-        return null;
-    }
-
-    /** Recursively collects all OBJR (object reference) descendants of an element. */
-    public static List<PdfObjRef> collectObjRefs(PdfStructElem elem) {
-        List<PdfObjRef> result = new ArrayList<>();
-        collectObjRefs(elem, result);
+    /**
+     * Recursively collects all descendants matching the given type, traversing only through {@link
+     * PdfStructElem} intermediaries. When {@code type} is {@code PdfMcr.class}, OBJRs are excluded.
+     */
+    public static <T extends IStructureNode> List<T> descendantsOf(
+            PdfStructElem elem, Class<T> type) {
+        List<T> result = new ArrayList<>();
+        collectDescendants(elem, type, result);
         return result;
     }
 
-    /** Recursively collects all OBJR (object reference) descendants of an element. */
-    private static void collectObjRefs(PdfStructElem elem, List<PdfObjRef> result) {
+    @SuppressWarnings("unchecked")
+    private static <T extends IStructureNode> void collectDescendants(
+            PdfStructElem elem, Class<T> type, List<T> result) {
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
         for (IStructureNode kid : kids) {
-            if (kid instanceof PdfObjRef objRef) {
-                result.add(objRef);
+            if (type.isInstance(kid) && !isExcludedMcr(kid, type)) {
+                result.add((T) kid);
             } else if (kid instanceof PdfStructElem childElem) {
-                collectObjRefs(childElem, result);
+                collectDescendants(childElem, type, result);
             }
         }
     }
 
-    /** Recursively collects all MCR descendants of an element (including OBJR entries). */
-    public static List<PdfMcr> collectMcrs(PdfStructElem elem) {
-        List<PdfMcr> result = new ArrayList<>();
-        collectMcrs(elem, result);
-        return result;
-    }
-
-    /** Recursively collects all MCR descendants of an element, excluding OBJRs. */
-    private static void collectMcrs(PdfStructElem elem, List<PdfMcr> result) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr && mcr.getMcid() >= 0) {
-                result.add(mcr);
-            } else if (kid instanceof PdfStructElem childElem) {
-                collectMcrs(childElem, result);
-            }
-        }
+    /** When collecting PdfMcr, exclude OBJRs (which have getMcid() &lt; 0). */
+    private static boolean isExcludedMcr(IStructureNode kid, Class<?> type) {
+        return type == PdfMcr.class && kid instanceof PdfMcr mcr && mcr.getMcid() < 0;
     }
 
     /**
@@ -405,22 +391,6 @@ public final class StructTree {
     public static PdfStructElem parentOf(PdfStructElem n) {
         IStructureNode p = n.getParent();
         return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
-    }
-
-    /**
-     * Returns the children of a structure element, or an empty list if no children are available.
-     */
-    public static List<PdfStructElem> structKidsOf(PdfStructElem n) {
-        List<IStructureNode> kids = n.getKids();
-        if (kids == null) return List.of();
-
-        List<PdfStructElem> out = new ArrayList<>();
-        for (IStructureNode k : kids) {
-            if (k instanceof PdfStructElem) {
-                out.add((PdfStructElem) k);
-            }
-        }
-        return out;
     }
 
     // --- Structure tree traversal utilities ---
@@ -457,7 +427,7 @@ public final class StructTree {
     /** Converts a PdfStructElem tree into a Node tree of role-name strings. */
     public static Node<String> toRoleTree(PdfStructElem elem) {
         List<Node<String>> childNodes = new ArrayList<>();
-        for (PdfStructElem kid : structKidsOf(elem)) {
+        for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
             childNodes.add(toRoleTree(kid));
         }
         return new Node<>(elem.getRole().getValue(), childNodes);
@@ -479,7 +449,7 @@ public final class StructTree {
         sb.append("  ".repeat(depth));
         sb.append(elem.getRole().getValue());
         sb.append('\n');
-        for (PdfStructElem kid : structKidsOf(elem)) {
+        for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
             appendIndentedTree(sb, kid, depth + 1);
         }
     }

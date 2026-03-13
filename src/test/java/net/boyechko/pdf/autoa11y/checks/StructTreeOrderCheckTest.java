@@ -210,7 +210,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             new ReorderStructTree().apply(ctx);
 
             // Verify children are now in page order
-            List<PdfStructElem> kids = StructTree.structKidsOf(document);
+            List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);
             assertEquals(3, kids.size());
             assertTrue(
                     StructTree.isSameElement(kids.get(0), p1),
@@ -251,7 +251,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             new ReorderStructTree().apply(ctx);
 
             // Order should be unchanged
-            List<PdfStructElem> kids = StructTree.structKidsOf(document);
+            List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);
             assertTrue(StructTree.isSameElement(kids.get(0), p1));
             assertTrue(StructTree.isSameElement(kids.get(1), p2));
         }
