@@ -71,7 +71,7 @@ public class ReorderStructTree implements IssueFix {
     }
 
     private void reorderRecursive(PdfStructElem elem) {
-        List<PdfStructElem> children = StructTree.structKidsOf(elem);
+        List<PdfStructElem> children = StructTree.childrenOf(elem, PdfStructElem.class);
 
         // Recurse first (bottom-up) so cache is populated
         for (PdfStructElem child : children) {

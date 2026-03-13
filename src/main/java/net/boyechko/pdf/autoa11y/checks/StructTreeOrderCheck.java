@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -116,7 +117,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
         }
 
         ReadingPosition key =
-                StructTree.collectMcrs(elem).stream()
+                StructTree.descendantsOf(elem, PdfMcr.class).stream()
                         .map(mcr -> new ReadingPosition(StructTree.pageOf(mcr), mcr.getMcid()))
                         .min(Comparator.naturalOrder())
                         .orElse(ReadingPosition.MAX);

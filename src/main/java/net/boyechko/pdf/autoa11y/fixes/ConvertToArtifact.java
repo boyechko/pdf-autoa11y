@@ -124,7 +124,7 @@ public class ConvertToArtifact implements IssueFix {
     private static Map<PdfPage, Set<Integer>> collectMcidsByPage(
             PdfStructElem elem, DocContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
-        List<PdfMcr> mcrs = StructTree.collectMcrs(elem);
+        List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
             PdfDictionary pageDict = mcr.getPageObject();
@@ -290,7 +290,7 @@ public class ConvertToArtifact implements IssueFix {
      * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
      */
     private void removeAnnotationsForElement(PdfStructElem elem, DocContext ctx) {
-        List<PdfObjRef> objRefs = StructTree.collectObjRefs(elem);
+        List<PdfObjRef> objRefs = StructTree.descendantsOf(elem, PdfObjRef.class);
 
         logger.trace("Found {} object ref(s) in {}", objRefs.size(), Format.elem(elem));
 

@@ -71,11 +71,12 @@ public class MoveSiblingMcrIntoLink implements IssueFix {
             logger.debug("Link element not found for obj. #{}", linkObjNum);
             return;
         }
-        if (StructTree.hasMcr(linkElem)) {
+        if (!StructTree.childrenOf(linkElem, PdfMcr.class).isEmpty()) {
             return;
         }
 
-        PdfObjRef objRef = StructTree.findFirstObjRef(linkElem);
+        List<PdfObjRef> objRefs = StructTree.childrenOf(linkElem, PdfObjRef.class);
+        PdfObjRef objRef = objRefs.isEmpty() ? null : objRefs.getFirst();
         if (objRef == null) {
             return;
         }

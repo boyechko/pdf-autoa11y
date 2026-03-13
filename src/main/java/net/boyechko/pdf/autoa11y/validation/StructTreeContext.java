@@ -72,7 +72,7 @@ public record StructTreeContext(
         PdfStructElem parent = StructTree.parentOf(node);
         String parentRole = parent != null ? StructTree.mappedRole(parent) : null;
 
-        List<PdfStructElem> children = StructTree.structKidsOf(node);
+        List<PdfStructElem> children = StructTree.childrenOf(node, PdfStructElem.class);
         List<String> childRoles = children.stream().map(StructTree::mappedRole).toList();
 
         return new StructTreeContext(

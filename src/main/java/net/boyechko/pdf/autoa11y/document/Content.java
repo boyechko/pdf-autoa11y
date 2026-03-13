@@ -110,7 +110,7 @@ public final class Content {
             return results;
         }
 
-        for (PdfMcr mcr : StructTree.collectMcrs(elem)) {
+        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
             int mcid = mcr.getMcid();
 
             PdfDictionary pageDict = mcr.getPageObject();
@@ -540,7 +540,7 @@ public final class Content {
                         pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
 
         Rectangle result = null;
-        for (PdfMcr mcr : StructTree.collectMcrs(node)) {
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
             int mcid = mcr.getMcid();
             Rectangle bounds = mcidBounds.get(mcid);
             if (bounds != null) {
