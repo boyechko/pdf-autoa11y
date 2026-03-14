@@ -180,7 +180,7 @@ and inspecting each processing step.
 
 - `CHANGELOG.md` for release notes
 - `CONTRIBUTING.md` for development workflow
-- `docs/architecture.md` for the processing architecture and extension points
+- `docs/architecture-decisions.md` for architecture decision records
 
 ## Development
 
