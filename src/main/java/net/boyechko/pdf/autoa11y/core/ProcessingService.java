@@ -173,10 +173,8 @@ public class ProcessingService {
         Path pipelineDir = initializePipelineTempDir();
         List<Path> tempFiles = new ArrayList<>();
 
-        IssueList allDocIssues = new IssueList();
-        IssueList allDocFixes = new IssueList();
-        IssueList allTagIssues = new IssueList();
-        IssueList allTagFixes = new IssueList();
+        IssueList allIssues = new IssueList();
+        IssueList allFixes = new IssueList();
 
         try {
             int stepNum = 0;
@@ -190,17 +188,16 @@ public class ProcessingService {
                 listener.onPhaseStart("Document checks");
                 listener.onDetectedSectionStart();
                 IssueList docIssues = runDocumentChecks(ctx, docCheckSuppliers);
-                allDocIssues.addAll(docIssues);
+                allIssues.addAll(docIssues);
 
-                if (allDocIssues.hasFatalIssues()) {
-                    listener.onSummary(allDocIssues);
+                if (allIssues.hasFatalIssues()) {
+                    listener.onSummary(allIssues);
                     cleanupPipelineDir(pipelineDir, tempFiles);
-                    return ProcessingResult.aborted(allDocIssues);
+                    return ProcessingResult.aborted(allIssues);
                 }
 
                 if (!docIssues.isEmpty()) {
-                    IssueList docFixes = applyAndReportFixes(ctx, docIssues);
-                    allDocFixes.addAll(docFixes);
+                    allFixes.addAll(applyAndReportFixes(ctx, docIssues));
                     reportRemainingIssues(docIssues);
                 }
             }
@@ -219,12 +216,11 @@ public class ProcessingService {
                     DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
                     IssueList issues = walkStructTree(ctx, List.of(check));
-                    allTagIssues.addAll(issues);
+                    allIssues.addAll(issues);
 
                     if (!issues.isEmpty()) {
                         reportIssuesGrouped(issues);
-                        IssueList fixes = applyAndReportFixes(ctx, issues);
-                        allTagFixes.addAll(fixes);
+                        allFixes.addAll(applyAndReportFixes(ctx, issues));
                         reportRemainingIssues(issues);
                     } else {
                         listener.onSuccess("No issues found");
@@ -245,23 +241,11 @@ public class ProcessingService {
                 Files.copy(current, finalOutput, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
 
-            // Summary
-            IssueList allIssues = new IssueList();
-            allIssues.addAll(allTagIssues);
-            allIssues.addAll(allDocIssues);
             listener.onSummary(allIssues);
-
-            // Cleanup pipeline directory (final output is safely outside it)
             cleanupPipelineDir(pipelineDir, tempFiles);
 
             return new ProcessingResult(
-                    allTagIssues,
-                    allTagFixes,
-                    allIssues.getRemainingIssues(),
-                    allDocIssues,
-                    allDocFixes,
-                    allIssues.getRemainingIssues(),
-                    finalOutput);
+                    allIssues, allFixes, allIssues.getRemainingIssues(), finalOutput);
         } catch (Exception e) {
             cleanupPipelineDir(pipelineDir, tempFiles);
             throw e;
