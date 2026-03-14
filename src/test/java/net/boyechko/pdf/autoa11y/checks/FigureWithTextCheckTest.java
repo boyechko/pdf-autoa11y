@@ -36,12 +36,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
@@ -92,32 +90,6 @@ public class FigureWithTextCheckTest extends PdfTestBase {
             assertTrue(
                     issues.stream().anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
                     "Should create an issue for Figure with text");
-        }
-    }
-
-    @Test
-    void ruleEngineRunVisitorsDoesNotAccumulateIssuesAcrossRuns() throws Exception {
-        Path pdfFile = createTestPdf();
-        assertTrue(Files.exists(pdfFile), "PDF file should exist");
-
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            DocContext context = new DocContext(pdfDoc);
-            CheckEngine engine =
-                    new CheckEngine(List.of(FigureWithTextCheck::new), TagSchema.loadDefault());
-
-            IssueList firstRun = engine.runStructTreeChecks(context);
-            IssueList secondRun = engine.runStructTreeChecks(context);
-
-            long firstFigureIssues =
-                    firstRun.stream().filter(i -> i.type() == IssueType.FIGURE_WITH_TEXT).count();
-            long secondFigureIssues =
-                    secondRun.stream().filter(i -> i.type() == IssueType.FIGURE_WITH_TEXT).count();
-
-            assertEquals(firstRun.size(), secondRun.size(), "Issue count should stay stable");
-            assertEquals(
-                    firstFigureIssues,
-                    secondFigureIssues,
-                    "FIGURE_WITH_TEXT issues should not accumulate across runs");
         }
     }
 }

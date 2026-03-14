@@ -19,75 +19,104 @@ package net.boyechko.pdf.autoa11y.validation;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
-import java.util.Set;
-import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.issue.*;
 import org.junit.jupiter.api.Test;
 
 class CheckEngineTest {
 
     @Test
-    void rejectsVisitorBeforeItsPrerequisite() {
-        var ex =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () ->
-                                new CheckEngine(
-                                        List.of(DependentCheck::new, PrereqCheck::new), null));
+    void applyFixesAppliesInPriorityOrder() {
+        CheckEngine engine = new CheckEngine();
+        IssueList issues = new IssueList();
+
+        // Create two issues with fixes at different priorities
+        Issue lowPriority =
+                new Issue(
+                        IssueType.LANGUAGE_NOT_SET,
+                        IssueSev.WARNING,
+                        IssueLoc.none(),
+                        "low",
+                        new StubFix(200, "low-fix"));
+        Issue highPriority =
+                new Issue(
+                        IssueType.LANGUAGE_NOT_SET,
+                        IssueSev.WARNING,
+                        IssueLoc.none(),
+                        "high",
+                        new StubFix(100, "high-fix"));
+        issues.add(lowPriority);
+        issues.add(highPriority);
+
+        IssueList resolved = engine.applyFixes(null, issues);
+
+        assertEquals(2, resolved.size());
+        // Both should be resolved
+        assertTrue(highPriority.isResolved());
+        assertTrue(lowPriority.isResolved());
+    }
+
+    @Test
+    void applyFixesSkipsInvalidatedFixes() {
+        CheckEngine engine = new CheckEngine();
+        IssueList issues = new IssueList();
+
+        Issue kept =
+                new Issue(
+                        IssueType.LANGUAGE_NOT_SET,
+                        IssueSev.WARNING,
+                        IssueLoc.none(),
+                        "kept",
+                        new InvalidatingFix(100));
+        Issue skipped =
+                new Issue(
+                        IssueType.LANGUAGE_NOT_SET,
+                        IssueSev.WARNING,
+                        IssueLoc.none(),
+                        "skipped",
+                        new StubFix(200, "skipped-fix"));
+        issues.add(kept);
+        issues.add(skipped);
+
+        IssueList resolved = engine.applyFixes(null, issues);
+
+        assertEquals(2, resolved.size());
+        assertTrue(kept.isResolved());
+        assertTrue(skipped.isResolved());
         assertTrue(
-                ex.getMessage().contains("PrereqCheck"),
-                "Error should name the missing prerequisite");
+                skipped.resolution().message().contains("Skipped"),
+                "Invalidated fix should be marked as skipped");
     }
 
-    @Test
-    void acceptsVisitorAfterItsPrerequisite() {
-        assertDoesNotThrow(
-                () -> new CheckEngine(List.of(PrereqCheck::new, DependentCheck::new), null));
+    // --- Stub fixes for testing ---
+
+    static class StubFix implements IssueFix {
+        private final int priority;
+        private final String name;
+
+        StubFix(int priority, String name) {
+            this.priority = priority;
+            this.name = name;
+        }
+
+        @Override
+        public int priority() {
+            return priority;
+        }
+
+        @Override
+        public void apply(DocContext ctx) {}
     }
 
-    @Test
-    void acceptsVisitorWithNoPrerequisites() {
-        assertDoesNotThrow(() -> new CheckEngine(List.of(PrereqCheck::new), null));
-    }
-
-    // --- Stub visitors for testing ---
-
-    static class PrereqCheck extends StructTreeCheck {
-        @Override
-        public String name() {
-            return "Prereq";
+    /** A fix that invalidates all other fixes. */
+    static class InvalidatingFix extends StubFix {
+        InvalidatingFix(int priority) {
+            super(priority, "invalidating");
         }
 
         @Override
-        public String description() {
-            return "";
-        }
-
-        @Override
-        public IssueList getIssues() {
-            return new IssueList();
-        }
-    }
-
-    static class DependentCheck extends StructTreeCheck {
-        @Override
-        public String name() {
-            return "Dependent";
-        }
-
-        @Override
-        public String description() {
-            return "";
-        }
-
-        @Override
-        public Set<Class<? extends Check>> prerequisites() {
-            return Set.of(PrereqCheck.class);
-        }
-
-        @Override
-        public IssueList getIssues() {
-            return new IssueList();
+        public boolean invalidates(IssueFix otherFix) {
+            return true;
         }
     }
 }

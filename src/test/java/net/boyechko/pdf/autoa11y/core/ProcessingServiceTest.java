@@ -228,6 +228,31 @@ public class ProcessingServiceTest extends PdfTestBase {
                 "Skipped document check should produce no issues");
     }
 
+    @Test
+    void rejectsSkipCheckWhenDependentCheckStillIncluded() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new ProcessingService.ProcessingServiceBuilder()
+                                .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                                .withListener(new NoOpProcessingListener())
+                                .skipChecks(java.util.Set.of("NeedlessNestingCheck"))
+                                .build(),
+                "Skipping NeedlessNestingCheck should fail because MissingPagePartsCheck depends on it");
+    }
+
+    @Test
+    void issuesDoNotAccumulateAcrossAnalyzeRuns() throws Exception {
+        Path inputPath = createFigureWithTextPdf();
+        ProcessingService service = createProcessingService(inputPath);
+
+        IssueList firstRun = service.analyze();
+        IssueList secondRun = service.analyze();
+
+        assertEquals(
+                firstRun.size(), secondRun.size(), "Issue count should stay stable across runs");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private Path createUntaggedPdf() throws Exception {
