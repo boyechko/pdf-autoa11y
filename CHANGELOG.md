@@ -31,6 +31,11 @@ Versioning](https://semver.org/).
 ### Changed
 - `--skip-checks` and `--only-checks` now apply to all checks, including
   document-level checks (previously only structure tree checks were filterable).
+- Simplified `ProcessingResult` to three unified issue lists (`detectedIssues`,
+  `appliedFixes`, `remainingIssues`) instead of separate document-level and
+  tag-level fields.
+- Accessibility report now groups all issues by type in a single section instead
+  of splitting into "Document-Level" and "Structure Tree" sections.
 - Improved CLI and report output to make issue locations, resolutions, and
   summaries clearer and easier to scan.
 - Updated structure-tree dump output to show object-reference details more

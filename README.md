@@ -38,12 +38,10 @@ mvn clean package
 
 ## What It Does
 
-PDF-Auto-A11y performs two kinds of checks:
-
-- Document-level rules for metadata, annotations, and required tagged-PDF
-  properties
-- Structure-tree visitors that walk the tag tree, report problems, and apply
-  automatic fixes when possible
+PDF-Auto-A11y runs a pipeline of checks against the input PDF. Each check gets
+its own pipeline step so intermediate results can be inspected. Checks cover
+document-level metadata and annotations as well as structure-tree validation
+and repair.
 
 By default, the tool can automatically remediate issues such as:
 
@@ -153,7 +151,7 @@ If you pass `-r/--report` without a path, the report defaults to
 
 Analysis and remediation can report different issue counts. Analysis scans the
 original document in a single pass, while remediation applies fixes
-sequentially, so earlier fixes may resolve issues before later visitors run.
+sequentially, so earlier fixes may resolve issues before later checks run.
 
 The output includes:
 
