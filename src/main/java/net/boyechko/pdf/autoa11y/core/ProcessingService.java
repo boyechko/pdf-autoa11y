@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.core;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -158,21 +159,7 @@ public class ProcessingService {
     /// Remediates the PDF using a sequential pipeline. Each rule/visitor runs as its own step,
     /// reading the previous step's output file.
     public ProcessingResult remediate() throws Exception {
-        Path pipelineDir = PIPELINE_TEMP_DIR.resolve(custodian.getInputPath().getFileName());
-        if (!Files.exists(pipelineDir)) {
-            Files.createDirectories(pipelineDir);
-        } else {
-            Files.list(pipelineDir)
-                    .forEach(
-                            path -> {
-                                try {
-                                    Files.delete(path);
-                                } catch (Exception e) {
-                                    throw new RuntimeException(
-                                            "Error deleting pipeline temp file", e);
-                                }
-                            });
-        }
+        Path pipelineDir = initializePipelineTempDir();
         List<Path> tempFiles = new ArrayList<>();
 
         IssueList allDocIssues = new IssueList();
@@ -187,9 +174,9 @@ public class ProcessingService {
             Path current =
                     pipelineDir.resolve(String.format("step%02d_document-checks.pdf", stepNum++));
             tempFiles.add(current);
-            listener.onPhaseStart("Document checks");
             try (PdfDocument doc = custodian.decryptToTemp(current)) {
                 DocContext ctx = new DocContext(doc);
+                listener.onPhaseStart("Document checks");
                 listener.onDetectedSectionStart();
                 IssueList docIssues = runDocumentChecks(ctx);
                 allDocIssues.addAll(docIssues);
@@ -215,6 +202,7 @@ public class ProcessingService {
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
                 tempFiles.add(output);
 
+                logger.debug("{} -> {}", check.getClass().getSimpleName(), output.getFileName());
                 listener.onPhaseStart(check.name());
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
@@ -238,7 +226,7 @@ public class ProcessingService {
                 current = output;
             }
 
-            // Finalize: copy result out of pipeline directory
+            // Finalize: copy the result out of the pipeline directory
             Path finalOutput = pipelineDir.resolve("output.pdf");
             if (custodian.isEncrypted()) {
                 custodian.reencrypt(current, finalOutput);
@@ -300,6 +288,25 @@ public class ProcessingService {
 
         // 3. Default: /tmp/pipeline/
         return Path.of("/tmp/pdf-autoa11y/pipeline");
+    }
+
+    private Path initializePipelineTempDir() throws IOException {
+        Path pipelineDir = PIPELINE_TEMP_DIR.resolve(custodian.getInputPath().getFileName());
+        if (!Files.exists(pipelineDir)) {
+            Files.createDirectories(pipelineDir);
+        } else {
+            try (var stream = Files.list(pipelineDir)) {
+                stream.forEach(
+                        path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Error deleting pipeline temp file", e);
+                            }
+                        });
+            }
+        }
+        return pipelineDir;
     }
 
     /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
