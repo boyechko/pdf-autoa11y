@@ -42,7 +42,7 @@ import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// Orchestrates the processing of a PDF document.
+/** Orchestrates the processing of a PDF document. */
 public class ProcessingService {
     private static final Logger logger = LoggerFactory.getLogger(ProcessingService.class);
 
@@ -125,8 +125,10 @@ public class ProcessingService {
 
     // == Filtering and validation =====================================
 
-    /// Filters check suppliers based on the skip and includeOnly sets. Probes each supplier once
-    /// to read its class name; the supplier itself is retained for later fresh instantiation.
+    /**
+     * Filters check suppliers based on the skip and includeOnly sets. Probes each supplier once to
+     * read its class name; the supplier itself is retained for later fresh instantiation.
+     */
     private static ArrayList<Supplier<Check>> filterChecks(
             List<Supplier<Check>> defaults, Set<String> skip, Set<String> includeOnly) {
         if (skip.isEmpty() && includeOnly.isEmpty()) {
@@ -146,7 +148,7 @@ public class ProcessingService {
         return filtered;
     }
 
-    /// Validates that every check's prerequisites appear earlier in the list.
+    /** Validates that every check's prerequisites appear earlier in the list. */
     private static void validateCheckPrereqs(List<Supplier<Check>> checks) {
         Set<Class<? extends Check>> seen = new HashSet<>();
         for (Supplier<Check> supplier : checks) {
@@ -165,8 +167,10 @@ public class ProcessingService {
 
     // == Pipeline =====================================================
 
-    /// Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
-    /// reading the previous step's output file.
+    /**
+     * Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
+     * reading the previous step's output file.
+     */
     public ProcessingResult remediate() throws Exception {
         Path pipelineDir = initializePipelineTempDir();
         List<Path> tempFiles = new ArrayList<>();
@@ -286,7 +290,7 @@ public class ProcessingService {
 
     // == Check execution ==============================================
 
-    /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
+    /** Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues. */
     private IssueList runDocumentChecks(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
         for (Supplier<Check> supplier : documentChecks) {
@@ -305,7 +309,7 @@ public class ProcessingService {
         return allDocIssues;
     }
 
-    /// Walks the structure tree with the given checks and returns all issues found.
+    /** Walks the structure tree with the given checks and returns all issues found. */
     private IssueList walkStructTree(DocContext ctx, List<StructTreeCheck> checks) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
@@ -320,7 +324,7 @@ public class ProcessingService {
         return walker.walk(root, ctx);
     }
 
-    /// Runs all structure tree checks in a single tree walk (used in analyze mode).
+    /** Runs all structure tree checks in a single tree walk (used in analyze mode). */
     private IssueList runStructTreeChecks(DocContext ctx) {
         List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
         for (Supplier<Check> supplier : structTreeChecks) {
@@ -403,7 +407,7 @@ public class ProcessingService {
         }
     }
 
-    /// Given a list of fixes, report them grouped by the fix type.
+    /** Reports applied fixes, grouped by fix type. */
     private void reportFixesGrouped(IssueList appliedFixes) {
         Map<Class<?>, List<Issue>> grouped =
                 appliedFixes.stream()
@@ -456,8 +460,7 @@ public class ProcessingService {
 
     // == Cleanup ======================================================
 
-    /// Cleans up the pipeline directory and temporary files if the [#KEEP_PIPELINE_TEMPS] flag is
-    // false.
+    /** Cleans up the pipeline directory and temporary files if KEEP_PIPELINE_TEMPS is false. */
     private static void cleanupPipelineDir(Path pipelineDir, List<Path> tempFiles) {
         if (KEEP_PIPELINE_TEMPS) {
             logger.debug("Pipeline temps kept at: {}", pipelineDir);
