@@ -40,6 +40,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
+import net.boyechko.pdf.autoa11y.ui.SidecarConfig;
 import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
 import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 import org.slf4j.Logger;
@@ -115,12 +116,19 @@ public class PdfAutoA11yCLI {
 
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
+            SidecarConfig sidecar = SidecarConfig.forPdf(config.inputPath());
+            if (sidecar.isPresent()) {
+                listener.onInfo("Using sidecar config for " + config.inputPath().getFileName());
+            }
+            Set<String> skipChecks = sidecar.mergeSkipChecks(config.skipChecks());
+            Set<String> onlyChecks = sidecar.mergeOnlyChecks(config.onlyChecks());
+
             ProcessingService.ProcessingServiceBuilder serviceBuilder =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
                             .withListener(listener)
-                            .skipChecks(config.skipChecks())
-                            .onlyChecks(config.onlyChecks());
+                            .skipChecks(skipChecks)
+                            .onlyChecks(onlyChecks);
             if (config.printStructureTree()) {
                 serviceBuilder.injectStructTreeCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));
@@ -396,6 +404,13 @@ public class PdfAutoA11yCLI {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
+                + "\n"
+                + "Sidecar config: place a <basename>.autoa11y.yaml file next to the input PDF\n"
+                + "to set persistent per-file check configuration. Example contents:\n"
+                + "  skip-checks:\n"
+                + "    - NeedlessNestingCheck\n"
+                + "    - MissingPagePartsCheck\n"
+                + "\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
                 + "  java PdfAutoA11yCLI -r -t document.pdf\n"

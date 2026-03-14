@@ -22,6 +22,8 @@ Versioning](https://semver.org/).
 - Added an accessibility report output (`-r/--report`) so processing results can
   be saved as an audit trail.
 - Added CLI options to skip checks or run only selected checks.
+- Added per-PDF sidecar config files (`<basename>.autoa11y.yaml`) for persistent
+  check configuration, so skip/only-checks settings travel with each input file.
 - Added configurable per-input pipeline temp directories via
   `AUTOA11Y_PIPELINE_DIR` or `-Dautoa11y.pipeline.dir=...`.
 - Added a "Resolved Breakdown" section to the accessibility report summary.
