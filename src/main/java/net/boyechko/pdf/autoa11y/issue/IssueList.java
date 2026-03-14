@@ -19,7 +19,11 @@ package net.boyechko.pdf.autoa11y.issue;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 
 /** List of accessibility issues found in a PDF document. */
 public class IssueList extends ArrayList<Issue> {
@@ -54,6 +58,45 @@ public class IssueList extends ArrayList<Issue> {
     /** Returns true if any issue has FATAL severity, meaning processing cannot continue. */
     public boolean hasFatalIssues() {
         return stream().anyMatch(issue -> issue.severity() == IssueSev.FATAL);
+    }
+
+    /** Applies fixes to issues, respecting priority ordering and invalidation. */
+    public IssueList applyFixes(DocContext ctx) {
+        List<Map.Entry<Issue, IssueFix>> ordered =
+                stream()
+                        .filter(i -> i.fix() != null)
+                        .map(i -> Map.entry(i, i.fix()))
+                        .sorted(Comparator.comparingInt(e -> e.getValue().priority()))
+                        .toList();
+
+        List<IssueFix> appliedFixes = new ArrayList<>();
+
+        for (Map.Entry<Issue, IssueFix> e : ordered) {
+            Issue i = e.getKey();
+            IssueFix fx = e.getValue();
+
+            boolean isInvalidated =
+                    appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
+
+            if (isInvalidated) {
+                i.markResolved(new IssueMsg("Skipped: resolved by higher priority fix", i.where()));
+                continue;
+            }
+
+            try {
+                fx.apply(ctx);
+                appliedFixes.add(fx);
+                i.markResolved(fx.describeLocated(ctx));
+            } catch (Exception ex) {
+                IssueMsg resolution = fx.describeLocated(ctx);
+                i.markFailed(
+                        new IssueMsg(
+                                resolution.message() + " failed: " + ex.getMessage(),
+                                resolution.where()));
+            }
+        }
+
+        return getResolvedIssues();
     }
 
     /**

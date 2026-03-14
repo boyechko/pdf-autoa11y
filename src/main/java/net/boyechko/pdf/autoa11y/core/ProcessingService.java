@@ -36,7 +36,6 @@ import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
-import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
@@ -53,7 +52,6 @@ public class ProcessingService {
     private static final Path PIPELINE_TEMP_DIR = resolvePipelineTempDir();
 
     private final PdfCustodian custodian;
-    private final CheckEngine checkEngine;
     private final ProcessingListener listener;
     private final List<Supplier<Check>> documentChecks;
     private final List<Supplier<Check>> structTreeChecks;
@@ -104,7 +102,6 @@ public class ProcessingService {
     private ProcessingService(ProcessingServiceBuilder builder) {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
-        this.checkEngine = new CheckEngine();
         this.schema = TagSchema.loadDefault();
 
         List<Supplier<Check>> checks =
@@ -200,7 +197,7 @@ public class ProcessingService {
                 }
 
                 if (!docIssues.isEmpty()) {
-                    IssueList docFixes = applyFixes(ctx, docIssues);
+                    IssueList docFixes = applyAndReportFixes(ctx, docIssues);
                     allDocFixes.addAll(docFixes);
                     reportRemainingIssues(docIssues);
                 }
@@ -224,7 +221,7 @@ public class ProcessingService {
 
                     if (!issues.isEmpty()) {
                         reportIssuesGrouped(issues);
-                        IssueList fixes = applyFixes(ctx, issues);
+                        IssueList fixes = applyAndReportFixes(ctx, issues);
                         allTagFixes.addAll(fixes);
                         reportRemainingIssues(issues);
                     } else {
@@ -332,21 +329,6 @@ public class ProcessingService {
         return walkStructTree(ctx, checks);
     }
 
-    // == Fix application ==============================================
-
-    /** Applies fixes and reports results. Returns the applied fixes. */
-    private IssueList applyFixes(DocContext ctx, IssueList issues) {
-        if (issues.isEmpty()) {
-            return new IssueList();
-        }
-        IssueList applied = checkEngine.applyFixes(ctx, issues);
-        if (!applied.isEmpty()) {
-            listener.onFixesSectionStart();
-        }
-        reportFixesGrouped(applied);
-        return applied;
-    }
-
     // == Pipeline helpers =============================================
 
     private static Path resolvePipelineTempDir() {
@@ -384,6 +366,16 @@ public class ProcessingService {
     // == Reporting helpers ============================================
 
     private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
+
+    /** Applies fixes and reports results. Returns the applied fixes. */
+    private IssueList applyAndReportFixes(DocContext ctx, IssueList issues) {
+        IssueList applied = issues.applyFixes(ctx);
+        if (!applied.isEmpty()) {
+            listener.onFixesSectionStart();
+        }
+        reportFixesGrouped(applied);
+        return applied;
+    }
 
     private void reportRemainingIssues(IssueList issues) {
         IssueList remainingIssues = issues.getRemainingIssues();
