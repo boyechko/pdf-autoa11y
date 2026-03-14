@@ -155,21 +155,11 @@ public class ProcessingService {
 
     // == Pipeline =====================================================
 
-    /** Partitions check suppliers into document checks and struct tree checks. */
-    private Map<Boolean, List<Supplier<Check>>> partitionChecks() {
-        return checks.stream()
-                .collect(Collectors.partitioningBy(s -> s.get() instanceof StructTreeCheck));
-    }
-
     /**
-     * Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
-     * reading the previous step's output file.
+     * Remediates the PDF using a sequential pipeline. Each check runs as its own step, reading the
+     * previous step's output file.
      */
     public ProcessingResult remediate() throws Exception {
-        Map<Boolean, List<Supplier<Check>>> partitioned = partitionChecks();
-        List<Supplier<Check>> docCheckSuppliers = partitioned.get(false);
-        List<Supplier<Check>> treeCheckSuppliers = partitioned.get(true);
-
         Path pipelineDir = initializePipelineTempDir();
         List<Path> tempFiles = new ArrayList<>();
 
@@ -179,32 +169,13 @@ public class ProcessingService {
         try {
             int stepNum = 0;
 
-            // Document-level checks (decrypt original → first temp)
-            Path current =
-                    pipelineDir.resolve(String.format("step%02d_document-checks.pdf", stepNum++));
+            // Decrypt original into the first pipeline temp
+            Path current = pipelineDir.resolve(String.format("step%02d_decrypt.pdf", stepNum++));
             tempFiles.add(current);
-            try (PdfDocument doc = custodian.decryptToTemp(current)) {
-                DocContext ctx = new DocContext(doc);
-                listener.onPhaseStart("Document checks");
-                listener.onDetectedSectionStart();
-                IssueList docIssues = runDocumentChecks(ctx, docCheckSuppliers);
-                allIssues.addAll(docIssues);
+            custodian.decryptToTemp(current).close();
 
-                if (allIssues.hasFatalIssues()) {
-                    listener.onSummary(allIssues);
-                    cleanupPipelineDir(pipelineDir, tempFiles);
-                    return ProcessingResult.aborted(allIssues);
-                }
-
-                if (!docIssues.isEmpty()) {
-                    allFixes.addAll(applyAndReportFixes(ctx, docIssues));
-                    reportRemainingIssues(docIssues);
-                }
-            }
-
-            // Each StructTreeCheck in its own pipeline step
-            for (Supplier<Check> supplier : treeCheckSuppliers) {
-                StructTreeCheck check = (StructTreeCheck) supplier.get();
+            for (Supplier<Check> supplier : checks) {
+                Check check = supplier.get();
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
@@ -215,15 +186,21 @@ public class ProcessingService {
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
-                    IssueList issues = walkStructTree(ctx, List.of(check));
+                    IssueList issues = runCheck(ctx, check);
                     allIssues.addAll(issues);
+
+                    if (allIssues.hasFatalIssues()) {
+                        listener.onSummary(allIssues);
+                        cleanupPipelineDir(pipelineDir, tempFiles);
+                        return ProcessingResult.aborted(allIssues);
+                    }
 
                     if (!issues.isEmpty()) {
                         reportIssuesGrouped(issues);
                         allFixes.addAll(applyAndReportFixes(ctx, issues));
                         reportRemainingIssues(issues);
                     } else {
-                        listener.onSuccess("No issues found");
+                        listener.onSuccess(check.passedMessage());
                     }
                 }
 
@@ -253,70 +230,52 @@ public class ProcessingService {
     }
 
     public IssueList analyze() throws Exception {
-        Map<Boolean, List<Supplier<Check>>> partitioned = partitionChecks();
-
         try (PdfDocument pdfDoc = custodian.openForReading()) {
             DocContext context = new DocContext(pdfDoc);
+            IssueList allIssues = new IssueList();
 
-            IssueList documentIssues =
-                    detectDocumentIssuesForAnalysis(context, partitioned.get(false));
-            if (documentIssues.hasFatalIssues()) {
-                return documentIssues;
+            for (Supplier<Check> supplier : checks) {
+                Check check = supplier.get();
+                listener.onPhaseStart(check.name());
+                IssueList issues = runCheck(context, check);
+                allIssues.addAll(issues);
+
+                if (allIssues.hasFatalIssues()) {
+                    return allIssues;
+                }
+
+                if (!issues.isEmpty()) {
+                    reportIssuesGrouped(issues);
+                } else {
+                    listener.onSuccess(check.passedMessage());
+                }
             }
 
-            IssueList tagIssues = detectTagIssuesForAnalysis(context, partitioned.get(true));
-            IssueList totalIssues = new IssueList();
-            totalIssues.addAll(documentIssues);
-            totalIssues.addAll(tagIssues);
-
-            return totalIssues;
+            return allIssues;
         }
     }
 
     // == Check execution ==============================================
 
-    /** Runs document checks, reporting per-rule pass/fail. Stops early on FATAL issues. */
-    private IssueList runDocumentChecks(DocContext ctx, List<Supplier<Check>> docCheckSuppliers) {
-        IssueList allDocIssues = new IssueList();
-        for (Supplier<Check> supplier : docCheckSuppliers) {
-            Check check = supplier.get();
-            IssueList ruleIssues = check.findIssues(ctx);
-            allDocIssues.addAll(ruleIssues);
-            if (ruleIssues.isEmpty()) {
-                listener.onSuccess(check.passedMessage());
-            } else {
-                reportIssuesGrouped(ruleIssues);
-            }
-            if (allDocIssues.hasFatalIssues()) {
-                break;
-            }
+    /** Runs a single check, dispatching by type to the appropriate execution mechanism. */
+    private IssueList runCheck(DocContext ctx, Check check) {
+        if (check instanceof StructTreeCheck treeCheck) {
+            return walkStructTree(ctx, treeCheck);
         }
-        return allDocIssues;
+        return check.findIssues(ctx);
     }
 
-    /** Walks the structure tree with the given checks and returns all issues found. */
-    private IssueList walkStructTree(DocContext ctx, List<StructTreeCheck> checks) {
+    /** Walks the structure tree with a single check. */
+    private IssueList walkStructTree(DocContext ctx, StructTreeCheck check) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
-            logger.debug("No structure tree found, skipping structure tree checks");
+            logger.debug("No structure tree found, skipping {}", check.name());
             return new IssueList();
         }
 
         StructTreeWalker walker = new StructTreeWalker(schema);
-        for (StructTreeCheck check : checks) {
-            walker.addVisitor(check);
-        }
+        walker.addVisitor(check);
         return walker.walk(root, ctx);
-    }
-
-    /** Runs all structure tree checks in a single tree walk (used in analyze mode). */
-    private IssueList runStructTreeChecks(
-            DocContext ctx, List<Supplier<Check>> treeCheckSuppliers) {
-        List<StructTreeCheck> treeChecks = new ArrayList<>(treeCheckSuppliers.size());
-        for (Supplier<Check> supplier : treeCheckSuppliers) {
-            treeChecks.add((StructTreeCheck) supplier.get());
-        }
-        return walkStructTree(ctx, treeChecks);
     }
 
     // == Pipeline helpers =============================================
@@ -412,38 +371,6 @@ public class ProcessingService {
                 }
             }
         }
-    }
-
-    // == Analysis helpers =============================================
-
-    private IssueList detectDocumentIssuesForAnalysis(
-            DocContext context, List<Supplier<Check>> docCheckSuppliers) {
-        listener.onPhaseStart("Detecting document-level issues");
-        IssueList docIssues = runDocumentChecks(context, docCheckSuppliers);
-        listener.onInfo("Found " + docIssues.size() + " issues");
-        return docIssues;
-    }
-
-    private IssueList detectTagIssuesForAnalysis(
-            DocContext context, List<Supplier<Check>> treeCheckSuppliers) {
-        listener.onPhaseStart("Detecting structure tree issues");
-
-        PdfStructTreeRoot root = context.doc().getStructTreeRoot();
-        if (root == null || root.getKids() == null) {
-            listener.onError("No structure tree");
-            return new IssueList();
-        }
-
-        IssueList tagIssues = runStructTreeChecks(context, treeCheckSuppliers);
-
-        if (tagIssues.isEmpty()) {
-            listener.onSuccess("No issues found");
-        } else {
-            reportIssuesGrouped(tagIssues);
-            listener.onInfo("Found " + tagIssues.size() + " issue(s)");
-        }
-
-        return tagIssues;
     }
 
     // == Cleanup ======================================================
