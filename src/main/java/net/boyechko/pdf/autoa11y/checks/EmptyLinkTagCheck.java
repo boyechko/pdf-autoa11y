@@ -29,7 +29,7 @@ import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.MoveSiblingMcrIntoLink;
+import net.boyechko.pdf.autoa11y.fixes.EmptyLinkTagFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -104,7 +104,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                 continue;
             }
 
-            IssueFix fix = new MoveSiblingMcrIntoLink(linkElem, mcr.getMcid(), pageNum);
+            IssueFix fix = new EmptyLinkTagFix(linkElem, mcr.getMcid(), pageNum);
             Issue issue =
                     new Issue(
                             IssueType.EMPTY_LINK_TAG,

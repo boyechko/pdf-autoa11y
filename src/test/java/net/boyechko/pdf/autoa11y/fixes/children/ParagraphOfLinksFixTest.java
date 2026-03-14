@@ -28,7 +28,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
-public class ListifyParagraphOfLinksTest extends PdfTestBase {
+public class ParagraphOfLinksFixTest extends PdfTestBase {
     @Test
     void convertsParagraphOfLinksToList() throws Exception {
         createStructuredTestPdf(
@@ -49,7 +49,7 @@ public class ListifyParagraphOfLinksTest extends PdfTestBase {
                             p.getKids().stream()
                                     .map(kid -> (PdfStructElem) kid)
                                     .collect(Collectors.toList());
-                    new ListifyParagraphOfLinks(p, kids).apply(ctx);
+                    new ParagraphOfLinksFix(p, kids).apply(ctx);
 
                     assertEquals(
                             "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",

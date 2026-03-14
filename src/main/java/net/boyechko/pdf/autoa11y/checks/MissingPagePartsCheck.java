@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
+import net.boyechko.pdf.autoa11y.fixes.MissingPagePartsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -73,7 +73,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
             return;
         }
 
-        IssueFix fix = new NormalizePageParts();
+        IssueFix fix = new MissingPagePartsFix();
         Issue issue =
                 new Issue(
                         IssueType.PAGE_PARTS_NOT_NORMALIZED,
@@ -140,7 +140,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
         Map<Integer, PdfStructElem> byPage = new HashMap<>();
         for (int pageNum = 1; pageNum <= doc.getNumberOfPages(); pageNum++) {
             PdfStructElem part =
-                    NormalizePageParts.findPartForPage(documentElem, doc.getPage(pageNum));
+                    MissingPagePartsFix.findPartForPage(documentElem, doc.getPage(pageNum));
             if (part != null) {
                 byPage.put(pageNum, part);
             }

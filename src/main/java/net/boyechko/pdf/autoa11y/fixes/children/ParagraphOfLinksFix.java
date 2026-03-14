@@ -26,28 +26,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Converts a P element containing only links to an L element. */
-public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
-    private static final Logger logger = LoggerFactory.getLogger(ListifyParagraphOfLinks.class);
+public final class ParagraphOfLinksFix extends TagMultipleChildrenFix {
+    private static final Logger logger = LoggerFactory.getLogger(ParagraphOfLinksFix.class);
     private static int MINIMUM_KIDS_COUNT = 2;
 
-    public ListifyParagraphOfLinks(PdfStructElem parent, List<PdfStructElem> kids) {
+    public ParagraphOfLinksFix(PdfStructElem parent, List<PdfStructElem> kids) {
         super(parent, kids);
     }
 
     public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
         logger.debug(
-                "Trying to create ListifyParagraphOfLinks for P element with {} kids", kids.size());
+                "Trying to create ParagraphOfLinksFix for P element with {} kids", kids.size());
         PdfName parentRole = parent.getRole();
         if (!PdfName.P.equals(parentRole) || kids.size() < MINIMUM_KIDS_COUNT) {
             logger.debug(
-                    "ListifyParagraphOfLinks not applicable: parent role is {} and kids count is {}",
+                    "ParagraphOfLinksFix not applicable: parent role is {} and kids count is {}",
                     parentRole,
                     kids.size());
             return null;
         }
 
         if (!kids.stream().allMatch(kid -> PdfName.Link.equals(kid.getRole()))) {
-            logger.debug("ListifyParagraphOfLinks not applicable: kids are not all links");
+            logger.debug("ParagraphOfLinksFix not applicable: kids are not all links");
             return null;
         }
 
@@ -56,13 +56,13 @@ public final class ListifyParagraphOfLinks extends TagMultipleChildrenFix {
         var allKids = parent.getKids();
         if (allKids != null && allKids.size() != kids.size()) {
             logger.debug(
-                    "ListifyParagraphOfLinks not applicable: parent has {} total kids but {} struct kids",
+                    "ParagraphOfLinksFix not applicable: parent has {} total kids but {} struct kids",
                     allKids.size(),
                     kids.size());
             return null;
         }
 
-        return new ListifyParagraphOfLinks(parent, kids);
+        return new ParagraphOfLinksFix(parent, kids);
     }
 
     @Override

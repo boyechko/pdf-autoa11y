@@ -101,7 +101,7 @@ by test class:
     brokenTagStructureIsDetectedAndFixed.pdf
     tagStructureIssuesCanBeFixed.pdf
     ...
-  ConvertToArtifactTest/
+  MistaggedArtifactFixTest/
     ...
 ```
 

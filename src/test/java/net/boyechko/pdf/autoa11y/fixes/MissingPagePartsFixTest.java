@@ -33,7 +33,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
-class NormalizePagePartsTest extends PdfTestBase {
+class MissingPagePartsFixTest extends PdfTestBase {
 
     @Test
     void createsPartsAndMovesSinglePageChildren() throws Exception {
@@ -51,11 +51,11 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(p1);
             document.addKid(p2);
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(new DocContext(pdfDoc));
 
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
-            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
+            PdfStructElem part2 = MissingPagePartsFix.findPartForPage(document, page2);
             assertNotNull(part1, "Part for page 1 should exist");
             assertNotNull(part2, "Part for page 2 should exist");
 
@@ -77,11 +77,11 @@ class NormalizePagePartsTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(new DocContext(pdfDoc));
 
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
-            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
+            PdfStructElem part2 = MissingPagePartsFix.findPartForPage(document, page2);
             assertNotNull(part1, "Part for page 1 should exist");
             assertNotNull(part2, "Part for page 2 should exist");
 
@@ -112,15 +112,15 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(sect);
             sect.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> docKids = document.getKids();
             assertEquals(
                     3, docKids.size(), "Document should retain Sect and add two Part elements");
             assertEquals(PdfName.Sect, ((PdfStructElem) docKids.get(0)).getRole());
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
-            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
+            PdfStructElem part2 = MissingPagePartsFix.findPartForPage(document, page2);
             assertNotNull(part1, "Part for page 1 should still be created");
             assertNotNull(part2, "Part for page 2 should still be created");
             assertTrue(part1.getKids() == null || part1.getKids().isEmpty());
@@ -142,13 +142,13 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page1));
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             DocContext ctx = new DocContext(pdfDoc);
             fix.apply(ctx);
             fix.apply(ctx);
 
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
-            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
+            PdfStructElem part2 = MissingPagePartsFix.findPartForPage(document, page2);
             assertNotNull(part1);
             assertNotNull(part2);
             assertEquals(1, part1.getKids().size(), "Page 1 Part should remain stable");
@@ -183,11 +183,11 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page2));
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page3));
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(new DocContext(pdfDoc));
 
             // Existing Part for page 1 should still be there
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
             assertNotNull(part1, "Existing Part for page 1 should be preserved");
             assertEquals(
                     PdfName.H1,
@@ -197,7 +197,7 @@ class NormalizePagePartsTest extends PdfTestBase {
             // Pages 2 and 3 should have their loose elements
             for (int pageNum = 2; pageNum <= 3; pageNum++) {
                 PdfStructElem part =
-                        NormalizePageParts.findPartForPage(document, pdfDoc.getPage(pageNum));
+                        MissingPagePartsFix.findPartForPage(document, pdfDoc.getPage(pageNum));
                 assertNotNull(part, "Part should exist for page " + pageNum);
                 int contentCount = countPageContent(part, pdfDoc, pageNum);
                 assertTrue(
@@ -230,10 +230,10 @@ class NormalizePagePartsTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P, page1));
             document.addKid(new PdfStructElem(pdfDoc, PdfName.H1, page2));
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(new DocContext(pdfDoc));
 
-            PdfStructElem part1 = NormalizePageParts.findPartForPage(document, page1);
+            PdfStructElem part1 = MissingPagePartsFix.findPartForPage(document, page1);
             List<IStructureNode> part1Kids = part1.getKids();
             assertEquals(2, part1Kids.size(), "Page 1 Part should have 2 children");
             assertEquals(
@@ -245,7 +245,7 @@ class NormalizePagePartsTest extends PdfTestBase {
                     ((PdfStructElem) part1Kids.get(1)).getRole(),
                     "Second element on page 1 should be P");
 
-            PdfStructElem part2 = NormalizePageParts.findPartForPage(document, page2);
+            PdfStructElem part2 = MissingPagePartsFix.findPartForPage(document, page2);
             List<IStructureNode> part2Kids = part2.getKids();
             assertEquals(2, part2Kids.size(), "Page 2 Part should have 2 children");
             assertEquals(

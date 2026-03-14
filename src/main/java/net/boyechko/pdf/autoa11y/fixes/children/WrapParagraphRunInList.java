@@ -89,8 +89,8 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
 
     /**
      * Finds the actual parent whose K array contains the given element. Starts from the element's
-     * /P parent and walks up the ancestor chain. This handles cases where FlattenNesting promoted
-     * children but iText's getKids() cache became stale.
+     * /P parent and walks up the ancestor chain. This handles cases where NeedlessNestingFix
+     * promoted children but iText's getKids() cache became stale.
      */
     private PdfStructElem findParentContaining(PdfStructElem target) {
         // Start from the target's /P parent, then walk up ancestors

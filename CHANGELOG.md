@@ -9,7 +9,7 @@ Versioning](https://semver.org/).
 
 ### Added
 - Added structure tree order check and fix (`StructTreeOrderCheck` /
-  `ReorderStructTree`) that detects and corrects siblings out of reading order
+  `StructTreeOrderFix`) that detects and corrects siblings out of reading order
   by sorting them based on their first marked-content appearance (page number,
   then MCID within page).
 - Added detection for image-only PDFs and other fatal document-level problems so

@@ -27,7 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.NormalizePageParts;
+import net.boyechko.pdf.autoa11y.fixes.MissingPagePartsFix;
 import org.junit.jupiter.api.Test;
 
 class MissingPagePartsCheckTest extends PdfTestBase {
@@ -98,7 +98,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
         }
     }
 
-    /** After applying the NormalizePageParts fix, detection should report no more issues. */
+    /** After applying the MissingPagePartsFix fix, detection should report no more issues. */
     @Test
     void visitorReportsNoIssuesAfterFixApplied() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
@@ -120,7 +120,7 @@ class MissingPagePartsCheckTest extends PdfTestBase {
                     MissingPagePartsCheck.needsNormalization(ctx),
                     "Precondition: should need normalization");
 
-            NormalizePageParts fix = new NormalizePageParts();
+            MissingPagePartsFix fix = new MissingPagePartsFix();
             fix.apply(ctx);
 
             DocContext freshCtx = new DocContext(pdfDoc);

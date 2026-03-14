@@ -23,7 +23,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.RemapLigatures;
+import net.boyechko.pdf.autoa11y.fixes.BadlyMappedLigatureFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -65,13 +65,13 @@ public class BadlyMappedLigatureCheck extends DocumentCheck {
         for (Map.Entry<Integer, PdfDictionary> entry : fontsByObjNum.entrySet()) {
             int fontObjNum = entry.getKey();
             PdfDictionary fontDict = entry.getValue();
-            Map<Integer, String> replacements = RemapLigatures.findBrokenMappings(fontDict);
+            Map<Integer, String> replacements = BadlyMappedLigatureFix.findBrokenMappings(fontDict);
             if (replacements.isEmpty()) {
                 continue;
             }
 
             int firstPage = firstPageByFontObjNum.getOrDefault(fontObjNum, 0);
-            String fontName = RemapLigatures.fontName(fontDict);
+            String fontName = BadlyMappedLigatureFix.fontName(fontDict);
             String message =
                     "Font "
                             + fontName
@@ -87,7 +87,7 @@ public class BadlyMappedLigatureCheck extends DocumentCheck {
                                     firstPage > 0 ? firstPage : null,
                                     IssueLoc.ObjKind.FONT),
                             message,
-                            new RemapLigatures(fontObjNum, fontName, replacements));
+                            new BadlyMappedLigatureFix(fontObjNum, fontName, replacements));
             issues.add(issue);
         }
 

@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
-class FlattenNestingTest extends PdfTestBase {
+class NeedlessNestingFixTest extends PdfTestBase {
 
     @Test
     void flattensDivWhenParentStartsWithSingleKEntry() throws Exception {
@@ -60,7 +60,8 @@ class FlattenNestingTest extends PdfTestBase {
                     sectToFlatten.getPdfObject().getAsArray(PdfName.K),
                     "Sect should start with a single-object /K entry");
 
-            new FlattenNesting(List.of(sectToFlatten, divToFlatten)).apply(new DocContext(pdfDoc));
+            new NeedlessNestingFix(List.of(sectToFlatten, divToFlatten))
+                    .apply(new DocContext(pdfDoc));
 
             List<IStructureNode> partKids = part.getKids();
             assertTrue(

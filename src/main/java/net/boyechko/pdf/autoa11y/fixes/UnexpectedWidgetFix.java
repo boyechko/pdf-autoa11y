@@ -41,14 +41,14 @@ import org.slf4j.LoggerFactory;
  * "Flushed object contains indirect reference which is free" errors when removing annotations via
  * the high-level API.
  */
-public class RemoveWidgetAnnotation implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(RemoveWidgetAnnotation.class);
+public class UnexpectedWidgetFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(UnexpectedWidgetFix.class);
     private static final int P_REMOVE_WIDGET = 12;
 
     private final PdfDictionary annotDict;
     private final int pageNum;
 
-    public RemoveWidgetAnnotation(PdfDictionary annotDict, int pageNum) {
+    public UnexpectedWidgetFix(PdfDictionary annotDict, int pageNum) {
         this.annotDict = annotDict;
         this.pageNum = pageNum;
     }

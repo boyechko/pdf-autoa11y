@@ -34,9 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Ensures the structure tree has a top-level Document element. */
-public class SetupDocumentStructure implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(SetupDocumentStructure.class);
-    // After FlattenNesting (15)
+public class MissingDocumentFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(MissingDocumentFix.class);
+    // After NeedlessNestingFix (15)
     private static final int P_DOC_SETUP = 18;
 
     private int elementsWrapped = 0;

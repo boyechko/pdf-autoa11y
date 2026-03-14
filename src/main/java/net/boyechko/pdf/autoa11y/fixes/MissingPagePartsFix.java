@@ -38,9 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Organizes direct Document children into page-level Part containers. */
-public class NormalizePageParts implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(NormalizePageParts.class);
-    // After SetupDocumentStructure (18), before link creation (22)
+public class MissingPagePartsFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(MissingPagePartsFix.class);
+    // After MissingDocumentFix (18), before link creation (22)
     private static final int P_PAGE_PARTS = 19;
 
     private int partsCreated = 0;

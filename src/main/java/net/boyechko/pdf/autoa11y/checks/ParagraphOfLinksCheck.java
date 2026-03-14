@@ -18,7 +18,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import net.boyechko.pdf.autoa11y.fixes.children.ListifyParagraphOfLinks;
+import net.boyechko.pdf.autoa11y.fixes.children.ParagraphOfLinksFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -55,7 +55,7 @@ public class ParagraphOfLinksCheck extends StructTreeCheck {
         }
 
         if (ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
-            IssueFix fix = new ListifyParagraphOfLinks(ctx.node(), ctx.children());
+            IssueFix fix = new ParagraphOfLinksFix(ctx.node(), ctx.children());
             Issue newIssue =
                     new Issue(
                             IssueType.PARAGRAPH_OF_LINKS,

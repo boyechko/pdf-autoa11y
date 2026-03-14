@@ -30,7 +30,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.ReorderStructTree;
+import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
@@ -207,7 +207,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             assertFalse(issues.isEmpty(), "Precondition: should detect out-of-order");
 
             // Apply fix
-            new ReorderStructTree().apply(ctx);
+            new StructTreeOrderFix().apply(ctx);
 
             // Verify children are now in page order
             List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);
@@ -248,7 +248,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             addMcr(page2, p2);
 
             DocContext ctx = new DocContext(doc);
-            new ReorderStructTree().apply(ctx);
+            new StructTreeOrderFix().apply(ctx);
 
             // Order should be unchanged
             List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);

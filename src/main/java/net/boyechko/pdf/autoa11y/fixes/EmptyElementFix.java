@@ -33,14 +33,14 @@ import org.slf4j.LoggerFactory;
  * Removes empty structure elements from the tree, cascading upward: if removing a child makes the
  * parent empty, the parent is removed too (like {@code rm -r}).
  */
-public class RemoveEmptyElements implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(RemoveEmptyElements.class);
+public class EmptyElementFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(EmptyElementFix.class);
     private static final int P_REMOVE_EMPTY = 25; // After structure fixes (20)
 
     private final List<PdfStructElem> elements;
     private int removedCount;
 
-    public RemoveEmptyElements(List<PdfStructElem> elements) {
+    public EmptyElementFix(List<PdfStructElem> elements) {
         this.elements = elements;
     }
 

@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.ReorderStructTree;
+import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -78,7 +78,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     @Override
     public void afterTraversal() {
         if (outOfOrderCount > 0) {
-            IssueFix fix = new ReorderStructTree(cache);
+            IssueFix fix = new StructTreeOrderFix(cache);
             issues.add(
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,

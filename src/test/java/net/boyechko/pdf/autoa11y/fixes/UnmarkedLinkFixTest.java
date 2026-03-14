@@ -35,7 +35,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
-class CreateLinkTagTest extends PdfTestBase {
+class UnmarkedLinkFixTest extends PdfTestBase {
     @Test
     void createsLinkTagWithObjRef() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
@@ -52,7 +52,7 @@ class CreateLinkTagTest extends PdfTestBase {
             // create annotation without having iTextPDF auto-tag it
             page.addAnnotation(-1, linkAnnot, false);
 
-            CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
+            UnmarkedLinkFix fix = new UnmarkedLinkFix(linkAnnot.getPdfObject(), 1);
             fix.apply(new DocContext(pdfDoc));
 
             assertEquals(1, documentElem.getKids().size(), "Document should have one child (Link)");
@@ -73,7 +73,7 @@ class CreateLinkTagTest extends PdfTestBase {
             PdfPage page1 = pdfDoc.addNewPage();
             PdfPage page2 = pdfDoc.addNewPage();
 
-            // Create basic Document structure manually (no SetupDocumentStructure dependency)
+            // Create basic Document structure manually (no MissingDocumentFix dependency)
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(documentElem);
@@ -90,8 +90,8 @@ class CreateLinkTagTest extends PdfTestBase {
 
             DocContext ctx = new DocContext(pdfDoc);
 
-            new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
-            new CreateLinkTag(linkAnnot2.getPdfObject(), 2).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot1.getPdfObject(), 1).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot2.getPdfObject(), 2).apply(ctx);
 
             assertEquals(
                     2, documentElem.getKids().size(), "Document should have two Link children");
@@ -131,7 +131,7 @@ class CreateLinkTagTest extends PdfTestBase {
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(documentElem);
 
-            new CreateLinkTag(linkAnnot.getPdfObject(), 1).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot.getPdfObject(), 1).apply(ctx);
 
             assertTrue(
                     linkAnnot.getPdfObject().containsKey(PdfName.StructParent),
@@ -165,9 +165,9 @@ class CreateLinkTagTest extends PdfTestBase {
 
             DocContext ctx = new DocContext(pdfDoc);
 
-            new CreateLinkTag(linkAnnot1.getPdfObject(), 1).apply(ctx);
-            new CreateLinkTag(linkAnnot2.getPdfObject(), 1).apply(ctx);
-            new CreateLinkTag(linkAnnot3.getPdfObject(), 1).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot1.getPdfObject(), 1).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot2.getPdfObject(), 1).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot3.getPdfObject(), 1).apply(ctx);
 
             assertEquals(3, documentElem.getKids().size(), "Document should have three Links");
 
@@ -193,7 +193,7 @@ class CreateLinkTagTest extends PdfTestBase {
 
             DocContext ctx = new DocContext(pdfDoc);
 
-            CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 1);
+            UnmarkedLinkFix fix = new UnmarkedLinkFix(linkAnnot.getPdfObject(), 1);
             assertThrows(IllegalStateException.class, () -> fix.apply(ctx));
 
             assertFalse(linkAnnot.getPdfObject().containsKey(PdfName.StructParent));
@@ -216,7 +216,7 @@ class CreateLinkTagTest extends PdfTestBase {
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(documentElem);
 
-            CreateLinkTag fix = new CreateLinkTag(linkAnnot.getPdfObject(), 99);
+            UnmarkedLinkFix fix = new UnmarkedLinkFix(linkAnnot.getPdfObject(), 99);
             assertThrows(IndexOutOfBoundsException.class, () -> fix.apply(ctx));
         }
     }
@@ -232,7 +232,7 @@ class CreateLinkTagTest extends PdfTestBase {
             PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(documentElem);
 
-            // Create Part elements for each page (simulating SetupDocumentStructure)
+            // Create Part elements for each page (simulating MissingDocumentFix)
             // Parts have /Pg attributes pointing to their respective pages
             PdfStructElem part1 = new PdfStructElem(pdfDoc, PdfName.Part, page1);
             PdfStructElem part2 = new PdfStructElem(pdfDoc, PdfName.Part, page2);
@@ -253,7 +253,7 @@ class CreateLinkTagTest extends PdfTestBase {
             page2.addAnnotation(-1, linkAnnot, false);
 
             DocContext ctx = new DocContext(pdfDoc);
-            new CreateLinkTag(linkAnnot.getPdfObject(), 2).apply(ctx);
+            new UnmarkedLinkFix(linkAnnot.getPdfObject(), 2).apply(ctx);
 
             // The key assertion: verify link is NOT nested under para1 from page 1
             // The fix's page filtering in collectBounds() prevents cross-page matches

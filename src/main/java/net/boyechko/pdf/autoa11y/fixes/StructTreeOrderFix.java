@@ -38,18 +38,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Reorders structure tree siblings to match reading order (page, then MCID within page). */
-public class ReorderStructTree implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(ReorderStructTree.class);
+public class StructTreeOrderFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(StructTreeOrderFix.class);
     private static final int P_REORDER = 10; // Before artifact removal (12) and flatten (15)
 
     private final Map<Integer, ReadingPosition> cache;
     private int reorderedCount;
 
-    public ReorderStructTree(Map<Integer, ReadingPosition> cache) {
+    public StructTreeOrderFix(Map<Integer, ReadingPosition> cache) {
         this.cache = cache;
     }
 
-    public ReorderStructTree() {
+    public StructTreeOrderFix() {
         this(new HashMap<>());
     }
 

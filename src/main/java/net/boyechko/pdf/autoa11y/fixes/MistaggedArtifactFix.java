@@ -57,8 +57,8 @@ import org.slf4j.LoggerFactory;
  * Converts tagged MCRs to artifacts by rewriting their content stream markers and removing them
  * from the structure tree. Can target all MCRs in an element or specific MCIDs.
  */
-public class ConvertToArtifact implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(ConvertToArtifact.class);
+public class MistaggedArtifactFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(MistaggedArtifactFix.class);
     private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
     private static final byte[] ARTIFACT_BMC = "/Artifact BMC".getBytes(StandardCharsets.US_ASCII);
 
@@ -66,12 +66,12 @@ public class ConvertToArtifact implements IssueFix {
     private final Map<PdfPage, Set<Integer>> targetMcids;
 
     /** Targets all MCRs in the element (computed at apply-time). */
-    public ConvertToArtifact(PdfStructElem element) {
+    public MistaggedArtifactFix(PdfStructElem element) {
         this(element, null);
     }
 
     /** Targets specific MCIDs within the element. */
-    public ConvertToArtifact(PdfStructElem element, Map<PdfPage, Set<Integer>> targetMcids) {
+    public MistaggedArtifactFix(PdfStructElem element, Map<PdfPage, Set<Integer>> targetMcids) {
         this.element = element;
         this.targetMcids = targetMcids;
     }
@@ -411,7 +411,7 @@ public class ConvertToArtifact implements IssueFix {
 
     @Override
     public boolean invalidates(IssueFix otherFix) {
-        if (otherFix instanceof ConvertToArtifact other) {
+        if (otherFix instanceof MistaggedArtifactFix other) {
             boolean sameOrDescendant =
                     StructTree.isSameElement(other.element, this.element)
                             || StructTree.isDescendantOf(other.element, this.element);

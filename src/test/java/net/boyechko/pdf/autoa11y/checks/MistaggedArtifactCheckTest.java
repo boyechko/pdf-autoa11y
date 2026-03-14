@@ -38,7 +38,7 @@ import java.util.Base64;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
+import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -95,7 +95,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             PdfStructElem p =
                     (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0).getKids().get(1);
-            ConvertToArtifact fix = new ConvertToArtifact(p);
+            MistaggedArtifactFix fix = new MistaggedArtifactFix(p);
 
             // Apply fix twice - should not throw
             fix.apply(ctx);
