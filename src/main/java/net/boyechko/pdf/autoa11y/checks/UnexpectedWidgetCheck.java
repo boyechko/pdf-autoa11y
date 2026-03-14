@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.RemoveWidgetAnnotation;
+import net.boyechko.pdf.autoa11y.fixes.UnexpectedWidgetFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 import org.slf4j.Logger;
@@ -66,7 +66,7 @@ public class UnexpectedWidgetCheck extends DocumentCheck {
             for (PdfAnnotation annot : page.getAnnotations()) {
                 PdfDictionary annotDict = annot.getPdfObject();
                 if (isPushbuttonWidget(annotDict, pageNum)) {
-                    IssueFix fix = new RemoveWidgetAnnotation(annotDict, pageNum);
+                    IssueFix fix = new UnexpectedWidgetFix(annotDict, pageNum);
                     int objNum =
                             annotDict.getIndirectReference() != null
                                     ? annotDict.getIndirectReference().getObjNumber()

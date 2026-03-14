@@ -38,7 +38,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
-class ConvertToArtifactTest extends PdfTestBase {
+class MistaggedArtifactFixTest extends PdfTestBase {
 
     @Test
     void removesElementAndAssociatedLinkAnnotation() throws Exception {
@@ -68,12 +68,12 @@ class ConvertToArtifactTest extends PdfTestBase {
                             "Page should have Link annotation before fix");
 
                     DocContext ctx = new DocContext(pdfDoc);
-                    new ConvertToArtifact(linkElem).apply(ctx);
+                    new MistaggedArtifactFix(linkElem).apply(ctx);
 
                     // Element remains in tree but MCRs are stripped; pipeline cleanup removes it
                     assertFalse(
                             document.getKids() == null || document.getKids().isEmpty(),
-                            "Element stays in tree (RemoveEmptyElements cleans up later)");
+                            "Element stays in tree (EmptyElementFix cleans up later)");
                     assertTrue(
                             page.getAnnotations().isEmpty(),
                             "Link annotation should be removed from page");
@@ -90,12 +90,12 @@ class ConvertToArtifactTest extends PdfTestBase {
                     root.addKid(p);
 
                     DocContext ctx = new DocContext(pdfDoc);
-                    new ConvertToArtifact(p).apply(ctx);
+                    new MistaggedArtifactFix(p).apply(ctx);
 
-                    // Element stays in tree; RemoveEmptyElements cleans up later
+                    // Element stays in tree; EmptyElementFix cleans up later
                     assertFalse(
                             root.getKids() == null || root.getKids().isEmpty(),
-                            "Element stays in tree (RemoveEmptyElements cleans up later)");
+                            "Element stays in tree (EmptyElementFix cleans up later)");
                 });
     }
 
@@ -106,7 +106,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                     PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
                     DocContext ctx = new DocContext(pdfDoc);
 
-                    ConvertToArtifact fix = new ConvertToArtifact(p);
+                    MistaggedArtifactFix fix = new MistaggedArtifactFix(p);
                     assertDoesNotThrow(() -> fix.apply(ctx));
                 });
     }
@@ -120,8 +120,8 @@ class ConvertToArtifactTest extends PdfTestBase {
                     document.addKid(parent);
                     parent.addKid(child);
 
-                    ConvertToArtifact parentFix = new ConvertToArtifact(parent);
-                    ConvertToArtifact childFix = new ConvertToArtifact(child);
+                    MistaggedArtifactFix parentFix = new MistaggedArtifactFix(parent);
+                    MistaggedArtifactFix childFix = new MistaggedArtifactFix(child);
 
                     assertTrue(
                             parentFix.invalidates(childFix),
@@ -145,7 +145,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                             firstPage, PdfName.Figure, mcr.getMcid(), "Decorative figure text");
 
                     DocContext ctx = new DocContext(pdfDoc);
-                    new ConvertToArtifact(figure).apply(ctx);
+                    new MistaggedArtifactFix(figure).apply(ctx);
 
                     // Element stays in tree; MCR entries are stripped
                     assertTrue(
@@ -177,7 +177,7 @@ class ConvertToArtifactTest extends PdfTestBase {
                     addMarkedText(firstPage, PdfName.P, mcr.getMcid(), "Decorative paragraph text");
 
                     DocContext ctx = new DocContext(pdfDoc);
-                    new ConvertToArtifact(parent).apply(ctx);
+                    new MistaggedArtifactFix(parent).apply(ctx);
 
                     // Element stays in tree; descendant MCR entries are stripped
                     assertTrue(

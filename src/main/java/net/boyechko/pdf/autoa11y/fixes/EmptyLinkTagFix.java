@@ -37,15 +37,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Moves a sibling MCR into a Link tag. */
-public class MoveSiblingMcrIntoLink implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(MoveSiblingMcrIntoLink.class);
+public class EmptyLinkTagFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(EmptyLinkTagFix.class);
     private static final int P_MOVE_LINK_CONTENT = 24;
 
     private final int linkObjNum;
     private final int mcid;
     private final int pageNum;
 
-    public MoveSiblingMcrIntoLink(PdfStructElem linkElem, int mcid, int pageNum) {
+    public EmptyLinkTagFix(PdfStructElem linkElem, int mcid, int pageNum) {
         this.linkObjNum = StructTree.objNum(linkElem);
         this.mcid = mcid;
         this.pageNum = pageNum;

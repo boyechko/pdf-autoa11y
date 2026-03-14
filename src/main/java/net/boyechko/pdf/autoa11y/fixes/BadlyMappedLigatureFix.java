@@ -41,7 +41,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Repairs broken ligature mappings in a font's ToUnicode CMap. */
-public class RemapLigatures implements IssueFix {
+public class BadlyMappedLigatureFix implements IssueFix {
     private static final int P_LIGATURE_REMAP = 20;
     private static final int BATCH_SIZE = 100;
 
@@ -66,7 +66,8 @@ public class RemapLigatures implements IssueFix {
     private final String fontName;
     private final Map<Integer, String> replacementByCode;
 
-    public RemapLigatures(int fontObjNum, String fontName, Map<Integer, String> replacementByCode) {
+    public BadlyMappedLigatureFix(
+            int fontObjNum, String fontName, Map<Integer, String> replacementByCode) {
         this.fontObjNum = fontObjNum;
         this.fontName = fontName;
         this.replacementByCode = Map.copyOf(replacementByCode);
@@ -318,7 +319,7 @@ public class RemapLigatures implements IssueFix {
 
     @Override
     public boolean invalidates(IssueFix otherFix) {
-        if (otherFix instanceof RemapLigatures other) {
+        if (otherFix instanceof BadlyMappedLigatureFix other) {
             return this.fontObjNum == other.fontObjNum;
         }
         return false;

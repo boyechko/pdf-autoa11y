@@ -23,7 +23,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.fixes.CreateLinkTag;
+import net.boyechko.pdf.autoa11y.fixes.UnmarkedLinkFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
@@ -70,7 +70,7 @@ public class UnmarkedLinkCheck extends DocumentCheck {
                     int objNumber = annotDict.getIndirectReference().getObjNumber();
                     String description = UnmarkedLinkCheck.buildDescription(objNumber, uri);
 
-                    IssueFix fix = new CreateLinkTag(annotDict, pageNum);
+                    IssueFix fix = new UnmarkedLinkFix(annotDict, pageNum);
                     Issue issue =
                             new Issue(
                                     IssueType.UNMARKED_LINK,

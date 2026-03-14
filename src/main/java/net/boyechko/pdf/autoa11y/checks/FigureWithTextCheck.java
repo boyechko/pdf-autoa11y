@@ -19,7 +19,7 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.fixes.ChangeFigureRole;
+import net.boyechko.pdf.autoa11y.fixes.FigureWithTextFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -57,7 +57,7 @@ public class FigureWithTextCheck extends StructTreeCheck {
         String textContent = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
-            IssueFix fix = new ChangeFigureRole(ctx.node(), PdfName.P);
+            IssueFix fix = new FigureWithTextFix(ctx.node(), PdfName.P);
             String truncated =
                     textContent.length() > MAX_DISPLAY_LENGTH
                             ? textContent.substring(0, MAX_DISPLAY_LENGTH) + "…"

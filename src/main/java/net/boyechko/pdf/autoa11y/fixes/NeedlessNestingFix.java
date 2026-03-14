@@ -31,14 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Flattens needless Part/Sect/Div wrappers by promoting their children to the parent element. */
-public class FlattenNesting implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(FlattenNesting.class);
+public class NeedlessNestingFix implements IssueFix {
+    private static final Logger logger = LoggerFactory.getLogger(NeedlessNestingFix.class);
     private static final int P_STRUCTURE = 15; // After document setup, before other structure fixes
 
     private final List<PdfStructElem> elementsToFlatten;
     private int flattened = 0;
 
-    public FlattenNesting(List<PdfStructElem> elementsToFlatten) {
+    public NeedlessNestingFix(List<PdfStructElem> elementsToFlatten) {
         this.elementsToFlatten = new ArrayList<>(elementsToFlatten);
     }
 

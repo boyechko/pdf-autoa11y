@@ -30,7 +30,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import org.junit.jupiter.api.Test;
 
-class SetupDocumentStructureTest extends PdfTestBase {
+class MissingDocumentFixTest extends PdfTestBase {
 
     @Test
     void createsDocumentWrapperWhenMissing() throws Exception {
@@ -42,7 +42,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
             root.addKid(new PdfStructElem(pdfDoc, new PdfName("P")));
 
-            SetupDocumentStructure fix = new SetupDocumentStructure();
+            MissingDocumentFix fix = new MissingDocumentFix();
             fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> rootKids = root.getKids();
@@ -68,7 +68,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             root.addKid(document);
             document.addKid(heading);
 
-            SetupDocumentStructure fix = new SetupDocumentStructure();
+            MissingDocumentFix fix = new MissingDocumentFix();
             fix.apply(new DocContext(pdfDoc));
 
             List<IStructureNode> rootKids = root.getKids();
@@ -88,7 +88,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
 
-            SetupDocumentStructure fix = new SetupDocumentStructure();
+            MissingDocumentFix fix = new MissingDocumentFix();
             DocContext ctx = new DocContext(pdfDoc);
             fix.apply(ctx);
             fix.apply(ctx);
@@ -105,7 +105,7 @@ class SetupDocumentStructureTest extends PdfTestBase {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
 
-            SetupDocumentStructure fix = new SetupDocumentStructure();
+            MissingDocumentFix fix = new MissingDocumentFix();
             assertDoesNotThrow(() -> fix.apply(new DocContext(pdfDoc)));
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();

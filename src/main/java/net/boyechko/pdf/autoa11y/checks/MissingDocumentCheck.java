@@ -22,7 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.SetupDocumentStructure;
+import net.boyechko.pdf.autoa11y.fixes.MissingDocumentFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
@@ -76,7 +76,7 @@ public class MissingDocumentCheck extends DocumentCheck {
             return new IssueList();
         }
 
-        IssueFix fix = new SetupDocumentStructure();
+        IssueFix fix = new MissingDocumentFix();
         Issue issue =
                 new Issue(IssueType.MISSING_DOCUMENT_ELEMENT, IssueSev.ERROR, failedMessage(), fix);
         return new IssueList(issue);

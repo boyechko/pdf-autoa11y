@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.fixes.ConvertToArtifact;
+import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -105,7 +105,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
 
         String textContent = getTextContent(ctx);
         if (matchesTextArtifactPattern(textContent)) {
-            IssueFix fix = new ConvertToArtifact(ctx.node());
+            IssueFix fix = new MistaggedArtifactFix(ctx.node());
             String truncated =
                     textContent.length() > 40 ? textContent.substring(0, 39) + "…" : textContent;
             issues.add(
@@ -202,7 +202,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             PdfPage page = ctx.doc().getPage(pageNum);
             Map<PdfPage, Set<Integer>> targetMcids = new LinkedHashMap<>();
             targetMcids.computeIfAbsent(page, k -> new LinkedHashSet<>()).add(mcid);
-            IssueFix fix = new ConvertToArtifact(ctx.node(), targetMcids);
+            IssueFix fix = new MistaggedArtifactFix(ctx.node(), targetMcids);
             issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,

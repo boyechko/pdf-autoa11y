@@ -21,7 +21,7 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.fixes.RemoveEmptyElements;
+import net.boyechko.pdf.autoa11y.fixes.EmptyElementFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -61,7 +61,7 @@ public class EmptyElementCheck extends StructTreeCheck {
     @Override
     public void afterTraversal() {
         if (!emptyElements.isEmpty()) {
-            IssueFix fix = new RemoveEmptyElements(emptyElements);
+            IssueFix fix = new EmptyElementFix(emptyElements);
             Issue issue =
                     new Issue(
                             IssueType.EMPTY_ELEMENT,
