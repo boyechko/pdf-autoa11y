@@ -120,17 +120,10 @@ public class ReorderStructTree implements IssueFix {
         logger.debug("Reordered {} struct children in {}", sorted.size(), parent.getRole());
     }
 
-    /**
-     * Checks whether a PdfObject in the K array is an indirect reference to one of the children.
-     */
+    /** Checks whether a PdfObject in the K array refers to one of the children. */
     private boolean isStructElemRef(PdfObject obj, List<PdfStructElem> children) {
         for (PdfStructElem child : children) {
-            PdfObject childObj = child.getPdfObject();
-            if (obj == childObj) return true;
-            if (childObj.getIndirectReference() != null
-                    && childObj.getIndirectReference().equals(obj)) {
-                return true;
-            }
+            if (StructTree.isSame(obj, child.getPdfObject())) return true;
         }
         return false;
     }

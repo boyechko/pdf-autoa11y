@@ -143,13 +143,13 @@ public final class StructTree {
             // Multiple children: find and remove from array
             for (int i = 0; i < parentKids.size(); i++) {
                 PdfObject obj = parentKids.get(i);
-                if (sameObject(elemObj, obj)) {
+                if (isSame(elemObj, obj)) {
                     parentKids.remove(i);
                     removed = true;
                     break;
                 }
             }
-        } else if (sameObject(elemObj, kObj)) {
+        } else if (isSame(elemObj, kObj)) {
             // Single child stored as direct /K reference
             fromDict.remove(PdfName.K);
             removed = true;
@@ -162,10 +162,6 @@ public final class StructTree {
         }
 
         return removed;
-    }
-
-    private static boolean sameObject(PdfObject a, PdfObject b) {
-        return a == b || (a.getIndirectReference() != null && a.getIndirectReference().equals(b));
     }
 
     /** Finds the index of a kid element within a parent's kids list (via getKids). */
@@ -246,7 +242,7 @@ public final class StructTree {
         PdfObject elemObj = elem.getPdfObject();
         for (int i = 0; i < kArray.size(); i++) {
             PdfObject obj = kArray.get(i);
-            if (obj == elemObj || obj.equals(elemObj.getIndirectReference())) {
+            if (isSame(obj, elemObj)) {
                 return i;
             }
         }
@@ -286,15 +282,24 @@ public final class StructTree {
         return null;
     }
 
+    /**
+     * Checks whether two PdfObjects refer to the same underlying PDF object. Handles any
+     * combination of resolved dictionaries and indirect references, in either argument order.
+     */
+    public static boolean isSame(PdfObject a, PdfObject b) {
+        if (a == b) return true;
+        if (a == null || b == null) return false;
+        // a might be an indirect ref pointing to b, or vice versa
+        PdfIndirectReference aRef = a.getIndirectReference();
+        PdfIndirectReference bRef = b.getIndirectReference();
+        if (aRef != null && aRef.equals(b)) return true;
+        if (bRef != null && bRef.equals(a)) return true;
+        return aRef != null && aRef.equals(bRef);
+    }
+
     /** Checks whether two structure elements refer to the same PDF object. */
     public static boolean isSameElement(PdfStructElem a, PdfStructElem b) {
-        if (a == b) return true;
-        PdfDictionary aDict = a.getPdfObject();
-        PdfDictionary bDict = b.getPdfObject();
-        if (aDict == bDict) return true;
-        PdfIndirectReference aRef = aDict.getIndirectReference();
-        PdfIndirectReference bRef = bDict.getIndirectReference();
-        return aRef != null && aRef.equals(bRef);
+        return a == b || isSame(a.getPdfObject(), b.getPdfObject());
     }
 
     /** Checks whether a candidate element is a descendant of an ancestor element. */

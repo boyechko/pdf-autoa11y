@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -459,6 +460,97 @@ class StructTreeTest extends PdfTestBase {
 
             assertEquals(doc, StructTree.pdfDocumentFor(document));
             assertEquals(doc, StructTree.pdfDocumentFor((IStructureNode) document));
+        }
+    }
+
+    // --- isSame tests ---
+
+    @Test
+    void isSameMatchesSameDict() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            PdfObject dict = p.getPdfObject();
+
+            assertTrue(StructTree.isSame(dict, dict));
+        }
+    }
+
+    @Test
+    void isSameMatchesDictAgainstItsIndirectRef() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            PdfObject dict = p.getPdfObject();
+            PdfObject indRef = dict.getIndirectReference();
+            assertNotNull(indRef, "struct elem should have an indirect reference");
+
+            assertTrue(StructTree.isSame(dict, indRef), "dict vs indRef");
+            assertTrue(StructTree.isSame(indRef, dict), "indRef vs dict (symmetry)");
+        }
+    }
+
+    @Test
+    void isSameMatchesSameIndirectRef() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            PdfObject indRef = p.getPdfObject().getIndirectReference();
+
+            assertTrue(StructTree.isSame(indRef, indRef));
+        }
+    }
+
+    @Test
+    void isSameRejectsDifferentObjects() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem p1 = new PdfStructElem(doc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(doc, PdfName.P);
+            root.addKid(p1);
+            root.addKid(p2);
+
+            assertFalse(StructTree.isSame(p1.getPdfObject(), p2.getPdfObject()));
+            assertFalse(
+                    StructTree.isSame(
+                            p1.getPdfObject().getIndirectReference(),
+                            p2.getPdfObject().getIndirectReference()));
+            assertFalse(
+                    StructTree.isSame(p1.getPdfObject(), p2.getPdfObject().getIndirectReference()));
+        }
+    }
+
+    @Test
+    void isSameMatchesKArrayEntryAgainstChildDict() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            document.addKid(p);
+
+            // K array entries may be indirect refs or dicts — isSame must handle both
+            PdfArray kArray = StructTree.normalizeKArray(document);
+            PdfObject kEntry = kArray.get(0);
+            PdfObject childDict = p.getPdfObject();
+
+            assertTrue(StructTree.isSame(kEntry, childDict));
+            assertTrue(StructTree.isSame(childDict, kEntry));
         }
     }
 }
