@@ -15,50 +15,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.validation;
+package net.boyechko.pdf.autoa11y.issue;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.issue.*;
 import org.junit.jupiter.api.Test;
 
-class CheckEngineTest {
+class IssueListTest {
 
     @Test
-    void applyFixesAppliesInPriorityOrder() {
-        CheckEngine engine = new CheckEngine();
+    void applyFixesResolvesAllFixableIssues() {
         IssueList issues = new IssueList();
 
-        // Create two issues with fixes at different priorities
         Issue lowPriority =
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
                         IssueLoc.none(),
                         "low",
-                        new StubFix(200, "low-fix"));
+                        new StubFix(200));
         Issue highPriority =
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
                         IssueLoc.none(),
                         "high",
-                        new StubFix(100, "high-fix"));
+                        new StubFix(100));
         issues.add(lowPriority);
         issues.add(highPriority);
 
-        IssueList resolved = engine.applyFixes(null, issues);
+        IssueList resolved = issues.applyFixes(null);
 
         assertEquals(2, resolved.size());
-        // Both should be resolved
         assertTrue(highPriority.isResolved());
         assertTrue(lowPriority.isResolved());
     }
 
     @Test
     void applyFixesSkipsInvalidatedFixes() {
-        CheckEngine engine = new CheckEngine();
         IssueList issues = new IssueList();
 
         Issue kept =
@@ -74,11 +69,11 @@ class CheckEngineTest {
                         IssueSev.WARNING,
                         IssueLoc.none(),
                         "skipped",
-                        new StubFix(200, "skipped-fix"));
+                        new StubFix(200));
         issues.add(kept);
         issues.add(skipped);
 
-        IssueList resolved = engine.applyFixes(null, issues);
+        IssueList resolved = issues.applyFixes(null);
 
         assertEquals(2, resolved.size());
         assertTrue(kept.isResolved());
@@ -92,11 +87,9 @@ class CheckEngineTest {
 
     static class StubFix implements IssueFix {
         private final int priority;
-        private final String name;
 
-        StubFix(int priority, String name) {
+        StubFix(int priority) {
             this.priority = priority;
-            this.name = name;
         }
 
         @Override
@@ -111,7 +104,7 @@ class CheckEngineTest {
     /** A fix that invalidates all other fixes. */
     static class InvalidatingFix extends StubFix {
         InvalidatingFix(int priority) {
-            super(priority, "invalidating");
+            super(priority);
         }
 
         @Override
