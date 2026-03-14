@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -59,19 +58,14 @@ public final class AccessibilityReport {
 
         try (PrintWriter out = new PrintWriter(Files.newBufferedWriter(reportPath))) {
             writeHeader(out, inputPath, outputPath);
-            writeSummary(out, result, result.originalDocumentIssues(), result.originalTagIssues());
+            writeSummary(out, result);
 
-            if (result.totalIssuesDetected() == 0) {
+            if (result.issuesDetected() == 0) {
                 out.println("No accessibility issues were detected.");
                 return;
             }
 
-            if (!result.originalDocumentIssues().isEmpty()) {
-                writeSection(out, "Document-Level Issues", result.originalDocumentIssues());
-            }
-            if (!result.originalTagIssues().isEmpty()) {
-                writeSection(out, "Structure Tree Issues", result.originalTagIssues());
-            }
+            writeSection(out, "Issues", result.detectedIssues());
         }
     }
 
@@ -86,29 +80,24 @@ public final class AccessibilityReport {
         out.println();
     }
 
-    private static void writeSummary(
-            PrintWriter out,
-            ProcessingResult result,
-            IssueList documentIssues,
-            IssueList tagIssues) {
+    private static void writeSummary(PrintWriter out, ProcessingResult result) {
         out.println("Summary");
         out.println("-------");
-        out.println("Issues detected:  " + result.totalIssuesDetected());
-        out.println("Issues resolved:  " + result.totalIssuesResolved());
-        out.println("Issues remaining: " + result.totalIssuesRemaining());
+        out.println("Issues detected:  " + result.issuesDetected());
+        out.println("Issues resolved:  " + result.issuesResolved());
+        out.println("Issues remaining: " + result.issuesRemaining());
         out.println();
-        writeResolvedSummary(out, documentIssues, tagIssues);
+        writeResolvedSummary(out, result.detectedIssues());
         out.println();
     }
 
-    private static void writeResolvedSummary(
-            PrintWriter out, IssueList documentIssues, IssueList tagIssues) {
-        if (documentIssues.isEmpty() && tagIssues.isEmpty()) {
+    private static void writeResolvedSummary(PrintWriter out, IssueList issues) {
+        if (issues.isEmpty()) {
             return;
         }
 
         Map<IssueType, List<Issue>> grouped =
-                Stream.concat(documentIssues.stream(), tagIssues.stream())
+                issues.stream()
                         .collect(
                                 Collectors.groupingBy(
                                         Issue::type, LinkedHashMap::new, Collectors.toList()));
@@ -135,8 +124,8 @@ public final class AccessibilityReport {
     }
 
     /**
-     * Writes a section (document-level or structure tree) grouping issues by type. Each group shows
-     * its status, count, group label, and indented details.
+     * Writes a section grouping issues by type. Each group shows its status, count, group label,
+     * and indented details.
      */
     private static void writeSection(PrintWriter out, String heading, IssueList issues) {
         out.println(heading);

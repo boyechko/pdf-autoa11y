@@ -79,8 +79,8 @@ public class ProcessingServiceTest extends PdfTestBase {
         ProcessingResult result = createProcessingService(testPdf).remediate();
 
         assertNotNull(result, "Should return a result");
-        assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
-        assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
+        assertNotNull(result.detectedIssues(), "Should have detected issues");
+        assertNotNull(result.appliedFixes(), "Should have applied fixes");
     }
 
     @Test
@@ -130,15 +130,12 @@ public class ProcessingServiceTest extends PdfTestBase {
         ProcessingResult result = createProcessingService(testPdf).remediate();
         saveRemediatedPdf(result);
 
-        assertNotNull(result.originalTagIssues(), "Should have original tag issues");
-        assertNotNull(result.appliedTagFixes(), "Should have applied tag fixes");
-        assertNotNull(result.remainingTagIssues(), "Should have remaining tag issues");
-        assertNotNull(result.originalDocumentIssues(), "Should have document level issues");
-        assertNotNull(result.appliedDocumentFixes(), "Should have applied document fixes");
-        assertNotNull(result.remainingDocumentIssues(), "Should have total remaining issues");
+        assertNotNull(result.detectedIssues(), "Should have detected issues");
+        assertNotNull(result.appliedFixes(), "Should have applied fixes");
+        assertNotNull(result.remainingIssues(), "Should have remaining issues");
 
         assertTrue(
-                result.totalIssuesRemaining() <= result.totalIssuesDetected(),
+                result.issuesRemaining() <= result.issuesDetected(),
                 "Remaining issues should not exceed detected issues");
     }
 
@@ -150,12 +147,11 @@ public class ProcessingServiceTest extends PdfTestBase {
         saveRemediatedPdf(result);
 
         assertTrue(
-                result.originalTagIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                result.detectedIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
                 "Should detect list-structure issues in the broken PDF");
-        assertFalse(
-                result.appliedTagFixes().isEmpty(), "Should apply fixes to broken tag structure");
+        assertFalse(result.appliedFixes().isEmpty(), "Should apply fixes to broken tag structure");
         assertTrue(
-                result.appliedTagFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                result.appliedFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
                 "Should apply at least one fix associated with list-structure issues");
     }
 
@@ -168,10 +164,10 @@ public class ProcessingServiceTest extends PdfTestBase {
         saveRemediatedPdf(result);
 
         assertTrue(
-                result.originalTagIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                result.detectedIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
                 "Should detect list-structure issues");
         assertTrue(
-                result.appliedTagFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
+                result.appliedFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
                 "Should apply fixes to list-structure issues");
     }
 
@@ -179,11 +175,10 @@ public class ProcessingServiceTest extends PdfTestBase {
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
         ProcessingResult result = createProcessingService(TAGGED_BASELINE_PDF).remediate();
 
-        assertNotNull(result.originalTagIssues());
-        assertNotNull(result.originalDocumentIssues());
+        assertNotNull(result.detectedIssues());
         assertEquals(
                 0,
-                result.totalIssuesRemaining(),
+                result.issuesRemaining(),
                 "Tagged baseline PDF should be compliant with no remaining issues");
     }
 
@@ -194,17 +189,17 @@ public class ProcessingServiceTest extends PdfTestBase {
         saveRemediatedPdf(result);
 
         assertTrue(
-                result.originalTagIssues().stream()
+                result.detectedIssues().stream()
                         .anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
-                "Original tag issues should include FIGURE_WITH_TEXT");
+                "Detected issues should include FIGURE_WITH_TEXT");
         assertTrue(
-                result.appliedTagFixes().stream()
+                result.appliedFixes().stream()
                         .anyMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
                 "Applied fixes should include FIGURE_WITH_TEXT");
         assertTrue(
-                result.remainingTagIssues().stream()
+                result.remainingIssues().stream()
                         .noneMatch(i -> i.type() == IssueType.FIGURE_WITH_TEXT),
-                "Remaining tag issues should not include FIGURE_WITH_TEXT");
+                "Remaining issues should not include FIGURE_WITH_TEXT");
     }
 
     @Test

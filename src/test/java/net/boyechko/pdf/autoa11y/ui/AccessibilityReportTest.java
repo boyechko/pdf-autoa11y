@@ -40,7 +40,7 @@ class AccessibilityReportTest {
 
     @Test
     void noIssuesProducesCleanReport() throws IOException {
-        ProcessingResult result = resultWith(new IssueList(), new IssueList());
+        ProcessingResult result = resultWith(new IssueList());
         String report = generateReport(result);
 
         assertContains(report, "Issues detected:  0");
@@ -53,13 +53,13 @@ class AccessibilityReportTest {
 
     @Test
     void resolvedIssuesShowResolutionNotes() throws IOException {
-        IssueList docIssues = new IssueList();
+        IssueList issues = new IssueList();
         Issue langIssue =
                 new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
         langIssue.markResolved(new IssueMsg("Set document language to \"en\"", langIssue.where()));
-        docIssues.add(langIssue);
+        issues.add(langIssue);
 
-        ProcessingResult result = resultWith(docIssues, new IssueList());
+        ProcessingResult result = resultWith(issues);
         String report = generateReport(result);
 
         assertContains(report, "[RESOLVED] 1 language not set");
@@ -71,21 +71,21 @@ class AccessibilityReportTest {
 
     @Test
     void remainingIssuesShowMessagesWithLocation() throws IOException {
-        IssueList tagIssues = new IssueList();
-        tagIssues.add(
+        IssueList issues = new IssueList();
+        issues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
                         IssueLoc.atPage(3),
                         "Figure missing alt text"));
-        tagIssues.add(
+        issues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
                         IssueLoc.atPage(7),
                         "Figure missing alt text"));
 
-        ProcessingResult result = resultWith(new IssueList(), tagIssues);
+        ProcessingResult result = resultWith(issues);
         String report = generateReport(result);
 
         assertContains(report, "[REMAINING] 2 images missing alt text");
@@ -96,18 +96,18 @@ class AccessibilityReportTest {
 
     @Test
     void mixedResolvedAndRemainingGroupedCorrectly() throws IOException {
-        IssueList tagIssues = new IssueList();
+        IssueList issues = new IssueList();
 
         Issue resolved =
                 new Issue(IssueType.TAG_WRONG_CHILD, IssueSev.WARNING, "Wrong child in Document");
         resolved.markResolved(new IssueMsg("Wrapped in Sect", resolved.where()));
-        tagIssues.add(resolved);
+        issues.add(resolved);
 
         Issue remaining =
                 new Issue(IssueType.TAG_WRONG_CHILD, IssueSev.WARNING, "Wrong child in Table");
-        tagIssues.add(remaining);
+        issues.add(remaining);
 
-        ProcessingResult result = resultWith(new IssueList(), tagIssues);
+        ProcessingResult result = resultWith(issues);
         String report = generateReport(result);
 
         assertContains(report, "[RESOLVED] 1 tags with wrong children");
@@ -118,7 +118,7 @@ class AccessibilityReportTest {
 
     @Test
     void headerContainsInputAndOutputPaths() throws IOException {
-        ProcessingResult result = resultWith(new IssueList(), new IssueList());
+        ProcessingResult result = resultWith(new IssueList());
         String report = generateReport(result);
 
         assertContains(report, "PDF Accessibility Remediation Report");
@@ -128,27 +128,8 @@ class AccessibilityReportTest {
     }
 
     @Test
-    void documentAndTagSectionsAppearSeparately() throws IOException {
-        IssueList docIssues = new IssueList();
-        docIssues.add(new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Language not set"));
-
-        IssueList tagIssues = new IssueList();
-        tagIssues.add(new Issue(IssueType.EMPTY_ELEMENT, IssueSev.WARNING, "Empty element found"));
-
-        ProcessingResult result = resultWith(docIssues, tagIssues);
-        String report = generateReport(result);
-
-        assertContains(report, "Document-Level Issues");
-        assertContains(report, "Structure Tree Issues");
-        // Document section comes before tag section
-        assertTrue(
-                report.indexOf("Document-Level Issues") < report.indexOf("Structure Tree Issues"),
-                "Document-Level Issues should appear before Structure Tree Issues");
-    }
-
-    @Test
     void resolvedGroupsUseFixResolvedItemCount() throws IOException {
-        IssueList tagIssues = new IssueList();
+        IssueList issues = new IssueList();
 
         Issue needlessNesting =
                 new Issue(
@@ -158,7 +139,7 @@ class AccessibilityReportTest {
                         new FixedCountIssueFix(49));
         needlessNesting.markResolved(
                 new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
-        tagIssues.add(needlessNesting);
+        issues.add(needlessNesting);
 
         Issue pageParts =
                 new Issue(
@@ -170,9 +151,9 @@ class AccessibilityReportTest {
                 new IssueMsg(
                         "Normalized page Parts: created 653 Part(s), moved 9675 element(s)",
                         IssueLoc.none()));
-        tagIssues.add(pageParts);
+        issues.add(pageParts);
 
-        ProcessingResult result = resultWith(new IssueList(), tagIssues);
+        ProcessingResult result = resultWith(issues);
         String report = generateReport(result);
 
         assertContains(report, " 653 Part(s)");
@@ -182,13 +163,13 @@ class AccessibilityReportTest {
 
     @Test
     void summaryIncludesResolvedBreakdownLines() throws IOException {
-        IssueList docIssues = new IssueList();
+        IssueList issues = new IssueList();
+
         Issue langIssue =
                 new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
         langIssue.markResolved(new IssueMsg("Set document language to \"en\"", IssueLoc.none()));
-        docIssues.add(langIssue);
+        issues.add(langIssue);
 
-        IssueList tagIssues = new IssueList();
         Issue nestingIssue =
                 new Issue(
                         IssueType.NEEDLESS_NESTING,
@@ -197,9 +178,9 @@ class AccessibilityReportTest {
                         new FixedCountIssueFix(49));
         nestingIssue.markResolved(
                 new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
-        tagIssues.add(nestingIssue);
+        issues.add(nestingIssue);
 
-        ProcessingResult result = resultWith(docIssues, tagIssues);
+        ProcessingResult result = resultWith(issues);
         String report = generateReport(result);
 
         assertContains(report, "Resolved Breakdown");
@@ -207,23 +188,13 @@ class AccessibilityReportTest {
         assertContains(report, " 49 ");
         assertContains(report, IssueType.NEEDLESS_NESTING.groupLabel());
         assertTrue(
-                report.indexOf("Resolved Breakdown") < report.indexOf("Document-Level Issues"),
-                "Resolved Breakdown should appear in summary before detailed sections");
+                report.indexOf("Resolved Breakdown") < report.indexOf("Issues\n"),
+                "Resolved Breakdown should appear in summary before detailed section");
     }
 
-    private ProcessingResult resultWith(IssueList docIssues, IssueList tagIssues) {
-        IssueList allIssues = new IssueList();
-        allIssues.addAll(docIssues);
-        allIssues.addAll(tagIssues);
-
+    private ProcessingResult resultWith(IssueList issues) {
         return new ProcessingResult(
-                tagIssues,
-                tagIssues.getResolvedIssues(),
-                tagIssues.getRemainingIssues(),
-                docIssues,
-                docIssues.getResolvedIssues(),
-                docIssues.getRemainingIssues(),
-                null);
+                issues, issues.getResolvedIssues(), issues.getRemainingIssues(), null);
     }
 
     private String generateReport(ProcessingResult result) throws IOException {
