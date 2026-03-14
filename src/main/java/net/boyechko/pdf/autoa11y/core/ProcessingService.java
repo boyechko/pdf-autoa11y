@@ -53,8 +53,7 @@ public class ProcessingService {
 
     private final PdfCustodian custodian;
     private final ProcessingListener listener;
-    private final List<Supplier<Check>> documentChecks;
-    private final List<Supplier<Check>> structTreeChecks;
+    private final List<Supplier<Check>> checks;
     private final TagSchema schema;
 
     public static class ProcessingServiceBuilder {
@@ -104,23 +103,12 @@ public class ProcessingService {
         this.listener = builder.listener;
         this.schema = TagSchema.loadDefault();
 
-        List<Supplier<Check>> checks =
+        List<Supplier<Check>> filtered =
                 filterChecks(
                         ProcessingDefaults.allChecks(), builder.skipChecks, builder.onlyChecks);
-        checks.addAll(builder.injectedChecks);
-
-        List<Supplier<Check>> docChecks = new ArrayList<>();
-        List<Supplier<Check>> treeChecks = new ArrayList<>();
-        for (Supplier<Check> supplier : checks) {
-            if (supplier.get() instanceof StructTreeCheck) {
-                treeChecks.add(supplier);
-            } else {
-                docChecks.add(supplier);
-            }
-        }
-        this.documentChecks = List.copyOf(docChecks);
-        this.structTreeChecks = List.copyOf(treeChecks);
-        validateCheckPrereqs(checks);
+        filtered.addAll(builder.injectedChecks);
+        validateCheckPrereqs(filtered);
+        this.checks = List.copyOf(filtered);
     }
 
     // == Filtering and validation =====================================
@@ -167,11 +155,21 @@ public class ProcessingService {
 
     // == Pipeline =====================================================
 
+    /** Partitions check suppliers into document checks and struct tree checks. */
+    private Map<Boolean, List<Supplier<Check>>> partitionChecks() {
+        return checks.stream()
+                .collect(Collectors.partitioningBy(s -> s.get() instanceof StructTreeCheck));
+    }
+
     /**
      * Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
      * reading the previous step's output file.
      */
     public ProcessingResult remediate() throws Exception {
+        Map<Boolean, List<Supplier<Check>>> partitioned = partitionChecks();
+        List<Supplier<Check>> docCheckSuppliers = partitioned.get(false);
+        List<Supplier<Check>> treeCheckSuppliers = partitioned.get(true);
+
         Path pipelineDir = initializePipelineTempDir();
         List<Path> tempFiles = new ArrayList<>();
 
@@ -183,7 +181,7 @@ public class ProcessingService {
         try {
             int stepNum = 0;
 
-            // Step 0: Document-level checks (decrypt original → first temp)
+            // Document-level checks (decrypt original → first temp)
             Path current =
                     pipelineDir.resolve(String.format("step%02d_document-checks.pdf", stepNum++));
             tempFiles.add(current);
@@ -191,7 +189,7 @@ public class ProcessingService {
                 DocContext ctx = new DocContext(doc);
                 listener.onPhaseStart("Document checks");
                 listener.onDetectedSectionStart();
-                IssueList docIssues = runDocumentChecks(ctx);
+                IssueList docIssues = runDocumentChecks(ctx, docCheckSuppliers);
                 allDocIssues.addAll(docIssues);
 
                 if (allDocIssues.hasFatalIssues()) {
@@ -207,8 +205,8 @@ public class ProcessingService {
                 }
             }
 
-            // Steps 1..N: Each StructTreeCheck in its own pipeline step
-            for (Supplier<Check> supplier : structTreeChecks) {
+            // Each StructTreeCheck in its own pipeline step
+            for (Supplier<Check> supplier : treeCheckSuppliers) {
                 StructTreeCheck check = (StructTreeCheck) supplier.get();
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
@@ -271,15 +269,18 @@ public class ProcessingService {
     }
 
     public IssueList analyze() throws Exception {
+        Map<Boolean, List<Supplier<Check>>> partitioned = partitionChecks();
+
         try (PdfDocument pdfDoc = custodian.openForReading()) {
             DocContext context = new DocContext(pdfDoc);
 
-            IssueList documentIssues = detectDocumentIssuesForAnalysis(context);
+            IssueList documentIssues =
+                    detectDocumentIssuesForAnalysis(context, partitioned.get(false));
             if (documentIssues.hasFatalIssues()) {
                 return documentIssues;
             }
 
-            IssueList tagIssues = detectTagIssuesForAnalysis(context);
+            IssueList tagIssues = detectTagIssuesForAnalysis(context, partitioned.get(true));
             IssueList totalIssues = new IssueList();
             totalIssues.addAll(documentIssues);
             totalIssues.addAll(tagIssues);
@@ -290,10 +291,10 @@ public class ProcessingService {
 
     // == Check execution ==============================================
 
-    /** Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues. */
-    private IssueList runDocumentChecks(DocContext ctx) {
+    /** Runs document checks, reporting per-rule pass/fail. Stops early on FATAL issues. */
+    private IssueList runDocumentChecks(DocContext ctx, List<Supplier<Check>> docCheckSuppliers) {
         IssueList allDocIssues = new IssueList();
-        for (Supplier<Check> supplier : documentChecks) {
+        for (Supplier<Check> supplier : docCheckSuppliers) {
             Check check = supplier.get();
             IssueList ruleIssues = check.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
@@ -325,12 +326,13 @@ public class ProcessingService {
     }
 
     /** Runs all structure tree checks in a single tree walk (used in analyze mode). */
-    private IssueList runStructTreeChecks(DocContext ctx) {
-        List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
-        for (Supplier<Check> supplier : structTreeChecks) {
-            checks.add((StructTreeCheck) supplier.get());
+    private IssueList runStructTreeChecks(
+            DocContext ctx, List<Supplier<Check>> treeCheckSuppliers) {
+        List<StructTreeCheck> treeChecks = new ArrayList<>(treeCheckSuppliers.size());
+        for (Supplier<Check> supplier : treeCheckSuppliers) {
+            treeChecks.add((StructTreeCheck) supplier.get());
         }
-        return walkStructTree(ctx, checks);
+        return walkStructTree(ctx, treeChecks);
     }
 
     // == Pipeline helpers =============================================
@@ -430,14 +432,16 @@ public class ProcessingService {
 
     // == Analysis helpers =============================================
 
-    private IssueList detectDocumentIssuesForAnalysis(DocContext context) {
+    private IssueList detectDocumentIssuesForAnalysis(
+            DocContext context, List<Supplier<Check>> docCheckSuppliers) {
         listener.onPhaseStart("Detecting document-level issues");
-        IssueList docIssues = runDocumentChecks(context);
+        IssueList docIssues = runDocumentChecks(context, docCheckSuppliers);
         listener.onInfo("Found " + docIssues.size() + " issues");
         return docIssues;
     }
 
-    private IssueList detectTagIssuesForAnalysis(DocContext context) {
+    private IssueList detectTagIssuesForAnalysis(
+            DocContext context, List<Supplier<Check>> treeCheckSuppliers) {
         listener.onPhaseStart("Detecting structure tree issues");
 
         PdfStructTreeRoot root = context.doc().getStructTreeRoot();
@@ -446,7 +450,7 @@ public class ProcessingService {
             return new IssueList();
         }
 
-        IssueList tagIssues = runStructTreeChecks(context);
+        IssueList tagIssues = runStructTreeChecks(context, treeCheckSuppliers);
 
         if (tagIssues.isEmpty()) {
             listener.onSuccess("No issues found");
