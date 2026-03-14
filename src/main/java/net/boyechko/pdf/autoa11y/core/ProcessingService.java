@@ -38,6 +38,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.CheckEngine;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
+import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,9 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final CheckEngine checkEngine;
     private final ProcessingListener listener;
+    private final List<Supplier<Check>> documentChecks;
+    private final List<Supplier<Check>> structTreeChecks;
+    private final TagSchema schema;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -90,7 +94,8 @@ public class ProcessingService {
         public ProcessingService build() {
             if (custodian == null) {
                 throw new IllegalStateException(
-                        "PdfCustodian must be provided via withPdfCustodian(...) before building ProcessingService");
+                        "PdfCustodian must be provided via withPdfCustodian(...) before building"
+                                + " ProcessingService");
             }
             return new ProcessingService(this);
         }
@@ -99,15 +104,29 @@ public class ProcessingService {
     private ProcessingService(ProcessingServiceBuilder builder) {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
+        this.checkEngine = new CheckEngine();
+        this.schema = TagSchema.loadDefault();
 
         List<Supplier<Check>> checks =
                 filterChecks(
                         ProcessingDefaults.allChecks(), builder.skipChecks, builder.onlyChecks);
         checks.addAll(builder.injectedChecks);
 
-        TagSchema schema = TagSchema.loadDefault();
-        this.checkEngine = new CheckEngine(checks, schema);
+        List<Supplier<Check>> docChecks = new ArrayList<>();
+        List<Supplier<Check>> treeChecks = new ArrayList<>();
+        for (Supplier<Check> supplier : checks) {
+            if (supplier.get() instanceof StructTreeCheck) {
+                treeChecks.add(supplier);
+            } else {
+                docChecks.add(supplier);
+            }
+        }
+        this.documentChecks = List.copyOf(docChecks);
+        this.structTreeChecks = List.copyOf(treeChecks);
+        validateCheckPrereqs(checks);
     }
+
+    // == Filtering and validation =====================================
 
     /// Filters check suppliers based on the skip and includeOnly sets. Probes each supplier once
     /// to read its class name; the supplier itself is retained for later fresh instantiation.
@@ -117,41 +136,37 @@ public class ProcessingService {
             return new ArrayList<>(defaults);
         }
         ArrayList<Supplier<Check>> filtered = new ArrayList<>();
-        Set<String> removedNames = new HashSet<>();
         for (Supplier<Check> supplier : defaults) {
             String className = supplier.get().getClass().getSimpleName();
             if (!includeOnly.isEmpty()) {
                 if (includeOnly.contains(className)) {
                     filtered.add(supplier);
-                } else {
-                    removedNames.add(className);
                 }
             } else if (!skip.contains(className)) {
                 filtered.add(supplier);
-            } else {
-                removedNames.add(className);
             }
         }
-        validateNoMissingPrerequisites(filtered, removedNames);
         return filtered;
     }
 
-    private static void validateNoMissingPrerequisites(
-            List<Supplier<Check>> checks, Set<String> removedNames) {
+    /// Validates that every check's prerequisites appear earlier in the list.
+    private static void validateCheckPrereqs(List<Supplier<Check>> checks) {
+        Set<Class<? extends Check>> seen = new HashSet<>();
         for (Supplier<Check> supplier : checks) {
             Check check = supplier.get();
             for (Class<? extends Check> prereq : check.prerequisites()) {
-                String prereqName = prereq.getSimpleName();
-                if (removedNames.contains(prereqName)) {
+                if (!seen.contains(prereq)) {
                     throw new IllegalArgumentException(
                             check.getClass().getSimpleName()
                                     + " requires "
-                                    + prereqName
-                                    + ", which was excluded.");
+                                    + prereq.getSimpleName());
                 }
             }
+            seen.add(check.getClass());
         }
     }
+
+    // == Pipeline =====================================================
 
     /// Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
     /// reading the previous step's output file.
@@ -192,7 +207,7 @@ public class ProcessingService {
             }
 
             // Steps 1..N: Each StructTreeCheck in its own pipeline step
-            for (Supplier<Check> supplier : checkEngine.getStructTreeChecks()) {
+            for (Supplier<Check> supplier : structTreeChecks) {
                 StructTreeCheck check = (StructTreeCheck) supplier.get();
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
@@ -204,7 +219,7 @@ public class ProcessingService {
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
                     listener.onDetectedSectionStart();
-                    IssueList issues = checkEngine.runStructTreeCheck(ctx, check);
+                    IssueList issues = walkStructTree(ctx, List.of(check));
                     allTagIssues.addAll(issues);
 
                     if (!issues.isEmpty()) {
@@ -272,6 +287,66 @@ public class ProcessingService {
         }
     }
 
+    // == Check execution ==============================================
+
+    /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
+    private IssueList runDocumentChecks(DocContext ctx) {
+        IssueList allDocIssues = new IssueList();
+        for (Supplier<Check> supplier : documentChecks) {
+            Check check = supplier.get();
+            IssueList ruleIssues = check.findIssues(ctx);
+            allDocIssues.addAll(ruleIssues);
+            if (ruleIssues.isEmpty()) {
+                listener.onSuccess(check.passedMessage());
+            } else {
+                reportIssuesGrouped(ruleIssues);
+            }
+            if (allDocIssues.hasFatalIssues()) {
+                break;
+            }
+        }
+        return allDocIssues;
+    }
+
+    /// Walks the structure tree with the given checks and returns all issues found.
+    private IssueList walkStructTree(DocContext ctx, List<StructTreeCheck> checks) {
+        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            logger.debug("No structure tree found, skipping structure tree checks");
+            return new IssueList();
+        }
+
+        StructTreeWalker walker = new StructTreeWalker(schema);
+        for (StructTreeCheck check : checks) {
+            walker.addVisitor(check);
+        }
+        return walker.walk(root, ctx);
+    }
+
+    /// Runs all structure tree checks in a single tree walk (used in analyze mode).
+    private IssueList runStructTreeChecks(DocContext ctx) {
+        List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
+        for (Supplier<Check> supplier : structTreeChecks) {
+            checks.add((StructTreeCheck) supplier.get());
+        }
+        return walkStructTree(ctx, checks);
+    }
+
+    // == Fix application ==============================================
+
+    /** Applies fixes and reports results. Returns the applied fixes. */
+    private IssueList applyFixes(DocContext ctx, IssueList issues) {
+        if (issues.isEmpty()) {
+            return new IssueList();
+        }
+        IssueList applied = checkEngine.applyFixes(ctx, issues);
+        if (!applied.isEmpty()) {
+            listener.onFixesSectionStart();
+        }
+        reportFixesGrouped(applied);
+        return applied;
+    }
+
     // == Pipeline helpers =============================================
 
     private static Path resolvePipelineTempDir() {
@@ -306,37 +381,9 @@ public class ProcessingService {
         return pipelineDir;
     }
 
-    /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
-    private IssueList runDocumentChecks(DocContext ctx) {
-        IssueList allDocIssues = new IssueList();
-        for (Supplier<Check> supplier : checkEngine.getDocumentChecks()) {
-            Check check = supplier.get();
-            IssueList ruleIssues = check.findIssues(ctx);
-            allDocIssues.addAll(ruleIssues);
-            if (ruleIssues.isEmpty()) {
-                listener.onSuccess(check.passedMessage());
-            } else {
-                reportIssuesGrouped(ruleIssues);
-            }
-            if (allDocIssues.hasFatalIssues()) {
-                break;
-            }
-        }
-        return allDocIssues;
-    }
+    // == Reporting helpers ============================================
 
-    /** Applies fixes and reports results. Returns the applied fixes. */
-    private IssueList applyFixes(DocContext ctx, IssueList issues) {
-        if (issues.isEmpty()) {
-            return new IssueList();
-        }
-        IssueList applied = checkEngine.applyFixes(ctx, issues);
-        if (!applied.isEmpty()) {
-            listener.onFixesSectionStart();
-        }
-        reportFixesGrouped(applied);
-        return applied;
-    }
+    private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
 
     private void reportRemainingIssues(IssueList issues) {
         IssueList remainingIssues = issues.getRemainingIssues();
@@ -346,40 +393,6 @@ public class ProcessingService {
         listener.onManualReviewSectionStart();
         reportIssuesGrouped(remainingIssues);
     }
-
-    // == Analysis helpers =============================================
-
-    private IssueList detectDocumentIssuesForAnalysis(DocContext context) {
-        listener.onPhaseStart("Detecting document-level issues");
-        IssueList docIssues = runDocumentChecks(context);
-        listener.onInfo("Found " + docIssues.size() + " issues");
-        return docIssues;
-    }
-
-    private IssueList detectTagIssuesForAnalysis(DocContext context) {
-        listener.onPhaseStart("Detecting structure tree issues");
-
-        PdfStructTreeRoot root = context.doc().getStructTreeRoot();
-        if (root == null || root.getKids() == null) {
-            listener.onError("No structure tree");
-            return new IssueList();
-        }
-
-        IssueList tagIssues = checkEngine.runStructTreeChecks(context);
-
-        if (tagIssues.isEmpty()) {
-            listener.onSuccess("No issues found");
-        } else {
-            reportIssuesGrouped(tagIssues);
-            listener.onInfo("Found " + tagIssues.size() + " issue(s)");
-        }
-
-        return tagIssues;
-    }
-
-    // == Reporting helpers ============================================
-
-    private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
 
     private void reportIssuesGrouped(IssueList issues) {
         Map<IssueType, List<Issue>> grouped =
@@ -418,6 +431,38 @@ public class ProcessingService {
             }
         }
     }
+
+    // == Analysis helpers =============================================
+
+    private IssueList detectDocumentIssuesForAnalysis(DocContext context) {
+        listener.onPhaseStart("Detecting document-level issues");
+        IssueList docIssues = runDocumentChecks(context);
+        listener.onInfo("Found " + docIssues.size() + " issues");
+        return docIssues;
+    }
+
+    private IssueList detectTagIssuesForAnalysis(DocContext context) {
+        listener.onPhaseStart("Detecting structure tree issues");
+
+        PdfStructTreeRoot root = context.doc().getStructTreeRoot();
+        if (root == null || root.getKids() == null) {
+            listener.onError("No structure tree");
+            return new IssueList();
+        }
+
+        IssueList tagIssues = runStructTreeChecks(context);
+
+        if (tagIssues.isEmpty()) {
+            listener.onSuccess("No issues found");
+        } else {
+            reportIssuesGrouped(tagIssues);
+            listener.onInfo("Found " + tagIssues.size() + " issue(s)");
+        }
+
+        return tagIssues;
+    }
+
+    // == Cleanup ======================================================
 
     /// Cleans up the pipeline directory and temporary files if the [#KEEP_PIPELINE_TEMPS] flag is
     // false.
