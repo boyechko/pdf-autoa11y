@@ -103,8 +103,7 @@ public class FigureWithTextCheckTest extends PdfTestBase {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             DocContext context = new DocContext(pdfDoc);
             CheckEngine engine =
-                    new CheckEngine(
-                            List.of(), List.of(FigureWithTextCheck::new), TagSchema.loadDefault());
+                    new CheckEngine(List.of(FigureWithTextCheck::new), TagSchema.loadDefault());
 
             IssueList firstRun = engine.runStructTreeChecks(context);
             IssueList secondRun = engine.runStructTreeChecks(context);

@@ -130,7 +130,7 @@ public class PdfAutoA11yCLI {
                             .skipChecks(skipChecks)
                             .onlyChecks(onlyChecks);
             if (config.printStructureTree()) {
-                serviceBuilder.injectStructTreeCheck(
+                serviceBuilder.injectCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));
             }
             ProcessingService service = serviceBuilder.build();

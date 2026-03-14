@@ -20,33 +20,30 @@ package net.boyechko.pdf.autoa11y.core;
 import java.util.List;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.checks.*;
-import net.boyechko.pdf.autoa11y.checks.FigureWithTextCheck;
 import net.boyechko.pdf.autoa11y.validation.Check;
-import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 
-///  Default document- and structure-tree-level checks.
+/**
+ * Default checks, ordered so that document-level checks run first and structure-tree checks follow
+ * in dependency order.
+ */
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
 
-    ///  List of default checks that work on the document level.
-    public static List<Check> documentChecks() {
+    public static List<Supplier<Check>> allChecks() {
         return List.of(
-                new ImageOnlyDocumentCheck(),
-                new StructureTreeExistsCheck(),
-                new MissingDocumentCheck(),
-                new StructTreeOrderCheck(),
-                new UnmarkedLinkCheck(),
-                new UnexpectedWidgetCheck(),
-                new BadlyMappedLigatureCheck(),
-                new LanguageSetCheck(),
-                new TabOrderCheck(),
-                new TaggedPdfCheck(),
-                new PdfUaConformanceCheck());
-    }
-
-    ///  List of default checks that work on the structure tree level.
-    public static List<Supplier<StructTreeCheck>> structTreeChecks() {
-        return List.of(
+                // Document checks
+                ImageOnlyDocumentCheck::new,
+                StructureTreeExistsCheck::new,
+                MissingDocumentCheck::new,
+                StructTreeOrderCheck::new,
+                UnmarkedLinkCheck::new,
+                UnexpectedWidgetCheck::new,
+                BadlyMappedLigatureCheck::new,
+                LanguageSetCheck::new,
+                TabOrderCheck::new,
+                TaggedPdfCheck::new,
+                PdfUaConformanceCheck::new,
+                // Structure tree checks
                 NeedlessNestingCheck::new,
                 MissingPagePartsCheck::new,
                 MistaggedArtifactCheck::new,

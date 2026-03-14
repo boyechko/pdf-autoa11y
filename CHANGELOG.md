@@ -29,6 +29,8 @@ Versioning](https://semver.org/).
 - Added a "Resolved Breakdown" section to the accessibility report summary.
 
 ### Changed
+- `--skip-checks` and `--only-checks` now apply to all checks, including
+  document-level checks (previously only structure tree checks were filterable).
 - Improved CLI and report output to make issue locations, resolutions, and
   summaries clearer and easier to scan.
 - Updated structure-tree dump output to show object-reference details more
