@@ -39,10 +39,6 @@ public abstract class StructTreeCheck implements Check {
 
     public abstract String description();
 
-    public CheckType type() {
-        return CheckType.STRUCT_TREE;
-    }
-
     @Override
     public String passedMessage() {
         return name() + ": no issues";
@@ -94,8 +90,8 @@ public abstract class StructTreeCheck implements Check {
                 element, ctx.getPageNumber(), StructTree.mappedRole(element), ctx.path());
     }
 
-    /// Returns checker classes that must run before this checker.
-    public Set<Class<? extends StructTreeCheck>> prerequisites() {
+    @Override
+    public Set<Class<? extends Check>> prerequisites() {
         return Set.of();
     }
 }

@@ -33,39 +33,39 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// Orchestrates validation using both document-level and structure tree checks.
-///
-/// The engine supports two types of checks:
-///
-/// - **Checks that work on the document as a whole** (extend [DocumentCheck])
-/// - **Checks that walk the structure tree** (extend [StructTreeCheck])
-///
+/**
+ * Orchestrates validation checks and fix application. Accepts a unified list of check suppliers and
+ * partitions them internally by type ({@code DocumentCheck} vs {@code StructTreeCheck}).
+ */
 public class CheckEngine {
     private static final Logger logger = LoggerFactory.getLogger(CheckEngine.class);
 
-    private final List<Check> documentChecks;
-    private final List<Supplier<StructTreeCheck>> structTreeChecks;
+    private final List<Supplier<Check>> documentChecks;
+    private final List<Supplier<Check>> structTreeChecks;
     private final TagSchema schema;
 
-    public CheckEngine(List<Check> documentChecks) {
-        this(documentChecks, List.of(), null);
-    }
-
-    public CheckEngine(
-            List<Check> documentChecks,
-            List<Supplier<StructTreeCheck>> structTreeChecks,
-            TagSchema schema) {
-        this.documentChecks = List.copyOf(documentChecks);
-        this.structTreeChecks = List.copyOf(structTreeChecks);
+    public CheckEngine(List<Supplier<Check>> checks, TagSchema schema) {
+        List<Supplier<Check>> docChecks = new ArrayList<>();
+        List<Supplier<Check>> treeChecks = new ArrayList<>();
+        for (Supplier<Check> supplier : checks) {
+            Check probe = supplier.get();
+            if (probe instanceof StructTreeCheck) {
+                treeChecks.add(supplier);
+            } else {
+                docChecks.add(supplier);
+            }
+        }
+        this.documentChecks = List.copyOf(docChecks);
+        this.structTreeChecks = List.copyOf(treeChecks);
         this.schema = schema;
         validateCheckPrereqs();
     }
 
     private void validateCheckPrereqs() {
-        Set<Class<? extends StructTreeCheck>> seen = new HashSet<>();
-        for (Supplier<StructTreeCheck> supplier : structTreeChecks) {
-            StructTreeCheck check = supplier.get();
-            for (Class<? extends StructTreeCheck> prereq : check.prerequisites()) {
+        Set<Class<? extends Check>> seen = new HashSet<>();
+        for (Supplier<Check> supplier : structTreeChecks) {
+            Check check = supplier.get();
+            for (Class<? extends Check> prereq : check.prerequisites()) {
                 if (!seen.contains(prereq)) {
                     throw new IllegalArgumentException(
                             check.getClass().getSimpleName()
@@ -79,28 +79,12 @@ public class CheckEngine {
         }
     }
 
-    public List<Check> getDocumentChecks() {
+    public List<Supplier<Check>> getDocumentChecks() {
         return documentChecks;
     }
 
-    public List<Supplier<StructTreeCheck>> getStructTreeChecks() {
+    public List<Supplier<Check>> getStructTreeChecks() {
         return structTreeChecks;
-    }
-
-    public IssueList detectIssues(DocContext ctx) {
-        IssueList all = new IssueList();
-
-        if (!structTreeChecks.isEmpty()) {
-            IssueList treeCheckIssues = runStructTreeChecks(ctx);
-            all.addAll(treeCheckIssues);
-        }
-
-        for (Check r : documentChecks) {
-            IssueList found = r.findIssues(ctx);
-            all.addAll(found);
-        }
-
-        return all;
     }
 
     private IssueList walkStructTree(DocContext ctx, List<StructTreeCheck> checks) {
@@ -117,41 +101,25 @@ public class CheckEngine {
         return walker.walk(root, ctx);
     }
 
+    /** Runs all structure tree checks in a single tree walk. */
     public IssueList runStructTreeChecks(DocContext ctx) {
-        return walkStructTree(ctx, instantiateStructTreeChecks());
-    }
-
-    /// Run a single StructTreeCheck, instantiating it from the supplier.
-    public IssueList runStructTreeCheck(DocContext ctx, Supplier<StructTreeCheck> checkSupplier) {
-        StructTreeCheck check = checkSupplier.get();
-        if (check == null) {
-            throw new IllegalStateException("StructTreeCheck supplier returned null");
+        List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
+        for (Supplier<Check> supplier : structTreeChecks) {
+            checks.add((StructTreeCheck) supplier.get());
         }
-        return runStructTreeCheck(ctx, check);
+        return walkStructTree(ctx, checks);
     }
 
-    /// Run a single StructTreeCheck instance.
+    /** Run a single StructTreeCheck instance. */
     public IssueList runStructTreeCheck(DocContext ctx, StructTreeCheck check) {
         return walkStructTree(ctx, List.of(check));
-    }
-
-    private List<StructTreeCheck> instantiateStructTreeChecks() {
-        List<StructTreeCheck> checks = new ArrayList<>(structTreeChecks.size());
-        for (Supplier<StructTreeCheck> checkSupplier : structTreeChecks) {
-            StructTreeCheck check = checkSupplier.get();
-            if (check == null) {
-                throw new IllegalStateException("StructTreeCheck supplier returned null");
-            }
-            checks.add(check);
-        }
-        return checks;
     }
 
     public IssueList applyFixes(DocContext ctx, IssueList issuesToFix) {
         List<Map.Entry<Issue, IssueFix>> ordered =
                 issuesToFix.stream()
-                        .filter(i -> i.fix() != null) // filter nulls first
-                        .map(i -> Map.entry(i, i.fix())) // safe to create entry now
+                        .filter(i -> i.fix() != null)
+                        .map(i -> Map.entry(i, i.fix()))
                         .sorted(Comparator.comparingInt(e -> e.getValue().priority()))
                         .toList();
 

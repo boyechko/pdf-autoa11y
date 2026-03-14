@@ -34,6 +34,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
@@ -83,7 +84,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
     }
 
     @Override
-    public Set<Class<? extends StructTreeCheck>> prerequisites() {
+    public Set<Class<? extends Check>> prerequisites() {
         return Set.of(NeedlessNestingCheck.class);
     }
 

@@ -207,6 +207,27 @@ public class ProcessingServiceTest extends PdfTestBase {
                 "Remaining tag issues should not include FIGURE_WITH_TEXT");
     }
 
+    @Test
+    void skipChecksExcludesDocumentLevelCheck() throws Exception {
+        Path testPdf =
+                createTestPdf(
+                        (pdfDoc, layoutDoc) -> {
+                            layoutDoc.add(new Paragraph("Skip check test").setFontSize(16));
+                        });
+        // Without skipping, LanguageSetCheck would normally run and potentially
+        // find an issue. Skipping it should prevent that issue from appearing.
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(testPdf, null))
+                        .withListener(new NoOpProcessingListener())
+                        .skipChecks(java.util.Set.of("LanguageSetCheck"))
+                        .build();
+        IssueList issues = service.analyze();
+        assertTrue(
+                issues.stream().noneMatch(i -> i.type() == IssueType.LANGUAGE_NOT_SET),
+                "Skipped document check should produce no issues");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private Path createUntaggedPdf() throws Exception {

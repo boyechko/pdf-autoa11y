@@ -54,14 +54,13 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final CheckEngine checkEngine;
     private final ProcessingListener listener;
-    private final List<Supplier<StructTreeCheck>> structTreeChecks;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
         private ProcessingListener listener;
         private final Set<String> skipChecks = new HashSet<>();
         private final Set<String> onlyChecks = new HashSet<>();
-        private final List<Supplier<StructTreeCheck>> injectedStructTreeChecks = new ArrayList<>();
+        private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -83,8 +82,8 @@ public class ProcessingService {
             return this;
         }
 
-        public ProcessingServiceBuilder injectStructTreeCheck(Supplier<StructTreeCheck> supplier) {
-            injectedStructTreeChecks.add(Objects.requireNonNull(supplier, "supplier"));
+        public ProcessingServiceBuilder injectCheck(Supplier<Check> supplier) {
+            injectedChecks.add(Objects.requireNonNull(supplier, "supplier"));
             return this;
         }
 
@@ -101,27 +100,25 @@ public class ProcessingService {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
 
-        List<Check> documentChecks = new ArrayList<>(ProcessingDefaults.documentChecks());
-        this.structTreeChecks =
-                filterVisitors(
-                        ProcessingDefaults.structTreeChecks(),
-                        builder.skipChecks,
-                        builder.onlyChecks);
-        structTreeChecks.addAll(builder.injectedStructTreeChecks);
+        List<Supplier<Check>> checks =
+                filterChecks(
+                        ProcessingDefaults.allChecks(), builder.skipChecks, builder.onlyChecks);
+        checks.addAll(builder.injectedChecks);
 
         TagSchema schema = TagSchema.loadDefault();
-        this.checkEngine = new CheckEngine(documentChecks, structTreeChecks, schema);
+        this.checkEngine = new CheckEngine(checks, schema);
     }
 
-    /// Filters the list of visitor suppliers based on the skip and includeOnly sets.
-    private static ArrayList<Supplier<StructTreeCheck>> filterVisitors(
-            List<Supplier<StructTreeCheck>> defaults, Set<String> skip, Set<String> includeOnly) {
+    /// Filters check suppliers based on the skip and includeOnly sets. Probes each supplier once
+    /// to read its class name; the supplier itself is retained for later fresh instantiation.
+    private static ArrayList<Supplier<Check>> filterChecks(
+            List<Supplier<Check>> defaults, Set<String> skip, Set<String> includeOnly) {
         if (skip.isEmpty() && includeOnly.isEmpty()) {
             return new ArrayList<>(defaults);
         }
-        ArrayList<Supplier<StructTreeCheck>> filtered = new ArrayList<>();
+        ArrayList<Supplier<Check>> filtered = new ArrayList<>();
         Set<String> removedNames = new HashSet<>();
-        for (Supplier<StructTreeCheck> supplier : defaults) {
+        for (Supplier<Check> supplier : defaults) {
             String className = supplier.get().getClass().getSimpleName();
             if (!includeOnly.isEmpty()) {
                 if (includeOnly.contains(className)) {
@@ -140,14 +137,14 @@ public class ProcessingService {
     }
 
     private static void validateNoMissingPrerequisites(
-            List<Supplier<StructTreeCheck>> visitors, Set<String> removedNames) {
-        for (Supplier<StructTreeCheck> supplier : visitors) {
-            StructTreeCheck visitor = supplier.get();
-            for (Class<? extends StructTreeCheck> prereq : visitor.prerequisites()) {
+            List<Supplier<Check>> checks, Set<String> removedNames) {
+        for (Supplier<Check> supplier : checks) {
+            Check check = supplier.get();
+            for (Class<? extends Check> prereq : check.prerequisites()) {
                 String prereqName = prereq.getSimpleName();
                 if (removedNames.contains(prereqName)) {
                     throw new IllegalArgumentException(
-                            visitor.getClass().getSimpleName()
+                            check.getClass().getSimpleName()
                                     + " requires "
                                     + prereqName
                                     + ", which was excluded.");
@@ -156,7 +153,7 @@ public class ProcessingService {
         }
     }
 
-    /// Remediates the PDF using a sequential pipeline. Each rule/visitor runs as its own step,
+    /// Remediates the PDF using a sequential pipeline. Each struct tree check runs as its own step,
     /// reading the previous step's output file.
     public ProcessingResult remediate() throws Exception {
         Path pipelineDir = initializePipelineTempDir();
@@ -195,8 +192,8 @@ public class ProcessingService {
             }
 
             // Steps 1..N: Each StructTreeCheck in its own pipeline step
-            for (Supplier<StructTreeCheck> supplier : structTreeChecks) {
-                StructTreeCheck check = supplier.get();
+            for (Supplier<Check> supplier : checkEngine.getStructTreeChecks()) {
+                StructTreeCheck check = (StructTreeCheck) supplier.get();
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
@@ -312,7 +309,8 @@ public class ProcessingService {
     /// Runs all document checks, reporting per-rule pass/fail. Stops early on FATAL issues.
     private IssueList runDocumentChecks(DocContext ctx) {
         IssueList allDocIssues = new IssueList();
-        for (Check check : checkEngine.getDocumentChecks()) {
+        for (Supplier<Check> supplier : checkEngine.getDocumentChecks()) {
+            Check check = supplier.get();
             IssueList ruleIssues = check.findIssues(ctx);
             allDocIssues.addAll(ruleIssues);
             if (ruleIssues.isEmpty()) {

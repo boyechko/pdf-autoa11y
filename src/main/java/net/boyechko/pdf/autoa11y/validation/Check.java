@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 
@@ -31,4 +32,9 @@ public interface Check {
     String failedMessage();
 
     IssueList findIssues(DocContext ctx);
+
+    /// Returns checker classes that must run before this checker.
+    default Set<Class<? extends Check>> prerequisites() {
+        return Set.of();
+    }
 }

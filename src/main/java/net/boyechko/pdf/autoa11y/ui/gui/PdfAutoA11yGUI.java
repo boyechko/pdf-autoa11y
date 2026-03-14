@@ -246,7 +246,7 @@ public class PdfAutoA11yGUI extends JFrame {
                                 new ProcessingService.ProcessingServiceBuilder()
                                         .withPdfCustodian(docFactory)
                                         .withListener(reporter)
-                                        .injectStructTreeCheck(
+                                        .injectCheck(
                                                 () ->
                                                         new StructTreeTablePrinter(
                                                                 reporter::onVerboseOutput))

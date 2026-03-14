@@ -33,9 +33,7 @@ class CheckEngineTest {
                         IllegalArgumentException.class,
                         () ->
                                 new CheckEngine(
-                                        List.of(),
-                                        List.of(DependentCheck::new, PrereqCheck::new),
-                                        null));
+                                        List.of(DependentCheck::new, PrereqCheck::new), null));
         assertTrue(
                 ex.getMessage().contains("PrereqCheck"),
                 "Error should name the missing prerequisite");
@@ -44,14 +42,12 @@ class CheckEngineTest {
     @Test
     void acceptsVisitorAfterItsPrerequisite() {
         assertDoesNotThrow(
-                () ->
-                        new CheckEngine(
-                                List.of(), List.of(PrereqCheck::new, DependentCheck::new), null));
+                () -> new CheckEngine(List.of(PrereqCheck::new, DependentCheck::new), null));
     }
 
     @Test
     void acceptsVisitorWithNoPrerequisites() {
-        assertDoesNotThrow(() -> new CheckEngine(List.of(), List.of(PrereqCheck::new), null));
+        assertDoesNotThrow(() -> new CheckEngine(List.of(PrereqCheck::new), null));
     }
 
     // --- Stub visitors for testing ---
@@ -85,7 +81,7 @@ class CheckEngineTest {
         }
 
         @Override
-        public Set<Class<? extends StructTreeCheck>> prerequisites() {
+        public Set<Class<? extends Check>> prerequisites() {
             return Set.of(PrereqCheck.class);
         }
 

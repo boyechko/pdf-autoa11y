@@ -17,22 +17,5 @@
  */
 package net.boyechko.pdf.autoa11y.validation;
 
-import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.issue.IssueList;
-
-///  A checker for document-level issues.
-public abstract class DocumentCheck implements Check {
-    public abstract String name();
-
-    public abstract String description();
-
-    public CheckType type() {
-        return CheckType.DOCUMENT;
-    }
-
-    public abstract String passedMessage();
-
-    public abstract String failedMessage();
-
-    public abstract IssueList findIssues(DocContext ctx);
-}
+/** A checker for document-level issues. */
+public abstract class DocumentCheck implements Check {}
