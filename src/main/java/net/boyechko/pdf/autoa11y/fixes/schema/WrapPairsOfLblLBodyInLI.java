@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.fixes.children;
+package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -24,27 +24,27 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
-/** Wraps pairs of Lbl,P elements in an LI structure. */
-public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
-    private WrapPairsOfLblPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
+/** Wraps pairs of Lbl,LBody elements in an LI structure. */
+public final class WrapPairsOfLblLBodyInLI extends TagMultipleChildrenFix {
+    private WrapPairsOfLblLBodyInLI(PdfStructElem parent, List<PdfStructElem> kids) {
         super(parent, kids);
     }
 
     public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
         String parentRole = parent.getRole().getValue();
 
-        // Check if parent is L and we have alternating Lbl/P pattern
+        // Check if parent is L and we have alternating Lbl/LBody pattern
         if ("L".equals(parentRole) && kids.size() >= 2 && kids.size() % 2 == 0) {
-            // Verify alternating Lbl/P pattern
+            // Verify alternating Lbl/LBody pattern
             for (int i = 0; i < kids.size(); i += 2) {
                 String lblRole = kids.get(i).getRole().getValue();
-                String pRole = kids.get(i + 1).getRole().getValue();
+                String lBodyRole = kids.get(i + 1).getRole().getValue();
 
-                if (!"Lbl".equals(lblRole) || !"P".equals(pRole)) {
+                if (!"Lbl".equals(lblRole) || !"LBody".equals(lBodyRole)) {
                     return null;
                 }
             }
-            return new WrapPairsOfLblPInLI(parent, kids);
+            return new WrapPairsOfLblLBodyInLI(parent, kids);
         }
         return null;
     }
@@ -52,31 +52,29 @@ public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         logger.debug(
-                "Applying WrapPairsOfLblPInLI to L obj. #{} (p. {}) with {} kids",
-                StructTree.objNum(parent),
-                kids.size());
+                "Applying WrapPairsOfLblLBodyInLI to L obj. #"
+                        + StructTree.objNum(parent)
+                        + " with "
+                        + kids.size()
+                        + " kids");
         for (int i = 0; i < kids.size(); i += 2) {
             PdfStructElem lbl = kids.get(i);
-            PdfStructElem p = kids.get(i + 1);
+            PdfStructElem lBody = kids.get(i + 1);
 
             PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
             parent.addKid(newLI);
 
-            // Move the Lbl directly under LI
             parent.removeKid(lbl);
             newLI.addKid(lbl);
 
-            // Create LBody and move P under it
-            PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-            newLI.addKid(newLBody);
-            parent.removeKid(p);
-            newLBody.addKid(p);
+            parent.removeKid(lBody);
+            newLI.addKid(lBody);
         }
     }
 
     @Override
     public String describe() {
-        return "Wrapped pairs of Lbl/P in LI elements";
+        return "Wrapped pairs of Lbl/LBody in LI elements";
     }
 
     @Override

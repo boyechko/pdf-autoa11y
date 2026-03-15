@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.fixes.schema.*;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.junit.jupiter.api.Test;
 
