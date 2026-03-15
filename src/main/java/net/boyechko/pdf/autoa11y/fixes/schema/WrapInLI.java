@@ -24,7 +24,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Wraps a single child element in an LI structure. */
-public final class WrapInLI extends TagSingleChildFix {
+public final class WrapInLI extends SchemaChildFix {
     private static final List<String> validKidRoles =
             List.of("Div", "Figure", "LBody", "P", "Span");
     private String wrappedIn = "";

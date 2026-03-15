@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * > LBody structure. Uses the /T metadata on the LBody --- bullet y-position put there by
  * MistaggedBulletedListCheck --- to determine insertion order within the L element.
  */
-public final class ExtractLBodyToList extends TagSingleChildFix {
+public final class ExtractLBodyToList extends SchemaChildFix {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtractLBodyToList.class);
 

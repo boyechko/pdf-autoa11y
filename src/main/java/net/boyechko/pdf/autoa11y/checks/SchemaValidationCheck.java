@@ -20,8 +20,8 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.schema.TagMultipleChildrenFix;
-import net.boyechko.pdf.autoa11y.fixes.schema.TagSingleChildFix;
+import net.boyechko.pdf.autoa11y.fixes.schema.SchemaChildFix;
+import net.boyechko.pdf.autoa11y.fixes.schema.SchemaChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -166,7 +166,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                                 message,
                                 fix));
 
-                if (fix instanceof TagMultipleChildrenFix) {
+                if (fix instanceof SchemaChildrenFix) {
                     multiFixCreated = true;
                 }
             }
@@ -206,10 +206,10 @@ public class SchemaValidationCheck extends StructTreeCheck {
 
         PdfStructElem childNode = ctx.children().get(childIndex);
 
-        IssueFix multi = TagMultipleChildrenFix.createIfApplicable(ctx.node(), ctx.children());
+        IssueFix multi = SchemaChildrenFix.createIfApplicable(ctx.node(), ctx.children());
         if (multi != null) return multi;
 
-        IssueFix single = TagSingleChildFix.createIfApplicable(childNode, ctx.node());
+        IssueFix single = SchemaChildFix.createIfApplicable(childNode, ctx.node());
         if (single != null) return single;
 
         logger.trace(

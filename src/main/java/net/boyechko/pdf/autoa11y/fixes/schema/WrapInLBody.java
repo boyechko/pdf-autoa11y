@@ -24,7 +24,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Wraps a single child element under LI in a LBody structure. */
-public final class WrapInLBody extends TagSingleChildFix {
+public final class WrapInLBody extends SchemaChildFix {
     private static final List<String> validKidRoles = List.of("Div", "Figure", "P", "Span");
 
     private WrapInLBody(PdfStructElem kid, PdfStructElem parent) {

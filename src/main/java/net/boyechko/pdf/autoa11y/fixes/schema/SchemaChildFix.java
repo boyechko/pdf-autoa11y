@@ -24,12 +24,12 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Base class for fixes that involve a single child element. */
-public abstract class TagSingleChildFix implements IssueFix {
+public abstract class SchemaChildFix implements IssueFix {
 
     protected final PdfStructElem kid;
     protected final PdfStructElem parent;
 
-    protected TagSingleChildFix(PdfStructElem kid, PdfStructElem parent) {
+    protected SchemaChildFix(PdfStructElem kid, PdfStructElem parent) {
         this.kid = kid;
         this.parent = parent;
     }

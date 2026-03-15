@@ -25,7 +25,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Wraps pairs of Lbl,P elements in an LI structure. */
-public final class WrapPairsOfLblPInLI extends TagMultipleChildrenFix {
+public final class WrapPairsOfLblPInLI extends SchemaChildrenFix {
     private WrapPairsOfLblPInLI(PdfStructElem parent, List<PdfStructElem> kids) {
         super(parent, kids);
     }
