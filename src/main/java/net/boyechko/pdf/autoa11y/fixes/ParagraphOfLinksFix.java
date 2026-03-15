@@ -20,19 +20,26 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
+import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.schema.TagMultipleChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Converts a P element containing only links to an L element. */
-public final class ParagraphOfLinksFix extends TagMultipleChildrenFix {
+public final class ParagraphOfLinksFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ParagraphOfLinksFix.class);
     private static int MINIMUM_KIDS_COUNT = 2;
 
+    protected final PdfStructElem parent;
+    protected final List<PdfStructElem> kids;
+
     public ParagraphOfLinksFix(PdfStructElem parent, List<PdfStructElem> kids) {
-        super(parent, kids);
+        this.parent = parent;
+        this.kids =
+                kids != null
+                        ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
+                        : List.of();
     }
 
     public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
@@ -77,6 +84,11 @@ public final class ParagraphOfLinksFix extends TagMultipleChildrenFix {
             lBody.addKid(kid);
             parent.removeKid(kid);
         }
+    }
+
+    @Override
+    public int priority() {
+        return 10;
     }
 
     @Override
