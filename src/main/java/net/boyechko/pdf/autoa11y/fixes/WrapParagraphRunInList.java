@@ -21,15 +21,26 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
+import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.schema.TagMultipleChildrenFix;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Wraps a run of consecutive P elements in L > LI > LBody structure. */
-public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
+public final class WrapParagraphRunInList implements IssueFix {
+    protected static final Logger logger = LoggerFactory.getLogger(WrapParagraphRunInList.class);
+
+    protected final PdfStructElem parent;
+    protected final List<PdfStructElem> kids;
 
     public WrapParagraphRunInList(PdfStructElem parent, List<PdfStructElem> kids) {
-        super(parent, kids);
+        this.parent = parent;
+        this.kids =
+                kids != null
+                        ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
+                        : List.of();
     }
 
     @Override
@@ -106,6 +117,11 @@ public final class WrapParagraphRunInList extends TagMultipleChildrenFix {
             candidate = elem.getParent();
         }
         return null;
+    }
+
+    @Override
+    public int priority() {
+        return 10;
     }
 
     @Override
