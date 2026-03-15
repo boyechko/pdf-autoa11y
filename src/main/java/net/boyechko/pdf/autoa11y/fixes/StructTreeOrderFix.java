@@ -19,12 +19,9 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck;
@@ -42,15 +39,15 @@ public class StructTreeOrderFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeOrderFix.class);
     private static final int P_REORDER = 10; // Before artifact removal (12) and flatten (15)
 
+    private final PdfStructElem element;
     private final Map<Integer, ReadingPosition> cache;
     private int reorderedCount;
+    private int totalChildren;
 
-    public StructTreeOrderFix(Map<Integer, ReadingPosition> cache) {
+    public StructTreeOrderFix(PdfStructElem element, Map<Integer, ReadingPosition> cache) {
+        this.element = element;
         this.cache = cache;
-    }
-
-    public StructTreeOrderFix() {
-        this(new HashMap<>());
+        this.reorderedCount = 0;
     }
 
     @Override
@@ -60,28 +57,8 @@ public class StructTreeOrderFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        if (root == null) return;
-
-        for (IStructureNode kid : root.getKids()) {
-            if (kid instanceof PdfStructElem elem) {
-                reorderRecursive(elem);
-            }
-        }
-    }
-
-    private void reorderRecursive(PdfStructElem elem) {
-        List<PdfStructElem> children = StructTree.childrenOf(elem, PdfStructElem.class);
-
-        // Recurse first (bottom-up) so cache is populated
-        for (PdfStructElem child : children) {
-            reorderRecursive(child);
-        }
-
-        if (children.size() >= 2 && !StructTreeOrderCheck.isInOrder(children, cache)) {
-            reorderChildren(elem, children);
-            reorderedCount++;
-        }
+        List<PdfStructElem> children = StructTree.childrenOf(element, PdfStructElem.class);
+        reorderChildren(element, children);
     }
 
     /**
@@ -107,6 +84,7 @@ public class StructTreeOrderFix implements IssueFix {
         }
 
         // Replace struct elem refs at their original positions with the sorted order
+        int movedCount = 0;
         for (int i = 0; i < structIndices.size() && i < sorted.size(); i++) {
             PdfStructElem child = sorted.get(i);
             int pos = structIndices.get(i);
@@ -114,10 +92,13 @@ public class StructTreeOrderFix implements IssueFix {
             if (ref == null) {
                 ref = child.getPdfObject();
             }
+            if (!StructTree.isSame(kArray.get(pos), ref)) {
+                movedCount++;
+            }
             kArray.set(pos, ref);
         }
-
-        logger.debug("Reordered {} struct children in {}", sorted.size(), parent.getRole());
+        this.reorderedCount = movedCount;
+        this.totalChildren = children.size();
     }
 
     /** Checks whether a PdfObject in the K array refers to one of the children. */
@@ -130,12 +111,12 @@ public class StructTreeOrderFix implements IssueFix {
 
     @Override
     public String describe() {
-        return "Reordered children in " + reorderedCount + " element(s) to match reading order";
+        return "Reordered " + reorderedCount + " of " + totalChildren + " children";
     }
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(), IssueLoc.none());
+        return new IssueMsg(describe(), IssueLoc.atElem(ctx, element));
     }
 
     @Override

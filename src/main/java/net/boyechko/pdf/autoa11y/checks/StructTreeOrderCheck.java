@@ -25,11 +25,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
-import net.boyechko.pdf.autoa11y.issue.Issue;
-import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueSev;
-import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
@@ -53,7 +49,6 @@ public class StructTreeOrderCheck extends StructTreeCheck {
 
     private final IssueList issues = new IssueList();
     private final Map<Integer, ReadingPosition> cache = new HashMap<>();
-    private int outOfOrderCount;
 
     @Override
     public String name() {
@@ -69,23 +64,17 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     public void leaveElement(StructTreeContext ctx) {
         List<PdfStructElem> children = ctx.children();
         if (children.size() >= 2 && !isInOrder(children, cache)) {
-            outOfOrderCount++;
-        }
-        // Cache this element's reading position now that all descendants have been visited
-        readingPositionOf(ctx.node(), cache);
-    }
-
-    @Override
-    public void afterTraversal() {
-        if (outOfOrderCount > 0) {
-            IssueFix fix = new StructTreeOrderFix(cache);
+            IssueFix fix = new StructTreeOrderFix(ctx.node(), cache);
             issues.add(
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,
                             IssueSev.WARNING,
-                            outOfOrderCount + " elements have children out of reading order",
+                            locAtElem(ctx),
+                            "Children are out of reading order",
                             fix));
         }
+        // Cache this element's reading position now that all descendants have been visited
+        readingPositionOf(ctx.node(), cache);
     }
 
     @Override
