@@ -29,14 +29,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Base class for fixes that involve multiple child elements. */
-public abstract class TagMultipleChildrenFix implements IssueFix {
+public abstract class SchemaChildrenFix implements IssueFix {
 
-    protected static final Logger logger = LoggerFactory.getLogger(TagMultipleChildrenFix.class);
+    protected static final Logger logger = LoggerFactory.getLogger(SchemaChildrenFix.class);
 
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
 
-    protected TagMultipleChildrenFix(PdfStructElem parent, List<? extends IStructureNode> kids) {
+    protected SchemaChildrenFix(PdfStructElem parent, List<? extends IStructureNode> kids) {
         this.parent = parent;
         this.kids =
                 kids != null
@@ -81,7 +81,7 @@ public abstract class TagMultipleChildrenFix implements IssueFix {
 
     @Override
     public boolean invalidates(IssueFix otherFix) {
-        if (otherFix instanceof TagSingleChildFix singleFix) {
+        if (otherFix instanceof SchemaChildFix singleFix) {
             return getParentRole().equals(singleFix.getParentRole())
                     && singleFix.getParent().equals(parent)
                     && kids.contains(singleFix.getKid());

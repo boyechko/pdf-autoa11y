@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.fixes.child;
+package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,11 +27,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.fixes.schema.*;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.junit.jupiter.api.Test;
 
-class TagSingleChildFixTest extends PdfTestBase {
+class SchemaChildFixTest extends PdfTestBase {
 
     @Test
     void treatLblFigureAsBullet() throws Exception {
@@ -223,7 +222,7 @@ class TagSingleChildFixTest extends PdfTestBase {
             PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
             p.addKid(lBody);
 
-            IssueFix fix = TagSingleChildFix.createIfApplicable(lBody, p);
+            IssueFix fix = SchemaChildFix.createIfApplicable(lBody, p);
             assertNotNull(fix, "createIfApplicable should find a fix for P[LBody]");
             assertInstanceOf(
                     ExtractLBodyToList.class,

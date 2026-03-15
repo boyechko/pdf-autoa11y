@@ -24,7 +24,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Changes a P element to a Lbl in an LI structure. */
-public final class ChangePToLblInLI extends TagMultipleChildrenFix {
+public final class ChangePToLblInLI extends SchemaChildrenFix {
     private ChangePToLblInLI(PdfStructElem parent, List<PdfStructElem> kids) {
         super(parent, kids);
     }
