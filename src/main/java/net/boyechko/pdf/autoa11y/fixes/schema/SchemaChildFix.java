@@ -18,36 +18,16 @@
 package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
-import net.boyechko.pdf.autoa11y.issue.IssueMsg;
+import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
 
-/** Base class for fixes that involve a single child element. */
-public abstract class SchemaChildFix implements IssueFix {
+/** Schema fix that operates on a single child element. */
+public abstract class SchemaChildFix extends SchemaValidationFix {
 
     protected final PdfStructElem kid;
-    protected final PdfStructElem parent;
 
     protected SchemaChildFix(PdfStructElem kid, PdfStructElem parent) {
+        super(parent);
         this.kid = kid;
-        this.parent = parent;
-    }
-
-    public static IssueFix createIfApplicable(PdfStructElem kid, PdfStructElem parent) {
-        IssueFix fix = ExtractLBodyToList.tryCreate(kid, parent);
-        if (fix != null) return fix;
-
-        fix = WrapInLI.tryCreate(kid, parent);
-        if (fix != null) return fix;
-
-        fix = WrapInLBody.tryCreate(kid, parent);
-        if (fix != null) return fix;
-
-        fix = TreatLblFigureAsBullet.tryCreate(kid, parent);
-        if (fix != null) return fix;
-
-        return null;
     }
 
     @Override
@@ -60,24 +40,11 @@ public abstract class SchemaChildFix implements IssueFix {
         return "Fix a single child, " + getKidRole() + ", under its parent " + getParentRole();
     }
 
-    @Override
-    public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, parent));
-    }
-
     public PdfStructElem getKid() {
         return kid;
     }
 
     public String getKidRole() {
         return kid.getRole().getValue();
-    }
-
-    public PdfStructElem getParent() {
-        return parent;
-    }
-
-    public String getParentRole() {
-        return parent.getRole().getValue();
     }
 }

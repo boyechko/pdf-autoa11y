@@ -21,40 +21,24 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
-import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Base class for fixes that involve multiple child elements. */
-public abstract class SchemaChildrenFix implements IssueFix {
+/** Schema fix that operates on multiple child elements. */
+public abstract class SchemaChildrenFix extends SchemaValidationFix {
 
     protected static final Logger logger = LoggerFactory.getLogger(SchemaChildrenFix.class);
 
-    protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
 
     protected SchemaChildrenFix(PdfStructElem parent, List<? extends IStructureNode> kids) {
-        this.parent = parent;
+        super(parent);
         this.kids =
                 kids != null
                         ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
                         : List.of();
-    }
-
-    public static IssueFix createIfApplicable(PdfStructElem parent, List<PdfStructElem> kids) {
-        IssueFix fix = WrapPairsOfLblPInLI.tryCreate(parent, kids);
-        if (fix != null) return fix;
-
-        fix = WrapPairsOfLblLBodyInLI.tryCreate(parent, kids);
-        if (fix != null) return fix;
-
-        fix = ChangePToLblInLI.tryCreate(parent, kids);
-        if (fix != null) return fix;
-
-        return null;
     }
 
     @Override
@@ -62,21 +46,8 @@ public abstract class SchemaChildrenFix implements IssueFix {
         return 20; // Structure fix - higher priority than single child fixes
     }
 
-    public PdfStructElem getParent() {
-        return parent;
-    }
-
     public List<PdfStructElem> getKids() {
         return kids;
-    }
-
-    public String getParentRole() {
-        return parent.getRole().getValue();
-    }
-
-    @Override
-    public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, parent));
     }
 
     @Override

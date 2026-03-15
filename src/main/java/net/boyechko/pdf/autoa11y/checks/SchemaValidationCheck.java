@@ -20,7 +20,7 @@ package net.boyechko.pdf.autoa11y.checks;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.schema.SchemaChildFix;
+import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
 import net.boyechko.pdf.autoa11y.fixes.schema.SchemaChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -206,10 +206,10 @@ public class SchemaValidationCheck extends StructTreeCheck {
 
         PdfStructElem childNode = ctx.children().get(childIndex);
 
-        IssueFix multi = SchemaChildrenFix.createIfApplicable(ctx.node(), ctx.children());
+        IssueFix multi = SchemaValidationFix.createForChildren(ctx.node(), ctx.children());
         if (multi != null) return multi;
 
-        IssueFix single = SchemaChildFix.createIfApplicable(childNode, ctx.node());
+        IssueFix single = SchemaValidationFix.createForChild(childNode, ctx.node());
         if (single != null) return single;
 
         logger.trace(

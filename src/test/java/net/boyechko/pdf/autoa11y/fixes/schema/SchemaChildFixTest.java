@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.junit.jupiter.api.Test;
 
@@ -222,7 +223,7 @@ class SchemaChildFixTest extends PdfTestBase {
             PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
             p.addKid(lBody);
 
-            IssueFix fix = SchemaChildFix.createIfApplicable(lBody, p);
+            IssueFix fix = SchemaValidationFix.createForChild(lBody, p);
             assertNotNull(fix, "createIfApplicable should find a fix for P[LBody]");
             assertInstanceOf(
                     ExtractLBodyToList.class,
