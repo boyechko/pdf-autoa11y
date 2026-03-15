@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.fixes.child;
+package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -23,47 +23,34 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
-/** Wraps a single child element in an LI structure. */
-public final class WrapInLI extends TagSingleChildFix {
-    private static final List<String> validKidRoles =
-            List.of("Div", "Figure", "LBody", "P", "Span");
-    private String wrappedIn = "";
+/** Wraps a single child element under LI in a LBody structure. */
+public final class WrapInLBody extends TagSingleChildFix {
+    private static final List<String> validKidRoles = List.of("Div", "Figure", "P", "Span");
 
-    private WrapInLI(PdfStructElem kid, PdfStructElem parent) {
+    private WrapInLBody(PdfStructElem kid, PdfStructElem parent) {
         super(kid, parent);
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
-        if ("L".equals(parentRole) && validKidRoles.contains(kidRole)) {
-            return new WrapInLI(kid, parent);
+        if ("LI".equals(parentRole) && validKidRoles.contains(kidRole)) {
+            return new WrapInLBody(kid, parent);
         }
         return null;
     }
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        PdfStructElem newLI = new PdfStructElem(ctx.doc(), PdfName.LI);
-        parent.addKid(newLI);
-
-        if (getKidRole().equals("LBody")) {
-            newLI.addKid(kid);
-            parent.removeKid(kid);
-            wrappedIn = "LI";
-            return;
-        }
         PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        newLI.addKid(newLBody);
-
+        parent.addKid(newLBody);
         parent.removeKid(kid);
         newLBody.addKid(kid);
-        wrappedIn = "LI->LBody";
     }
 
     @Override
     public String describe() {
-        return "Wrapped " + getKidRole() + " in " + wrappedIn;
+        return "Wrapped " + getKidRole() + " in LBody";
     }
 
     @Override

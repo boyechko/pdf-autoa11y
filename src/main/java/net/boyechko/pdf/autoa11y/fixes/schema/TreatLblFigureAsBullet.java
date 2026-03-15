@@ -15,42 +15,54 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.fixes.child;
+package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
-/** Wraps a single child element under LI in a LBody structure. */
-public final class WrapInLBody extends TagSingleChildFix {
-    private static final List<String> validKidRoles = List.of("Div", "Figure", "P", "Span");
-
-    private WrapInLBody(PdfStructElem kid, PdfStructElem parent) {
+/** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */
+public final class TreatLblFigureAsBullet extends TagSingleChildFix {
+    private TreatLblFigureAsBullet(PdfStructElem kid, PdfStructElem parent) {
         super(kid, parent);
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
         String kidRole = kid.getRole().getValue();
         String parentRole = parent.getRole().getValue();
-        if ("LI".equals(parentRole) && validKidRoles.contains(kidRole)) {
-            return new WrapInLBody(kid, parent);
+        if ("Lbl".equals(parentRole) && "Figure".equals(kidRole)) {
+            return new TreatLblFigureAsBullet(kid, parent);
         }
         return null;
     }
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        PdfStructElem newLBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        parent.addKid(newLBody);
-        parent.removeKid(kid);
-        newLBody.addKid(kid);
+        PdfStructElem lbl = parent;
+        PdfStructElem figure = kid;
+        PdfStructElem li = (PdfStructElem) lbl.getParent();
+        if (figure.getActualText() == null || figure.getAlt() == null) {
+            // Move Figure out from under Lbl
+            lbl.setRole(PdfName.Artifact);
+            lbl.removeKid(figure);
+            li.addKid(0, figure);
+
+            // Remove now-empty Lbl
+            li.removeKid(lbl);
+
+            // Change Figure to Lbl
+            figure.setRole(PdfName.Lbl);
+            figure.setActualText(new PdfString("Bullet"));
+        } else {
+            throw new Exception("Figure already has ActualText or AltText");
+        }
     }
 
     @Override
     public String describe() {
-        return "Wrapped " + getKidRole() + " in LBody";
+        return "Converted Figure in Lbl to bullet label";
     }
 
     @Override
