@@ -64,7 +64,8 @@ public class PdfAutoA11yCLI {
             VerbosityLevel verbosity,
             boolean printStructureTree,
             Set<String> skipChecks,
-            Set<String> onlyChecks) {
+            Set<String> onlyChecks,
+            Set<String> includeChecks) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -236,6 +237,9 @@ public class PdfAutoA11yCLI {
                 b.skipChecks = parseCommaSeparated(args[i].substring("--skip-checks=".length()));
             } else if (args[i].startsWith("--only-checks=")) {
                 b.onlyChecks = parseCommaSeparated(args[i].substring("--only-checks=".length()));
+            } else if (args[i].startsWith("--include-checks=")) {
+                b.includeChecks =
+                        parseCommaSeparated(args[i].substring("--include-checks=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
@@ -257,6 +261,14 @@ public class PdfAutoA11yCLI {
                             b.onlyChecks = parseCommaSeparated(args[++i]);
                         } else {
                             throw new CLIException("Check names not specified after --only-checks");
+                        }
+                    }
+                    case "--include-checks" -> {
+                        if (i + 1 < args.length) {
+                            b.includeChecks = parseCommaSeparated(args[++i]);
+                        } else {
+                            throw new CLIException(
+                                    "Check names not specified after --include-checks");
                         }
                     }
                     case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
@@ -318,6 +330,7 @@ public class PdfAutoA11yCLI {
         boolean printStructureTree;
         Set<String> skipChecks = Set.of();
         Set<String> onlyChecks = Set.of();
+        Set<String> includeChecks = Set.of();
 
         CLIConfig build() throws CLIException {
             if (inputPath == null) {
@@ -344,7 +357,8 @@ public class PdfAutoA11yCLI {
                     verbosity,
                     printStructureTree,
                     skipChecks,
-                    onlyChecks);
+                    onlyChecks,
+                    includeChecks);
         }
 
         private void resolveOutputPath(String baseName) {
@@ -404,6 +418,7 @@ public class PdfAutoA11yCLI {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
+                + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
                 + "\n"
                 + "Sidecar config: place a <basename>.autoa11y.yaml file next to the input PDF\n"
                 + "to set persistent per-file check configuration. Example contents:\n"
