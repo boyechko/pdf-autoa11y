@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -67,6 +68,86 @@ class SidecarConfigTest {
     }
 
     @Test
+    void loadsIncludeChecksFromSidecarFile() throws IOException {
+        Path pdf = tempDir.resolve("rolemap.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("rolemap.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                include-checks:
+                  - ClearRoleMapCheck
+                """);
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertEquals(Set.of("ClearRoleMapCheck"), sidecar.includeChecks());
+    }
+
+    @Test
+    void mergesWithAdditionalIncludeChecks() throws IOException {
+        Path pdf = tempDir.resolve("mergeincl.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("mergeincl.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                include-checks:
+                  - ClearRoleMapCheck
+                """);
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+        Set<String> additional = Set.of("ReplaceRoleMapCheck");
+        Set<String> merged = sidecar.mergeIncludeChecks(additional);
+
+        assertEquals(Set.of("ClearRoleMapCheck", "ReplaceRoleMapCheck"), merged);
+    }
+
+    @Test
+    void loadsRoleMapMappingsFromSidecarFile() throws IOException {
+        Path pdf = tempDir.resolve("rolemapmappings.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("rolemapmappings.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                role-map:
+                  CustomHeading: H1
+                  FigureAlt: Figure
+                """);
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.roleMap().isPresent());
+        assertEquals(Map.of("CustomHeading", "H1", "FigureAlt", "Figure"), sidecar.roleMap().get());
+    }
+
+    @Test
+    void roleMapClearReturnsEmptyMap() throws IOException {
+        Path pdf = tempDir.resolve("clearrm.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("clearrm.autoa11y.yaml");
+        Files.writeString(config, "role-map: clear\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.roleMap().isPresent());
+        assertTrue(sidecar.roleMap().get().isEmpty());
+    }
+
+    @Test
+    void roleMapAbsentWhenNotSpecified() throws IOException {
+        Path pdf = tempDir.resolve("normnomap.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("normnomap.autoa11y.yaml");
+        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.roleMap().isEmpty());
+    }
+
+    @Test
     void returnsEmptySetsWhenNoSidecarFileExists() {
         Path pdf = tempDir.resolve("no-config.pdf");
 
@@ -74,6 +155,7 @@ class SidecarConfigTest {
 
         assertTrue(sidecar.skipChecks().isEmpty());
         assertTrue(sidecar.onlyChecks().isEmpty());
+        assertTrue(sidecar.includeChecks().isEmpty());
         assertFalse(sidecar.isPresent());
     }
 
@@ -101,6 +183,7 @@ class SidecarConfigTest {
         assertTrue(sidecar.isPresent());
         assertTrue(sidecar.skipChecks().isEmpty());
         assertTrue(sidecar.onlyChecks().isEmpty());
+        assertTrue(sidecar.includeChecks().isEmpty());
     }
 
     @Test

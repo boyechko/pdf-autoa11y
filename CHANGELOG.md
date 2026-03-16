@@ -22,6 +22,17 @@ Versioning](https://semver.org/).
 - Added an accessibility report output (`-r/--report`) so processing results can
   be saved as an audit trail.
 - Added CLI options to skip checks or run only selected checks.
+- Added `--include-checks` CLI option and sidecar `include-checks:` key to
+  activate optional checks that don't run by default.
+- Added optional check registry (`ProcessingDefaults.optionalChecks()`) so new
+  opt-in checks only need a class and one registry line — no CLI changes.
+- Added `ClearRoleMapCheck` optional check to remove `/RoleMap` from the
+  structure tree root, activatable via `--include-checks=ClearRoleMapCheck`
+  or sidecar config.
+- Added `ReplaceRoleMapCheck` to replace `/RoleMap` with custom mappings
+  specified in the sidecar config under the `role-map:` key.
+- Added sidecar `role-map:` key supporting both a mapping dictionary and the
+  literal `clear` to remove the role map entirely.
 - Added per-PDF sidecar config files (`<basename>.autoa11y.yaml`) for persistent
   check configuration, so skip/only-checks settings travel with each input file.
 - Added configurable per-input pipeline temp directories via
@@ -31,6 +42,9 @@ Versioning](https://semver.org/).
 ### Changed
 - `--skip-checks` and `--only-checks` now apply to all checks, including
   document-level checks (previously only structure tree checks were filterable).
+- `--only-checks` now selects from all known checks (default and optional),
+  so `--only-checks=ClearRoleMapCheck` works without also needing
+  `--include-checks`.
 - Simplified `ProcessingResult` to three unified issue lists (`detectedIssues`,
   `appliedFixes`, `remainingIssues`) instead of separate document-level and
   tag-level fields.

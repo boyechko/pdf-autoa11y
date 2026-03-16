@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -123,13 +124,25 @@ public class PdfAutoA11yCLI {
             }
             Set<String> skipChecks = sidecar.mergeSkipChecks(config.skipChecks());
             Set<String> onlyChecks = sidecar.mergeOnlyChecks(config.onlyChecks());
+            Set<String> includeChecks = sidecar.mergeIncludeChecks(config.includeChecks());
 
             ProcessingService.ProcessingServiceBuilder serviceBuilder =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
                             .withListener(listener)
                             .skipChecks(skipChecks)
-                            .onlyChecks(onlyChecks);
+                            .onlyChecks(onlyChecks)
+                            .includeChecks(includeChecks);
+            sidecar.roleMap()
+                    .ifPresent(
+                            mappings -> {
+                                if (mappings.isEmpty()) {
+                                    serviceBuilder.includeChecks(Set.of("ClearRoleMapCheck"));
+                                } else {
+                                    serviceBuilder.injectCheck(
+                                            () -> new ReplaceRoleMapCheck(mappings));
+                                }
+                            });
             if (config.printStructureTree()) {
                 serviceBuilder.injectCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));
@@ -424,7 +437,8 @@ public class PdfAutoA11yCLI {
                 + "to set persistent per-file check configuration. Example contents:\n"
                 + "  skip-checks:\n"
                 + "    - NeedlessNestingCheck\n"
-                + "    - MissingPagePartsCheck\n"
+                + "  include-checks:\n"
+                + "    - ClearRoleMapCheck\n"
                 + "\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"
