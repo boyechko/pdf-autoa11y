@@ -51,7 +51,8 @@ public enum IssueType {
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
-    PARAGRAPH_OF_LINKS("paragraphs containing only links");
+    PARAGRAPH_OF_LINKS("paragraphs containing only links"),
+    ROLEMAP_PRESENT("RoleMap present in structure tree root");
 
     private final String groupLabel;
 
