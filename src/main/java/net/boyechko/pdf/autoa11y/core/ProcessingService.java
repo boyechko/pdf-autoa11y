@@ -215,11 +215,9 @@ public class ProcessingService {
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
                 tempFiles.add(output);
 
-                logger.debug("{} -> {}", check.getClass().getSimpleName(), output.getFileName());
-                listener.onPhaseStart(check.name());
+                listener.onCheckStart(check);
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
-                    listener.onDetectedSectionStart();
                     IssueList issues = runCheck(ctx, check);
                     allIssues.addAll(issues);
 
@@ -230,6 +228,7 @@ public class ProcessingService {
                     }
 
                     if (!issues.isEmpty()) {
+                        listener.onDetectedSectionStart();
                         reportIssuesGrouped(issues);
                         allFixes.addAll(applyAndReportFixes(ctx, issues));
                         reportRemainingIssues(issues);
@@ -270,7 +269,7 @@ public class ProcessingService {
 
             for (Supplier<Check> supplier : checks) {
                 Check check = supplier.get();
-                listener.onPhaseStart(check.name());
+                listener.onCheckStart(check);
                 IssueList issues = runCheck(context, check);
                 allIssues.addAll(issues);
 

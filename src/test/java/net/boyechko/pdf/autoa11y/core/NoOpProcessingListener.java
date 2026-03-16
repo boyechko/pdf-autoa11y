@@ -19,10 +19,11 @@ package net.boyechko.pdf.autoa11y.core;
 
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.validation.Check;
 
 public class NoOpProcessingListener implements ProcessingListener {
     @Override
-    public void onPhaseStart(String phaseName) {}
+    public void onCheckStart(Check check) {}
 
     @Override
     public void onSuccess(String message) {}

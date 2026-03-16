@@ -20,10 +20,11 @@ package net.boyechko.pdf.autoa11y.core;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.validation.Check;
 
 /// Interface for reporting progress and results of the processing.
 public interface ProcessingListener {
-    void onPhaseStart(String phaseName);
+    void onCheckStart(Check check);
 
     void onSuccess(String message);
 

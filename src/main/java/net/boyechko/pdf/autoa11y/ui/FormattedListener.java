@@ -31,6 +31,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.LoggerFactory;
 
 public class FormattedListener implements ProcessingListener {
@@ -68,10 +69,10 @@ public class FormattedListener implements ProcessingListener {
     }
 
     @Override
-    public void onPhaseStart(String phaseName) {
+    public void onCheckStart(Check check) {
         if (verbosity.shouldShow(VerbosityLevel.NORMAL)) {
             closePhaseBoxIfOpen();
-            printBoxHeader(phaseName);
+            printBoxHeader(check.name());
             phaseOpen = true;
         }
     }

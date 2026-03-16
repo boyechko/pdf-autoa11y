@@ -25,6 +25,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.LoggerFactory;
 
 /** A {@link ProcessingListener} that routes all events through SLF4J. */
@@ -74,23 +75,18 @@ public class LoggingListener implements ProcessingListener {
     }
 
     @Override
-    public void onPhaseStart(String phaseName) {
-        logger.info("PHASE {}", phaseName);
+    public void onCheckStart(Check check) {
+        logger.info("CHECK {}", check.getClass().getSimpleName());
     }
 
     @Override
     public void onSuccess(String message) {
-        logger.info("OK {}", message);
+        logger.info("OK");
     }
 
     @Override
     public void onWarning(Issue issue) {
-        String message =
-                "ISSUE "
-                        + issue.type()
-                        + ": "
-                        + issue.message()
-                        + issueFormatter.format(issue.where());
+        String message = "ISSUE " + issue.message() + issueFormatter.format(issue.where());
         IssueSev severity = issue.severity();
         if (severity == IssueSev.INFO) {
             logger.info("{}", message);
@@ -104,7 +100,7 @@ public class LoggingListener implements ProcessingListener {
 
     @Override
     public void onIssueFixed(Issue issue) {
-        logger.info("FIXED {}: {}", issue.type(), issueFormatter.formatResolution(issue));
+        logger.info("FIXED {}", issueFormatter.formatResolution(issue));
     }
 
     @Override
