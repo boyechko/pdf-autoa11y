@@ -45,21 +45,16 @@ public final class SidecarConfig {
     private final Set<String> includeChecks;
     private final Optional<Map<String, String>> roleMap;
 
-    private SidecarConfig(
-            boolean present,
-            Set<String> skipChecks,
-            Set<String> onlyChecks,
-            Set<String> includeChecks,
-            Optional<Map<String, String>> roleMap) {
-        this.present = present;
-        this.skipChecks = Set.copyOf(skipChecks);
-        this.onlyChecks = Set.copyOf(onlyChecks);
-        this.includeChecks = Set.copyOf(includeChecks);
-        this.roleMap = roleMap;
+    private SidecarConfig(Builder builder) {
+        this.present = builder.present;
+        this.skipChecks = Set.copyOf(builder.skipChecks);
+        this.onlyChecks = Set.copyOf(builder.onlyChecks);
+        this.includeChecks = Set.copyOf(builder.includeChecks);
+        this.roleMap = builder.roleMap;
     }
 
     private static SidecarConfig empty() {
-        return new SidecarConfig(false, Set.of(), Set.of(), Set.of(), Optional.empty());
+        return new Builder().build();
     }
 
     /** Loads sidecar config for the given PDF path, or returns an empty config if none exists. */
@@ -76,6 +71,8 @@ public final class SidecarConfig {
             return empty();
         }
     }
+
+    // == Accessors ========================================================
 
     /** Whether a sidecar config file was found. */
     public boolean isPresent() {
@@ -102,6 +99,8 @@ public final class SidecarConfig {
         return roleMap;
     }
 
+    // == Merging ==========================================================
+
     /** Returns the union of sidecar skip-checks and additional skip-checks. */
     public Set<String> mergeSkipChecks(Set<String> additionalSkipChecks) {
         return mergeSets(skipChecks, additionalSkipChecks);
@@ -117,6 +116,42 @@ public final class SidecarConfig {
         return mergeSets(includeChecks, additionalIncludeChecks);
     }
 
+    // == Builder ==========================================================
+
+    private static class Builder {
+        boolean present;
+        Set<String> skipChecks = Set.of();
+        Set<String> onlyChecks = Set.of();
+        Set<String> includeChecks = Set.of();
+        Optional<Map<String, String>> roleMap = Optional.empty();
+
+        Builder skipChecks(Set<String> skipChecks) {
+            this.skipChecks = skipChecks;
+            return this;
+        }
+
+        Builder onlyChecks(Set<String> onlyChecks) {
+            this.onlyChecks = onlyChecks;
+            return this;
+        }
+
+        Builder includeChecks(Set<String> includeChecks) {
+            this.includeChecks = includeChecks;
+            return this;
+        }
+
+        Builder roleMap(Optional<Map<String, String>> roleMap) {
+            this.roleMap = roleMap;
+            return this;
+        }
+
+        SidecarConfig build() {
+            return new SidecarConfig(this);
+        }
+    }
+
+    // == Loading ==========================================================
+
     private static Path resolveSidecarPath(Path pdfPath) {
         String filename = pdfPath.getFileName().toString();
         String baseName = filename.replaceFirst("(_autoa11y)*\\.[^.]+$", "");
@@ -128,18 +163,20 @@ public final class SidecarConfig {
     @SuppressWarnings("unchecked")
     private static SidecarConfig load(Path path) throws IOException {
         try (Reader reader = Files.newBufferedReader(path)) {
-            Yaml yaml = new Yaml();
-            Map<String, Object> data = yaml.load(reader);
-            if (data == null) {
-                return new SidecarConfig(true, Set.of(), Set.of(), Set.of(), Optional.empty());
+            Map<String, Object> data = new Yaml().load(reader);
+            Builder b = new Builder();
+            b.present = true;
+            if (data != null) {
+                b.skipChecks(extractStringList(data, "skip-checks"))
+                        .onlyChecks(extractStringList(data, "only-checks"))
+                        .includeChecks(extractStringList(data, "include-checks"))
+                        .roleMap(extractRoleMap(data));
             }
-            Set<String> skip = extractStringList(data, "skip-checks");
-            Set<String> only = extractStringList(data, "only-checks");
-            Set<String> include = extractStringList(data, "include-checks");
-            Optional<Map<String, String>> roleMap = extractRoleMap(data);
-            return new SidecarConfig(true, skip, only, include, roleMap);
+            return b.build();
         }
     }
+
+    // == Extraction helpers ===============================================
 
     @SuppressWarnings("unchecked")
     private static Set<String> extractStringList(Map<String, Object> data, String key) {
