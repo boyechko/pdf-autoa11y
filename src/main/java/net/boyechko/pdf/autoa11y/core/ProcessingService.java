@@ -61,6 +61,7 @@ public class ProcessingService {
         private ProcessingListener listener;
         private final Set<String> skipChecks = new HashSet<>();
         private final Set<String> onlyChecks = new HashSet<>();
+        private final List<Supplier<Check>> includedChecks = new ArrayList<>();
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
@@ -83,8 +84,31 @@ public class ProcessingService {
             return this;
         }
 
+        /** Injects a single check supplier directly. */
         public ProcessingServiceBuilder injectCheck(Supplier<Check> supplier) {
             injectedChecks.add(Objects.requireNonNull(supplier, "supplier"));
+            return this;
+        }
+
+        /** Resolves named optional checks from the registry for user-level inclusion. */
+        public ProcessingServiceBuilder includeChecks(Set<String> checkNames) {
+            if (checkNames.isEmpty()) {
+                return this;
+            }
+            List<Supplier<Check>> optional = ProcessingDefaults.optionalChecks();
+            Set<String> remaining = new HashSet<>(checkNames);
+            for (Supplier<Check> supplier : optional) {
+                String className = supplier.get().getClass().getSimpleName();
+                if (remaining.remove(className)) {
+                    includedChecks.add(supplier);
+                }
+            }
+            if (!remaining.isEmpty()) {
+                List<String> available =
+                        optional.stream().map(s -> s.get().getClass().getSimpleName()).toList();
+                throw new IllegalArgumentException(
+                        "Unknown optional check(s): " + remaining + ". Available: " + available);
+            }
             return this;
         }
 
@@ -103,9 +127,10 @@ public class ProcessingService {
         this.listener = builder.listener;
         this.schema = TagSchema.loadDefault();
 
+        List<Supplier<Check>> allUserChecks = new ArrayList<>(ProcessingDefaults.defaultChecks());
+        allUserChecks.addAll(builder.includedChecks);
         List<Supplier<Check>> filtered =
-                filterChecks(
-                        ProcessingDefaults.allChecks(), builder.skipChecks, builder.onlyChecks);
+                filterChecks(allUserChecks, builder.skipChecks, builder.onlyChecks);
         filtered.addAll(builder.injectedChecks);
         validateCheckPrereqs(filtered);
         this.checks = List.copyOf(filtered);

@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.checks.*;
@@ -29,7 +30,7 @@ import net.boyechko.pdf.autoa11y.validation.Check;
 public final class ProcessingDefaults {
     private ProcessingDefaults() {}
 
-    public static List<Supplier<Check>> allChecks() {
+    public static List<Supplier<Check>> defaultChecks() {
         return List.of(
                 // Document checks
                 ImageOnlyDocumentCheck::new,
@@ -54,5 +55,17 @@ public final class ProcessingDefaults {
                 ParagraphOfLinksCheck::new,
                 EmptyElementCheck::new,
                 SchemaValidationCheck::new);
+    }
+
+    /** Self-contained optional checks that can be activated directly. */
+    public static List<Supplier<Check>> optionalChecks() {
+        return List.of(ClearRoleMapCheck::new);
+    }
+
+    /** All known checks: defaults followed by optional. */
+    public static List<Supplier<Check>> allChecks() {
+        List<Supplier<Check>> all = new ArrayList<>(defaultChecks());
+        all.addAll(optionalChecks());
+        return all;
     }
 }

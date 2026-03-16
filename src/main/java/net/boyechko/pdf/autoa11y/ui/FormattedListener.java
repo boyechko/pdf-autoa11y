@@ -143,7 +143,7 @@ public class FormattedListener implements ProcessingListener {
             if (detected == 0 && resolved == 0) {
                 printLine(
                         "Checked "
-                                + ProcessingDefaults.allChecks().size()
+                                + ProcessingDefaults.defaultChecks().size()
                                 + " rules and found no issues",
                         SUCCESS);
             } else {
