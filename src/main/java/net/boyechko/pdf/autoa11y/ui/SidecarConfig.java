@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,25 +42,38 @@ public final class SidecarConfig {
     private final boolean present;
     private final Set<String> skipChecks;
     private final Set<String> onlyChecks;
+    private final Set<String> includeChecks;
+    private final Optional<Map<String, String>> roleMap;
 
-    private SidecarConfig(boolean present, Set<String> skipChecks, Set<String> onlyChecks) {
+    private SidecarConfig(
+            boolean present,
+            Set<String> skipChecks,
+            Set<String> onlyChecks,
+            Set<String> includeChecks,
+            Optional<Map<String, String>> roleMap) {
         this.present = present;
         this.skipChecks = Set.copyOf(skipChecks);
         this.onlyChecks = Set.copyOf(onlyChecks);
+        this.includeChecks = Set.copyOf(includeChecks);
+        this.roleMap = roleMap;
+    }
+
+    private static SidecarConfig empty() {
+        return new SidecarConfig(false, Set.of(), Set.of(), Set.of(), Optional.empty());
     }
 
     /** Loads sidecar config for the given PDF path, or returns an empty config if none exists. */
     public static SidecarConfig forPdf(Path pdfPath) {
         Path sidecarPath = resolveSidecarPath(pdfPath);
         if (!Files.exists(sidecarPath)) {
-            return new SidecarConfig(false, Set.of(), Set.of());
+            return empty();
         }
         logger.info("Loading sidecar config: {}", sidecarPath);
         try {
             return load(sidecarPath);
         } catch (IOException e) {
             logger.warn("Failed to read sidecar config {}: {}", sidecarPath, e.getMessage());
-            return new SidecarConfig(false, Set.of(), Set.of());
+            return empty();
         }
     }
 
@@ -75,6 +90,18 @@ public final class SidecarConfig {
         return onlyChecks;
     }
 
+    public Set<String> includeChecks() {
+        return includeChecks;
+    }
+
+    /**
+     * Returns the role-map mappings if specified in the sidecar config. An empty map means "clear
+     * the role map"; a non-empty map means "replace with these mappings".
+     */
+    public Optional<Map<String, String>> roleMap() {
+        return roleMap;
+    }
+
     /** Returns the union of sidecar skip-checks and additional skip-checks. */
     public Set<String> mergeSkipChecks(Set<String> additionalSkipChecks) {
         return mergeSets(skipChecks, additionalSkipChecks);
@@ -83,6 +110,11 @@ public final class SidecarConfig {
     /** Returns the union of sidecar only-checks and additional only-checks. */
     public Set<String> mergeOnlyChecks(Set<String> additionalOnlyChecks) {
         return mergeSets(onlyChecks, additionalOnlyChecks);
+    }
+
+    /** Returns the union of sidecar include-checks and additional include-checks. */
+    public Set<String> mergeIncludeChecks(Set<String> additionalIncludeChecks) {
+        return mergeSets(includeChecks, additionalIncludeChecks);
     }
 
     private static Path resolveSidecarPath(Path pdfPath) {
@@ -99,11 +131,13 @@ public final class SidecarConfig {
             Yaml yaml = new Yaml();
             Map<String, Object> data = yaml.load(reader);
             if (data == null) {
-                return new SidecarConfig(true, Set.of(), Set.of());
+                return new SidecarConfig(true, Set.of(), Set.of(), Set.of(), Optional.empty());
             }
             Set<String> skip = extractStringList(data, "skip-checks");
             Set<String> only = extractStringList(data, "only-checks");
-            return new SidecarConfig(true, skip, only);
+            Set<String> include = extractStringList(data, "include-checks");
+            Optional<Map<String, String>> roleMap = extractRoleMap(data);
+            return new SidecarConfig(true, skip, only, include, roleMap);
         }
     }
 
@@ -120,6 +154,32 @@ public final class SidecarConfig {
             return result;
         }
         return Set.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Optional<Map<String, String>> extractRoleMap(Map<String, Object> data) {
+        Object value = data.get("role-map");
+        if (value == null) {
+            return Optional.empty();
+        }
+        if ("clear".equals(value)) {
+            return Optional.of(Map.of());
+        }
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            throw new IllegalArgumentException(
+                    "role-map must be a mapping of custom role names to standard tags, or 'clear'");
+        }
+        Map<String, String> mappings = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+            if (!(entry.getKey() instanceof String key)) {
+                throw new IllegalArgumentException("role-map keys must be strings");
+            }
+            if (!(entry.getValue() instanceof String val)) {
+                throw new IllegalArgumentException("role-map values must be strings");
+            }
+            mappings.put(key.trim(), val.trim());
+        }
+        return Optional.of(Map.copyOf(mappings));
     }
 
     private static Set<String> mergeSets(Set<String> a, Set<String> b) {
