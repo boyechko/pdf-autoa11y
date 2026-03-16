@@ -19,6 +19,9 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import net.boyechko.pdf.autoa11y.checks.LanguageSetCheck;
+import net.boyechko.pdf.autoa11y.checks.NeedlessNestingCheck;
+import net.boyechko.pdf.autoa11y.checks.SchemaValidationCheck;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -49,7 +52,7 @@ public class FormattedListenerTest {
     private void replayProcessingTranscript(FormattedListener reporter) {
         IssueList summaryIssues = new IssueList();
 
-        reporter.onPhaseStart("Document rules");
+        reporter.onCheckStart(new LanguageSetCheck());
         reporter.onDetectedSectionStart();
         Issue missingLanguage =
                 issue(
@@ -75,7 +78,7 @@ public class FormattedListenerTest {
         summaryIssues.add(missingLanguage);
         summaryIssues.add(missingDocumentElement);
 
-        reporter.onPhaseStart("Needless Nesting Visitor");
+        reporter.onCheckStart(new NeedlessNestingCheck());
         reporter.onDetectedSectionStart();
         IssueList groupedNestingIssues = new IssueList();
         groupedNestingIssues.add(
@@ -105,7 +108,7 @@ public class FormattedListenerTest {
         reporter.onFixGroup(IssueType.NEEDLESS_NESTING.groupLabel(), groupedNestingIssues);
         summaryIssues.addAll(groupedNestingIssues);
 
-        reporter.onPhaseStart("Schema Validation Visitor");
+        reporter.onCheckStart(new SchemaValidationCheck());
         reporter.onDetectedSectionStart();
         Issue invalidSchemaTag =
                 issue(
