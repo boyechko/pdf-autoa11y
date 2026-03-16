@@ -61,7 +61,7 @@ public class ProcessingService {
         private ProcessingListener listener;
         private final Set<String> skipChecks = new HashSet<>();
         private final Set<String> onlyChecks = new HashSet<>();
-        private final List<Supplier<Check>> includedChecks = new ArrayList<>();
+        private final Set<String> includeChecks = new HashSet<>();
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
@@ -84,31 +84,14 @@ public class ProcessingService {
             return this;
         }
 
-        /** Injects a single check supplier directly. */
-        public ProcessingServiceBuilder injectCheck(Supplier<Check> supplier) {
-            injectedChecks.add(Objects.requireNonNull(supplier, "supplier"));
+        public ProcessingServiceBuilder includeChecks(Set<String> checkClassNames) {
+            includeChecks.addAll(checkClassNames);
             return this;
         }
 
-        /** Resolves named optional checks from the registry for user-level inclusion. */
-        public ProcessingServiceBuilder includeChecks(Set<String> checkNames) {
-            if (checkNames.isEmpty()) {
-                return this;
-            }
-            List<Supplier<Check>> optional = ProcessingDefaults.optionalChecks();
-            Set<String> remaining = new HashSet<>(checkNames);
-            for (Supplier<Check> supplier : optional) {
-                String className = supplier.get().getClass().getSimpleName();
-                if (remaining.remove(className)) {
-                    includedChecks.add(supplier);
-                }
-            }
-            if (!remaining.isEmpty()) {
-                List<String> available =
-                        optional.stream().map(s -> s.get().getClass().getSimpleName()).toList();
-                throw new IllegalArgumentException(
-                        "Unknown optional check(s): " + remaining + ". Available: " + available);
-            }
+        /** Injects a single check supplier directly, bypassing name-based filtering. */
+        public ProcessingServiceBuilder injectCheck(Supplier<Check> supplier) {
+            injectedChecks.add(Objects.requireNonNull(supplier, "supplier"));
             return this;
         }
 
@@ -127,10 +110,13 @@ public class ProcessingService {
         this.listener = builder.listener;
         this.schema = TagSchema.loadDefault();
 
-        List<Supplier<Check>> allUserChecks = new ArrayList<>(ProcessingDefaults.defaultChecks());
-        allUserChecks.addAll(builder.includedChecks);
         List<Supplier<Check>> filtered =
-                filterChecks(allUserChecks, builder.skipChecks, builder.onlyChecks);
+                selectChecks(
+                        ProcessingDefaults.allChecks(),
+                        ProcessingDefaults.defaultChecks(),
+                        builder.skipChecks,
+                        builder.onlyChecks,
+                        builder.includeChecks);
         filtered.addAll(builder.injectedChecks);
         validateCheckPrereqs(filtered);
         this.checks = List.copyOf(filtered);
@@ -139,26 +125,49 @@ public class ProcessingService {
     // == Filtering and validation =====================================
 
     /**
-     * Filters check suppliers based on the skip and includeOnly sets. Probes each supplier once to
-     * read its class name; the supplier itself is retained for later fresh instantiation.
+     * Selects which checks to run from the full pool of known checks.
+     *
+     * <ul>
+     *   <li>{@code only}: keep exactly these
+     *   <li>{@code include}: add these to the defaults
+     *   <li>{@code skip}: remove these from the active set
+     * </ul>
      */
-    private static ArrayList<Supplier<Check>> filterChecks(
-            List<Supplier<Check>> defaults, Set<String> skip, Set<String> includeOnly) {
-        if (skip.isEmpty() && includeOnly.isEmpty()) {
-            return new ArrayList<>(defaults);
+    private static ArrayList<Supplier<Check>> selectChecks(
+            List<Supplier<Check>> allChecks,
+            List<Supplier<Check>> defaultChecks,
+            Set<String> skip,
+            Set<String> only,
+            Set<String> include) {
+        if (!only.isEmpty()) {
+            return filterByName(allChecks, only::contains);
         }
-        ArrayList<Supplier<Check>> filtered = new ArrayList<>();
-        for (Supplier<Check> supplier : defaults) {
+        Set<String> defaultNames = collectNames(defaultChecks);
+        return filterByName(
+                allChecks,
+                name ->
+                        (defaultNames.contains(name) || include.contains(name))
+                                && !skip.contains(name));
+    }
+
+    private static ArrayList<Supplier<Check>> filterByName(
+            List<Supplier<Check>> checks, java.util.function.Predicate<String> predicate) {
+        ArrayList<Supplier<Check>> result = new ArrayList<>();
+        for (Supplier<Check> supplier : checks) {
             String className = supplier.get().getClass().getSimpleName();
-            if (!includeOnly.isEmpty()) {
-                if (includeOnly.contains(className)) {
-                    filtered.add(supplier);
-                }
-            } else if (!skip.contains(className)) {
-                filtered.add(supplier);
+            if (predicate.test(className)) {
+                result.add(supplier);
             }
         }
-        return filtered;
+        return result;
+    }
+
+    private static Set<String> collectNames(List<Supplier<Check>> checks) {
+        Set<String> names = new HashSet<>();
+        for (Supplier<Check> supplier : checks) {
+            names.add(supplier.get().getClass().getSimpleName());
+        }
+        return names;
     }
 
     /** Validates that every check's prerequisites appear earlier in the list. */
