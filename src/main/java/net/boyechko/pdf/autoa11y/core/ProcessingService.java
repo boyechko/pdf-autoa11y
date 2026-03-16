@@ -223,7 +223,7 @@ public class ProcessingService {
 
                     if (allIssues.hasFatalIssues()) {
                         listener.onSummary(allIssues);
-                        cleanupPipelineDir(pipelineDir, tempFiles);
+                        cleanupPipelineTempDir();
                         return ProcessingResult.aborted(allIssues);
                     }
 
@@ -252,12 +252,12 @@ public class ProcessingService {
             }
 
             listener.onSummary(allIssues);
-            cleanupPipelineDir(pipelineDir, tempFiles);
+            cleanupPipelineTempDir();
 
             return new ProcessingResult(
                     allIssues, allFixes, allIssues.getRemainingIssues(), finalOutput);
         } catch (Exception e) {
-            cleanupPipelineDir(pipelineDir, tempFiles);
+            cleanupPipelineTempDir();
             throw e;
         }
     }
@@ -331,18 +331,41 @@ public class ProcessingService {
         if (!Files.exists(pipelineDir)) {
             Files.createDirectories(pipelineDir);
         } else {
-            try (var stream = Files.list(pipelineDir)) {
-                stream.forEach(
-                        path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (Exception e) {
-                                throw new RuntimeException("Error deleting pipeline temp file", e);
-                            }
-                        });
-            }
+            deleteAllFiles(pipelineDir);
         }
         return pipelineDir;
+    }
+
+    /** Cleans up the pipeline directory and temporary files if KEEP_PIPELINE_TEMPS is false. */
+    private void cleanupPipelineTempDir() {
+        if (!KEEP_PIPELINE_TEMPS) {
+            deleteAllFiles(PIPELINE_TEMP_DIR);
+            try {
+                Files.deleteIfExists(PIPELINE_TEMP_DIR);
+            } catch (IOException e) {
+                logger.warn("Failed to delete pipeline temp directory", e);
+            }
+        } else {
+            logger.debug("Pipeline temps: {}", PIPELINE_TEMP_DIR);
+        }
+    }
+
+    private static void deleteAllFiles(Path directory) {
+        try (var stream = Files.list(directory)) {
+            stream.forEach(
+                    path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (Exception e) {
+                            throw new RuntimeException("Error deleting pipeline temp file", e);
+                        }
+                    });
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static String sanitizeForFilename(String name) {
+        return name.replaceAll("[^a-zA-Z0-9_-]", "_");
     }
 
     // == Reporting helpers ============================================
@@ -404,29 +427,5 @@ public class ProcessingService {
                 }
             }
         }
-    }
-
-    // == Cleanup ======================================================
-
-    /** Cleans up the pipeline directory and temporary files if KEEP_PIPELINE_TEMPS is false. */
-    private static void cleanupPipelineDir(Path pipelineDir, List<Path> tempFiles) {
-        if (KEEP_PIPELINE_TEMPS) {
-            logger.debug("Pipeline temps kept at: {}", pipelineDir);
-            return;
-        }
-        for (Path temp : tempFiles) {
-            try {
-                Files.deleteIfExists(temp);
-            } catch (Exception ignored) {
-            }
-        }
-        try {
-            Files.deleteIfExists(pipelineDir);
-        } catch (Exception ignored) {
-        }
-    }
-
-    private static String sanitizeForFilename(String name) {
-        return name.replaceAll("[^a-zA-Z0-9_-]", "_");
     }
 }
