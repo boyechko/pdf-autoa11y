@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `StaleAnnotationCheck` to flag structure elements with workflow
+  annotations (titles starting with `__`) left over from manual remediation in
+  Acrobat. Runs last in the pipeline; no automatic fix.
 - Added structure tree order check and fix (`StructTreeOrderCheck` /
   `StructTreeOrderFix`) that detects and corrects siblings out of reading order
   by sorting them based on their first marked-content appearance (page number,
