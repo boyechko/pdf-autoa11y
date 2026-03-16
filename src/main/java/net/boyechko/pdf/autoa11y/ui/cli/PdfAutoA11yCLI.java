@@ -64,6 +64,7 @@ public class PdfAutoA11yCLI {
             Path reportPath,
             VerbosityLevel verbosity,
             boolean printStructureTree,
+            boolean createSidecar,
             Set<String> skipChecks,
             Set<String> onlyChecks,
             Set<String> includeChecks) {
@@ -71,7 +72,11 @@ public class PdfAutoA11yCLI {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
-            if (!analyzeOnly && !dumpTreeSimple && !dumpTreeDetailed && outputPath == null) {
+            if (!analyzeOnly
+                    && !dumpTreeSimple
+                    && !dumpTreeDetailed
+                    && !createSidecar
+                    && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
             }
             if (verbosity == null) {
@@ -103,6 +108,10 @@ public class PdfAutoA11yCLI {
     }
 
     private static void processFile(CLIConfig config) {
+        if (config.createSidecar()) {
+            createSidecar(config);
+            return;
+        }
         if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
             dumpTree(config);
             return;
@@ -200,6 +209,16 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    private static void createSidecar(CLIConfig config) {
+        try {
+            Path created = SidecarConfig.createTemplate(config.inputPath());
+            System.out.println("Created sidecar config: " + created);
+        } catch (IOException e) {
+            System.err.println("✗ Failed to create sidecar config: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
     /** Prints the structure tree to the console based on the CLI config. */
     private static void dumpTree(CLIConfig config) {
         try {
@@ -290,6 +309,7 @@ public class PdfAutoA11yCLI {
                     case "-t", "--print-tree" -> b.printStructureTree = true;
                     case "--dump-tree" -> b.dumpTreeDetailed = true;
                     case "--dump-roles" -> b.dumpTreeSimple = true;
+                    case "--create-sidecar" -> b.createSidecar = true;
                     case "-f", "--force" -> b.forceSave = true;
                     case "-a", "--analyze" -> b.analyzeOnly = true;
                     case "-r", "--report" -> b.generateReport = true;
@@ -341,6 +361,7 @@ public class PdfAutoA11yCLI {
         Path reportPath;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
         boolean printStructureTree;
+        boolean createSidecar;
         Set<String> skipChecks = Set.of();
         Set<String> onlyChecks = Set.of();
         Set<String> includeChecks = Set.of();
@@ -369,13 +390,14 @@ public class PdfAutoA11yCLI {
                     reportPath,
                     verbosity,
                     printStructureTree,
+                    createSidecar,
                     skipChecks,
                     onlyChecks,
                     includeChecks);
         }
 
         private void resolveOutputPath(String baseName) {
-            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed) {
+            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed || createSidecar) {
                 return;
             }
             if (outputPath == null) {
@@ -423,22 +445,20 @@ public class PdfAutoA11yCLI {
                 + "  -v, --verbose     Show detailed processing information\n"
                 + "  -vv, --debug      Show all debug information\n"
                 + "  -t, --print-tree  Print the structure tree during processing\n"
-                + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
-                + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  -f, --force       Force save even if no fixes applied\n"
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save accessibility report (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
+                + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
+                + "  --dump-roles      Print the structure tree (roles only) and exit\n"
+                + "  --create-sidecar  Create a template sidecar config file and exit\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
                 + "\n"
                 + "Sidecar config: place a <basename>.autoa11y.yaml file next to the input PDF\n"
-                + "to set persistent per-file check configuration. Example contents:\n"
-                + "  skip-checks:\n"
-                + "    - NeedlessNestingCheck\n"
-                + "  include-checks:\n"
-                + "    - ClearRoleMapCheck\n"
+                + "to set persistent per-file check configuration. You can generate a template\n"
+                + "with --create-sidecar argument."
                 + "\n"
                 + "Examples:\n"
                 + "  java PdfAutoA11yCLI -a -v document.pdf\n"

@@ -33,6 +33,9 @@ Versioning](https://semver.org/).
   specified in the sidecar config under the `role-map:` key.
 - Added sidecar `role-map:` key supporting both a mapping dictionary and the
   literal `clear` to remove the role map entirely.
+- Added `--create-sidecar` CLI option to generate a template
+  `<basename>.autoa11y.yaml` file with all known checks and options listed as
+  commented-out examples.
 - Added per-PDF sidecar config files (`<basename>.autoa11y.yaml`) for persistent
   check configuration, so skip/only-checks settings travel with each input file.
 - Added configurable per-input pipeline temp directories via

@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
+import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -70,6 +73,35 @@ public final class SidecarConfig {
             logger.warn("Failed to read sidecar config {}: {}", sidecarPath, e.getMessage());
             return empty();
         }
+    }
+
+    /** Creates a template sidecar config file for the given PDF. Returns the created path. */
+    public static Path createTemplate(Path pdfPath) throws IOException {
+        Path sidecarPath = resolveSidecarPath(pdfPath);
+        StringBuilder sb = new StringBuilder();
+        sb.append("# Sidecar config for ").append(pdfPath.getFileName()).append("\n");
+        sb.append("# See --help for details.\n\n");
+
+        sb.append("#skip-checks:\n");
+        sb.append("#  - CheckName\n\n");
+
+        sb.append("#only-checks:\n");
+        for (Supplier<Check> supplier : ProcessingDefaults.defaultChecks()) {
+            sb.append("#  - ").append(supplier.get().getClass().getSimpleName()).append("\n");
+        }
+        sb.append("\n");
+
+        sb.append("#include-checks:\n");
+        for (Supplier<Check> supplier : ProcessingDefaults.optionalChecks()) {
+            sb.append("#  - ").append(supplier.get().getClass().getSimpleName()).append("\n");
+        }
+        sb.append("\n");
+
+        sb.append("#role-map:\n");
+        sb.append("#  CustomRole: StandardRole\n");
+
+        Files.writeString(sidecarPath, sb.toString());
+        return sidecarPath;
     }
 
     // == Accessors ========================================================
