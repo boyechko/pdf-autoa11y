@@ -54,7 +54,8 @@ public final class ProcessingDefaults {
                 MistaggedBulletedListCheck::new,
                 ParagraphOfLinksCheck::new,
                 EmptyElementCheck::new,
-                SchemaValidationCheck::new);
+                SchemaValidationCheck::new,
+                StaleAnnotationCheck::new);
     }
 
     /** Self-contained optional checks that can be activated directly. */
