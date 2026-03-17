@@ -17,14 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
-import com.itextpdf.kernel.pdf.PdfArray;
-import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfIndirectReference;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNumber;
-import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
@@ -104,14 +97,14 @@ public final class StructTree {
             if (pageNum > 0) return pageNum;
         }
 
-        // Check via indirect reference in context cache
+        // Check via indirect reference in the context cache
         int objNum = objNum(elem);
         if (objNum >= 0) {
             int pageNum = ctx.getPageNumber(objNum);
             if (pageNum > 0) return pageNum;
         }
 
-        // Recursively check first child with a page
+        // Recursively check for the first child with a page
         List<IStructureNode> kids = elem.getKids();
         if (kids != null) {
             for (IStructureNode kid : kids) {
@@ -396,6 +389,14 @@ public final class StructTree {
     public static PdfStructElem parentOf(PdfStructElem n) {
         IStructureNode p = n.getParent();
         return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
+    }
+
+    // === Miscellaneous utilities ===========================================
+
+    public static final String ANNOTATION_PREFIX = "__";
+
+    public static void setWorkingAnnotation(PdfStructElem elem, String annotation) {
+        elem.put(PdfName.T, new PdfString(ANNOTATION_PREFIX + annotation));
     }
 
     // --- Structure tree traversal utilities ---
