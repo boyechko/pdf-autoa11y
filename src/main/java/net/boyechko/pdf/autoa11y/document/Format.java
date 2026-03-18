@@ -32,9 +32,7 @@ public final class Format {
 
     /** Returns a short label for a structure element: role and object number. */
     public static String elem(PdfStructElem elem) {
-        String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructTree.objNum(elem);
-        return objNum >= 0 ? role + " (obj. #" + objNum + ")" : role;
+        return elem(elem, 0);
     }
 
     /**
@@ -43,43 +41,34 @@ public final class Format {
      * <p>The page is omitted when {@code pageNum <= 0}.
      */
     public static String elem(PdfStructElem elem, int pageNum) {
-        String role = elem.getRole() != null ? elem.getRole().getValue() : "?";
-        int objNum = StructTree.objNum(elem);
-        if (objNum < 0) return role;
-        if (pageNum > 0) return role + " (obj. #" + objNum + ", p. " + pageNum + ")";
-        return role + " (obj. #" + objNum + ")";
+        return Label.of(DocValue.Role.of(elem))
+                .add(DocValue.ObjNum.of(elem))
+                .add(pageNum > 0 ? page(pageNum) : null)
+                .separator(", ")
+                .wrap("(", ")")
+                .toString();
     }
 
     /** Returns a short label for a structure element, resolving the page via {@code ctx}. */
     public static String elem(PdfStructElem elem, DocContext ctx) {
-        int objNum = StructTree.objNum(elem);
-        int pageNum = ctx.getPageNumber(objNum);
+        DocValue.ObjNum obj = DocValue.ObjNum.of(elem);
+        int pageNum = obj != null ? ctx.getPageNumber(obj.value()) : 0;
         return elem(elem, pageNum);
     }
 
     /** Returns a short label for a PDF object number. */
     public static String objNum(int objNum) {
-        return "obj. #" + objNum;
-    }
-
-    /** Returns a short label for a PDF object number and page number. */
-    public static String objNum(int objNum, int pageNum) {
-        return objNum(objNum) + " (" + page(pageNum) + ")";
+        return new DocValue.ObjNum(objNum).toString();
     }
 
     /** Returns a short label for a page number. */
     public static String page(int pageNum) {
-        return "p. " + pageNum;
+        return new DocValue.PageNum(pageNum).toString();
     }
 
     /** Returns a short label for a marked content identifier. */
     public static String mcid(int mcid) {
-        return "MCID #" + mcid;
-    }
-
-    /** Returns a short label for a marked content identifier on a page. */
-    public static String mcid(int mcid, int pageNum) {
-        return mcid(mcid) + " (" + page(pageNum) + ")";
+        return new DocValue.Mcid(mcid).toString();
     }
 
     /**
@@ -97,16 +86,13 @@ public final class Format {
                 yield s + ")";
             }
             case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) -> {
-                int objNum = StructTree.objNum(element);
-                if (objNum < 0 && pageNum == null) {
-                    if (role != null && !role.isBlank()) {
-                        yield " (" + role + ")";
-                    }
-                    yield "";
+                DocValue.ObjNum obj = DocValue.ObjNum.of(element);
+                if (obj == null && pageNum == null) {
+                    yield (role != null && !role.isBlank()) ? " (" + role + ")" : "";
                 }
                 String s = " (";
-                if (objNum >= 0) {
-                    s += objNum(objNum);
+                if (obj != null) {
+                    s += objNum(obj.value());
                     if (pageNum != null) s += ", " + page(pageNum);
                 } else {
                     s += page(pageNum);
@@ -125,14 +111,6 @@ public final class Format {
                 yield s + ")";
             }
         };
-    }
-
-    /**
-     * Returns a parenthesized location string for an object number and page number. e.g. {@code "
-     * (obj. #42, p. 3)"}.
-     */
-    public static String loc(int objNum, int pageNum) {
-        return " (" + objNum(objNum) + ", " + page(pageNum) + ")";
     }
 
     private static String typedObj(IssueLoc.ObjKind kind, int objNum) {
