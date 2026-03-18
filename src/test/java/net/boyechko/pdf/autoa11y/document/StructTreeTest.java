@@ -17,8 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
-import static net.boyechko.pdf.autoa11y.document.StructTree.Node.branch;
-import static net.boyechko.pdf.autoa11y.document.StructTree.Node.leaf;
+import static net.boyechko.pdf.autoa11y.document.TreeDiagram.Node.branch;
+import static net.boyechko.pdf.autoa11y.document.TreeDiagram.Node.leaf;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfArray;
@@ -32,7 +32,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.StructTree.Node;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram.Node;
 import org.junit.jupiter.api.Test;
 
 class StructTreeTest extends PdfTestBase {
@@ -423,7 +423,7 @@ class StructTreeTest extends PdfTestBase {
             p.addKid(span);
 
             Node<String> expected = branch("Document", leaf("H1"), branch("P", leaf("Span")));
-            assertEquals(expected, StructTree.toRoleTree(document));
+            assertEquals(expected, TreeDiagram.toRoleTree(document));
         }
     }
 

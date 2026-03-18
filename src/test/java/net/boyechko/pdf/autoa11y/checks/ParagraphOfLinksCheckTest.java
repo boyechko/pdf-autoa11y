@@ -30,7 +30,8 @@ import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.StructTree.Node;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram.Node;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -77,7 +78,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
             issue.fix().apply(new DocContext(pdfDoc));
 
             Node<String> roleTree =
-                    StructTree.toRoleTree(StructTree.findDocument(pdfDoc.getStructTreeRoot()));
+                    TreeDiagram.toRoleTree(StructTree.findDocument(pdfDoc.getStructTreeRoot()));
             assertEquals(
                     "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",
                     roleTree.toString());
@@ -99,7 +100,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
                     layoutDoc.add(p);
                     assertEquals(
                             "Document[P[Link,Span,Link,Span,Link,Span,Link,Span,Link,Span]]",
-                            StructTree.toRoleTreeString(
+                            TreeDiagram.toRoleTreeString(
                                     StructTree.findDocument(pdfDoc.getStructTreeRoot())));
 
                     StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());

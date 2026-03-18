@@ -38,6 +38,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
@@ -240,9 +241,9 @@ public class PdfAutoA11yCLI {
                         PdfPage page = pdfDoc.getPage(i);
                         contentKinds.putAll(Content.extractContentKindsForPage(page));
                     }
-                    System.out.print(StructTree.toDetailedTreeString(docElem, contentKinds));
+                    System.out.print(TreeDiagram.toDetailedTreeString(docElem, contentKinds));
                 } else {
-                    System.out.print(StructTree.toIndentedTreeString(docElem));
+                    System.out.print(TreeDiagram.toIndentedTreeString(docElem));
                 }
             }
         } catch (Exception e) {

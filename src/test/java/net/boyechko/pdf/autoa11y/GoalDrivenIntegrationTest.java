@@ -39,6 +39,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -115,7 +116,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                 PdfPage page = doc.getPage(i);
                 contentKinds.putAll(Content.extractContentKindsForPage(page));
             }
-            return StructTree.toDetailedTreeString(docElem, contentKinds).strip();
+            return TreeDiagram.toDetailedTreeString(docElem, contentKinds).strip();
         }
     }
 
