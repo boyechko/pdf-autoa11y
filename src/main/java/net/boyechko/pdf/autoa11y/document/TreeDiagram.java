@@ -79,6 +79,9 @@ public final class TreeDiagram {
             int depth,
             Map<Integer, Set<Content.ContentKind>> contentKinds,
             int[] currentPage) {
+        // Emit page break before the element if its first leaf is on a new page
+        emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
+
         sb.append(indentation(depth));
         sb.append(structElemLabel(elem));
         sb.append('\n');
@@ -109,10 +112,30 @@ public final class TreeDiagram {
         }
     }
 
+    /** Returns the page number of the first MCR or OBJR leaf in a subtree, or 0 if none. */
+    private static int firstLeafPage(PdfStructElem elem) {
+        List<IStructureNode> kids = elem.getKids();
+        if (kids == null) return 0;
+        for (IStructureNode kid : kids) {
+            switch (kid) {
+                case PdfMcr mcr -> {
+                    int page = pageOf(mcr);
+                    if (page > 0) return page;
+                }
+                case PdfStructElem childElem -> {
+                    int page = firstLeafPage(childElem);
+                    if (page > 0) return page;
+                }
+                default -> {}
+            }
+        }
+        return 0;
+    }
+
     private static void emitPageBreakIfNeeded(StringBuilder sb, int pageNum, int[] currentPage) {
         if (pageNum > 0 && pageNum != currentPage[0]) {
             currentPage[0] = pageNum;
-            sb.append("--- Page ");
+            sb.append("------------------------- Page ");
             sb.append(pageNum);
             sb.append(" ---\n");
         }
