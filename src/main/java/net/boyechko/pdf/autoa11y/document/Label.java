@@ -22,22 +22,31 @@ import java.util.List;
 
 /** Builds compact labels from optional parts, skipping nulls and empty strings. */
 public final class Label {
-    private final String prefix;
+    private final String subject;
     private final List<String> parts = new ArrayList<>();
     private String separator = " ";
     private String open = "";
     private String close = "";
 
-    private Label(String prefix) {
-        this.prefix = prefix;
+    private Label(DocValue subject) {
+        this.subject = subject.toString();
     }
 
-    /** Creates a label with the given prefix (always included). */
-    public static Label of(String prefix) {
-        return new Label(prefix);
+    /** Creates a label with the given token as the main subject. */
+    public static Label of(DocValue subject) {
+        return new Label(subject);
     }
 
-    /** Adds a part to the label, ignored if null or empty. */
+    /** Adds a token to the label, ignored if null. */
+    public Label add(DocValue part) {
+        if (part != null) {
+            String s = part.toString();
+            if (!s.isEmpty()) parts.add(s);
+        }
+        return this;
+    }
+
+    /** Adds a raw string to the label, ignored if null or empty. */
     public Label add(String part) {
         if (part != null && !part.isEmpty()) parts.add(part);
         return this;
@@ -59,7 +68,7 @@ public final class Label {
     /** Builds the label string. Parts are joined and wrapped only if non-empty. */
     @Override
     public String toString() {
-        if (parts.isEmpty()) return prefix;
-        return prefix + " " + open + String.join(separator, parts) + close;
+        if (parts.isEmpty()) return subject;
+        return subject + " " + open + String.join(separator, parts) + close;
     }
 }

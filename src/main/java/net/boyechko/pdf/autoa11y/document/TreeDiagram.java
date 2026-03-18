@@ -104,7 +104,11 @@ public final class TreeDiagram {
                 case PdfMcr mcr -> {
                     emitPageBreakIfNeeded(sb, pageOf(mcr), currentPage);
                     sb.append(childIndent);
-                    sb.append("[" + mcrLabel(mcr, contentKinds) + "]");
+                    sb.append(
+                            "["
+                                    + new DocValue.Mcr(
+                                            mcr.getMcid(), contentKinds.get(mcr.getMcid()))
+                                    + "]");
                     sb.append('\n');
                 }
                 default -> throw new IllegalArgumentException("Unexpected value: " + kid);
@@ -142,51 +146,20 @@ public final class TreeDiagram {
     }
 
     private static String structElemLabel(PdfStructElem elem) {
-        int obj = StructTree.objNum(elem);
-        PdfString t = elem.getPdfObject().getAsString(PdfName.T);
-        return Label.of(StructTree.mappedRole(elem))
-                .add(obj >= 0 ? "#" + obj : "")
-                .add(
-                        t != null && !t.toUnicodeString().isEmpty()
-                                ? "\"" + t.toUnicodeString() + "\""
-                                : "")
+        return Label.of(new DocValue.Role(StructTree.mappedRole(elem)))
+                .add(DocValue.ObjNum.of(elem))
+                .add(DocValue.Annotation.of(elem))
                 .toString();
     }
 
     private static String objrLabel(PdfObjRef objRef) {
-        PdfDictionary refObj = objRef.getReferencedObject();
-        String objrLabel = "";
-        if (refObj == null) {
+        DocValue annot = DocValue.annotOf(objRef);
+        if (annot == null) {
             logger.debug(
                     "No referenced object found for OBJR {}", objRef.getPdfObject().toString());
-            return objrLabel + "unknown";
+            return "unknown";
         }
-        PdfName subtype = refObj.getAsName(PdfName.Subtype);
-        objrLabel = subtype != null ? objrLabel + subtype.getValue().toLowerCase() : objrLabel;
-        PdfIndirectReference ref = refObj.getIndirectReference();
-        String label = ref != null ? objrLabel + " #" + ref.getObjNumber() : objrLabel;
-        return label;
-    }
-
-    private static String mcrLabel(
-            PdfMcr mcr, Map<Integer, Set<Content.ContentKind>> contentKinds) {
-        int mcid = mcr.getMcid();
-        Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-        String mcrLabel = "";
-
-        if (kinds == null || kinds.isEmpty()) {
-            logger.debug("No content kinds found for MCID #{}", mcid);
-            return mcrLabel + "unknown";
-        }
-        boolean hasText = kinds.contains(Content.ContentKind.TEXT);
-        boolean hasImage = kinds.contains(Content.ContentKind.IMAGE);
-        boolean hasPath = kinds.contains(Content.ContentKind.PATH);
-        List<String> labels = new ArrayList<>();
-        if (hasText) labels.add("text");
-        if (hasImage) labels.add("image");
-        if (hasPath) labels.add("path");
-        mcrLabel += labels.isEmpty() ? "unknown" : String.join("+", labels);
-        return mcrLabel + " &" + mcid;
+        return annot.toString();
     }
 
     private static String indentation(int depth) {
