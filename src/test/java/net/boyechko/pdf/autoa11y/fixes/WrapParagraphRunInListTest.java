@@ -24,7 +24,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram;
 import org.junit.jupiter.api.Test;
 
 class WrapParagraphRunInListTest extends PdfTestBase {
@@ -39,7 +39,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals("Document[P, P, P]", StructTree.toRoleTree(document).toString());
+                    assertEquals("Document[P, P, P]", TreeDiagram.toRoleTree(document).toString());
 
                     DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
@@ -48,7 +48,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
 
                     assertEquals(
                             "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
-                            StructTree.toRoleTree(document).toString());
+                            TreeDiagram.toRoleTree(document).toString());
                 });
     }
 
@@ -62,7 +62,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals("Document[P, P, P]", StructTree.toRoleTree(document).toString());
+                    assertEquals("Document[P, P, P]", TreeDiagram.toRoleTree(document).toString());
 
                     DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
@@ -71,7 +71,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
 
                     assertEquals(
                             "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
-                            StructTree.toRoleTree(document).toString());
+                            TreeDiagram.toRoleTree(document).toString());
                 });
     }
 }
