@@ -142,10 +142,15 @@ public final class TreeDiagram {
     }
 
     private static String structElemLabel(PdfStructElem elem) {
-        String role = StructTree.mappedRole(elem);
+        int obj = StructTree.objNum(elem);
         PdfString t = elem.getPdfObject().getAsString(PdfName.T);
-        if (t == null || t.getValue().isEmpty()) return role;
-        return role + " \"" + t.getValue() + "\"";
+        return Label.of(StructTree.mappedRole(elem))
+                .add(obj >= 0 ? "#" + obj : "")
+                .add(
+                        t != null && !t.toUnicodeString().isEmpty()
+                                ? "\"" + t.toUnicodeString() + "\""
+                                : "")
+                .toString();
     }
 
     private static String objrLabel(PdfObjRef objRef) {
