@@ -86,9 +86,9 @@ public sealed interface DocValue {
     }
 
     /** A structure element annotation (/T key), rendered as {@code "some title"}. */
-    record Annotation(String value) implements DocValue {
+    record Scribble(String value) implements DocValue {
         /** Extracts the string value of /T key from the element. */
-        public static Annotation of(PdfStructElem elem) {
+        public static Scribble of(PdfStructElem elem) {
             PdfString t = elem.getPdfObject().getAsString(PdfName.T);
             if (t == null) {
                 return null;
@@ -99,7 +99,7 @@ public sealed interface DocValue {
             if (value.isEmpty()) {
                 return null;
             }
-            return new DocValue.Annotation(value);
+            return new Scribble(value);
         }
 
         @Override

@@ -398,10 +398,10 @@ public final class StructTree {
 
     // === Miscellaneous utilities ===========================================
 
-    public static final String ANNOTATION_PREFIX = "__";
+    public static final String SCRIBBLE_PREFIX = "__";
 
-    public static void setWorkingAnnotation(PdfStructElem elem, String annotation) {
-        elem.put(PdfName.T, new PdfString(ANNOTATION_PREFIX + annotation));
+    public static void setScribble(PdfStructElem elem, String scribble) {
+        elem.put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + scribble));
     }
 
     /**

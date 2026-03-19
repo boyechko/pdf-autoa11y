@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
+import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -32,16 +33,15 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class StaleAnnotationCheckTest extends PdfTestBase {
-
-    private static final String PREFIX = StaleAnnotationCheck.ANNOTATION_PREFIX;
+class StaleScribbleCheckTest extends PdfTestBase {
 
     @Test
     void detectsAnnotatedTitle() throws Exception {
         createStructuredTestPdf(
                 (pdfDoc, firstPage, root, document) -> {
                     PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject().put(PdfName.T, new PdfString(PREFIX + "NeedsReview"));
+                    h1.getPdfObject()
+                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
                     document.addKid(h1);
                 });
 
@@ -49,8 +49,8 @@ class StaleAnnotationCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size());
-            assertEquals(IssueType.STALE_ANNOTATION, issues.get(0).type());
-            assertNull(issues.get(0).fix(), "Stale annotations have no automatic fix");
+            assertEquals(IssueType.STALE_SCRIBBLE, issues.get(0).type());
+            assertNull(issues.get(0).fix(), "Stale scribbles have no automatic fix");
         }
     }
 
@@ -86,15 +86,17 @@ class StaleAnnotationCheckTest extends PdfTestBase {
     }
 
     @Test
-    void detectsMultipleStaleAnnotations() throws Exception {
+    void detectsMultipleStaleScribbles() throws Exception {
         createStructuredTestPdf(
                 (pdfDoc, firstPage, root, document) -> {
                     PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject().put(PdfName.T, new PdfString(PREFIX + "FixHeadingLevel"));
+                    h1.getPdfObject()
+                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "FixHeadingLevel"));
                     document.addKid(h1);
 
                     PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject().put(PdfName.T, new PdfString(PREFIX + "ShouldBeList"));
+                    p.getPdfObject()
+                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
                     document.addKid(p);
                 });
 
@@ -102,13 +104,13 @@ class StaleAnnotationCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(2, issues.size());
-            assertTrue(issues.stream().allMatch(i -> i.type() == IssueType.STALE_ANNOTATION));
+            assertTrue(issues.stream().allMatch(i -> i.type() == IssueType.STALE_SCRIBBLE));
         }
     }
 
     private IssueList runCheck(PdfDocument pdfDoc) {
         StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-        walker.addVisitor(new StaleAnnotationCheck());
+        walker.addVisitor(new StaleScribbleCheck());
         return walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
     }
 }
