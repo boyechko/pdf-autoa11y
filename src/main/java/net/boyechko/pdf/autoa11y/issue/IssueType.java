@@ -53,7 +53,7 @@ public enum IssueType {
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
     PARAGRAPH_OF_LINKS("paragraphs containing only links"),
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
-    STALE_ANNOTATION("elements with stale workflow annotations in /T");
+    STALE_SCRIBBLE("elements with stale workflow scribbles in /T");
 
     private final String groupLabel;
 

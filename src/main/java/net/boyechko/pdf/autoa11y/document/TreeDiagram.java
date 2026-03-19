@@ -20,7 +20,6 @@ package net.boyechko.pdf.autoa11y.document;
 import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
 import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
 
-import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -148,7 +147,7 @@ public final class TreeDiagram {
     private static String structElemLabel(PdfStructElem elem) {
         return Label.of(new DocValue.Role(StructTree.mappedRole(elem)))
                 .add(DocValue.ObjNum.of(elem))
-                .add(DocValue.Annotation.of(elem))
+                .add(DocValue.Scribble.of(elem))
                 .toString();
     }
 

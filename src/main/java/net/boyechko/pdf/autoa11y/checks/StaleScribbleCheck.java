@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
+import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
+
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -27,17 +29,16 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /**
- * Flags structure elements whose /T (title) value starts with "__", indicating a workflow
- * annotation left over from manual remediation that should be cleared before final output.
+ * Flags structure elements whose /T (title) value starts with StructTree.SCRIBBLE_PREFIX,
+ * indicating a workflow scribble left over from manual remediation that should be cleared before
+ * final output.
  */
-public class StaleAnnotationCheck extends StructTreeCheck {
-    static final String ANNOTATION_PREFIX = "__";
-
+public class StaleScribbleCheck extends StructTreeCheck {
     private final IssueList issues = new IssueList();
 
     @Override
     public String name() {
-        return "Stale Annotation Check";
+        return "Stale Scribble Check";
     }
 
     @Override
@@ -52,13 +53,13 @@ public class StaleAnnotationCheck extends StructTreeCheck {
             return true;
         }
         String value = title.toUnicodeString();
-        if (value.startsWith(ANNOTATION_PREFIX)) {
+        if (value.startsWith(SCRIBBLE_PREFIX)) {
             issues.add(
                     new Issue(
-                            IssueType.STALE_ANNOTATION,
+                            IssueType.STALE_SCRIBBLE,
                             IssueSev.WARNING,
                             locAtElem(ctx),
-                            "Stale workflow annotation: " + value));
+                            "Stale workflow scribble: " + value));
         }
         return true;
     }

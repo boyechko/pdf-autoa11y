@@ -55,7 +55,7 @@ public final class ProcessingDefaults {
                 ParagraphOfLinksCheck::new,
                 EmptyElementCheck::new,
                 SchemaValidationCheck::new,
-                StaleAnnotationCheck::new);
+                StaleScribbleCheck::new);
     }
 
     /** Self-contained optional checks that can be activated directly. */
