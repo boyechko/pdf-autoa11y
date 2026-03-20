@@ -53,6 +53,7 @@ public final class ProcessingDefaults {
                 EmptyLinkTagCheck::new,
                 MistaggedBulletedListCheck::new,
                 ParagraphOfLinksCheck::new,
+                ArtifactFlaggedElementsCheck::new,
                 EmptyElementCheck::new,
                 SchemaValidationCheck::new,
                 StaleScribbleCheck::new);
