@@ -12,6 +12,10 @@ Versioning](https://semver.org/).
   whose /T scribble is `__artifact`, supporting a manual remediation workflow
   where headers, footers, and other decorative content are flagged in Acrobat.
   Runs before `EmptyElementCheck` so emptied parents get cleaned up.
+- Added `artifact-patterns` sidecar config key for specifying custom text
+  artifact patterns (name-to-regex map in YAML) that replace the built-in
+  defaults. Converted built-in patterns from `artifact_patterns.txt` to
+  `artifact_patterns.yaml`.
 - Added `StaleScribbleCheck` to flag structure elements with workflow
   scribbles (/T values starting with `__`) left over from manual remediation
   in Acrobat. Runs last in the pipeline; no automatic fix.

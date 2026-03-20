@@ -47,6 +47,7 @@ public final class SidecarConfig {
     private final Set<String> onlyChecks;
     private final Set<String> includeChecks;
     private final Optional<Map<String, String>> roleMap;
+    private final Optional<Map<String, String>> artifactPatterns;
 
     private SidecarConfig(Builder builder) {
         this.present = builder.present;
@@ -54,6 +55,7 @@ public final class SidecarConfig {
         this.onlyChecks = Set.copyOf(builder.onlyChecks);
         this.includeChecks = Set.copyOf(builder.includeChecks);
         this.roleMap = builder.roleMap;
+        this.artifactPatterns = builder.artifactPatterns;
     }
 
     private static SidecarConfig empty() {
@@ -98,7 +100,10 @@ public final class SidecarConfig {
         sb.append("\n");
 
         sb.append("#role-map:\n");
-        sb.append("#  CustomRole: StandardRole\n");
+        sb.append("#  CustomRole: StandardRole\n\n");
+
+        sb.append("#artifact-patterns:\n");
+        sb.append("#  pattern-name: 'regex'\n");
 
         Files.writeString(sidecarPath, sb.toString());
         return sidecarPath;
@@ -131,6 +136,14 @@ public final class SidecarConfig {
         return roleMap;
     }
 
+    /**
+     * Returns artifact text patterns if specified in the sidecar config. A map of pattern name to
+     * regex. When present, these replace the built-in default patterns.
+     */
+    public Optional<Map<String, String>> artifactPatterns() {
+        return artifactPatterns;
+    }
+
     // == Merging ==========================================================
 
     /** Returns the union of sidecar skip-checks and additional skip-checks. */
@@ -156,6 +169,7 @@ public final class SidecarConfig {
         Set<String> onlyChecks = Set.of();
         Set<String> includeChecks = Set.of();
         Optional<Map<String, String>> roleMap = Optional.empty();
+        Optional<Map<String, String>> artifactPatterns = Optional.empty();
 
         Builder skipChecks(Set<String> skipChecks) {
             this.skipChecks = skipChecks;
@@ -174,6 +188,11 @@ public final class SidecarConfig {
 
         Builder roleMap(Optional<Map<String, String>> roleMap) {
             this.roleMap = roleMap;
+            return this;
+        }
+
+        Builder artifactPatterns(Optional<Map<String, String>> artifactPatterns) {
+            this.artifactPatterns = artifactPatterns;
             return this;
         }
 
@@ -202,7 +221,8 @@ public final class SidecarConfig {
                 b.skipChecks(extractStringList(data, "skip-checks"))
                         .onlyChecks(extractStringList(data, "only-checks"))
                         .includeChecks(extractStringList(data, "include-checks"))
-                        .roleMap(extractRoleMap(data));
+                        .roleMap(extractRoleMap(data))
+                        .artifactPatterns(extractStringMap(data, "artifact-patterns"));
             }
             return b.build();
         }
@@ -223,6 +243,32 @@ public final class SidecarConfig {
             return result;
         }
         return Set.of();
+    }
+
+    /** Extracts an optional String-to-String map from a YAML key. */
+    private static Optional<Map<String, String>> extractStringMap(
+            Map<String, Object> data, String key) {
+        if (!data.containsKey(key)) {
+            return Optional.empty();
+        }
+        Object value = data.get(key);
+        if (value == null) {
+            return Optional.of(Map.of());
+        }
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            throw new IllegalArgumentException(key + " must be a mapping of names to values");
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+            if (!(entry.getKey() instanceof String k)) {
+                throw new IllegalArgumentException(key + " keys must be strings");
+            }
+            if (!(entry.getValue() instanceof String v)) {
+                throw new IllegalArgumentException(key + " values must be strings");
+            }
+            result.put(k.trim(), v.trim());
+        }
+        return Optional.of(Map.copyOf(result));
     }
 
     @SuppressWarnings("unchecked")

@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
@@ -152,6 +153,13 @@ public class PdfAutoA11yCLI {
                                     serviceBuilder.injectCheck(
                                             () -> new ReplaceRoleMapCheck(mappings));
                                 }
+                            });
+            sidecar.artifactPatterns()
+                    .ifPresent(
+                            patterns -> {
+                                serviceBuilder.skipChecks(Set.of("MistaggedArtifactCheck"));
+                                serviceBuilder.injectCheck(
+                                        () -> new MistaggedArtifactCheck(patterns));
                             });
             if (config.printStructureTree()) {
                 serviceBuilder.injectCheck(
