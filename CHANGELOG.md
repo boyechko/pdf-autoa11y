@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `ArtifactFlaggedElementsCheck` to automatically artifact elements
+  whose /T scribble is `__artifact`, supporting a manual remediation workflow
+  where headers, footers, and other decorative content are flagged in Acrobat.
+  Runs before `EmptyElementCheck` so emptied parents get cleaned up.
 - Added `StaleScribbleCheck` to flag structure elements with workflow
   scribbles (/T values starting with `__`) left over from manual remediation
   in Acrobat. Runs last in the pipeline; no automatic fix.
