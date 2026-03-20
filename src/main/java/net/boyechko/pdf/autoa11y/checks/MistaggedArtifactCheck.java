@@ -24,13 +24,8 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -47,6 +42,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import org.yaml.snakeyaml.Yaml;
 
 /** Visitor that detects tagged content that should be artifacts. */
 public class MistaggedArtifactCheck extends StructTreeCheck {
@@ -61,16 +57,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     /** Classpath resource containing built-in text artifact patterns. */
-    static final String DEFAULT_PATTERNS_RESOURCE = "/artifact_patterns.txt";
-
-    /**
-     * Optional system property for loading extra text artifact patterns from a file.
-     *
-     * <p>Expected file format: one rule per line as either {@code name=regex} or bare {@code
-     * regex}. Empty lines and lines starting with {@code #} are ignored.
-     */
-    public static final String TEXT_ARTIFACT_PATTERN_FILE_PROPERTY =
-            "autoa11y.mistaggedArtifact.patternFile";
+    static final String DEFAULT_PATTERNS_RESOURCE = "/artifact_patterns.yaml";
 
     // Images above both thresholds are meaningful content images, not decorative
     static final float MEANINGFUL_MIN_WIDTH = 144f; // 2 inches
@@ -82,14 +69,14 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     private final IssueList issues = new IssueList();
     private final List<TextArtifactRule> textArtifactRules;
 
-    /** Loads built-in patterns from classpath, plus optional extras from system property. */
+    /** Loads built-in patterns from the classpath YAML resource. */
     public MistaggedArtifactCheck() {
-        this(loadDefaultPlusConfigured());
+        this(loadFromResource(DEFAULT_PATTERNS_RESOURCE));
     }
 
-    /** Uses extra rules from the given pattern file (no built-in defaults). */
-    public MistaggedArtifactCheck(Path textArtifactPatternFile) {
-        this(loadTextArtifactRules(textArtifactPatternFile));
+    /** Uses the given name-to-regex map as artifact patterns (replaces defaults). */
+    public MistaggedArtifactCheck(Map<String, String> patterns) {
+        this(rulesFromMap(patterns));
     }
 
     MistaggedArtifactCheck(List<TextArtifactRule> textArtifactRules) {
@@ -227,100 +214,30 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         return Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
     }
 
-    private static List<TextArtifactRule> loadTextArtifactRules(Path patternFile) {
-        if (patternFile == null) {
-            return List.of();
-        }
-
-        try {
-            List<String> lines = Files.readAllLines(patternFile);
-            ArrayList<TextArtifactRule> loaded = new ArrayList<>();
-            for (int i = 0; i < lines.size(); i++) {
-                String line = lines.get(i).trim();
-                if (line.isEmpty() || line.startsWith("#")) {
-                    continue;
-                }
-
-                String name = "line-" + (i + 1);
-                String regex = line;
-                int eq = line.indexOf('=');
-                if (eq > 0) {
-                    name = line.substring(0, eq).trim();
-                    regex = line.substring(eq + 1).trim();
-                }
-                if (name.isEmpty() || regex.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Invalid text artifact rule at " + patternFile + ":" + (i + 1));
-                }
-                loaded.add(textRule(name, regex));
-            }
-            return loaded;
-        } catch (IOException e) {
-            throw new IllegalArgumentException(
-                    "Failed to load text artifact rules from "
-                            + patternFile
-                            + ": "
-                            + e.getMessage(),
-                    e);
-        }
-    }
-
-    private static List<TextArtifactRule> loadDefaultPlusConfigured() {
-        List<TextArtifactRule> rules =
-                new ArrayList<>(loadTextArtifactRulesFromResource(DEFAULT_PATTERNS_RESOURCE));
-        Path extraFile = configuredPatternFile();
-        if (extraFile != null) {
-            rules.addAll(loadTextArtifactRules(extraFile));
-        }
-        return rules;
-    }
-
-    private static List<TextArtifactRule> loadTextArtifactRulesFromResource(String resourcePath) {
+    @SuppressWarnings("unchecked")
+    private static List<TextArtifactRule> loadFromResource(String resourcePath) {
         try (InputStream in = MistaggedArtifactCheck.class.getResourceAsStream(resourcePath)) {
             if (in == null) {
                 throw new IllegalArgumentException("Resource not found: " + resourcePath);
             }
-            List<String> lines =
-                    new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
-                            .lines()
-                            .toList();
-            ArrayList<TextArtifactRule> loaded = new ArrayList<>();
-            for (int i = 0; i < lines.size(); i++) {
-                String line = lines.get(i).trim();
-                if (line.isEmpty() || line.startsWith("#")) {
-                    continue;
-                }
-
-                String name = "line-" + (i + 1);
-                String regex = line;
-                int eq = line.indexOf('=');
-                if (eq > 0) {
-                    name = line.substring(0, eq).trim();
-                    regex = line.substring(eq + 1).trim();
-                }
-                if (name.isEmpty() || regex.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Invalid text artifact rule at " + resourcePath + ":" + (i + 1));
-                }
-                loaded.add(textRule(name, regex));
+            Map<String, String> data = new Yaml().load(in);
+            if (data == null) {
+                return List.of();
             }
-            return loaded;
+            return rulesFromMap(data);
         } catch (IOException e) {
             throw new IllegalArgumentException(
-                    "Failed to load text artifact rules from "
-                            + resourcePath
-                            + ": "
-                            + e.getMessage(),
+                    "Failed to load artifact patterns from " + resourcePath + ": " + e.getMessage(),
                     e);
         }
     }
 
-    private static Path configuredPatternFile() {
-        String configuredPath = System.getProperty(TEXT_ARTIFACT_PATTERN_FILE_PROPERTY);
-        if (configuredPath == null || configuredPath.isBlank()) {
-            return null;
+    private static List<TextArtifactRule> rulesFromMap(Map<String, String> patterns) {
+        List<TextArtifactRule> rules = new ArrayList<>();
+        for (Map.Entry<String, String> entry : patterns.entrySet()) {
+            rules.add(textRule(entry.getKey(), entry.getValue()));
         }
-        return Path.of(configuredPath);
+        return rules;
     }
 
     static TextArtifactRule textRule(String name, String regex) {

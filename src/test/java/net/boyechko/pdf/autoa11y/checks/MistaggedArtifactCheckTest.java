@@ -32,10 +32,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
@@ -158,14 +158,9 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     }
 
     @Test
-    void detectsTextPatternFromExternalRulesFile() throws Exception {
-        Path ruleFile = testOutputPath("MistaggedArtifactCheckTest-rules.txt");
-        Files.writeString(
-                ruleFile,
-                """
-                # one rule per line, optional name=regex
-                confidential-footer=^\\s*CONFIDENTIAL\\s+FOOTER\\s*$
-                """);
+    void detectsTextPatternFromCustomPatternMap() throws Exception {
+        Map<String, String> patterns =
+                Map.of("confidential-footer", "^\\s*CONFIDENTIAL\\s+FOOTER\\s*$");
 
         Path pdfFile =
                 createTextPdf(
@@ -174,7 +169,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
                         "CONFIDENTIAL FOOTER");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(new MistaggedArtifactCheck(ruleFile));
+            walker.addVisitor(new MistaggedArtifactCheck(patterns));
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(1, issues.size(), "Custom text pattern should be flagged");
