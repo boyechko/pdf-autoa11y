@@ -259,6 +259,53 @@ class SidecarConfigTest {
     }
 
     @Test
+    void loadsArtifactPatternsFromSidecarFile() throws IOException {
+        Path pdf = tempDir.resolve("patterns.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("patterns.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                artifact-patterns:
+                  page-number: '^\\s*(Page\\s+)?\\d+\\s*$'
+                  chapter-header: 'Chapter \\d+'
+                """);
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.artifactPatterns().isPresent());
+        Map<String, String> patterns = sidecar.artifactPatterns().get();
+        assertEquals(2, patterns.size());
+        assertEquals("^\\s*(Page\\s+)?\\d+\\s*$", patterns.get("page-number"));
+        assertEquals("Chapter \\d+", patterns.get("chapter-header"));
+    }
+
+    @Test
+    void emptyArtifactPatternsReturnsEmptyMap() throws IOException {
+        Path pdf = tempDir.resolve("emptypatterns.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("emptypatterns.autoa11y.yaml");
+        Files.writeString(config, "artifact-patterns:\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.artifactPatterns().isPresent());
+        assertTrue(sidecar.artifactPatterns().get().isEmpty());
+    }
+
+    @Test
+    void artifactPatternsAbsentWhenNotSpecified() throws IOException {
+        Path pdf = tempDir.resolve("nopatterns.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("nopatterns.autoa11y.yaml");
+        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.artifactPatterns().isEmpty());
+    }
+
+    @Test
     void stripsAutoa11ySuffixWhenLookingForConfig() throws IOException {
         Path pdf = tempDir.resolve("textbook_autoa11y.pdf");
         Files.createFile(pdf);
