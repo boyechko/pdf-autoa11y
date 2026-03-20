@@ -67,7 +67,7 @@ public record StructTreeContext(
         String role = StructTree.mappedRole(node);
         String mappedRole = StructTree.mappedRole(node);
         String path = parentPath + role + "[" + globalIndex + "]";
-        TagSchema.Rule schemaRule = schema != null ? schema.roles.get(role) : null;
+        TagSchema.Rule schemaRule = schema != null ? schema.roles.get(mappedRole) : null;
 
         PdfStructElem parent = StructTree.parentOf(node);
         String parentRole = parent != null ? StructTree.mappedRole(parent) : null;
