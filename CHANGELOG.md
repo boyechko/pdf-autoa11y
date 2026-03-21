@@ -80,6 +80,9 @@ Versioning](https://semver.org/).
 - Upgraded iText PDF from `9.3.0` to `9.5.0`.
 
 ### Fixed
+- Fixed default `page-number` artifact pattern matching bare numbers like "2" or
+  "15". The `Page` prefix is now required, preventing false positives on list
+  labels, footnote markers, and other legitimate numeric content.
 - Fixed `--dump-tree` page markers appearing after grouping elements instead of
   before them, so the output now correctly shows which page a subtree belongs to.
 - Fixed fatal-issue handling so processing stops sooner and reports those
