@@ -24,6 +24,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -105,6 +106,17 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             return false;
         }
 
+        if (isSpaceOnlyLeaf(ctx, textContent)) {
+            issues.add(
+                    new Issue(
+                            IssueType.MISTAGGED_ARTIFACT,
+                            IssueSev.WARNING,
+                            locAtElem(ctx),
+                            "Space-only element should be artifact",
+                            new MistaggedArtifactFix(ctx.node())));
+            return false;
+        }
+
         detectDecorativeMcrs(ctx);
         return true;
     }
@@ -112,6 +124,65 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     @Override
     public IssueList getIssues() {
         return issues;
+    }
+
+    /**
+     * Detects leaf elements whose only children are MCRs containing nothing but whitespace glyphs.
+     * These are typically InDesign typographic spacers that got tagged instead of artifacted.
+     */
+    private boolean isSpaceOnlyLeaf(StructTreeContext ctx, String textContent) {
+        if (textContent != null && !textContent.isBlank()) {
+            return false;
+        }
+
+        List<IStructureNode> kids = ctx.node().getKids();
+        if (kids == null || kids.isEmpty()) {
+            return false;
+        }
+
+        boolean hasMcr = false;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem || kid instanceof PdfObjRef) {
+                return false;
+            }
+            if (kid instanceof PdfMcr) {
+                hasMcr = true;
+            }
+        }
+        if (!hasMcr) {
+            return false;
+        }
+
+        // Verify no MCR has meaningful visual content (image, path, or non-whitespace text)
+        for (IStructureNode kid : kids) {
+            if (!(kid instanceof PdfMcr mcr)) {
+                continue;
+            }
+            int mcid = mcr.getMcid();
+            if (mcid < 0) {
+                continue;
+            }
+            PdfDictionary pageDict = mcr.getPageObject();
+            if (pageDict == null) {
+                continue;
+            }
+            int pageNum = ctx.doc().getPageNumber(pageDict);
+            if (pageNum <= 0) {
+                continue;
+            }
+            Map<Integer, Set<Content.ContentKind>> contentKinds =
+                    ctx.docCtx()
+                            .getOrComputeContentKinds(
+                                    pageNum,
+                                    () ->
+                                            Content.extractContentKindsForPage(
+                                                    ctx.doc().getPage(pageNum)));
+            Set<Content.ContentKind> kinds = contentKinds.get(mcid);
+            if (kinds != null && !kinds.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean matchesTextArtifactPattern(String textContent) {

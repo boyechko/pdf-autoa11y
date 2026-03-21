@@ -19,8 +19,11 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
@@ -202,6 +205,58 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(0, issues.size(), "Large path Figure should not be flagged");
         }
+    }
+
+    @Test
+    void detectsSpaceOnlySpanAsArtifact() throws Exception {
+        Path pdfFile = createSpaceOnlySpanPdf("MistaggedArtifactCheckTest-space-span.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck());
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(1, issues.size(), "Space-only Span should be flagged");
+            assertEquals(IssueType.MISTAGGED_ARTIFACT, issues.get(0).type());
+            assertTrue(issues.get(0).message().contains("Space-only"));
+        }
+    }
+
+    @Test
+    void doesNotFlagSpanWithRealText() throws Exception {
+        Path pdfFile = createTextPdf("MistaggedArtifactCheckTest-real-span.pdf", "Real content");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(new MistaggedArtifactCheck(List.of()));
+
+            IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(0, issues.size(), "Span with real text should not be flagged");
+        }
+    }
+
+    /** Creates a tagged PDF with a Span containing a single space-glyph MCR. */
+    private Path createSpaceOnlySpanPdf(String filename) throws Exception {
+        return createStructuredTestPdf(
+                testOutputPath(filename),
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, firstPage);
+                    document.addKid(span);
+
+                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, span);
+                    span.addKid(mcr);
+
+                    PdfDictionary props = new PdfDictionary();
+                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                    PdfCanvas canvas = new PdfCanvas(firstPage);
+                    canvas.beginMarkedContent(PdfName.Span, props);
+                    canvas.beginText()
+                            .setFontAndSize(font, 10)
+                            .moveText(100, 700)
+                            .showText(" ")
+                            .endText();
+                    canvas.endMarkedContent();
+                });
     }
 
     private Path createTextPdf(String filename, String... lines) throws Exception {
