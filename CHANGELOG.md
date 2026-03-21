@@ -16,6 +16,9 @@ Versioning](https://semver.org/).
   artifact patterns (name-to-regex map in YAML) that replace the built-in
   defaults. Converted built-in patterns from `artifact_patterns.txt` to
   `artifact_patterns.yaml`.
+- Added space-only leaf element detection to `MistaggedArtifactCheck`:
+  elements whose only children are MCRs containing nothing but whitespace
+  glyphs are now flagged as artifacts. Common in InDesign-produced PDFs.
 - Added `StaleScribbleCheck` to flag structure elements with workflow
   scribbles (/T values starting with `__`) left over from manual remediation
   in Acrobat. Runs last in the pipeline; no automatic fix.
