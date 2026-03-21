@@ -156,11 +156,10 @@ public class PdfAutoA11yCLI {
                             });
             sidecar.artifactPatterns()
                     .ifPresent(
-                            patterns -> {
-                                serviceBuilder.skipChecks(Set.of("MistaggedArtifactCheck"));
-                                serviceBuilder.injectCheck(
-                                        () -> new MistaggedArtifactCheck(patterns));
-                            });
+                            patterns ->
+                                    serviceBuilder.replaceCheck(
+                                            "MistaggedArtifactCheck",
+                                            () -> new MistaggedArtifactCheck(patterns)));
             if (config.printStructureTree()) {
                 serviceBuilder.injectCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));

@@ -23,6 +23,13 @@ Versioning](https://semver.org/).
 - Added space-only leaf element detection to `MistaggedArtifactCheck`:
   elements whose only children are MCRs containing nothing but whitespace
   glyphs are now flagged as artifacts. Common in InDesign-produced PDFs.
+
+### Fixed
+- Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
+  `artifact-patterns`). The `only` filter was not consulting the `skip` set,
+  causing both the default and sidecar-injected check to run.
+
+### Added
 - Added `StaleScribbleCheck` to flag structure elements with workflow
   scribbles (/T values starting with `__`) left over from manual remediation
   in Acrobat. Runs last in the pipeline; no automatic fix.

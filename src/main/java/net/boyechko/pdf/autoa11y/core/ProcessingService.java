@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class ProcessingService {
         private final Set<String> onlyChecks = new HashSet<>();
         private final Set<String> includeChecks = new HashSet<>();
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
+        private final Map<String, Supplier<Check>> replacedChecks = new HashMap<>();
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -95,6 +97,14 @@ public class ProcessingService {
             return this;
         }
 
+        /** Replaces a default check by class name, preserving its position in the pipeline. */
+        public ProcessingServiceBuilder replaceCheck(
+                String checkClassName, Supplier<Check> replacement) {
+            replacedChecks.put(
+                    Objects.requireNonNull(checkClassName), Objects.requireNonNull(replacement));
+            return this;
+        }
+
         public ProcessingService build() {
             if (custodian == null) {
                 throw new IllegalStateException(
@@ -116,7 +126,8 @@ public class ProcessingService {
                         ProcessingDefaults.defaultChecks(),
                         builder.skipChecks,
                         builder.onlyChecks,
-                        builder.includeChecks);
+                        builder.includeChecks,
+                        builder.replacedChecks);
         filtered.addAll(builder.injectedChecks);
         validateCheckPrereqs(filtered);
         this.checks = List.copyOf(filtered);
@@ -125,12 +136,13 @@ public class ProcessingService {
     // == Filtering and validation =====================================
 
     /**
-     * Selects which checks to run from the full pool of known checks.
+     * Selects which checks to run from the full pool of known checks, applying any replaceChecks.
      *
      * <ul>
      *   <li>{@code only}: keep exactly these
      *   <li>{@code include}: add these to the defaults
      *   <li>{@code skip}: remove these from the active set
+     *   <li>{@code replaceChecks}: substitute suppliers in-place by class name
      * </ul>
      */
     private static ArrayList<Supplier<Check>> selectChecks(
@@ -138,25 +150,31 @@ public class ProcessingService {
             List<Supplier<Check>> defaultChecks,
             Set<String> skip,
             Set<String> only,
-            Set<String> include) {
+            Set<String> include,
+            Map<String, Supplier<Check>> replaceChecks) {
+        java.util.function.Predicate<String> predicate;
         if (!only.isEmpty()) {
-            return filterByName(allChecks, only::contains);
+            predicate = name -> only.contains(name) && !skip.contains(name);
+        } else {
+            Set<String> defaultNames = collectNames(defaultChecks);
+            predicate =
+                    name ->
+                            (defaultNames.contains(name) || include.contains(name))
+                                    && !skip.contains(name);
         }
-        Set<String> defaultNames = collectNames(defaultChecks);
-        return filterByName(
-                allChecks,
-                name ->
-                        (defaultNames.contains(name) || include.contains(name))
-                                && !skip.contains(name));
+        return filterByName(allChecks, predicate, replaceChecks);
     }
 
     private static ArrayList<Supplier<Check>> filterByName(
-            List<Supplier<Check>> checks, java.util.function.Predicate<String> predicate) {
+            List<Supplier<Check>> checks,
+            java.util.function.Predicate<String> predicate,
+            Map<String, Supplier<Check>> replaceChecks) {
         ArrayList<Supplier<Check>> result = new ArrayList<>();
         for (Supplier<Check> supplier : checks) {
             String className = supplier.get().getClass().getSimpleName();
             if (predicate.test(className)) {
-                result.add(supplier);
+                Supplier<Check> replacement = replaceChecks.get(className);
+                result.add(replacement != null ? replacement : supplier);
             }
         }
         return result;
