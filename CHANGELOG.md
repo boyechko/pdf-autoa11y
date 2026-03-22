@@ -9,9 +9,11 @@ Versioning](https://semver.org/).
 
 ### Added
 - Added `ScribbledInstructionCheck` and `ScribbledInstructionFix` to carry out
-  structural instructions encoded in /T scribbles (e.g., `__!NEWCHILD
-  Reference[Lbl[]]`). Supports a workflow where a remediator annotates elements
-  in Acrobat and the tool executes the instructions.
+  structural instructions encoded in /T scribbles. Supports a workflow where a
+  remediator annotates elements in Acrobat and the tool executes the
+  instructions. Supported instructions: `!ADD_CHILD <tags>` (adds structure
+  elements as children, e.g., `Reference[Lbl[]]`) and `!ADD_PARENT <tag>`
+  (wraps element in a new parent, e.g., `Note[]`).
 - Added `ArtifactFlaggedElementsCheck` to automatically artifact elements
   whose /T scribble is `__artifact`, supporting a manual remediation workflow
   where headers, footers, and other decorative content are flagged in Acrobat.

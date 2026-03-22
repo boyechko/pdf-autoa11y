@@ -43,7 +43,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
                     p.getPdfObject()
                             .put(
                                     PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!NEWCHILD Reference[Lbl[]]"));
+                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
                     document.addKid(p);
                 });
 
@@ -95,14 +95,14 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
                     p1.getPdfObject()
                             .put(
                                     PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!NEWCHILD Reference[Lbl[]]"));
+                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
                     document.addKid(p1);
 
                     PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
                     p2.getPdfObject()
                             .put(
                                     PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!NEWCHILD Reference[Lbl[]]"));
+                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
                     document.addKid(p2);
                 });
 
@@ -110,6 +110,25 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(2, issues.size());
+        }
+    }
+
+    @Test
+    void detectsAddParentScribble() throws Exception {
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+                    p.getPdfObject()
+                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_PARENT Note[]"));
+                    document.addKid(p);
+                });
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(1, issues.size());
+            assertEquals(IssueType.SCRIBBLED_INSTRUCTION, issues.get(0).type());
+            assertNotNull(issues.get(0).fix());
         }
     }
 
