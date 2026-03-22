@@ -80,7 +80,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
             Node<String> roleTree =
                     TreeDiagram.toRoleTree(StructTree.findDocument(pdfDoc.getStructTreeRoot()));
             assertEquals(
-                    "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",
+                    "Document[L[LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]]]]",
                     roleTree.toString());
             layoutDoc.close();
         }
@@ -99,7 +99,7 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
                     }
                     layoutDoc.add(p);
                     assertEquals(
-                            "Document[P[Link,Span,Link,Span,Link,Span,Link,Span,Link,Span]]",
+                            "Document[P[Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[]]]",
                             TreeDiagram.toRoleTreeString(
                                     StructTree.findDocument(pdfDoc.getStructTreeRoot())));
 
