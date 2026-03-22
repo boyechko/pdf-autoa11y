@@ -94,17 +94,17 @@ public sealed interface DocValue {
                 return null;
             }
 
-            // Strip null bytes that Acrobat writes?
+            // Strip null terminator that Acrobat seems to add to PDF strings
             String value = t.toUnicodeString().replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "");
             if (value.isEmpty()) {
                 return null;
             }
-            return new Scribble(value);
+            return new Scribble(value.replaceFirst(StructTree.SCRIBBLE_PREFIX, ""));
         }
 
         @Override
         public String toString() {
-            return "\"" + value + "\"";
+            return "\"" + StructTree.SCRIBBLE_PREFIX + value + "\"";
         }
     }
 
