@@ -54,6 +54,7 @@ public enum IssueType {
     PARAGRAPH_OF_LINKS("paragraphs containing only links"),
     FLAGGED_ARTIFACT("elements flagged as artifacts via scribble"),
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
+    SCRIBBLED_INSTRUCTION("elements with structural-instruction scribbles"),
     STALE_SCRIBBLE("elements with stale workflow scribbles in /T");
 
     private final String groupLabel;

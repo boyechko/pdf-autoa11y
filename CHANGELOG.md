@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `ScribbledInstructionCheck` and `ScribbledInstructionFix` to carry out
+  structural instructions encoded in /T scribbles (e.g., `__!NEWCHILD
+  Reference[Lbl[]]`). Supports a workflow where a remediator annotates elements
+  in Acrobat and the tool executes the instructions.
 - Added `ArtifactFlaggedElementsCheck` to automatically artifact elements
   whose /T scribble is `__artifact`, supporting a manual remediation workflow
   where headers, footers, and other decorative content are flagged in Acrobat.
@@ -80,6 +84,9 @@ Versioning](https://semver.org/).
 - Upgraded iText PDF from `9.3.0` to `9.5.0`.
 
 ### Fixed
+- Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
+  `artifact-patterns`). The `only` filter was not consulting the `skip` set,
+  causing both the default and sidecar-injected check to run.
 - Fixed default `page-number` artifact pattern matching bare numbers like "2" or
   "15". The `Page` prefix is now required, preventing false positives on list
   labels, footnote markers, and other legitimate numeric content.

@@ -55,6 +55,7 @@ public final class ProcessingDefaults {
                 ParagraphOfLinksCheck::new,
                 ArtifactFlaggedElementsCheck::new,
                 EmptyElementCheck::new,
+                ScribbledInstructionCheck::new,
                 SchemaValidationCheck::new,
                 StaleScribbleCheck::new);
     }
