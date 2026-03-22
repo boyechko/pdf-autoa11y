@@ -40,7 +40,7 @@ public class ParagraphOfLinksFixTest extends PdfTestBase {
                         p.addKid(link);
                     }
                     assertEquals(
-                            "Document[P[Link, Link, Link, Link, Link]]",
+                            "Document[P[Link[], Link[], Link[], Link[], Link[]]]",
                             TreeDiagram.toRoleTree(document).toString(),
                             "Document should have P child with 5 Link children before fix");
 
@@ -52,7 +52,7 @@ public class ParagraphOfLinksFixTest extends PdfTestBase {
                     new ParagraphOfLinksFix(p, kids).apply(ctx);
 
                     assertEquals(
-                            "Document[L[LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]], LI[LBody[Link]]]]",
+                            "Document[L[LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]]]]",
                             TreeDiagram.toRoleTree(document).toString(),
                             "Document should have P child converted to L with 5 LI children after fix");
                 });

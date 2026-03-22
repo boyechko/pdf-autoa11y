@@ -39,7 +39,8 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals("Document[P, P, P]", TreeDiagram.toRoleTree(document).toString());
+                    assertEquals(
+                            "Document[P[], P[], P[]]", TreeDiagram.toRoleTree(document).toString());
 
                     DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
@@ -47,7 +48,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     fix.apply(ctx);
 
                     assertEquals(
-                            "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
+                            "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
                             TreeDiagram.toRoleTree(document).toString());
                 });
     }
@@ -62,7 +63,8 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     document.addKid(p1);
                     document.addKid(p2);
                     document.addKid(p3);
-                    assertEquals("Document[P, P, P]", TreeDiagram.toRoleTree(document).toString());
+                    assertEquals(
+                            "Document[P[], P[], P[]]", TreeDiagram.toRoleTree(document).toString());
 
                     DocContext ctx = new DocContext(pdfDoc);
                     WrapParagraphRunInList fix =
@@ -70,7 +72,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
                     fix.apply(ctx);
 
                     assertEquals(
-                            "Document[L[LI[LBody[P]], LI[LBody[P]], LI[LBody[P]]]]",
+                            "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
                             TreeDiagram.toRoleTree(document).toString());
                 });
     }
