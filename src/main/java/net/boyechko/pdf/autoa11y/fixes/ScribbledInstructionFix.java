@@ -17,11 +17,16 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeDiagram.Node;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
@@ -30,6 +35,9 @@ import org.slf4j.LoggerFactory;
 /** Carries out the instruction scribbled in the structure element's /T key. */
 public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
+
+    private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD\\s+(.+)");
+    private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENT\\s+(.+)");
 
     private final String instruction;
     private final PdfStructElem element;
@@ -46,17 +54,62 @@ public class ScribbledInstructionFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        if (instruction.contains("!NEWCHILD Reference[Lbl[]]")) {
-            PdfStructElem reference = new PdfStructElem(ctx.doc(), PdfName.Reference);
-            element.addKid(reference);
+        Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
+        Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
 
-            PdfStructElem lbl = new PdfStructElem(ctx.doc(), PdfName.Lbl);
-            reference.addKid(lbl);
-
-            element.getPdfObject().remove(PdfName.T);
-            StructTree.setScribble(element, "OK");
+        if (addChild.matches()) {
+            applyAddChild(ctx, addChild.group(1));
+        } else if (addParent.matches()) {
+            applyAddParent(ctx, addParent.group(1));
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
+        }
+    }
+
+    /** Parses the tag expression and adds the resulting structure as children of the element. */
+    private void applyAddChild(DocContext ctx, String tagExpr) {
+        List<Node<String>> nodes = Node.fromString(tagExpr);
+        createStructElems(ctx.doc(), element, nodes);
+        element.getPdfObject().remove(PdfName.T);
+        StructTree.setScribble(element, "OK");
+    }
+
+    /** Parses the tag expression, wraps the element in the outermost parsed tag. */
+    private void applyAddParent(DocContext ctx, String tagExpr) {
+        PdfStructElem parent = (PdfStructElem) element.getParent();
+        if (parent == null) {
+            logger.warn("Cannot add parent: element has no parent");
+            return;
+        }
+
+        List<Node<String>> nodes = Node.fromString(tagExpr);
+        if (nodes.size() != 1) {
+            throw new IllegalArgumentException(
+                    "!ADD_PARENT requires exactly one wrapper tag, got: " + tagExpr);
+        }
+        String wrapperName = nodes.get(0).value();
+
+        int index = StructTree.findKidIndex(parent, element);
+
+        PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(wrapperName));
+        parent.addKid(index, wrapper);
+
+        parent.removeKid(element);
+        wrapper.addKid(element);
+
+        element.getPdfObject().remove(PdfName.T);
+        StructTree.setScribble(element, "OK");
+    }
+
+    /** Creates PdfStructElem nodes from parsed role tree nodes and adds them to the parent. */
+    private static void createStructElems(
+            PdfDocument doc, PdfStructElem parent, List<Node<String>> nodes) {
+        for (Node<String> node : nodes) {
+            PdfStructElem elem = new PdfStructElem(doc, new PdfName(node.value()));
+            parent.addKid(elem);
+            if (!node.children().isEmpty()) {
+                createStructElems(doc, elem, node.children());
+            }
         }
     }
 
