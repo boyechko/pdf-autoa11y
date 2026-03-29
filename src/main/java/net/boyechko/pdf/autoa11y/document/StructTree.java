@@ -400,6 +400,11 @@ public final class StructTree {
 
     public static final String SCRIBBLE_PREFIX = "__";
 
+    /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
+    public static DocValue.Scribble getScribble(PdfStructElem elem) {
+        return DocValue.Scribble.of(elem);
+    }
+
     public static void setScribble(PdfStructElem elem, String scribble) {
         elem.put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + scribble));
     }
