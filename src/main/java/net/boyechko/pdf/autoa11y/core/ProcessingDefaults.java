@@ -62,7 +62,7 @@ public final class ProcessingDefaults {
 
     /** Self-contained optional checks that can be activated directly. */
     public static List<Supplier<Check>> optionalChecks() {
-        return List.of(ClearRoleMapCheck::new);
+        return List.of(ClearRoleMapCheck::new, MisartifactedTextCheck::new);
     }
 
     /** All known checks: defaults followed by optional. */

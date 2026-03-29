@@ -46,6 +46,7 @@ public enum IssueType {
     STRUCT_TREE_OUT_OF_ORDER("structure tree siblings out of reading order"),
     NEEDLESS_NESTING("unnecessary Part/Sect/Art/Div grouping elements"),
     MISTAGGED_ARTIFACT("tagged content that should be artifacts"),
+    MISARTIFACTED_TEXT("artifact blocks containing text that should be tagged"),
     UNMARKED_LINK("Link annotations not tagged"),
     UNEXPECTED_WIDGET("non-functional Widget annotations"),
     EMPTY_ELEMENT("empty structure elements"),
