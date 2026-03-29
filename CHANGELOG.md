@@ -25,6 +25,11 @@ Versioning](https://semver.org/).
 - Added space-only leaf element detection to `MistaggedArtifactCheck`:
   elements whose only children are MCRs containing nothing but whitespace
   glyphs are now flagged as artifacts. Common in InDesign-produced PDFs.
+- Added optional `MisartifactedTextCheck` to detect digit-only text inside
+  artifact blocks that may have been incorrectly artifacted. Inserts a
+  scribbled `Lbl` signpost (`__misartifacted`) near the neighboring structure
+  element to mark where manual de-artifacting is needed. Activate via
+  `--include-checks=MisartifactedTextCheck`.
 
 ### Fixed
 - Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
