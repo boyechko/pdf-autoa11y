@@ -380,8 +380,12 @@ public final class StructTree {
      * Returns the mapped role for a structure element, or the raw role if no mapping is available.
      */
     public static String mappedRole(PdfStructElem n) {
-        PdfDictionary roleMap = pdfDocumentFor(n).getStructTreeRoot().getRoleMap();
         PdfName role = n.getRole();
+        PdfStructTreeRoot structTreeRoot = pdfDocumentFor(n).getStructTreeRoot();
+        if (structTreeRoot == null) {
+            return role.getValue();
+        }
+        PdfDictionary roleMap = structTreeRoot.getRoleMap();
 
         if (roleMap != null) {
             PdfName mappedRole = roleMap.getAsName(role);
