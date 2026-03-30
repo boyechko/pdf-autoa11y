@@ -17,10 +17,10 @@ roles:
     allowed_children: [Span]
 
   BlockQuote:
-    allowed_children: [P, Span]
+    allowed_children: [L, P, Reference, Span]
 
   Caption:
-    allowed_children: [Span, P]
+    allowed_children: [Lbl, Span, P]
 
   Code:
     allowed_children:
@@ -84,7 +84,7 @@ roles:
     allowed_children: [Annot, BibEntry, Code, Figure, Form, Formula, Link, Note, Quote, Reference, Span]
 
   Part:
-    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table]
+    allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table, TOC]
 
   Quote:
     allowed_children: [Span]
@@ -94,7 +94,7 @@ roles:
   # Link is also allowed, but Acrobat's autotag abuses that, so need to mark it
 
   Sect:
-    allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
+    allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
 
   Span:
     allowed_children: [Link, Span]
