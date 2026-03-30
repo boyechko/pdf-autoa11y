@@ -149,12 +149,20 @@ public class SchemaValidationCheck extends StructTreeCheck {
         if (rule == null || rule.getAllowedChildren() == null) return;
         if (rule.getAllowedChildren().isEmpty()) return;
 
-        boolean multiFixCreated = false;
+        IssueFix multiFix = null;
 
         for (int i = 0; i < ctx.childRoles().size(); i++) {
             String childRole = ctx.childRoles().get(i);
             if (!rule.getAllowedChildren().contains(childRole)) {
-                IssueFix fix = createChildFix(ctx, i, multiFixCreated, childRole);
+                IssueFix fix;
+                if (multiFix != null) {
+                    fix = multiFix;
+                } else {
+                    fix = createChildFix(ctx, i, childRole);
+                    if (fix instanceof SchemaChildrenFix) {
+                        multiFix = fix;
+                    }
+                }
 
                 String message =
                         formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
@@ -165,10 +173,6 @@ public class SchemaValidationCheck extends StructTreeCheck {
                                 locAtElem(ctx, ctx.children().get(i)),
                                 message,
                                 fix));
-
-                if (fix instanceof SchemaChildrenFix) {
-                    multiFixCreated = true;
-                }
             }
         }
     }
@@ -194,16 +198,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
         }
     }
 
-    private IssueFix createChildFix(
-            StructTreeContext ctx, int childIndex, boolean multiFixCreated, String childRole) {
-        if (multiFixCreated) {
-            logger.debug(
-                    "Fix already created for parent {}; no further fix for kid {}",
-                    formatRole(ctx.role()),
-                    formatRole(childRole));
-            return null;
-        }
-
+    private IssueFix createChildFix(StructTreeContext ctx, int childIndex, String childRole) {
         PdfStructElem childNode = ctx.children().get(childIndex);
 
         IssueFix multi = SchemaValidationFix.createForChildren(ctx.node(), ctx.children());

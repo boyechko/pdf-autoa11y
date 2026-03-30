@@ -52,6 +52,7 @@ public abstract class SchemaChildrenFix extends SchemaValidationFix {
 
     @Override
     public boolean invalidates(IssueFix otherFix) {
+        if (this == otherFix) return true;
         if (otherFix instanceof SchemaChildFix singleFix) {
             return getParentRole().equals(singleFix.getParentRole())
                     && singleFix.getParent().equals(parent)
