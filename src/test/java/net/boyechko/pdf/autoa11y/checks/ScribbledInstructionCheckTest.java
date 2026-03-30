@@ -61,7 +61,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
         createStructuredTestPdf(
                 (pdfDoc, firstPage, root, document) -> {
                     PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "artifact"));
+                    p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
                     document.addKid(p);
                 });
 
@@ -129,6 +129,45 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             assertEquals(1, issues.size());
             assertEquals(IssueType.SCRIBBLED_INSTRUCTION, issues.get(0).type());
             assertNotNull(issues.get(0).fix());
+        }
+    }
+
+    @Test
+    void detectsArtifactScribble() throws Exception {
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+                    p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+                    document.addKid(p);
+                });
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(1, issues.size());
+            assertEquals(IssueType.SCRIBBLED_INSTRUCTION, issues.get(0).type());
+            assertNotNull(issues.get(0).fix());
+        }
+    }
+
+    @Test
+    void skipsChildrenOfArtifactInstruction() throws Exception {
+        createStructuredTestPdf(
+                (pdfDoc, firstPage, root, document) -> {
+                    PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
+                    div.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+                    document.addKid(div);
+
+                    PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+                    child.getPdfObject()
+                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+                    div.addKid(child);
+                });
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(1, issues.size(), "Should only flag the parent, not the child");
         }
     }
 

@@ -129,6 +129,19 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
+    void artifactInstructionDelegatesToMistaggedArtifactFix() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            root.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            assertDoesNotThrow(() -> new ScribbledInstructionFix(p, "!ARTIFACT").apply(ctx));
+        }
+    }
+
+    @Test
     void unsupportedInstructionThrows() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
