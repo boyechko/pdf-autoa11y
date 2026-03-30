@@ -36,8 +36,9 @@ import org.slf4j.LoggerFactory;
 public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
 
-    private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD\\s+(.+)");
+    private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENT\\s+(.+)");
+    private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
 
     private final String instruction;
     private final PdfStructElem element;
@@ -56,11 +57,14 @@ public class ScribbledInstructionFix implements IssueFix {
     public void apply(DocContext ctx) throws Exception {
         Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
+        Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
 
         if (addChild.matches()) {
             applyAddChild(ctx, addChild.group(1));
         } else if (addParent.matches()) {
             applyAddParent(ctx, addParent.group(1));
+        } else if (artifact.matches()) {
+            applyArtifact(ctx);
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
         }
@@ -72,6 +76,11 @@ public class ScribbledInstructionFix implements IssueFix {
         createStructElems(ctx.doc(), element, nodes);
         element.getPdfObject().remove(PdfName.T);
         StructTree.setScribble(element, "OK");
+    }
+
+    /** Delegates to MistaggedArtifactFix to convert the element's content to artifacts. */
+    private void applyArtifact(DocContext ctx) throws Exception {
+        new MistaggedArtifactFix(element).apply(ctx);
     }
 
     /** Parses the tag expression, wraps the element in the outermost parsed tag. */

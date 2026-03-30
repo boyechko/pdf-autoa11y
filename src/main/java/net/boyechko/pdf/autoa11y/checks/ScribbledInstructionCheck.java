@@ -29,6 +29,7 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 /** Detects elements whose /T scribble encodes a structural instruction. */
 public class ScribbledInstructionCheck extends StructTreeCheck {
     static final String SCRIBBLED_INSTRUCTION_PREFIX = "!";
+    static final String ARTIFACT_INSTRUCTION = "ARTIFACT";
 
     private final IssueList issues = new IssueList();
 
@@ -56,6 +57,9 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
                             locAtElem(ctx),
                             "Scribbled instruction: " + scribble.value(),
                             new ScribbledInstructionFix(ctx.node(), scribble.value())));
+            // Skip children for ARTIFACT — the entire subtree will be converted
+            return !scribble.value()
+                    .startsWith(SCRIBBLED_INSTRUCTION_PREFIX + ARTIFACT_INSTRUCTION);
         }
         return true;
     }

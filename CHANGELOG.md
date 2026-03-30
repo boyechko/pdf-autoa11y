@@ -12,12 +12,9 @@ Versioning](https://semver.org/).
   structural instructions encoded in /T scribbles. Supports a workflow where a
   remediator annotates elements in Acrobat and the tool executes the
   instructions. Supported instructions: `!ADD_CHILD <tags>` (adds structure
-  elements as children, e.g., `Reference[Lbl[]]`) and `!ADD_PARENT <tag>`
-  (wraps element in a new parent, e.g., `Note[]`).
-- Added `ArtifactFlaggedElementsCheck` to automatically artifact elements
-  whose /T scribble is `__artifact`, supporting a manual remediation workflow
-  where headers, footers, and other decorative content are flagged in Acrobat.
-  Runs before `EmptyElementCheck` so emptied parents get cleaned up.
+  elements as children, e.g., `Reference[Lbl[]]`), `!ADD_PARENT <tag>`
+  (wraps element in a new parent, e.g., `Note[]`), and `!ARTIFACT` (converts
+  the element and its subtree to artifacts).
 - Added `artifact-patterns` sidecar config key for specifying custom text
   artifact patterns (name-to-regex map in YAML) that replace the built-in
   defaults. Converted built-in patterns from `artifact_patterns.txt` to

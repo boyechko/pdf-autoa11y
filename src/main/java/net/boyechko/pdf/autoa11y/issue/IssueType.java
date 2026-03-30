@@ -53,7 +53,6 @@ public enum IssueType {
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
     PARAGRAPH_OF_LINKS("paragraphs containing only links"),
-    FLAGGED_ARTIFACT("elements flagged as artifacts via scribble"),
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
     SCRIBBLED_INSTRUCTION("elements with structural-instruction scribbles"),
     STALE_SCRIBBLE("elements with stale workflow scribbles in /T");
