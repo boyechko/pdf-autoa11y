@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Objects;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.schema.*;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -84,7 +85,7 @@ public abstract class SchemaValidationFix implements IssueFix {
     }
 
     public String getParentRole() {
-        return parent.getRole().getValue();
+        return StructTree.mappedRole(parent);
     }
 
     @Override

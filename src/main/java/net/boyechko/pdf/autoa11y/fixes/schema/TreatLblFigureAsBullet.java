@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Fixes a Lbl[Figure] structure by converting the Figure to a bullet label. */
@@ -30,8 +31,8 @@ public final class TreatLblFigureAsBullet extends SchemaChildFix {
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
-        String kidRole = kid.getRole().getValue();
-        String parentRole = parent.getRole().getValue();
+        String kidRole = StructTree.mappedRole(kid);
+        String parentRole = StructTree.mappedRole(parent);
         if ("Lbl".equals(parentRole) && "Figure".equals(kidRole)) {
             return new TreatLblFigureAsBullet(kid, parent);
         }

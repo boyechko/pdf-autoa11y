@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Wraps a single child element in an LI structure. */
@@ -34,8 +35,8 @@ public final class WrapInLI extends SchemaChildFix {
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
-        String kidRole = kid.getRole().getValue();
-        String parentRole = parent.getRole().getValue();
+        String kidRole = StructTree.mappedRole(kid);
+        String parentRole = StructTree.mappedRole(parent);
         if ("L".equals(parentRole) && validKidRoles.contains(kidRole)) {
             return new WrapInLI(kid, parent);
         }

@@ -21,6 +21,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Changes a P element to a Lbl in an LI structure. */
@@ -30,11 +31,11 @@ public final class ChangePToLblInLI extends SchemaChildrenFix {
     }
 
     public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
-        String parentRole = parent.getRole().getValue();
+        String parentRole = StructTree.mappedRole(parent);
         // There should be exactly two kids, one of which is LBody and the other P
         if ("LI".equals(parentRole) && kids.size() == 2) {
-            String kid1Role = kids.get(0).getRole().getValue();
-            String kid2Role = kids.get(1).getRole().getValue();
+            String kid1Role = StructTree.mappedRole(kids.get(0));
+            String kid2Role = StructTree.mappedRole(kids.get(1));
 
             if (("P".equals(kid1Role) && "LBody".equals(kid2Role))
                     || ("LBody".equals(kid1Role) && "P".equals(kid2Role))) {
@@ -47,7 +48,7 @@ public final class ChangePToLblInLI extends SchemaChildrenFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         for (PdfStructElem p : kids) {
-            if ("P".equals(p.getRole().getValue())) {
+            if ("P".equals(StructTree.mappedRole(p))) {
                 p.setRole(PdfName.Lbl);
             }
         }
