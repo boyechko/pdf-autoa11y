@@ -29,6 +29,10 @@ Versioning](https://semver.org/).
   `--include-checks=MisartifactedTextCheck`.
 
 ### Fixed
+- Fixed schema fixes (WrapInLI, WrapInLBody, ExtractLBodyToList, and others)
+  silently failing on documents with a /RoleMap. Fix factories compared raw
+  element roles instead of mapped roles, so they never matched standard names
+  like `L` or `LBody` when the PDF used custom role names.
 - Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
   `artifact-patterns`). The `only` filter was not consulting the `skip` set,
   causing both the default and sidecar-injected check to run.

@@ -31,14 +31,14 @@ public final class WrapPairsOfLblLBodyInLI extends SchemaChildrenFix {
     }
 
     public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
-        String parentRole = parent.getRole().getValue();
+        String parentRole = StructTree.mappedRole(parent);
 
         // Check if parent is L and we have alternating Lbl/LBody pattern
         if ("L".equals(parentRole) && kids.size() >= 2 && kids.size() % 2 == 0) {
             // Verify alternating Lbl/LBody pattern
             for (int i = 0; i < kids.size(); i += 2) {
-                String lblRole = kids.get(i).getRole().getValue();
-                String lBodyRole = kids.get(i + 1).getRole().getValue();
+                String lblRole = StructTree.mappedRole(kids.get(i));
+                String lBodyRole = StructTree.mappedRole(kids.get(i + 1));
 
                 if (!"Lbl".equals(lblRole) || !"LBody".equals(lBodyRole)) {
                     return null;

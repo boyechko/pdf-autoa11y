@@ -44,8 +44,8 @@ public final class ExtractLBodyToList extends SchemaChildFix {
     }
 
     public static IssueFix tryCreate(PdfStructElem kid, PdfStructElem parent) {
-        String kidRole = kid.getRole().getValue();
-        String parentRole = parent.getRole().getValue();
+        String kidRole = StructTree.mappedRole(kid);
+        String parentRole = StructTree.mappedRole(parent);
         if ("LBody".equals(kidRole) && !"LI".equals(parentRole) && !"L".equals(parentRole)) {
             return new ExtractLBodyToList(kid, parent);
         }
@@ -81,7 +81,7 @@ public final class ExtractLBodyToList extends SchemaChildFix {
         if (listIndex < containerKids.size()) {
             IStructureNode nextSibling = containerKids.get(listIndex);
             if (nextSibling instanceof PdfStructElem nextElem
-                    && "L".equals(nextElem.getRole().getValue())) {
+                    && "L".equals(StructTree.mappedRole(nextElem))) {
                 listElem = nextElem;
             }
         }

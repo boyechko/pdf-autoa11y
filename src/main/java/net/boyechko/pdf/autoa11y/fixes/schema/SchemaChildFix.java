@@ -18,6 +18,7 @@
 package net.boyechko.pdf.autoa11y.fixes.schema;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
 
 /** Schema fix that operates on a single child element. */
@@ -45,6 +46,6 @@ public abstract class SchemaChildFix extends SchemaValidationFix {
     }
 
     public String getKidRole() {
-        return kid.getRole().getValue();
+        return StructTree.mappedRole(kid);
     }
 }
