@@ -33,6 +33,10 @@ Versioning](https://semver.org/).
   silently failing on documents with a /RoleMap. Fix factories compared raw
   element roles instead of mapped roles, so they never matched standard names
   like `L` or `LBody` when the PDF used custom role names.
+- Fixed multi-child schema fixes (e.g., WrapPairsOfLblLBodyInLI) leaving
+  sibling issues unresolved. The multi-fix was applied correctly but only
+  the first issue was marked resolved; remaining siblings now share the
+  same fix reference and are resolved via invalidation.
 - Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
   `artifact-patterns`). The `only` filter was not consulting the `skip` set,
   causing both the default and sidecar-injected check to run.
