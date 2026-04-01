@@ -21,6 +21,7 @@ import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
+import net.boyechko.pdf.autoa11y.fixes.StaleScribbleFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
@@ -59,7 +60,8 @@ public class StaleScribbleCheck extends StructTreeCheck {
                             IssueType.STALE_SCRIBBLE,
                             IssueSev.WARNING,
                             locAtElem(ctx),
-                            "Stale workflow scribble: " + value));
+                            "Stale workflow scribble: " + value,
+                            new StaleScribbleFix(ctx.node(), value)));
         }
         return true;
     }

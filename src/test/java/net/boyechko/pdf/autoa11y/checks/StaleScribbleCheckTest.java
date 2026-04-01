@@ -50,7 +50,7 @@ class StaleScribbleCheckTest extends PdfTestBase {
 
             assertEquals(1, issues.size());
             assertEquals(IssueType.STALE_SCRIBBLE, issues.get(0).type());
-            assertNull(issues.get(0).fix(), "Stale scribbles have no automatic fix");
+            assertNotNull(issues.get(0).fix(), "Stale scribbles should have an automatic fix");
         }
     }
 
