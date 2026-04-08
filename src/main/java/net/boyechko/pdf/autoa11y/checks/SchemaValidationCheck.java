@@ -17,13 +17,9 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.fixes.SchemaValidationFix;
-import net.boyechko.pdf.autoa11y.fixes.schema.SchemaChildrenFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
-import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -31,8 +27,6 @@ import net.boyechko.pdf.autoa11y.validation.PatternMatcher;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Visitor that validates structure tree elements against the tag schema. Performs five validations:
@@ -46,8 +40,6 @@ import org.slf4j.LoggerFactory;
  * </ol>
  */
 public class SchemaValidationCheck extends StructTreeCheck {
-
-    private static final Logger logger = LoggerFactory.getLogger(SchemaValidationCheck.class);
 
     private final IssueList issues = new IssueList();
 
@@ -149,21 +141,9 @@ public class SchemaValidationCheck extends StructTreeCheck {
         if (rule == null || rule.getAllowedChildren() == null) return;
         if (rule.getAllowedChildren().isEmpty()) return;
 
-        IssueFix multiFix = null;
-
         for (int i = 0; i < ctx.childRoles().size(); i++) {
             String childRole = ctx.childRoles().get(i);
             if (!rule.getAllowedChildren().contains(childRole)) {
-                IssueFix fix;
-                if (multiFix != null) {
-                    fix = multiFix;
-                } else {
-                    fix = createChildFix(ctx, i, childRole);
-                    if (fix instanceof SchemaChildrenFix) {
-                        multiFix = fix;
-                    }
-                }
-
                 String message =
                         formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
                 issues.add(
@@ -171,8 +151,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                                 IssueType.TAG_WRONG_CHILD,
                                 IssueSev.ERROR,
                                 locAtElem(ctx, ctx.children().get(i)),
-                                message,
-                                fix));
+                                message));
             }
         }
     }
@@ -196,22 +175,6 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             locAtElem(ctx),
                             message));
         }
-    }
-
-    private IssueFix createChildFix(StructTreeContext ctx, int childIndex, String childRole) {
-        PdfStructElem childNode = ctx.children().get(childIndex);
-
-        IssueFix multi = SchemaValidationFix.createForChildren(ctx.node(), ctx.children());
-        if (multi != null) return multi;
-
-        IssueFix single = SchemaValidationFix.createForChild(childNode, ctx.node());
-        if (single != null) return single;
-
-        logger.trace(
-                "No automatic fix available for kid {} under parent {}",
-                formatRole(childRole),
-                formatRole(ctx.role()));
-        return null;
     }
 
     private String formatRole(String role) {

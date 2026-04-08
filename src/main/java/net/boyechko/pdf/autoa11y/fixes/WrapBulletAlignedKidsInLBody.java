@@ -17,14 +17,16 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.PdfString;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -35,8 +37,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Wraps a group of consecutive raw kids (MCRs and struct elements) inside a parent element into an
- * LBody > P structure. The bullet y-position is stored as /T on the LBody so that
- * ExtractLBodyToList can determine visual ordering when building the final L > LI structure.
+ * L > LI > LBody > P structure. The L element is placed as a sibling of the parent, reusing an
+ * existing adjacent L if one exists. The bullet y-position determines insertion order within the L.
  */
 public final class WrapBulletAlignedKidsInLBody implements IssueFix {
 
@@ -67,7 +69,6 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
          * insertion, always use addKid() to ensure proper indirect reference
          * handling. The hybrid approach works: remove items from the K array
          * manually, but insert new struct elements via addKid.
-         *
          */
         PdfArray parentK = StructTree.normalizeKArray(parent);
         if (parentK == null) {
@@ -86,7 +87,6 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
 
         // 2. Remove from parent K array in reverse order to preserve indices
-        int insertIndex = kidIndices.get(0);
         for (int i = kidIndices.size() - 1; i >= 0; i--) {
             int idx = kidIndices.get(i);
             if (idx < parentK.size()) {
@@ -94,22 +94,22 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
             }
         }
 
-        // 3. Create LBody and insert into parent FIRST (so it gets /P)
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        lBody.getPdfObject().put(PdfName.T, new PdfString(String.valueOf(bulletY)));
-        if (insertIndex > parentK.size()) {
-            insertIndex = parentK.size();
-        }
-        parent.addKid(insertIndex, lBody);
+        // 3. Build L > LI > LBody > P structure as a sibling of the parent
+        PdfStructElem listElem = findOrCreateListElement(ctx);
+        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
+        int insertPos = findInsertPosition(listElem, ctx);
+        listElem.addKid(insertPos, li);
 
-        // 4. Create P and add to LBody (lBody now has /P, so this works)
+        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
+        li.addKid(lBody);
+
         PdfStructElem newP = new PdfStructElem(ctx.doc(), PdfName.P);
         if (parent.getPdfObject().containsKey(PdfName.Pg)) {
             newP.getPdfObject().put(PdfName.Pg, parent.getPdfObject().get(PdfName.Pg));
         }
         lBody.addKid(newP);
 
-        // 5. Build newP's K array with the collected objects
+        // 4. Build newP's K array with the collected objects
         PdfArray newPK = new PdfArray();
         newP.getPdfObject().put(PdfName.K, newPK);
 
@@ -129,10 +129,62 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
 
         logger.debug(
-                "Wrapped {} raw kids in LBody>P under obj. #{} (bulletY={})",
+                "Wrapped {} raw kids into L>LI>LBody>P near obj. #{} (bulletY={})",
                 kidIndices.size(),
                 StructTree.objNum(parent),
                 String.format("%.1f", bulletY));
+    }
+
+    /** Finds an existing L element adjacent to the parent, or creates one. */
+    private PdfStructElem findOrCreateListElement(DocContext ctx) {
+        IStructureNode container = parent.getParent();
+        if (!(container instanceof PdfStructElem containerElem)) {
+            // Fallback: create L as child of parent (will be caught by schema check)
+            PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
+            parent.addKid(l);
+            return l;
+        }
+
+        int parentIndex = StructTree.findKidIndex(containerElem, parent);
+        if (parentIndex < 0) {
+            PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
+            parent.addKid(l);
+            return l;
+        }
+
+        // Look for an existing L element immediately after the parent
+        List<IStructureNode> containerKids = containerElem.getKids();
+        int listIndex = parentIndex + 1;
+        if (listIndex < containerKids.size()) {
+            IStructureNode nextSibling = containerKids.get(listIndex);
+            if (nextSibling instanceof PdfStructElem nextElem
+                    && "L".equals(StructTree.mappedRole(nextElem))) {
+                return nextElem;
+            }
+        }
+
+        // No adjacent L — create one after the parent
+        PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
+        StructTree.addKidToParent(containerElem, listIndex, l);
+        return l;
+    }
+
+    /** Determines where to insert the new LI based on bullet y-position. */
+    private int findInsertPosition(PdfStructElem listElem, DocContext ctx) {
+        int pageNum = StructTree.determinePageNumber(ctx, parent);
+        List<PdfStructElem> existingLIs = StructTree.childrenOf(listElem, PdfStructElem.class);
+
+        for (int i = 0; i < existingLIs.size(); i++) {
+            Rectangle liBounds = Content.getBoundsForElement(existingLIs.get(i), ctx, pageNum);
+            if (liBounds != null) {
+                float liCenterY = liBounds.getBottom() + liBounds.getHeight() / 2;
+                if (bulletY > liCenterY) {
+                    return i;
+                }
+            }
+        }
+
+        return existingLIs.size();
     }
 
     @Override

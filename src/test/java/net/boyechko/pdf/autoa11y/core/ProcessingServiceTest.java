@@ -140,38 +140,6 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     @Test
-    void brokenTagStructureIsDetectedAndFixed() throws Exception {
-        Path brokenPdf =
-                breakTestPdf(ProcessingServiceTest::listContent, TagBreakage.L_WITH_P_CHILDREN);
-        ProcessingResult result = createProcessingService(brokenPdf).remediate();
-        saveRemediatedPdf(result);
-
-        assertTrue(
-                result.detectedIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
-                "Should detect list-structure issues in the broken PDF");
-        assertFalse(result.appliedFixes().isEmpty(), "Should apply fixes to broken tag structure");
-        assertTrue(
-                result.appliedFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
-                "Should apply at least one fix associated with list-structure issues");
-    }
-
-    @Test
-    void tagStructureIssuesCanBeFixed() throws Exception {
-        Path testPdf =
-                breakTestPdf(
-                        ProcessingServiceTest::fixableListContent, TagBreakage.LI_WITH_SINGLE_P);
-        ProcessingResult result = createProcessingService(testPdf).remediate();
-        saveRemediatedPdf(result);
-
-        assertTrue(
-                result.detectedIssues().stream().anyMatch(i -> isListStructureIssue(i.type())),
-                "Should detect list-structure issues");
-        assertTrue(
-                result.appliedFixes().stream().anyMatch(i -> isListStructureIssue(i.type())),
-                "Should apply fixes to list-structure issues");
-    }
-
-    @Test
     void multipleIssueTypesDetectedInSingleRun() throws Exception {
         ProcessingResult result = createProcessingService(TAGGED_BASELINE_PDF).remediate();
 
