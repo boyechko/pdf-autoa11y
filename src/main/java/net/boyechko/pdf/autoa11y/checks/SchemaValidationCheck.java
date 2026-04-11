@@ -17,6 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -40,6 +41,9 @@ import net.boyechko.pdf.autoa11y.validation.TagSchema;
  * </ol>
  */
 public class SchemaValidationCheck extends StructTreeCheck {
+
+    /** Scribble prefix written to /T on elements with schema violations. */
+    static final String SCRIBBLE_PREFIX = "SCHEMA";
 
     private final IssueList issues = new IssueList();
 
@@ -72,14 +76,13 @@ public class SchemaValidationCheck extends StructTreeCheck {
     private void validateUnknownRole(StructTreeContext ctx) {
         /* If the schema rule is null, the role is not defined in the schema. */
         if (ctx.schemaRule() == null) {
+            String message =
+                    String.format(
+                            "%s role is not defined in schema",
+                            formatRole(StructTree.mappedRole(ctx.node())));
+            scribbleIssue(ctx.node(), message);
             issues.add(
-                    new Issue(
-                            IssueType.TAG_UNKNOWN_ROLE,
-                            IssueSev.ERROR,
-                            locAtElem(ctx),
-                            String.format(
-                                    "%s role is not defined in schema",
-                                    formatRole(StructTree.mappedRole(ctx.node())))));
+                    new Issue(IssueType.TAG_UNKNOWN_ROLE, IssueSev.ERROR, locAtElem(ctx), message));
         }
     }
 
@@ -94,6 +97,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             + formatRole(rule.getParentMustBe())
                             + " but is "
                             + formatRole(ctx.parentRole());
+            scribbleIssue(ctx.node(), message);
             issues.add(
                     new Issue(IssueType.TAG_WRONG_PARENT, IssueSev.ERROR, locAtElem(ctx), message));
         }
@@ -112,6 +116,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             + childCount
                             + " kids; min is "
                             + rule.getMinChildren();
+            scribbleIssue(ctx.node(), message);
             issues.add(
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
@@ -127,6 +132,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             + childCount
                             + " kids; max is "
                             + rule.getMaxChildren();
+            scribbleIssue(ctx.node(), message);
             issues.add(
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_COUNT,
@@ -146,6 +152,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
             if (!rule.getAllowedChildren().contains(childRole)) {
                 String message =
                         formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
+                scribbleIssue(ctx.children().get(i), message);
                 issues.add(
                         new Issue(
                                 IssueType.TAG_WRONG_CHILD,
@@ -168,6 +175,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             + " do not match pattern '"
                             + rule.getChildPattern()
                             + "'";
+            scribbleIssue(ctx.node(), message);
             issues.add(
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_PATTERN,
@@ -175,6 +183,10 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             locAtElem(ctx),
                             message));
         }
+    }
+
+    private void scribbleIssue(PdfStructElem elem, String message) {
+        StructTree.addScribble(elem, SCRIBBLE_PREFIX + " " + message);
     }
 
     private String formatRole(String role) {
