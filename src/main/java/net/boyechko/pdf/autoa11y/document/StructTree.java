@@ -403,6 +403,7 @@ public final class StructTree {
     // === Miscellaneous utilities ===========================================
 
     public static final String SCRIBBLE_PREFIX = "__";
+    public static final String SCRIBBLE_SEPARATOR = "; ";
 
     /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
     public static DocValue.Scribble getScribble(PdfStructElem elem) {
@@ -411,6 +412,16 @@ public final class StructTree {
 
     public static void setScribble(PdfStructElem elem, String scribble) {
         elem.put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + scribble));
+    }
+
+    /** Appends to an existing scribble or creates a new one if none exists. */
+    public static void addScribble(PdfStructElem elem, String scribble) {
+        DocValue.Scribble existing = getScribble(elem);
+        if (existing == null) {
+            setScribble(elem, scribble);
+        } else {
+            setScribble(elem, existing.value() + SCRIBBLE_SEPARATOR + scribble);
+        }
     }
 
     /**
