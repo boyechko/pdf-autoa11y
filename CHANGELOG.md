@@ -7,6 +7,8 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.3.0] - 2026-04-11
+
 ### Added
 - Added `ScribbledInstructionCheck` and `ScribbledInstructionFix` to carry out
   structural instructions encoded in /T scribbles. Supports a workflow where a
@@ -15,33 +17,6 @@ Versioning](https://semver.org/).
   elements as children, e.g., `Reference[Lbl[]]`), `!ADD_PARENT <tag>`
   (wraps element in a new parent, e.g., `Note[]`), and `!ARTIFACT` (converts
   the element and its subtree to artifacts).
-- Added `artifact-patterns` sidecar config key for specifying custom text
-  artifact patterns (name-to-regex map in YAML) that replace the built-in
-  defaults. Converted built-in patterns from `artifact_patterns.txt` to
-  `artifact_patterns.yaml`.
-- Added space-only leaf element detection to `MistaggedArtifactCheck`:
-  elements whose only children are MCRs containing nothing but whitespace
-  glyphs are now flagged as artifacts. Common in InDesign-produced PDFs.
-- Added optional `MisartifactedTextCheck` to detect digit-only text inside
-  artifact blocks that may have been incorrectly artifacted. Inserts a
-  scribbled `Lbl` signpost (`__misartifacted`) near the neighboring structure
-  element to mark where manual de-artifacting is needed. Activate via
-  `--include-checks=MisartifactedTextCheck`.
-
-### Fixed
-- Fixed schema fixes (WrapInLI, WrapInLBody, ExtractLBodyToList, and others)
-  silently failing on documents with a /RoleMap. Fix factories compared raw
-  element roles instead of mapped roles, so they never matched standard names
-  like `L` or `LBody` when the PDF used custom role names.
-- Fixed multi-child schema fixes (e.g., WrapPairsOfLblLBodyInLI) leaving
-  sibling issues unresolved. The multi-fix was applied correctly but only
-  the first issue was marked resolved; remaining siblings now share the
-  same fix reference and are resolved via invalidation.
-- Fixed `--only-checks` ignoring sidecar check replacements (e.g.,
-  `artifact-patterns`). The `only` filter was not consulting the `skip` set,
-  causing both the default and sidecar-injected check to run.
-
-### Added
 - Added `StaleScribbleCheck` to flag structure elements with workflow
   scribbles (/T values starting with `__`) left over from manual remediation
   in Acrobat. Runs last in the pipeline; no automatic fix.
@@ -56,9 +31,18 @@ Versioning](https://semver.org/).
 - Added stronger remediation for mistagged bulleted lists, including fixes for
   bullet-aligned content that should be converted into proper list structure.
 - Added cleanup for empty structural elements at the end of processing.
+- Added space-only leaf element detection to `MistaggedArtifactCheck`:
+  elements whose only children are MCRs containing nothing but whitespace
+  glyphs are now flagged as artifacts. Common in InDesign-produced PDFs.
+- Added optional `MisartifactedTextCheck` to detect digit-only text inside
+  artifact blocks that may have been incorrectly artifacted. Inserts a
+  scribbled `Lbl` signpost (`__misartifacted`) near the neighboring structure
+  element to mark where manual de-artifacting is needed. Activate via
+  `--include-checks=MisartifactedTextCheck`.
 - Added an accessibility report output (`-r/--report`) so processing results can
-  be saved as an audit trail.
-- Added CLI options to skip checks or run only selected checks.
+  be saved as an audit trail, with a "Resolved Breakdown" summary section.
+- Added CLI options `--skip-checks` and `--only-checks` to skip or run only
+  selected checks.
 - Added `--include-checks` CLI option and sidecar `include-checks:` key to
   activate optional checks that don't run by default.
 - Added optional check registry (`ProcessingDefaults.optionalChecks()`) so new
@@ -68,18 +52,28 @@ Versioning](https://semver.org/).
   or sidecar config.
 - Added `ReplaceRoleMapCheck` to replace `/RoleMap` with custom mappings
   specified in the sidecar config under the `role-map:` key.
+- Added per-PDF sidecar config files (`<basename>.autoa11y.yaml`) for persistent
+  check configuration, so skip/only-checks settings travel with each input file.
 - Added sidecar `role-map:` key supporting both a mapping dictionary and the
   literal `clear` to remove the role map entirely.
+- Added sidecar `artifact-patterns` key for specifying custom text artifact
+  patterns (name-to-regex map in YAML) that replace the built-in defaults.
+  Converted built-in patterns from `artifact_patterns.txt` to
+  `artifact_patterns.yaml`.
 - Added `--create-sidecar` CLI option to generate a template
   `<basename>.autoa11y.yaml` file with all known checks and options listed as
   commented-out examples.
-- Added per-PDF sidecar config files (`<basename>.autoa11y.yaml`) for persistent
-  check configuration, so skip/only-checks settings travel with each input file.
 - Added configurable per-input pipeline temp directories via
   `AUTOA11Y_PIPELINE_DIR` or `-Dautoa11y.pipeline.dir=...`.
-- Added a "Resolved Breakdown" section to the accessibility report summary.
 
 ### Changed
+- Schema validation violations now scribble the issue onto the offending
+  element's /T key (e.g., `__SCHEMA <P> not allowed under <L>`), making
+  them visible in Acrobat's tags panel for manual remediation.
+- `WrapBulletAlignedKidsInLBody` now builds the full L > LI > LBody > P
+  structure in a single step, reusing an adjacent L element if one exists.
+  Previously it created an orphaned LBody that relied on a second-pass
+  schema fix to move into the correct structure.
 - `--skip-checks` and `--only-checks` now apply to all checks, including
   document-level checks (previously only structure tree checks were filterable).
 - `--only-checks` now selects from all known checks (default and optional),
@@ -124,7 +118,14 @@ Versioning](https://semver.org/).
 - Fixed several paragraph/list remediation edge cases, including handling for
   marked-content references inside paragraph-of-links patterns.
 
-## [0.7.0] - 2026-02-17
+### Removed
+- Removed `SchemaValidationFix` and all `fixes/schema/` classes (WrapInLI,
+  WrapInLBody, WrapPairsOfLblPInLI, WrapPairsOfLblLBodyInLI,
+  ChangePToLblInLI, ExtractLBodyToList, TreatLblFigureAsBullet).
+  SchemaValidationCheck now reports violations without attempting automatic
+  fixes; use scribbled instructions for manual remediation instead.
+
+## [0.2.0] - 2026-02-17
 
 ### Added
 - New structural validation architecture based on visitors and a dedicated
