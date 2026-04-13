@@ -75,6 +75,48 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
+    void addParentsBuildsNestedWrapperChain() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem span = new PdfStructElem(pdfDoc, new PdfName("Span"));
+            document.addKid(span);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(span, "!ADD_PARENTS Reference[Link[P[]]]").apply(ctx);
+
+            PdfStructElem p = (PdfStructElem) span.getParent();
+            assertEquals("P", p.getRole().getValue());
+            PdfStructElem link = (PdfStructElem) p.getParent();
+            assertEquals("Link", link.getRole().getValue());
+            PdfStructElem reference = (PdfStructElem) link.getParent();
+            assertEquals("Reference", reference.getRole().getValue());
+            assertEquals("Document", ((PdfStructElem) reference.getParent()).getRole().getValue());
+        }
+    }
+
+    @Test
+    void addParentRejectsBranchingChain() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem span = new PdfStructElem(pdfDoc, new PdfName("Span"));
+            document.addKid(span);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            new ScribbledInstructionFix(span, "!ADD_PARENT Note[P[], Span[]]")
+                                    .apply(ctx));
+        }
+    }
+
+    @Test
     void addChildCreatesNestedStructure() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);

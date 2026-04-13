@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,7 +38,7 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
 
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
-    private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENT\\s+(.+)");
+    private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
 
     private final String instruction;
@@ -83,7 +84,11 @@ public class ScribbledInstructionFix implements IssueFix {
         new MistaggedArtifactFix(element).apply(ctx);
     }
 
-    /** Parses the tag expression, wraps the element in the outermost parsed tag. */
+    /**
+     * Parses the tag expression, which must be a linear chain (each node has at most one child and
+     * the innermost is a leaf), and wraps the element in that chain. For example, {@code
+     * Reference[Link[P[]]]} applied to a Span produces {@code Reference[Link[P[Span]]]}.
+     */
     private void applyAddParent(DocContext ctx, String tagExpr) {
         PdfStructElem parent = (PdfStructElem) element.getParent();
         if (parent == null) {
@@ -94,20 +99,55 @@ public class ScribbledInstructionFix implements IssueFix {
         List<Node<String>> nodes = Node.fromString(tagExpr);
         if (nodes.size() != 1) {
             throw new IllegalArgumentException(
-                    "!ADD_PARENT requires exactly one wrapper tag, got: " + tagExpr);
+                    "!ADD_PARENT requires exactly one wrapper chain root, got: " + tagExpr);
         }
-        String wrapperName = nodes.get(0).value();
+
+        List<String> chain = linearChain(nodes.get(0), tagExpr);
 
         int index = StructTree.findKidIndex(parent, element);
 
-        PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(wrapperName));
-        parent.addKid(index, wrapper);
+        // Build the chain top-down: each wrapper must have /P set (via addKid on its own
+        // parent) before we can addKid into it.
+        PdfStructElem innermost = parent;
+        PdfStructElem outermost = null;
+        for (String wrapperName : chain) {
+            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(wrapperName));
+            if (outermost == null) {
+                parent.addKid(index, wrapper);
+                outermost = wrapper;
+            } else {
+                innermost.addKid(wrapper);
+            }
+            innermost = wrapper;
+        }
 
         parent.removeKid(element);
-        wrapper.addKid(element);
+        innermost.addKid(element);
 
         element.getPdfObject().remove(PdfName.T);
         StructTree.setScribble(element, "OK");
+    }
+
+    /**
+     * Flattens a linear chain of single-child nodes into a list of role names, outermost first.
+     * Rejects branching (more than one child at any level).
+     */
+    private static List<String> linearChain(Node<String> root, String tagExpr) {
+        List<String> names = new ArrayList<>();
+        Node<String> current = root;
+        while (true) {
+            names.add(current.value());
+            List<Node<String>> kids = current.children();
+            if (kids.isEmpty()) {
+                return names;
+            }
+            if (kids.size() > 1) {
+                throw new IllegalArgumentException(
+                        "!ADD_PARENT requires a linear chain (one child per level), got: "
+                                + tagExpr);
+            }
+            current = kids.get(0);
+        }
     }
 
     /** Creates PdfStructElem nodes from parsed role tree nodes and adds them to the parent. */
