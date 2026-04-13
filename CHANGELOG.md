@@ -7,6 +7,14 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- `!ADD_PARENT` (and new alias `!ADD_PARENTS`) now accepts a nested chain
+  expression to create multiple wrapping levels at once, e.g.,
+  `!ADD_PARENTS Reference[Link[P[]]]` wraps the element in
+  `Reference > Link > P`. Previously only the outermost tag was created and
+  any inner structure in the expression was silently discarded. Branching
+  (more than one child at a level) is rejected.
+
 ### Changed
 - `MistaggedArtifactFix` now prunes empty structure elements left behind
   after artifacting MCRs, cascading upward through newly-empty ancestors.
