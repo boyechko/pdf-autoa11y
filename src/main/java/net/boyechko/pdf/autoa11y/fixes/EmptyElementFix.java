@@ -17,24 +17,19 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Removes empty structure elements from the tree, cascading upward: if removing a child makes the
  * parent empty, the parent is removed too (like {@code rm -r}).
  */
 public class EmptyElementFix implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(EmptyElementFix.class);
     private static final int P_REMOVE_EMPTY = 25; // After structure fixes (20)
 
     private final List<PdfStructElem> elements;
@@ -53,38 +48,8 @@ public class EmptyElementFix implements IssueFix {
     public void apply(DocContext ctx) {
         removedCount = 0;
         for (PdfStructElem elem : elements) {
-            removeIfEmpty(elem);
+            removedCount += StructTree.pruneEmpty(elem);
         }
-    }
-
-    private void removeIfEmpty(PdfStructElem elem) {
-        if (!isEmpty(elem)) {
-            return;
-        }
-
-        IStructureNode parent = elem.getParent();
-        if (parent == null) {
-            return;
-        }
-        // Never remove the Document element
-        if (parent instanceof PdfStructTreeRoot) {
-            return;
-        }
-
-        String role = elem.getRole() != null ? elem.getRole().getValue() : "unknown";
-        logger.debug("Removing empty {} (obj. #{})", role, StructTree.objNum(elem));
-        StructTree.removeFromParent(elem, parent);
-        removedCount++;
-
-        // Cascade: if parent is now empty, remove it too
-        if (parent instanceof PdfStructElem parentElem) {
-            removeIfEmpty(parentElem);
-        }
-    }
-
-    private boolean isEmpty(PdfStructElem elem) {
-        List<IStructureNode> kids = elem.getKids();
-        return kids == null || kids.isEmpty();
     }
 
     @Override
