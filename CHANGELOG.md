@@ -7,6 +7,13 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Changed
+- `MistaggedArtifactFix` now prunes empty structure elements left behind
+  after artifacting MCRs, cascading upward through newly-empty ancestors.
+  Previously this cleanup relied on `EmptyElementCheck` running afterward;
+  the fix is now self-contained and works correctly even when that check
+  is skipped.
+
 ## [0.3.0] - 2026-04-11
 
 ### Added

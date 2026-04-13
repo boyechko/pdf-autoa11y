@@ -199,6 +199,32 @@ public final class StructTree {
         }
     }
 
+    /**
+     * Removes the element if it has no kids, then cascades upward: if the parent becomes empty, it
+     * is removed too. Stops at the Document element (direct child of StructTreeRoot). Returns the
+     * number of elements removed.
+     */
+    public static int pruneEmpty(PdfStructElem elem) {
+        int removed = 0;
+        PdfStructElem current = elem;
+        while (current != null) {
+            List<IStructureNode> kids = current.getKids();
+            if (kids != null && !kids.isEmpty()) {
+                break;
+            }
+            IStructureNode parent = current.getParent();
+            if (parent == null || parent instanceof PdfStructTreeRoot) {
+                break;
+            }
+            String role = current.getRole() != null ? current.getRole().getValue() : "unknown";
+            logger.debug("Pruning empty {} (obj. #{})", role, objNum(current));
+            removeFromParent(current, parent);
+            removed++;
+            current = (parent instanceof PdfStructElem parentElem) ? parentElem : null;
+        }
+        return removed;
+    }
+
     /* The PDF spec allows /K to be either a single object or an array. iText
      * follows this: when a structure element has one child, it stores /K as a
      * direct dictionary reference. Only with 2+ children does it upgrade to a

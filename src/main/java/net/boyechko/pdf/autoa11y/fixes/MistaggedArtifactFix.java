@@ -96,7 +96,20 @@ public class MistaggedArtifactFix implements IssueFix {
         if (!mcidsByPage.isEmpty()) {
             rewriteMcidsAsArtifacts(mcidsByPage);
             removeMcrEntries(mcidsByPage);
+            pruneEmptySubtree(element);
         }
+    }
+
+    /** Walks the subtree bottom-up, pruning any elements left empty after MCR removal. */
+    private void pruneEmptySubtree(PdfStructElem elem) {
+        if (elem.getKids() != null) {
+            for (var kid : List.copyOf(elem.getKids())) {
+                if (kid instanceof PdfStructElem childElem) {
+                    pruneEmptySubtree(childElem);
+                }
+            }
+        }
+        StructTree.pruneEmpty(elem);
     }
 
     /** Removes MCR entries from the element's subtree for all rewritten MCIDs. */
