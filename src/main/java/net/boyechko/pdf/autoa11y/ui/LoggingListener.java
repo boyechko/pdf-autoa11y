@@ -119,6 +119,11 @@ public class LoggingListener implements ProcessingListener {
     }
 
     @Override
+    public void onSubsection(String header) {
+        logger.info("--- {} ---", header);
+    }
+
+    @Override
     public void onSummary(IssueList allIssues) {
         int detected = allIssues.size();
         int resolved = allIssues.getResolvedIssues().size();
