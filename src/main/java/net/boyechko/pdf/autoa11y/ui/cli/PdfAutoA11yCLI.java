@@ -133,9 +133,19 @@ public class PdfAutoA11yCLI {
             if (sidecar.isPresent()) {
                 listener.onInfo("Using sidecar config for " + config.inputPath().getFileName());
             }
-            Set<String> skipChecks = sidecar.mergeSkipChecks(config.skipChecks());
-            Set<String> onlyChecks = sidecar.mergeOnlyChecks(config.onlyChecks());
-            Set<String> includeChecks = sidecar.mergeIncludeChecks(config.includeChecks());
+            Set<String> onlyChecks =
+                    config.onlyChecks().isEmpty() ? sidecar.onlyChecks() : config.onlyChecks();
+            // When CLI specifies only-checks, don't apply sidecar's skip-checks — the user has
+            // made an explicit choice about what to run, which takes precedence.
+            boolean cliSpecifiedOnly = !config.onlyChecks().isEmpty();
+            Set<String> skipChecks =
+                    (cliSpecifiedOnly || !config.skipChecks().isEmpty())
+                            ? config.skipChecks()
+                            : sidecar.skipChecks();
+            Set<String> includeChecks =
+                    config.includeChecks().isEmpty()
+                            ? sidecar.includeChecks()
+                            : config.includeChecks();
 
             ProcessingService.ProcessingServiceBuilder serviceBuilder =
                     new ProcessingService.ProcessingServiceBuilder()
