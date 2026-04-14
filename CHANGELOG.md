@@ -8,6 +8,14 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `!ADD_CHILDREN` now accepts index and range references to redistribute
+  existing kids into new wrappers. Syntax: `Tag[N]` (single kid, 1-based),
+  `Tag[N..M]` (inclusive range), `Tag[N..]` (from N to last). Example:
+  `!ADD_CHILDREN Lbl[1], LBody[2..]` on an `LI` with several MCRs produces
+  `LI[Lbl[MCR1], LBody[MCR2..N]]`. New empty wrappers can be mixed in,
+  e.g., `Lbl[1], Note[], LBody[2..]`. Ranges must appear in ascending order
+  and cover every existing kid exactly once; partial coverage, gaps, or
+  out-of-order references are rejected.
 - `!ADD_PARENT` (and new alias `!ADD_PARENTS`) now accepts a nested chain
   expression to create multiple wrapping levels at once, e.g.,
   `!ADD_PARENTS Reference[Link[P[]]]` wraps the element in
