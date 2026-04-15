@@ -17,6 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.checks;
 
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.ScribbledInstructionFix;
@@ -45,8 +47,17 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
     }
 
     @Override
+    public void beforeTraversal(DocContext docCtx) {
+        PdfStructTreeRoot root = docCtx.doc().getStructTreeRoot();
+        if (root != null
+                && StructTree.clearScribbleSegmentsInTree(
+                        root, ScribbledInstructionFix.CHECK_SCRIBBLE_PREFIX)) {
+            docCtx.markDirty();
+        }
+    }
+
+    @Override
     public boolean enterElement(StructTreeContext ctx) {
-        StructTree.clearScribbleSegments(ctx.node(), ScribbledInstructionFix.CHECK_SCRIBBLE_PREFIX);
         DocValue.Scribble scribble = DocValue.Scribble.of(ctx.node());
         if (scribble == null) {
             return true;

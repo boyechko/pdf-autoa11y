@@ -36,7 +36,6 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /**
  * Detects when direct Document children should be grouped into page-level Part containers. Runs
@@ -46,7 +45,6 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 public class MissingPagePartsCheck extends StructTreeCheck {
     private static final int MINIMUM_NUMBER_OF_PAGES = 5;
 
-    private DocContext docCtx;
     private final IssueList issues = new IssueList();
 
     @Override
@@ -60,15 +58,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (docCtx == null) {
-            docCtx = ctx.docCtx();
-        }
-        return true;
-    }
-
-    @Override
-    public void afterTraversal() {
+    public void afterTraversal(DocContext docCtx) {
         if (docCtx == null || !needsNormalization(docCtx)) {
             return;
         }

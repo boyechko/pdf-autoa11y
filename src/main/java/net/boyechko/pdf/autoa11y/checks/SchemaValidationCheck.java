@@ -18,7 +18,9 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -58,8 +60,23 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     @Override
+    public void beforeTraversal(DocContext docCtx) {
+        PdfStructTreeRoot root = docCtx.doc().getStructTreeRoot();
+        if (root != null && StructTree.clearScribbleSegmentsInTree(root, CHECK_SCRIBBLE_PREFIX)) {
+            docCtx.markDirty();
+        }
+    }
+
+    @Override
+    public void afterTraversal(DocContext docCtx) {
+        // Any issue implies a scribble was written by the validators during traversal.
+        if (!issues.isEmpty()) {
+            docCtx.markDirty();
+        }
+    }
+
+    @Override
     public boolean enterElement(StructTreeContext ctx) {
-        StructTree.clearScribbleSegments(ctx.node(), CHECK_SCRIBBLE_PREFIX);
         validateUnknownRole(ctx);
         validateParentRule(ctx);
         validateChildCount(ctx);

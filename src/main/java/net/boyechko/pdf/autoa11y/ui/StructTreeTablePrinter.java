@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import java.util.function.Consumer;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
@@ -56,7 +57,7 @@ public class StructTreeTablePrinter extends StructTreeCheck {
     }
 
     @Override
-    public void beforeTraversal(StructTreeContext ctx) {
+    public void beforeTraversal(DocContext docCtx) {
         printHeader();
     }
 
