@@ -42,8 +42,8 @@ import net.boyechko.pdf.autoa11y.validation.TagSchema;
  */
 public class SchemaValidationCheck extends StructTreeCheck {
 
-    /** Scribble prefix written to /T on elements with schema violations. */
-    static final String SCRIBBLE_PREFIX = "SCHEMA";
+    /** Tag prefix written to /T on elements with schema violations and cleared on each run. */
+    static final String CHECK_SCRIBBLE_PREFIX = "SCHEMA";
 
     private final IssueList issues = new IssueList();
 
@@ -59,6 +59,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
 
     @Override
     public boolean enterElement(StructTreeContext ctx) {
+        StructTree.clearScribbleSegments(ctx.node(), CHECK_SCRIBBLE_PREFIX);
         validateUnknownRole(ctx);
         validateParentRule(ctx);
         validateChildCount(ctx);
@@ -186,7 +187,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {
-        StructTree.addScribble(elem, SCRIBBLE_PREFIX + " " + message);
+        StructTree.addScribble(elem, CHECK_SCRIBBLE_PREFIX + " " + message);
     }
 
     private String formatRole(String role) {
