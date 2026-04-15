@@ -37,6 +37,20 @@ public class DocContext {
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
     private final Map<Integer, Map<Integer, Set<Content.ContentKind>>> contentKindsCache;
+    private boolean dirty = false;
+
+    /**
+     * Marks the document as mutated. Checks/fixes that write to PDF objects as a side effect
+     * (rather than via the Issue/Fix accounting model — e.g. scribble clearing) should call this so
+     * the save gate knows the output differs from the input.
+     */
+    public void markDirty() {
+        this.dirty = true;
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
 
     public DocContext(PdfDocument doc) {
         this.doc = doc;

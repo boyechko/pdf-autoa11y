@@ -217,6 +217,7 @@ public class ProcessingService {
 
         IssueList allIssues = new IssueList();
         IssueList allFixes = new IssueList();
+        boolean isDirty = false;
 
         try {
             int stepNum = 0;
@@ -253,6 +254,7 @@ public class ProcessingService {
                     } else {
                         listener.onSuccess(check.passedMessage());
                     }
+                    isDirty |= ctx.isDirty();
                 }
 
                 if (!KEEP_PIPELINE_TEMPS) {
@@ -273,7 +275,7 @@ public class ProcessingService {
             cleanupPipelineTempDir();
 
             return new ProcessingResult(
-                    allIssues, allFixes, allIssues.getRemainingIssues(), finalOutput);
+                    allIssues, allFixes, allIssues.getRemainingIssues(), finalOutput, isDirty);
         } catch (Exception e) {
             cleanupPipelineTempDir();
             throw e;

@@ -265,7 +265,7 @@ public class PdfAutoA11yGUI extends JFrame {
                             ProcessingResult result = get();
                             lastResult = result;
 
-                            if (result.issuesResolved() == 0) {
+                            if (result.issuesResolved() == 0 && !result.dirty()) {
                                 reporter.onInfo("No changes made; output file not created");
                                 tempResultFile = null;
                                 saveButton.setEnabled(false);
