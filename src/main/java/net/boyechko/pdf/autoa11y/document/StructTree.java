@@ -451,6 +451,34 @@ public final class StructTree {
     }
 
     /**
+     * Removes scribble segments whose first whitespace-separated token equals {@code tag}. If the
+     * element has no scribble, this is a no-op. If all segments are removed, /T is cleared.
+     *
+     * <p>Intended for checks that rewrite their own diagnostics on each run: clear the check's own
+     * segments before re-emitting, so stale violations don't accumulate.
+     */
+    public static void clearScribbleSegments(PdfStructElem elem, String tag) {
+        DocValue.Scribble existing = getScribble(elem);
+        if (existing == null) return;
+
+        String[] segments =
+                existing.value().split(java.util.regex.Pattern.quote(SCRIBBLE_SEPARATOR));
+        StringBuilder kept = new StringBuilder();
+        for (String seg : segments) {
+            int sp = seg.indexOf(' ');
+            String head = (sp < 0) ? seg : seg.substring(0, sp);
+            if (head.equals(tag)) continue;
+            if (kept.length() > 0) kept.append(SCRIBBLE_SEPARATOR);
+            kept.append(seg);
+        }
+        if (kept.length() == 0) {
+            elem.getPdfObject().remove(PdfName.T);
+        } else {
+            setScribble(elem, kept.toString());
+        }
+    }
+
+    /**
      * Navigates to a descendant by a sequence of child indices.
      *
      * <p>For example, {@code getDescendant(root, 0, 2, 0)} is equivalent to {@code
