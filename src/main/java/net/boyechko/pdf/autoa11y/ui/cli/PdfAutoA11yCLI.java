@@ -196,7 +196,7 @@ public class PdfAutoA11yCLI {
             return;
         }
 
-        if (result.issuesResolved() == 0 && !config.force_save()) {
+        if (result.issuesResolved() == 0 && !result.dirty() && !config.force_save()) {
             listener.onInfo("No changes made; output file not created");
             return;
         }

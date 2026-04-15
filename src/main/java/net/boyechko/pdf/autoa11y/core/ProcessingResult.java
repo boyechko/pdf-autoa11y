@@ -15,11 +15,12 @@ public record ProcessingResult(
         IssueList detectedIssues,
         IssueList appliedFixes,
         IssueList remainingIssues,
-        Path tempOutputFile) {
+        Path tempOutputFile,
+        boolean dirty) {
 
     /** Returns an aborted result with no output file and the given fatal issues. */
     public static ProcessingResult aborted(IssueList fatalIssues) {
-        return new ProcessingResult(fatalIssues, new IssueList(), fatalIssues, null);
+        return new ProcessingResult(fatalIssues, new IssueList(), fatalIssues, null, false);
     }
 
     public int issuesDetected() {

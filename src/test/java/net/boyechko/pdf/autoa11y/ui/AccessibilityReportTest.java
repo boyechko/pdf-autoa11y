@@ -194,7 +194,7 @@ class AccessibilityReportTest {
 
     private ProcessingResult resultWith(IssueList issues) {
         return new ProcessingResult(
-                issues, issues.getResolvedIssues(), issues.getRemainingIssues(), null);
+                issues, issues.getResolvedIssues(), issues.getRemainingIssues(), null, false);
     }
 
     private String generateReport(ProcessingResult result) throws IOException {
