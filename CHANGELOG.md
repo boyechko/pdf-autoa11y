@@ -24,6 +24,9 @@ Versioning](https://semver.org/).
   (more than one child at a level) is rejected.
 
 ### Changed
+- Schema validation now clears its own prior scribble segments on each run,
+  preventing duplicate diagnostics across re-runs. Scribbled-instruction success
+  breadcrumb changed from __OK to __INST OK.
 - `MistaggedArtifactFix` now prunes empty structure elements left behind
   after artifacting MCRs, cascading upward through newly-empty ancestors.
   Previously this cleanup relied on `EmptyElementCheck` running afterward;

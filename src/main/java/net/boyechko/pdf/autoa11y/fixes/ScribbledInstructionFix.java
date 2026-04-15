@@ -45,6 +45,9 @@ import org.slf4j.LoggerFactory;
 public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
 
+    /** Tag written to /T after a successful fix (as "INST OK") and cleared on each run. */
+    public static final String CHECK_SCRIBBLE_PREFIX = "INST";
+
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
@@ -107,7 +110,7 @@ public class ScribbledInstructionFix implements IssueFix {
         }
 
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, "OK");
+        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
     }
 
     private void populateWrapper(
@@ -382,7 +385,7 @@ public class ScribbledInstructionFix implements IssueFix {
         innermost.addKid(element);
 
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, "OK");
+        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
     }
 
     /**
