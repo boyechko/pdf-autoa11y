@@ -22,6 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.NeedlessNestingFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -58,7 +59,7 @@ public class NeedlessNestingCheck extends StructTreeCheck {
     }
 
     @Override
-    public void afterTraversal() {
+    public void afterTraversal(DocContext docCtx) {
         if (!groupingElementsToFlatten.isEmpty()) {
             IssueFix fix = new NeedlessNestingFix(groupingElementsToFlatten);
             Issue issue =

@@ -53,15 +53,14 @@ public class StructTreeWalker {
         this.globalIndex = 0;
 
         for (StructTreeCheck visitor : visitors) {
-            // No node context exists at the root level.
-            visitor.beforeTraversal(null);
+            visitor.beforeTraversal(docCtx);
         }
 
         walkRoot();
 
         IssueList allIssues = new IssueList();
         for (StructTreeCheck visitor : visitors) {
-            visitor.afterTraversal();
+            visitor.afterTraversal(docCtx);
             allIssues.addAll(visitor.getIssues());
         }
 

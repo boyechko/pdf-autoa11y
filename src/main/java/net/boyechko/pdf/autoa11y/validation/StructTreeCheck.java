@@ -70,12 +70,12 @@ public abstract class StructTreeCheck implements Check {
     /// Called after `ctx` is visited (and after any children are traversed or skipped).
     public void leaveElement(StructTreeContext ctx) {}
 
-    /// Called once before traversal begins; `ctx` is `null` because no current node exists at root
-    /// level.
-    public void beforeTraversal(StructTreeContext ctx) {}
+    /// Called once before traversal begins. No current node exists yet, so only the document
+    /// context is supplied.
+    public void beforeTraversal(DocContext docCtx) {}
 
     /// Called once after traversal completes.
-    public void afterTraversal() {}
+    public void afterTraversal(DocContext docCtx) {}
 
     public abstract IssueList getIssues();
 
