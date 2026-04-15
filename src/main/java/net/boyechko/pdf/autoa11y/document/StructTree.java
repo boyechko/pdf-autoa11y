@@ -457,25 +457,63 @@ public final class StructTree {
      * <p>Intended for checks that rewrite their own diagnostics on each run: clear the check's own
      * segments before re-emitting, so stale violations don't accumulate.
      */
-    public static void clearScribbleSegments(PdfStructElem elem, String tag) {
+    public static boolean clearScribbleSegments(PdfStructElem elem, String tag) {
         DocValue.Scribble existing = getScribble(elem);
-        if (existing == null) return;
+        if (existing == null) return false;
 
         String[] segments =
                 existing.value().split(java.util.regex.Pattern.quote(SCRIBBLE_SEPARATOR));
         StringBuilder kept = new StringBuilder();
+        boolean removedAny = false;
         for (String seg : segments) {
             int sp = seg.indexOf(' ');
             String head = (sp < 0) ? seg : seg.substring(0, sp);
-            if (head.equals(tag)) continue;
+            if (head.equals(tag)) {
+                removedAny = true;
+                continue;
+            }
             if (kept.length() > 0) kept.append(SCRIBBLE_SEPARATOR);
             kept.append(seg);
         }
+        if (!removedAny) return false;
         if (kept.length() == 0) {
             elem.getPdfObject().remove(PdfName.T);
         } else {
             setScribble(elem, kept.toString());
         }
+        return true;
+    }
+
+    /**
+     * Walks the structure tree below {@code root}, clearing scribble segments tagged {@code tag} on
+     * every element. Returns {@code true} if any element was modified.
+     *
+     * <p>Prefer this single pre-pass over per-node clearing in {@code enterElement}: the latter
+     * would wipe scribbles that a parent's validator wrote to a child element before the child is
+     * visited.
+     */
+    public static boolean clearScribbleSegmentsInTree(PdfStructTreeRoot root, String tag) {
+        if (root == null || root.getKids() == null) return false;
+        boolean dirty = false;
+        for (IStructureNode kid : root.getKids()) {
+            if (kid instanceof PdfStructElem elem) {
+                dirty |= clearScribbleSegmentsInSubtree(elem, tag);
+            }
+        }
+        return dirty;
+    }
+
+    private static boolean clearScribbleSegmentsInSubtree(PdfStructElem elem, String tag) {
+        boolean dirty = clearScribbleSegments(elem, tag);
+        List<IStructureNode> kids = elem.getKids();
+        if (kids != null) {
+            for (IStructureNode kid : kids) {
+                if (kid instanceof PdfStructElem child) {
+                    dirty |= clearScribbleSegmentsInSubtree(child, tag);
+                }
+            }
+        }
+        return dirty;
     }
 
     /**
