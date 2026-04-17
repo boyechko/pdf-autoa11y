@@ -21,12 +21,18 @@ import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
 import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Label;
@@ -34,9 +40,13 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Renders PDF structure trees as text diagrams. */
+/** Renders PDF structure trees as text diagrams and applies annotations from edited dumps. */
 public final class TreeDiagram {
     private static final Logger logger = LoggerFactory.getLogger(TreeDiagram.class);
+
+    /** Matches "Role #objNum" with an optional trailing quoted scribble. */
+    private static final Pattern ANNOTATED_LINE =
+            Pattern.compile("^\\s*(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
 
     private TreeDiagram() {}
 
@@ -196,4 +206,113 @@ public final class TreeDiagram {
     private static String indentation(int depth) {
         return " ".repeat(2 * depth);
     }
+
+    // === Annotate tree from edited dump file =================================
+
+    /** Result of applying annotations from a dump-tree file. */
+    public record AnnotateResult(
+            int updated, int cleared, int unchanged, int unmatchedLines, int unmatchedElements) {}
+
+    /**
+     * Parses an edited {@code --dump-tree} output and writes quoted scribbles back to the matching
+     * elements' {@code /T} keys. Lines without a quoted scribble clear {@code /T} on the matched
+     * element. Role mismatches and unknown object numbers are reported via {@code warn}.
+     */
+    public static AnnotateResult annotateFromString(
+            PdfDocument doc, String annotatedDump, Consumer<String> warn) {
+        Map<ElemKey, Optional<String>> desired = parseDump(annotatedDump, warn);
+
+        Map<Integer, PdfStructElem> byObj = new HashMap<>();
+        PdfStructTreeRoot root = doc.getStructTreeRoot();
+        if (root != null) {
+            for (IStructureNode kid : root.getKids()) {
+                indexByObjNum(kid, byObj);
+            }
+        }
+
+        int updated = 0, cleared = 0, unchanged = 0, unmatchedLines = 0;
+
+        for (Map.Entry<ElemKey, Optional<String>> entry : desired.entrySet()) {
+            ElemKey key = entry.getKey();
+            PdfStructElem elem = byObj.get(key.objNum());
+            if (elem == null) {
+                warn.accept("no element found for " + key.role() + " #" + key.objNum());
+                unmatchedLines++;
+                continue;
+            }
+            String actualRole = StructTree.mappedRole(elem);
+            if (!key.role().equals(actualRole)) {
+                warn.accept(
+                        "line says "
+                                + key.role()
+                                + " #"
+                                + key.objNum()
+                                + " but element's role is "
+                                + actualRole);
+                unmatchedLines++;
+                continue;
+            }
+
+            Optional<String> scribble = entry.getValue();
+            if (scribble.isPresent()) {
+                elem.put(PdfName.T, new PdfString(scribble.get()));
+                updated++;
+            } else if (elem.getPdfObject().containsKey(PdfName.T)) {
+                elem.getPdfObject().remove(PdfName.T);
+                cleared++;
+            } else {
+                unchanged++;
+            }
+        }
+
+        int unmatchedElements = 0;
+        for (Map.Entry<Integer, PdfStructElem> e : byObj.entrySet()) {
+            String role = StructTree.mappedRole(e.getValue());
+            if (!desired.containsKey(new ElemKey(role, e.getKey()))) {
+                unmatchedElements++;
+            }
+        }
+
+        return new AnnotateResult(updated, cleared, unchanged, unmatchedLines, unmatchedElements);
+    }
+
+    private static Map<ElemKey, Optional<String>> parseDump(String content, Consumer<String> warn) {
+        Map<ElemKey, Optional<String>> out = new HashMap<>();
+        List<String> lines = content.lines().toList();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.isBlank()) continue;
+
+            Matcher m = ANNOTATED_LINE.matcher(line);
+            if (!m.matches()) continue;
+
+            String role = m.group(1);
+            int objNum = Integer.parseInt(m.group(2));
+            String scribble = m.group(3);
+
+            ElemKey key = new ElemKey(role, objNum);
+            Optional<String> value = scribble != null ? Optional.of(scribble) : Optional.empty();
+            Optional<String> prior = out.put(key, value);
+            if (prior != null && !prior.equals(value)) {
+                warn.accept(
+                        "duplicate line for " + role + " #" + objNum + " (line " + (i + 1) + ")");
+            }
+        }
+        return out;
+    }
+
+    private static void indexByObjNum(IStructureNode node, Map<Integer, PdfStructElem> out) {
+        if (node instanceof PdfStructElem elem) {
+            int objNum = StructTree.objNum(elem);
+            if (objNum > 0) out.put(objNum, elem);
+        }
+        List<IStructureNode> kids = node.getKids();
+        if (kids != null) {
+            for (IStructureNode kid : kids) {
+                if (kid != null) indexByObjNum(kid, out);
+            }
+        }
+    }
+
+    private record ElemKey(String role, int objNum) {}
 }

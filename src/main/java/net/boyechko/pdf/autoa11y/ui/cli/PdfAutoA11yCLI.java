@@ -56,6 +56,7 @@ public class PdfAutoA11yCLI {
             boolean analyzeOnly,
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
+            Path annotateTreePath,
             Path reportPath,
             VerbosityLevel verbosity,
             boolean printStructureTree,
@@ -109,6 +110,10 @@ public class PdfAutoA11yCLI {
         }
         if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
             dumpTree(config);
+            return;
+        }
+        if (config.annotateTreePath() != null) {
+            annotateTree(config);
             return;
         }
 
@@ -230,6 +235,30 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    /** Applies /T scribbles from an annotated dump-tree text file to the input PDF. */
+    private static void annotateTree(CLIConfig config) {
+        try {
+            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+            String content = Files.readString(config.annotateTreePath());
+            try (PdfDocument pdfDoc = custodian.openForModification(config.outputPath())) {
+                TreeDiagram.AnnotateResult result =
+                        TreeDiagram.annotateFromString(
+                                pdfDoc, content, msg -> System.err.println("! " + msg));
+                System.out.printf(
+                        "Annotations applied: %d updated, %d cleared, %d unchanged"
+                                + " (%d unmatched line(s), %d element(s) not listed)%n",
+                        result.updated(),
+                        result.cleared(),
+                        result.unchanged(),
+                        result.unmatchedLines(),
+                        result.unmatchedElements());
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Failed to annotate tree: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
     /** Prints the structure tree to the console based on the CLI config. */
     private static void dumpTree(CLIConfig config) {
         try {
@@ -264,6 +293,8 @@ public class PdfAutoA11yCLI {
             } else if (args[i].startsWith("--include-checks=")) {
                 b.includeChecks =
                         parseCommaSeparated(args[i].substring("--include-checks=".length()));
+            } else if (args[i].startsWith("--annotate-tree=")) {
+                b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
@@ -293,6 +324,13 @@ public class PdfAutoA11yCLI {
                         } else {
                             throw new CLIException(
                                     "Check names not specified after --include-checks");
+                        }
+                    }
+                    case "--annotate-tree" -> {
+                        if (i + 1 < args.length) {
+                            b.annotateTreePath = Paths.get(args[++i]);
+                        } else {
+                            throw new CLIException("File path not specified after --annotate-tree");
                         }
                     }
                     case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
@@ -349,6 +387,7 @@ public class PdfAutoA11yCLI {
         boolean analyzeOnly;
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
+        Path annotateTreePath;
         boolean generateReport;
         Path reportPath;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
@@ -379,6 +418,7 @@ public class PdfAutoA11yCLI {
                     analyzeOnly,
                     dumpTreeSimple,
                     dumpTreeDetailed,
+                    annotateTreePath,
                     reportPath,
                     verbosity,
                     printStructureTree,
@@ -443,6 +483,9 @@ public class PdfAutoA11yCLI {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
+                + "  --annotate-tree <file>  Read scribbles from an edited --dump-tree output\n"
+                + "                          file and write them to matching elements' /T keys\n"
+                + "                          in the output PDF (no checks or fixes run)\n"
                 + "  --create-sidecar  Create a template sidecar config file and exit\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
