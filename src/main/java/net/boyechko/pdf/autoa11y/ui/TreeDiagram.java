@@ -1,6 +1,6 @@
 /*
  * PDF-Auto-A11y - Automated PDF Accessibility Remediation
- * Copyright (C) 2025 Richard Boyechko
+ * Copyright (C) 2026 Richard Boyechko
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.document;
+package net.boyechko.pdf.autoa11y.ui;
 
 import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
 import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
@@ -24,6 +24,10 @@ import com.itextpdf.kernel.pdf.tagging.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.Label;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
