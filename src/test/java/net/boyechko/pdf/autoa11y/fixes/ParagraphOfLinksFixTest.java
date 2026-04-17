@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.TreeDiagram;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
 public class ParagraphOfLinksFixTest extends PdfTestBase {
@@ -41,7 +41,7 @@ public class ParagraphOfLinksFixTest extends PdfTestBase {
                     }
                     assertEquals(
                             "Document[P[Link[], Link[], Link[], Link[], Link[]]]",
-                            TreeDiagram.toRoleTree(document).toString(),
+                            StructTree.toRoleTree(document).toString(),
                             "Document should have P child with 5 Link children before fix");
 
                     DocContext ctx = new DocContext(pdfDoc);
@@ -53,7 +53,7 @@ public class ParagraphOfLinksFixTest extends PdfTestBase {
 
                     assertEquals(
                             "Document[L[LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]]]]",
-                            TreeDiagram.toRoleTree(document).toString(),
+                            StructTree.toRoleTree(document).toString(),
                             "Document should have P child converted to L with 5 LI children after fix");
                 });
     }
