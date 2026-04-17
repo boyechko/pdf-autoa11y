@@ -20,15 +20,10 @@ package net.boyechko.pdf.autoa11y.ui.cli;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
@@ -36,9 +31,7 @@ import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
@@ -242,26 +235,7 @@ public class PdfAutoA11yCLI {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             try (PdfDocument pdfDoc = custodian.openForReading()) {
-                PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-                if (root == null) {
-                    System.err.println("✗ PDF has no structure tree");
-                    System.exit(1);
-                }
-                PdfStructElem docElem = StructTree.findDocument(root);
-                if (docElem == null) {
-                    System.err.println("✗ Structure tree has no Document element");
-                    System.exit(1);
-                }
-                if (config.dumpTreeDetailed()) {
-                    Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
-                    for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
-                        PdfPage page = pdfDoc.getPage(i);
-                        contentKinds.putAll(Content.extractContentKindsForPage(page));
-                    }
-                    System.out.print(TreeDiagram.toDetailedTreeString(docElem, contentKinds));
-                } else {
-                    System.out.print(TreeDiagram.toIndentedTreeString(docElem));
-                }
+                System.out.print(TreeDiagram.dumpToString(pdfDoc, config.dumpTreeDetailed()));
             }
         } catch (Exception e) {
             System.err.println("✗ Failed to read PDF: " + e.getMessage());
