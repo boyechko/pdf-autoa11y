@@ -17,8 +17,8 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
-import static net.boyechko.pdf.autoa11y.document.TreeDiagram.Node.branch;
-import static net.boyechko.pdf.autoa11y.document.TreeDiagram.Node.leaf;
+import static net.boyechko.pdf.autoa11y.document.StructTree.Node.branch;
+import static net.boyechko.pdf.autoa11y.document.StructTree.Node.leaf;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfArray;
@@ -32,7 +32,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.TreeDiagram.Node;
+import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import org.junit.jupiter.api.Test;
 
 class StructTreeTest extends PdfTestBase {
@@ -423,7 +423,65 @@ class StructTreeTest extends PdfTestBase {
             p.addKid(span);
 
             Node<String> expected = branch("Document", leaf("H1"), branch("P", leaf("Span")));
-            assertEquals(expected, TreeDiagram.toRoleTree(document));
+            assertEquals(expected, StructTree.toRoleTree(document));
+        }
+    }
+
+    @Test
+    void parsesEmptyElement() {
+        List<Node<String>> nodes = Node.fromString("Note[]");
+
+        assertEquals(1, nodes.size());
+        assertEquals("Note", nodes.get(0).value());
+        assertTrue(nodes.get(0).children().isEmpty());
+    }
+
+    @Test
+    void parsesNestedElements() {
+        List<Node<String>> nodes = Node.fromString("Reference[Lbl[]]");
+
+        assertEquals(1, nodes.size());
+        assertEquals("Reference", nodes.get(0).value());
+        assertEquals(1, nodes.get(0).children().size());
+        assertEquals("Lbl", nodes.get(0).children().get(0).value());
+    }
+
+    @Test
+    void parsesSiblingElements() {
+        List<Node<String>> nodes = Node.fromString("Lbl[],LBody[]");
+
+        assertEquals(2, nodes.size());
+        assertEquals("Lbl", nodes.get(0).value());
+        assertEquals("LBody", nodes.get(1).value());
+    }
+
+    @Test
+    void parsesDeeplyNested() {
+        List<Node<String>> nodes = Node.fromString("L[LI[Lbl[],LBody[P[]]]]");
+
+        assertEquals(1, nodes.size());
+        Node<String> l = nodes.get(0);
+        assertEquals("L", l.value());
+        Node<String> li = l.children().get(0);
+        assertEquals("LI", li.value());
+        assertEquals(2, li.children().size());
+        assertEquals("Lbl", li.children().get(0).value());
+        assertEquals("LBody", li.children().get(1).value());
+        assertEquals("P", li.children().get(1).children().get(0).value());
+    }
+
+    @Test
+    void roundTripsWithToString() {
+        String[] expressions = {
+            "Note[]", "Reference[Lbl[]]", "L[LI[Lbl[], LBody[P[]]]]",
+        };
+        for (String expr : expressions) {
+            List<Node<String>> nodes = Node.fromString(expr);
+            String result =
+                    nodes.size() == 1
+                            ? nodes.get(0).toString()
+                            : String.join(", ", nodes.stream().map(Node::toString).toList());
+            assertEquals(expr, result, "Round-trip failed for: " + expr);
         }
     }
 

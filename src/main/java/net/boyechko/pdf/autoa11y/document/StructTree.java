@@ -529,4 +529,99 @@ public final class StructTree {
         }
         return current;
     }
+
+    // === Node tree representation ============================================
+
+    /** A generic tree node with bracket-notation parsing and serialization. */
+    public record Node<T>(T value, List<Node<T>> children) {
+        /** Creates a leaf node (no children). */
+        public static <T> Node<T> leaf(T value) {
+            return new Node<>(value, List.of());
+        }
+
+        /** Creates a node with children. */
+        @SafeVarargs
+        public static <T> Node<T> branch(T value, Node<T>... children) {
+            return new Node<>(value, List.of(children));
+        }
+
+        /**
+         * Parses bracket notation like {@code Reference[Lbl[], Span[]]} into a list of Node trees.
+         * This is the inverse of {@link #toString()}.
+         */
+        public static List<Node<String>> fromString(String expr) {
+            List<Node<String>> nodes = new ArrayList<>();
+            int[] pos = {0};
+            parseNodes(expr, pos, nodes);
+            return nodes;
+        }
+
+        private static void parseNodes(String expr, int[] pos, List<Node<String>> out) {
+            while (pos[0] < expr.length()) {
+                while (pos[0] < expr.length()
+                        && (expr.charAt(pos[0]) == ' ' || expr.charAt(pos[0]) == ',')) {
+                    pos[0]++;
+                }
+                if (pos[0] >= expr.length() || expr.charAt(pos[0]) == ']') {
+                    break;
+                }
+
+                int nameStart = pos[0];
+                while (pos[0] < expr.length()
+                        && expr.charAt(pos[0]) != '['
+                        && expr.charAt(pos[0]) != ']'
+                        && expr.charAt(pos[0]) != ',') {
+                    pos[0]++;
+                }
+                String tagName = expr.substring(nameStart, pos[0]).trim();
+                if (tagName.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Invalid tag expression at position " + pos[0]);
+                }
+
+                List<Node<String>> children = new ArrayList<>();
+                if (pos[0] < expr.length() && expr.charAt(pos[0]) == '[') {
+                    pos[0]++;
+                    parseNodes(expr, pos, children);
+                    if (pos[0] < expr.length() && expr.charAt(pos[0]) == ']') {
+                        pos[0]++;
+                    }
+                }
+
+                out.add(new Node<>(tagName, children));
+            }
+        }
+
+        /** Returns bracket notation, e.g. {@code Document[L[LI[Lbl[], LBody[P[]]]]]}. */
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(value).append('[');
+            for (int i = 0; i < children.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(children.get(i));
+            }
+            sb.append(']');
+            return sb.toString();
+        }
+    }
+
+    /** Converts a PdfStructElem tree into a Node tree of role-name strings. */
+    public static Node<String> toRoleTree(PdfStructElem elem) {
+        List<Node<String>> childNodes = new ArrayList<>();
+        for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
+            childNodes.add(toRoleTree(kid));
+        }
+        return new Node<>(elem.getRole().getValue(), childNodes);
+    }
+
+    /** Converts a PdfStructElem tree into a compact bracket-notation string. */
+    public static String toRoleTreeString(PdfStructElem elem) {
+        return toRoleTree(elem).toString().replaceAll("\\s+", "");
+    }
+
+    /** Convenience wrapper for {@link Node#fromString(String)}. */
+    public static List<Node<String>> fromRoleTreeString(String expr) {
+        return Node.fromString(expr);
+    }
 }

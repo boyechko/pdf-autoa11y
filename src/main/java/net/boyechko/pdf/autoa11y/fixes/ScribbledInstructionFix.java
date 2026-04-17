@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TreeDiagram.Node;
+import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
