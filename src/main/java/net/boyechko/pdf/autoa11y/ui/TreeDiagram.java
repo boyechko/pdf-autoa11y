@@ -20,7 +20,10 @@ package net.boyechko.pdf.autoa11y.ui;
 import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
 import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +39,32 @@ public final class TreeDiagram {
     private static final Logger logger = LoggerFactory.getLogger(TreeDiagram.class);
 
     private TreeDiagram() {}
+
+    /**
+     * Renders the structure tree of a PDF document as text. When {@code detailed} is true, includes
+     * MCRs, OBJRs, and content-kind labels; otherwise renders role names only.
+     *
+     * @throws IllegalStateException if the document has no structure tree or Document element
+     */
+    public static String dumpToString(PdfDocument pdfDoc, boolean detailed) {
+        PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+        if (root == null) {
+            throw new IllegalStateException("PDF has no structure tree");
+        }
+        PdfStructElem docElem = StructTree.findDocument(root);
+        if (docElem == null) {
+            throw new IllegalStateException("Structure tree has no Document element");
+        }
+        if (detailed) {
+            Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+            for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                PdfPage page = pdfDoc.getPage(i);
+                contentKinds.putAll(Content.extractContentKindsForPage(page));
+            }
+            return toDetailedTreeString(docElem, contentKinds);
+        }
+        return toIndentedTreeString(docElem);
+    }
 
     // === Indented tree diagram =============================================
 
