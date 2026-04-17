@@ -8,6 +8,13 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `--annotate-tree=<file>` CLI option that reads an edited
+  `--dump-tree` output file and writes the quoted scribbles back to the
+  matching elements' `/T` keys (matched by role + object number). Lines
+  without a quoted scribble clear `/T` on the referenced element; role
+  mismatches and unknown object numbers warn and skip. Enables bulk
+  scribble edits via regex substitution in a text editor, e.g.,
+  `:%s/H3 \(.*\)/H3 \1 "__!SET_ROLE H4"/` to rewrite every `H3`.
 - `!ADD_CHILDREN` now accepts index and range references to redistribute
   existing kids into new wrappers. Syntax: `Tag[N]` (single kid, 1-based),
   `Tag[N..M]` (inclusive range), `Tag[N..]` (from N to last). Example:
