@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -85,10 +86,7 @@ public class MissingPagePartsFix implements IssueFix {
                 partElem.put(PdfName.T, new PdfString("p. " + pageNum));
                 documentElem.addKid(partElem);
                 partsCreated++;
-                logger.debug(
-                        "Created Part element obj. #{} for page {}",
-                        StructTree.objNum(partElem),
-                        pageNum);
+                logger.debug("Created Part element {}", Format.elem(partElem, ctx));
             }
             pageParts.put(pageNum, partElem);
         }
@@ -113,18 +111,16 @@ public class MissingPagePartsFix implements IssueFix {
             int pageNum = StructTree.determinePageNumber(ctx, elem);
             if (pageNum > 0 && pageParts.containsKey(pageNum)) {
                 PdfStructElem targetPart = pageParts.get(pageNum);
-                if (StructTree.moveElement(documentElem, elem, targetPart)) {
-                    elementsMoved++;
-                    logger.debug(
-                            "Moved {} (obj. #{}) into Part for page {}",
-                            elem.getRole() != null ? elem.getRole().getValue() : "unknown",
-                            StructTree.objNum(elem),
-                            pageNum);
-                }
+                StructTree.moveKid(elem, documentElem, targetPart);
+                elementsMoved++;
+                logger.debug(
+                        "Moved {} into Part {}",
+                        Format.elem(elem, ctx),
+                        Format.elem(targetPart, ctx));
             } else {
                 logger.debug(
                         "Element {} has no page association, leaving under Document",
-                        elem.getRole() != null ? elem.getRole().getValue() : "unknown");
+                        Format.elem(elem, ctx));
             }
         }
     }

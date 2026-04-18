@@ -183,7 +183,7 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
-    void moveElementReparentsChild() throws Exception {
+    void moveKidReparentsChild() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             doc.addNewPage();
@@ -196,10 +196,8 @@ class StructTreeTest extends PdfTestBase {
             PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
             document.addKid(p);
 
-            boolean moved = StructTree.moveElement(document, p, part);
+            StructTree.moveKid(p, document, part);
 
-            assertTrue(moved);
-            // p should now be under part, not document
             List<IStructureNode> partKids = part.getKids();
             assertEquals(1, partKids.size());
             assertSame(p.getPdfObject(), ((PdfStructElem) partKids.get(0)).getPdfObject());
@@ -207,7 +205,7 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
-    void moveElementWorkWithSingleChild() throws Exception {
+    void moveKidWorksWithSingleChild() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             doc.addNewPage();
@@ -215,7 +213,6 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            // document has exactly one child — /K is a direct reference, not an array
             PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
             document.addKid(p);
             PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
@@ -223,31 +220,11 @@ class StructTreeTest extends PdfTestBase {
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K), "/K should not be an array");
 
-            boolean moved = StructTree.moveElement(document, p, part);
+            StructTree.moveKid(p, document, part);
 
-            assertTrue(moved);
             List<IStructureNode> partKids = part.getKids();
             assertEquals(1, partKids.size());
             assertSame(p.getPdfObject(), ((PdfStructElem) partKids.get(0)).getPdfObject());
-        }
-    }
-
-    @Test
-    void moveElementReturnsFalseWhenNotFound() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
-            root.addKid(document);
-            PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
-            document.addKid(part);
-            // orphan — not a child of document
-            PdfStructElem orphan = new PdfStructElem(doc, new PdfName("P"));
-
-            boolean moved = StructTree.moveElement(document, orphan, part);
-            assertFalse(moved);
         }
     }
 

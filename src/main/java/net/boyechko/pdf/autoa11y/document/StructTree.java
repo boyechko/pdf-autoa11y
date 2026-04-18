@@ -20,6 +20,9 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
@@ -137,42 +140,30 @@ public final class StructTree {
     }
 
     /**
-     * Moves an element from one parent to another, updating the /K array and /P reference.
-     *
-     * @return true if the element was successfully moved
+     * Moves a kid (struct elem, MCR, or OBJR) from one parent to another. For MCRs and OBJRs, a
+     * fresh wrapper is constructed so iText's ParentTreeHandler sees the correct parent when
+     * emitting the ParentTree.
      */
-    public static boolean moveElement(
-            PdfStructElem fromParent, PdfStructElem elem, PdfStructElem toParent) {
-        PdfDictionary fromDict = fromParent.getPdfObject();
-        PdfObject kObj = fromDict.get(PdfName.K);
-        if (kObj == null) return false;
-
-        PdfObject elemObj = elem.getPdfObject();
-        boolean removed = false;
-
-        if (kObj instanceof PdfArray parentKids) {
-            // Multiple children: find and remove from array
-            for (int i = 0; i < parentKids.size(); i++) {
-                PdfObject obj = parentKids.get(i);
-                if (isSame(elemObj, obj)) {
-                    parentKids.remove(i);
-                    removed = true;
-                    break;
-                }
-            }
-        } else if (isSame(elemObj, kObj)) {
-            // Single child stored as direct /K reference
-            fromDict.remove(PdfName.K);
-            removed = true;
+    public static void moveKid(
+            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
+        if (kid instanceof PdfStructElem childElem) {
+            fromParent.removeKid(childElem);
+            toParent.addKid(childElem);
+        } else if (kid instanceof PdfObjRef objRef) {
+            PdfDictionary objRefDict = (PdfDictionary) objRef.getPdfObject();
+            fromParent.removeKid(objRef);
+            toParent.addKid(new PdfObjRef(objRefDict, toParent));
+        } else if (kid instanceof PdfMcr mcr) {
+            PdfObject underlying = mcr.getPdfObject();
+            fromParent.removeKid(mcr);
+            PdfMcr rebound =
+                    underlying instanceof PdfNumber num
+                            ? new PdfMcrNumber(num, toParent)
+                            : new PdfMcrDictionary((PdfDictionary) underlying, toParent);
+            toParent.addKid(rebound);
+        } else {
+            logger.warn("Unexpected kid type {} in moveKid", kid.getClass());
         }
-
-        if (removed) {
-            elem.getPdfObject().put(PdfName.P, toParent.getPdfObject());
-            toParent.addKid(elem);
-            logger.debug("Moved {} into {}", Format.elem(elem), Format.elem(toParent));
-        }
-
-        return removed;
     }
 
     /** Finds the index of a kid element within a parent's kids list (via getKids). */
