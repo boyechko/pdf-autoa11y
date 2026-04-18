@@ -95,12 +95,7 @@ public class ScribbledInstructionFix implements IssueFix {
         for (ChildSpec spec : specs) {
             PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(spec.tag()));
             element.addKid(wrapper);
-            // Set /Pg on wrappers receiving MCRs so Acrobat's preflight (which checks /Pg on the
-            // immediate parent) accepts them, even though the spec allows ancestor inheritance.
-            if (spec instanceof WrapRange && effectivePg != null) {
-                wrapper.getPdfObject().put(PdfName.Pg, effectivePg);
-            }
-            populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount);
+            populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount, effectivePg);
         }
 
         element.getPdfObject().remove(PdfName.T);
@@ -112,14 +107,19 @@ public class ScribbledInstructionFix implements IssueFix {
             PdfStructElem wrapper,
             ChildSpec spec,
             List<IStructureNode> origKids,
-            int kidCount) {
+            int kidCount,
+            PdfObject effectivePg) {
         if (spec instanceof NewStructure ns) {
             for (ChildSpec child : ns.children()) {
                 PdfStructElem nested = new PdfStructElem(doc, new PdfName(child.tag()));
                 wrapper.addKid(nested);
-                populateWrapper(doc, nested, child, origKids, kidCount);
+                populateWrapper(doc, nested, child, origKids, kidCount, effectivePg);
             }
         } else if (spec instanceof WrapRange wr) {
+            // Set /Pg on the immediate parent of MCRs so Acrobat preflight accepts them.
+            if (effectivePg != null) {
+                wrapper.getPdfObject().put(PdfName.Pg, effectivePg);
+            }
             int from = wr.from() - 1;
             int to = Math.min(wr.to(), kidCount);
             for (int i = from; i < to; i++) {
@@ -130,11 +130,12 @@ public class ScribbledInstructionFix implements IssueFix {
 
     /** Validates that ranges cover 1..kidCount exactly, appearing in ascending order. */
     private static void validateCoverage(List<ChildSpec> specs, int kidCount, String tagExpr) {
+        List<WrapRange> ranges = new ArrayList<>();
+        collectRanges(specs, ranges);
+        if (ranges.isEmpty()) return;
+
         int expectedNext = 1;
-        for (ChildSpec spec : specs) {
-            if (!(spec instanceof WrapRange wr)) {
-                continue;
-            }
+        for (WrapRange wr : ranges) {
             if (wr.from() != expectedNext) {
                 throw new IllegalArgumentException(
                         String.format(
@@ -157,6 +158,17 @@ public class ScribbledInstructionFix implements IssueFix {
         }
     }
 
+    /** Collects all WrapRange specs in depth-first order. */
+    private static void collectRanges(List<ChildSpec> specs, List<WrapRange> out) {
+        for (ChildSpec spec : specs) {
+            if (spec instanceof WrapRange wr) {
+                out.add(wr);
+            } else if (spec instanceof NewStructure ns) {
+                collectRanges(ns.children(), out);
+            }
+        }
+    }
+
     // --- Template parser --------------------------------------------------
 
     /** Template AST for !ADD_CHILDREN. Top-level list may mix both variants. */
@@ -176,7 +188,7 @@ public class ScribbledInstructionFix implements IssueFix {
     /** Parses an !ADD_CHILDREN template into a list of top-level ChildSpecs. */
     static List<ChildSpec> parseTemplate(String expr) {
         int[] pos = {0};
-        List<ChildSpec> out = parseSpecList(expr, pos, /* allowRanges= */ true);
+        List<ChildSpec> out = parseSpecList(expr, pos);
         skipWhitespaceAndCommas(expr, pos);
         if (pos[0] < expr.length()) {
             throw new IllegalArgumentException(
@@ -185,19 +197,19 @@ public class ScribbledInstructionFix implements IssueFix {
         return out;
     }
 
-    private static List<ChildSpec> parseSpecList(String expr, int[] pos, boolean allowRanges) {
+    private static List<ChildSpec> parseSpecList(String expr, int[] pos) {
         List<ChildSpec> list = new ArrayList<>();
         while (pos[0] < expr.length()) {
             skipWhitespaceAndCommas(expr, pos);
             if (pos[0] >= expr.length() || expr.charAt(pos[0]) == ']') {
                 break;
             }
-            list.add(parseSpec(expr, pos, allowRanges));
+            list.add(parseSpec(expr, pos));
         }
         return list;
     }
 
-    private static ChildSpec parseSpec(String expr, int[] pos, boolean allowRanges) {
+    private static ChildSpec parseSpec(String expr, int[] pos) {
         int nameStart = pos[0];
         while (pos[0] < expr.length()
                 && expr.charAt(pos[0]) != '['
@@ -223,15 +235,9 @@ public class ScribbledInstructionFix implements IssueFix {
 
         ChildSpec result;
         if (Character.isDigit(peek)) {
-            if (!allowRanges) {
-                throw new IllegalArgumentException(
-                        "Range refs are only allowed at the top level of !ADD_CHILDREN; got '"
-                                + tag
-                                + "[...]' nested inside another wrapper");
-            }
             result = parseRangeWrapper(tag, expr, pos);
         } else {
-            List<ChildSpec> children = parseSpecList(expr, pos, /* allowRanges= */ false);
+            List<ChildSpec> children = parseSpecList(expr, pos);
             result = new NewStructure(tag, children);
         }
 

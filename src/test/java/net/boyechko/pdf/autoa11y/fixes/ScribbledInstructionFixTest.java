@@ -359,18 +359,34 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
-    void addChildrenRejectsRangeRefInsideNestedWrapper() throws Exception {
+    void addChildrenAllowsRangeRefInsideNestedWrapper() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
-            root.addKid(p);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem l = new PdfStructElem(pdfDoc, new PdfName("L"), page);
+            document.addKid(l);
+            for (int i = 0; i < 3; i++) {
+                l.addKid(new PdfMcrNumber(page, l));
+            }
 
             DocContext ctx = new DocContext(pdfDoc);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () ->
-                            new ScribbledInstructionFix(p, "!ADD_CHILDREN Reference[Lbl[1]]")
-                                    .apply(ctx));
+            new ScribbledInstructionFix(l, "!ADD_CHILDREN LI[LBody[1]], LI[LBody[2]], LI[LBody[3]]")
+                    .apply(ctx);
+
+            var kids = l.getKids();
+            assertEquals(3, kids.size());
+            for (int i = 0; i < 3; i++) {
+                PdfStructElem li = (PdfStructElem) kids.get(i);
+                assertEquals("LI", li.getRole().getValue());
+                assertEquals(1, li.getKids().size());
+                PdfStructElem lbody = (PdfStructElem) li.getKids().get(0);
+                assertEquals("LBody", lbody.getRole().getValue());
+                assertEquals(1, lbody.getKids().size(), "LBody should wrap 1 MCR");
+            }
         }
     }
 

@@ -66,14 +66,14 @@ Template  := Wrapper { "," Wrapper }
 Wrapper   := TagName "[" Body "]"
            | TagName                      (* empty leaf wrapper *)
 Body      := Range
-           | Template                     (* nested new wrappers *)
+           | Template                     (* nested wrappers *)
 Range     := N                            (* single kid, 1-based *)
            | N ".." M                     (* inclusive range, M ≥ N *)
            | N ".."                       (* from N to last kid *)
 ```
 
-Range references are only allowed at the top level — nested wrappers
-inside a range-bearing wrapper must be empty new structures.
+Range references always index the scribbled element's direct kids,
+regardless of nesting depth.
 
 **Examples:**
 
@@ -83,6 +83,7 @@ inside a range-bearing wrapper must be empty new structures.
 | `!ADD_CHILDREN Lbl[1], LBody[2..]` | `LI[MCR₁, MCR₂, MCR₃]` | `LI[Lbl[MCR₁], LBody[MCR₂, MCR₃]]` |
 | `!ADD_CHILDREN Lbl[1], Note[], LBody[2..]` | `LI[MCR₁, MCR₂]` | `LI[Lbl[MCR₁], Note[], LBody[MCR₂]]` |
 | `!ADD_CHILDREN TD[Caption[]]` | `TR[]` | `TR[TD[Caption[]]]` |
+| `!ADD_CHILDREN LI[LBody[1]], LI[LBody[2]], LI[LBody[3]]` | `L[MCR₁, MCR₂, MCR₃]` | `L[LI[LBody[MCR₁]], LI[LBody[MCR₂]], LI[LBody[MCR₃]]]` |
 
 ### !ADD_PARENT \<chain\> / !ADD_PARENTS \<chain\>
 

@@ -20,9 +20,9 @@ Versioning](https://semver.org/).
   `Tag[N..M]` (inclusive range), `Tag[N..]` (from N to last). Example:
   `!ADD_CHILDREN Lbl[1], LBody[2..]` on an `LI` with several MCRs produces
   `LI[Lbl[MCR1], LBody[MCR2..N]]`. New empty wrappers can be mixed in,
-  e.g., `Lbl[1], Note[], LBody[2..]`. Ranges must appear in ascending order
-  and cover every existing kid exactly once; partial coverage, gaps, or
-  out-of-order references are rejected.
+  e.g., `Lbl[1], Note[], LBody[2..]`. Ranges may appear at any nesting
+  depth (e.g., `LI[LBody[1]], LI[LBody[2]]` on an `L`) and must appear
+  in ascending order, covering every existing kid exactly once.
 - `!ADD_PARENT` (and new alias `!ADD_PARENTS`) now accepts a nested chain
   expression to create multiple wrapping levels at once, e.g.,
   `!ADD_PARENTS Reference[Link[P[]]]` wraps the element in
