@@ -17,16 +17,10 @@
  */
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,35 +123,8 @@ public class ScribbledInstructionFix implements IssueFix {
             int from = wr.from() - 1;
             int to = Math.min(wr.to(), kidCount);
             for (int i = from; i < to; i++) {
-                moveKidInto(origKids.get(i), wrapper);
+                StructTree.moveKid(origKids.get(i), element, wrapper);
             }
-        }
-    }
-
-    /**
-     * Moves a single kid (MCR, OBJR, or struct element) from {@code element} into {@code wrapper},
-     * using iText's public API so the document's ParentTree is updated alongside the K array.
-     */
-    private void moveKidInto(IStructureNode kid, PdfStructElem wrapper) {
-        if (kid instanceof PdfStructElem childElem) {
-            element.removeKid(childElem);
-            wrapper.addKid(childElem);
-        } else if (kid instanceof PdfObjRef objRef) {
-            // Rebuild so the PdfMcr's internal parent field points at the new wrapper;
-            // iText's ParentTreeHandler reads mcr.getParent() when emitting ParentTree.
-            PdfDictionary objRefDict = (PdfDictionary) objRef.getPdfObject();
-            element.removeKid(objRef);
-            wrapper.addKid(new PdfObjRef(objRefDict, wrapper));
-        } else if (kid instanceof PdfMcr mcr) {
-            PdfObject underlying = mcr.getPdfObject();
-            element.removeKid(mcr);
-            PdfMcr rebound =
-                    underlying instanceof PdfNumber num
-                            ? new PdfMcrNumber(num, wrapper)
-                            : new PdfMcrDictionary((PdfDictionary) underlying, wrapper);
-            wrapper.addKid(rebound);
-        } else {
-            logger.warn("Unexpected kid type {} in !ADD_CHILDREN redistribution", kid.getClass());
         }
     }
 
