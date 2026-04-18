@@ -97,7 +97,7 @@ public class ScribbledInstructionFix implements IssueFix {
         int kidCount = origKids.size();
         validateCoverage(specs, kidCount, tagExpr);
 
-        PdfObject effectivePg = effectivePageDict(element);
+        PdfObject effectivePg = StructTree.effectivePageDict(element);
         for (ChildSpec spec : specs) {
             PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(spec.tag()));
             element.addKid(wrapper);
@@ -132,22 +132,6 @@ public class ScribbledInstructionFix implements IssueFix {
                 moveKidInto(origKids.get(i), wrapper);
             }
         }
-    }
-
-    /**
-     * Walks up the structure tree from {@code elem} and returns the first {@code /Pg} page
-     * reference found. Returns {@code null} if no ancestor sets it.
-     */
-    private static PdfObject effectivePageDict(PdfStructElem elem) {
-        IStructureNode current = elem;
-        while (current instanceof PdfStructElem se) {
-            PdfObject pg = se.getPdfObject().get(PdfName.Pg);
-            if (pg != null) {
-                return pg;
-            }
-            current = se.getParent();
-        }
-        return null;
     }
 
     /**

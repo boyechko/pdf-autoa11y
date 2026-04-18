@@ -123,6 +123,19 @@ public final class StructTree {
         return doc.getPageNumber(pageObj);
     }
 
+    /** Walks up ancestors from {@code elem} and returns the first /Pg page reference found. */
+    public static PdfObject effectivePageDict(PdfStructElem elem) {
+        IStructureNode current = elem;
+        while (current instanceof PdfStructElem se) {
+            PdfObject pg = se.getPdfObject().get(PdfName.Pg);
+            if (pg != null) {
+                return pg;
+            }
+            current = se.getParent();
+        }
+        return null;
+    }
+
     /**
      * Moves an element from one parent to another, updating the /K array and /P reference.
      *
