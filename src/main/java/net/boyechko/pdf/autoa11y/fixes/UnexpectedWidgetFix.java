@@ -26,6 +26,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -67,18 +68,7 @@ public class UnexpectedWidgetFix implements IssueFix {
 
     /** Removes this annotation from the page's /Annots array directly. */
     private void removeFromPageAnnots(DocContext ctx) {
-        PdfDictionary pageDict = ctx.doc().getPage(pageNum).getPdfObject();
-        PdfArray annots = pageDict.getAsArray(PdfName.Annots);
-        if (annots == null) {
-            return;
-        }
-
-        if (removeMatchingEntry(annots)) {
-            annots.setModified();
-            if (annots.isEmpty()) {
-                pageDict.remove(PdfName.Annots);
-            }
-            pageDict.setModified();
+        if (Annotation.removeFromPageAnnots(ctx.doc().getPage(pageNum), annotDict)) {
             logger.debug("Removed {}", widgetRef());
         } else {
             logger.warn("{} not found in page annotations", widgetRef());
@@ -105,18 +95,18 @@ public class UnexpectedWidgetFix implements IssueFix {
         if (parent != null) {
             // Child widget: remove from parent's /Kids
             PdfArray kids = parent.getAsArray(PdfName.Kids);
-            if (kids != null && removeMatchingEntry(kids)) {
+            if (kids != null && Annotation.removeMatchingEntry(kids, annotDict)) {
                 kids.setModified();
                 parent.setModified();
             }
             // If the parent has no remaining kids, remove it from /Fields
             if (kids == null || kids.isEmpty()) {
-                removeMatchingEntry(fields, parent);
+                Annotation.removeMatchingEntry(fields, parent);
                 fields.setModified();
             }
         } else {
             // Merged field+widget: remove directly from /Fields
-            if (removeMatchingEntry(fields)) {
+            if (Annotation.removeMatchingEntry(fields, annotDict)) {
                 fields.setModified();
             }
         }
@@ -126,34 +116,6 @@ public class UnexpectedWidgetFix implements IssueFix {
             catalog.setModified();
             logger.debug("Removed empty AcroForm from catalog");
         }
-    }
-
-    /**
-     * Removes the entry matching this annotation's indirect reference from the array. Returns true
-     * if an entry was found and removed.
-     */
-    private boolean removeMatchingEntry(PdfArray array) {
-        return removeMatchingEntry(array, annotDict);
-    }
-
-    /**
-     * Removes an entry from the array whose indirect reference matches the target dictionary.
-     * Checks both raw (non-dereferenced) and resolved entries to handle iText's internal storage.
-     */
-    private boolean removeMatchingEntry(PdfArray array, PdfDictionary target) {
-        if (target.getIndirectReference() == null) {
-            return false;
-        }
-        for (int i = 0; i < array.size(); i++) {
-            // Check the resolved (dereferenced) entry
-            PdfObject resolved = array.get(i);
-            if (resolved != null
-                    && target.getIndirectReference().equals(resolved.getIndirectReference())) {
-                array.remove(i);
-                return true;
-            }
-        }
-        return false;
     }
 
     private void removeObjRefFromStructureTree(DocContext ctx) {
