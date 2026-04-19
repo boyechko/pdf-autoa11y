@@ -120,6 +120,29 @@ Instruction := "!ARTIFACT"
 |---|---|---|
 | `!ARTIFACT` | `P[Span[MCR₁]]` | *(element and MCRs removed; content marked as artifact)* |
 
+### !UNLINK
+
+Unwraps a `Link` element: promotes its non-`OBJR` kids to the parent
+at the Link's original position, removes the Link element, and
+deletes the associated Link annotation from the page's `/Annots`
+array. The element is destroyed, so no breadcrumb is written. Only
+valid on `Link` elements; applying it elsewhere raises an error.
+
+```text
+Instruction := "!UNLINK"
+```
+
+Typical use: pair with `InvalidLinkUriCheck`, which flags Link
+elements whose `/A /URI` is not a plausible web address. Review
+the `LINK_URI` scribbles via `--dump-tree`, rewrite legitimate
+offenders as `!UNLINK`, then rerun the tool.
+
+**Example:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!UNLINK` | `P[Link[Span[MCR₁], OBJR]]` | `P[Span[MCR₁]]` *(annotation also removed from page)* |
+
 ## StructTreeOrderCheck
 
 The structure tree order check sorts siblings by their first
