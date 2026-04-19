@@ -39,6 +39,7 @@ public enum IssueType {
     FIGURE_WITH_TEXT("Figure elements containing text"),
     FIGURE_MISSING_ALT("images missing alt text"),
     EMPTY_LINK_TAG("Link elements without description"),
+    INVALID_LINK_URI("Link elements with invalid URIs"),
 
     // Structure Issues
     MISSING_DOCUMENT_ELEMENT("no Document element under /StructTreeRoot"),

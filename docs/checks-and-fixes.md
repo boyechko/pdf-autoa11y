@@ -39,6 +39,7 @@ previous step in the execution order listed below.
 | FigureWithTextCheck | Detects Figure elements containing text content | Changes Figure role |
 | MissingAltTextCheck | Detects content images missing alt text | None (manual) |
 | EmptyLinkTagCheck | Detects Link elements without link description | Moves adjacent text into Link |
+| InvalidLinkUriCheck | Detects Link elements whose `/A /URI` is not a plausible http(s) web address | Writes `LINK_URI` scribble for manual review |
 | MistaggedBulletedListCheck | Detects vector bullet glyphs near elements that should be lists | Wraps in list structure |
 | ParagraphOfLinksCheck | Detects paragraphs containing only links | Converts to list structure |
 | EmptyElementCheck | Detects empty structure elements | Removes empty elements |

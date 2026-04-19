@@ -8,6 +8,13 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `InvalidLinkUriCheck` flags `Link` elements whose `/A /URI` action is not a
+  plausible http(s) web address (non-http scheme, non-letter or overly short
+  TLD, malformed syntax, etc.). Links that use an internal `/Dest` or a
+  non-URI action (e.g., GoTo) are out of scope and are not flagged. Writes a
+  `LINK_URI` scribble on each offending element so reviewers can inspect
+  offenders via `--dump-tree` and replace the scribble with an instruction
+  (e.g., `!UNLINK`, once that directive is supported).
 - Added `--annotate-tree=<file>` CLI option that reads an edited
   `--dump-tree` output file and writes the quoted scribbles back to the
   matching elements' `/T` keys (matched by role + object number). Lines
