@@ -1,6 +1,6 @@
 /*
  * PDF-Auto-A11y - Automated PDF Accessibility Remediation
- * Copyright (C) 2025 Richard Boyechko
+ * Copyright (C) 2026 Richard Boyechko
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -30,10 +30,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.checks.UnmarkedLinkCheck;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
+import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -255,7 +255,7 @@ public class UnmarkedLinkFix implements IssueFix {
 
     @Override
     public String describe(DocContext ctx) {
-        String uri = UnmarkedLinkCheck.getAnnotationUri(annotDict);
+        String uri = Link.getUri(annotDict);
         if (uri == null || uri.isBlank()) {
             return describe();
         }
