@@ -1,6 +1,6 @@
 /*
  * PDF-Auto-A11y - Automated PDF Accessibility Remediation
- * Copyright (C) 2025 Richard Boyechko
+ * Copyright (C) 2026 Richard Boyechko
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -23,6 +23,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.fixes.UnmarkedLinkFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
@@ -66,7 +67,7 @@ public class UnmarkedLinkCheck extends DocumentCheck {
                         continue;
                     }
 
-                    String uri = getAnnotationUri(annotDict);
+                    String uri = Link.getUri(annotDict);
                     int objNumber = annotDict.getIndirectReference().getObjNumber();
                     String description = UnmarkedLinkCheck.buildDescription(objNumber, uri);
 
@@ -96,19 +97,5 @@ public class UnmarkedLinkCheck extends DocumentCheck {
         }
 
         return sb.toString();
-    }
-
-    public static String getAnnotationUri(PdfDictionary annotDict) {
-        PdfDictionary action = annotDict.getAsDictionary(PdfName.A);
-        if (action != null) {
-            PdfName actionType = action.getAsName(PdfName.S);
-            if (PdfName.URI.equals(actionType)) {
-                var uriObj = action.get(PdfName.URI);
-                if (uriObj != null) {
-                    return uriObj.toString();
-                }
-            }
-        }
-        return null;
     }
 }
