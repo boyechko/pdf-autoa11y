@@ -14,7 +14,15 @@ Versioning](https://semver.org/).
   non-URI action (e.g., GoTo) are out of scope and are not flagged. Writes a
   `LINK_URI` scribble on each offending element so reviewers can inspect
   offenders via `--dump-tree` and replace the scribble with an instruction
-  (e.g., `!UNLINK`, once that directive is supported).
+  (e.g., `!UNLINK`).
+- `!UNLINK` scribbled-instruction unwraps a `Link` element: promotes its
+  non-`OBJR` kids to the parent at the Link's original position, removes the
+  Link struct element, and deletes the associated Link annotation from the
+  page's `/Annots` array. Intended workflow: `InvalidLinkUriCheck` writes
+  `LINK_URI` scribbles on spurious Links; reviewers rewrite them to `!UNLINK`;
+  the next run applies them. Bare-int MCRs promoted into a parent that lacks
+  `/Pg` are kept resolvable by copying the Link's effective `/Pg` onto the
+  parent.
 - Added `--annotate-tree=<file>` CLI option that reads an edited
   `--dump-tree` output file and writes the quoted scribbles back to the
   matching elements' `/T` keys (matched by role + object number). Lines
