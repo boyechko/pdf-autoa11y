@@ -51,6 +51,7 @@ public final class ProcessingDefaults {
                 FigureWithTextCheck::new,
                 MissingAltTextCheck::new,
                 EmptyLinkTagCheck::new,
+                InvalidLinkUriCheck::new,
                 MistaggedBulletedListCheck::new,
                 ParagraphOfLinksCheck::new,
                 EmptyElementCheck::new,
