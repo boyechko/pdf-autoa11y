@@ -180,6 +180,8 @@ and inspecting each processing step.
 
 - `CHANGELOG.md` for release notes
 - `CONTRIBUTING.md` for development workflow
+- `docs/sidecar.md` for per-PDF sidecar config reference
+- `docs/checks-and-fixes.md` for the full list of checks and fixes
 - `docs/architecture-decisions.md` for architecture decision records
 
 ## Development

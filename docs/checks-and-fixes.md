@@ -143,6 +143,31 @@ offenders as `!UNLINK`, then rerun the tool.
 |---|---|---|
 | `!UNLINK` | `P[Link[Span[MCR₁], OBJR]]` | `P[Span[MCR₁]]` *(annotation also removed from page)* |
 
+## RoleMap Checks
+
+`ClearRoleMapCheck` and `ReplaceRoleMapCheck` are not part of the default
+pipeline. They run when the PDF's sidecar config (e.g.,
+`document.autoa11y.yaml`) includes a `role-map:` key.
+
+To remove the `/RoleMap` entirely:
+
+```yaml
+role-map: clear
+```
+
+To replace the `/RoleMap` with a specific set of mappings:
+
+```yaml
+role-map:
+  CustomHeading: H1
+  CustomFigure: Figure
+```
+
+| Check | Description | Fix |
+|---|---|---|
+| ClearRoleMapCheck | Detects presence of `/RoleMap` in the structure tree root | Removes `/RoleMap` |
+| ReplaceRoleMapCheck | Compares `/RoleMap` to sidecar-supplied mappings | Replaces `/RoleMap` with supplied mappings |
+
 ## StructTreeOrderCheck
 
 The structure tree order check sorts siblings by their first
