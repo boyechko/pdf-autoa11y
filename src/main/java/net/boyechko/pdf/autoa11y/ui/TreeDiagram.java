@@ -54,7 +54,7 @@ public final class TreeDiagram {
      * Renders the structure tree of a PDF document as text. When {@code detailed} is true, includes
      * MCRs, OBJRs, and content-kind labels; otherwise renders role names only.
      *
-     * @throws IllegalStateException if the document has no structure tree or Document element
+     * @throws IllegalStateException if the document has no structure tree
      */
     public static String dumpToString(PdfDocument pdfDoc, boolean detailed) {
         PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -62,26 +62,36 @@ public final class TreeDiagram {
             throw new IllegalStateException("PDF has no structure tree");
         }
         PdfStructElem docElem = StructTree.findDocument(root);
-        if (docElem == null) {
-            throw new IllegalStateException("Structure tree has no Document element");
-        }
+        IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
             Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
             for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
                 PdfPage page = pdfDoc.getPage(i);
                 contentKinds.putAll(Content.extractContentKindsForPage(page));
             }
-            return toDetailedTreeString(docElem, contentKinds);
+            return toDetailedTreeString(start, contentKinds);
         }
-        return toIndentedTreeString(docElem);
+        return toIndentedTreeString(start);
     }
 
     // === Indented tree diagram =============================================
 
-    /** Converts a PdfStructElem tree into an indented, multi-line string of role names. */
-    public static String toIndentedTreeString(PdfStructElem elem) {
+    /**
+     * Converts a structure tree into an indented, multi-line string of role names. A {@link
+     * PdfStructElem} is rendered as the top line of the output, with its descendants indented
+     * below.
+     */
+    public static String toIndentedTreeString(IStructureNode node) {
         StringBuilder sb = new StringBuilder();
-        appendIndentedTree(sb, elem, 0);
+        if (node instanceof PdfStructElem elem) {
+            appendIndentedTree(sb, elem, 0);
+        } else {
+            for (IStructureNode kid : node.getKids()) {
+                if (kid instanceof PdfStructElem childElem) {
+                    appendIndentedTree(sb, childElem, 0);
+                }
+            }
+        }
         return sb.toString();
     }
 
@@ -98,19 +108,27 @@ public final class TreeDiagram {
      * Like {@link #toIndentedTreeString}, but also shows MCRs and annotation object references
      * (OBJRs) as leaf annotations on each element.
      */
-    public static String toDetailedTreeString(PdfStructElem elem) {
-        return toDetailedTreeString(elem, Map.of());
+    public static String toDetailedTreeString(IStructureNode node) {
+        return toDetailedTreeString(node, Map.of());
     }
 
     /**
-     * Like {@link #toDetailedTreeString(PdfStructElem)}, but labels MCRs with their content kind
+     * Like {@link #toDetailedTreeString(IStructureNode)}, but labels MCRs with their content kind
      * (text/image) using the provided map from MCID to content kinds.
      */
     public static String toDetailedTreeString(
-            PdfStructElem elem, Map<Integer, Set<Content.ContentKind>> contentKinds) {
+            IStructureNode node, Map<Integer, Set<Content.ContentKind>> contentKinds) {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
-        appendDetailedTree(sb, elem, 0, contentKinds, currentPage);
+        if (node instanceof PdfStructElem elem) {
+            appendDetailedTree(sb, elem, 0, contentKinds, currentPage);
+        } else {
+            for (IStructureNode kid : node.getKids()) {
+                if (kid instanceof PdfStructElem childElem) {
+                    appendDetailedTree(sb, childElem, 0, contentKinds, currentPage);
+                }
+            }
+        }
         return sb.toString();
     }
 
