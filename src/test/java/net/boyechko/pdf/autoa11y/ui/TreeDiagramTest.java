@@ -39,6 +39,24 @@ class TreeDiagramTest {
     @TempDir Path tempDir;
 
     @Test
+    void renderingFromStructTreeRootSkipsRootLabel() throws Exception {
+        try (PdfDocument doc = openForReading()) {
+            var root = doc.getStructTreeRoot();
+            PdfStructElem docElem = StructTree.findDocument(root);
+
+            String fromRoot = TreeDiagram.toIndentedTreeString(root);
+            String fromDocument = TreeDiagram.toIndentedTreeString(docElem);
+
+            assertEquals(
+                    fromDocument,
+                    fromRoot,
+                    "Rendering from StructTreeRoot should skip its label and produce the same"
+                            + " output as rendering from its Document kid");
+            assertTrue(fromRoot.startsWith("Document"), "Top line should be the Document element");
+        }
+    }
+
+    @Test
     void annotateFromStringWritesScribbleToMatchingElement() throws Exception {
         Path outPdf = tempDir.resolve("annotated.pdf");
 

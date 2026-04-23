@@ -58,6 +58,12 @@ Versioning](https://semver.org/).
   the fix is now self-contained and works correctly even when that check
   is skipped.
 
+### Fixed
+- `--dump-tree` no longer fails on PDFs whose structure tree lacks a `Document`
+  wrapper element. When the `Document` element is present the output is
+  unchanged; when it is absent, the direct struct-element children of
+  `StructTreeRoot` become the top lines of the dump.
+
 ## [0.3.0] - 2026-04-11
 
 ### Added
