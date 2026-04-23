@@ -8,6 +8,21 @@ The sidecar lets you persist per-file settings — which checks to skip,
 custom role mappings, or custom artifact patterns — without repeating
 CLI flags on every run.
 
+## File Discovery
+
+For `document.pdf`, the tool automatically loads `document.autoa11y.yaml`
+from the same directory if it exists. The `_autoa11y` output suffix is
+stripped when resolving the sidecar name, so the remediated output
+`document_autoa11y.pdf` maps to the same sidecar as the original.
+
+To use a different sidecar file, pass `--sidecar`:
+
+```bash
+./pdf-autoa11y --sidecar shared.autoa11y.yaml document.pdf
+```
+
+This overrides auto-discovery entirely.
+
 ## Creating a Template
 
 ```bash

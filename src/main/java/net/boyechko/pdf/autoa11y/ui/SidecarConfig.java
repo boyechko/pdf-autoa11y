@@ -62,6 +62,15 @@ public final class SidecarConfig {
         return new Builder().build();
     }
 
+    /** Loads sidecar config from an explicit path. Throws IOException if the file is missing. */
+    public static SidecarConfig fromPath(Path sidecarPath) throws IOException {
+        if (!Files.exists(sidecarPath)) {
+            throw new IOException("Sidecar config not found: " + sidecarPath);
+        }
+        logger.info("Loading sidecar config: {}", sidecarPath);
+        return load(sidecarPath);
+    }
+
     /** Loads sidecar config for the given PDF path, or returns an empty config if none exists. */
     public static SidecarConfig forPdf(Path pdfPath) {
         Path sidecarPath = resolveSidecarPath(pdfPath);
