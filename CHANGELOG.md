@@ -8,6 +8,8 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `--sidecar <file>` CLI option to explicitly specify a sidecar config
+  file, overriding the auto-discovered `<basename>.autoa11y.yaml`.
 - `InvalidLinkUriCheck` flags `Link` elements whose `/A /URI` action is not a
   plausible http(s) web address (non-http scheme, non-letter or overly short
   TLD, malformed syntax, etc.). Links that use an internal `/Dest` or a

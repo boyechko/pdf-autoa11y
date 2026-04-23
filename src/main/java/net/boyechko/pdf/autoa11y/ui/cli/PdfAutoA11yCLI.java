@@ -61,6 +61,7 @@ public class PdfAutoA11yCLI {
             VerbosityLevel verbosity,
             boolean printStructureTree,
             boolean createSidecar,
+            Path sidecarPath,
             Set<String> skipChecks,
             Set<String> onlyChecks,
             Set<String> includeChecks) {
@@ -127,9 +128,16 @@ public class PdfAutoA11yCLI {
 
             PdfCustodian docFactory = new PdfCustodian(config.inputPath(), config.password());
 
-            SidecarConfig sidecar = SidecarConfig.forPdf(config.inputPath());
+            SidecarConfig sidecar =
+                    config.sidecarPath() != null
+                            ? SidecarConfig.fromPath(config.sidecarPath())
+                            : SidecarConfig.forPdf(config.inputPath());
             if (sidecar.isPresent()) {
-                listener.onInfo("Using sidecar config for " + config.inputPath().getFileName());
+                listener.onInfo(
+                        "Using sidecar config: "
+                                + (config.sidecarPath() != null
+                                        ? config.sidecarPath()
+                                        : config.inputPath().getFileName()));
             }
             Set<String> onlyChecks =
                     config.onlyChecks().isEmpty() ? sidecar.onlyChecks() : config.onlyChecks();
@@ -295,6 +303,8 @@ public class PdfAutoA11yCLI {
                         parseCommaSeparated(args[i].substring("--include-checks=".length()));
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
+            } else if (args[i].startsWith("--sidecar=")) {
+                b.sidecarPath = Paths.get(args[i].substring("--sidecar=".length()));
             } else {
                 switch (args[i]) {
                     case "-p", "--password" -> {
@@ -331,6 +341,13 @@ public class PdfAutoA11yCLI {
                             b.annotateTreePath = Paths.get(args[++i]);
                         } else {
                             throw new CLIException("File path not specified after --annotate-tree");
+                        }
+                    }
+                    case "--sidecar" -> {
+                        if (i + 1 < args.length) {
+                            b.sidecarPath = Paths.get(args[++i]);
+                        } else {
+                            throw new CLIException("File path not specified after --sidecar");
                         }
                     }
                     case "-q", "--quiet" -> b.verbosity = VerbosityLevel.QUIET;
@@ -393,6 +410,7 @@ public class PdfAutoA11yCLI {
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
         boolean printStructureTree;
         boolean createSidecar;
+        Path sidecarPath;
         Set<String> skipChecks = Set.of();
         Set<String> onlyChecks = Set.of();
         Set<String> includeChecks = Set.of();
@@ -403,6 +421,9 @@ public class PdfAutoA11yCLI {
             }
             if (!Files.exists(inputPath)) {
                 throw new CLIException("File not found: " + inputPath);
+            }
+            if (sidecarPath != null && !Files.exists(sidecarPath)) {
+                throw new CLIException("Sidecar config not found: " + sidecarPath);
             }
 
             String baseName =
@@ -423,6 +444,7 @@ public class PdfAutoA11yCLI {
                     verbosity,
                     printStructureTree,
                     createSidecar,
+                    sidecarPath,
                     skipChecks,
                     onlyChecks,
                     includeChecks);
@@ -487,6 +509,7 @@ public class PdfAutoA11yCLI {
                 + "                          file and write them to matching elements' /T keys\n"
                 + "                          in the output PDF (no checks or fixes run)\n"
                 + "  --create-sidecar  Create a template sidecar config file and exit\n"
+                + "  --sidecar <file>  Use this sidecar config instead of <basename>.autoa11y.yaml\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
