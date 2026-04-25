@@ -111,10 +111,15 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             if (docElem == null) {
                 return "<no Document element>";
             }
-            Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds = new HashMap<>();
             for (int i = 1; i <= doc.getNumberOfPages(); i++) {
                 PdfPage page = doc.getPage(i);
-                contentKinds.putAll(Content.extractContentKindsForPage(page));
+                int pageNum = i;
+                Content.extractContentKindsForPage(page)
+                        .forEach(
+                                (mcid, kinds) ->
+                                        contentKinds.put(
+                                                new Content.PageMcid(pageNum, mcid), kinds));
             }
             return TreeDiagram.toDetailedTreeString(docElem, contentKinds).strip();
         }

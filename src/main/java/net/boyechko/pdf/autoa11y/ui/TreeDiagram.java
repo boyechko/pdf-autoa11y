@@ -64,10 +64,15 @@ public final class TreeDiagram {
         PdfStructElem docElem = StructTree.findDocument(root);
         IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
-            Map<Integer, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds = new HashMap<>();
             for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
                 PdfPage page = pdfDoc.getPage(i);
-                contentKinds.putAll(Content.extractContentKindsForPage(page));
+                int pageNum = i;
+                Content.extractContentKindsForPage(page)
+                        .forEach(
+                                (mcid, kinds) ->
+                                        contentKinds.put(
+                                                new Content.PageMcid(pageNum, mcid), kinds));
             }
             return toDetailedTreeString(start, contentKinds);
         }
@@ -114,10 +119,10 @@ public final class TreeDiagram {
 
     /**
      * Like {@link #toDetailedTreeString(IStructureNode)}, but labels MCRs with their content kind
-     * (text/image) using the provided map from MCID to content kinds.
+     * (text/image) using the provided map keyed by (page, MCID).
      */
     public static String toDetailedTreeString(
-            IStructureNode node, Map<Integer, Set<Content.ContentKind>> contentKinds) {
+            IStructureNode node, Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds) {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
         if (node instanceof PdfStructElem elem) {
@@ -136,7 +141,7 @@ public final class TreeDiagram {
             StringBuilder sb,
             PdfStructElem elem,
             int depth,
-            Map<Integer, Set<Content.ContentKind>> contentKinds,
+            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds,
             int[] currentPage) {
         // Emit page break before the element if its first leaf is on a new page
         emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
@@ -161,12 +166,15 @@ public final class TreeDiagram {
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {
-                    emitPageBreakIfNeeded(sb, pageOf(mcr), currentPage);
+                    int pageNum = pageOf(mcr);
+                    emitPageBreakIfNeeded(sb, pageNum, currentPage);
                     sb.append(childIndent);
                     sb.append(
                             "["
                                     + new DocValue.Mcr(
-                                            mcr.getMcid(), contentKinds.get(mcr.getMcid()))
+                                            mcr.getMcid(),
+                                            contentKinds.get(
+                                                    new Content.PageMcid(pageNum, mcr.getMcid())))
                                     + "]");
                     sb.append('\n');
                 }
