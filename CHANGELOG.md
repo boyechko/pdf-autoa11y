@@ -59,6 +59,10 @@ Versioning](https://semver.org/).
   is skipped.
 
 ### Fixed
+- `--dump-tree` content-kind labels (`text`, `image`, `path`) on MCRs are now
+  correct on multi-page PDFs. Previously, the per-page kind maps were merged by
+  raw MCID across pages, so an MCID reused on a later page would overwrite
+  earlier pages' entries and mis-label every collision.
 - `--dump-tree` no longer fails on PDFs whose structure tree lacks a `Document`
   wrapper element. When the `Document` element is present the output is
   unchanged; when it is absent, the direct struct-element children of
