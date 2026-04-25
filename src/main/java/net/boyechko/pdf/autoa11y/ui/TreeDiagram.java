@@ -164,6 +164,10 @@ public final class TreeDiagram {
                     emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
                     sb.append(childIndent);
                     sb.append("<" + objrLabel(objRef) + ">");
+                    DocValue.Destination dest = DocValue.destinationOf(objRef);
+                    if (dest != null) {
+                        sb.append(' ').append(dest);
+                    }
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {

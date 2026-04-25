@@ -17,9 +17,12 @@
  */
 package net.boyechko.pdf.autoa11y.document;
 
+import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -122,6 +125,79 @@ public sealed interface DocValue {
         public String toString() {
             return "widget " + new ObjNum(objNum);
         }
+    }
+
+    /** A Link annotation's destination — either a URI or a GoTo target. */
+    sealed interface Destination extends DocValue
+            permits Destination.Uri, Destination.GoToPage, Destination.GoToNamed {
+
+        /** A URI destination, rendered as {@code /URI (https://example.com)}. */
+        record Uri(String url) implements Destination {
+            @Override
+            public String toString() {
+                return "/URI (" + url + ")";
+            }
+        }
+
+        /** A GoTo destination resolved to a page number, rendered as {@code /GoTo p52}. */
+        record GoToPage(int pageNum) implements Destination {
+            @Override
+            public String toString() {
+                return "/GoTo p" + pageNum;
+            }
+        }
+
+        /** A named GoTo destination (left unresolved), rendered as {@code /GoTo MyChapter}. */
+        record GoToNamed(String name) implements Destination {
+            @Override
+            public String toString() {
+                return "/GoTo " + name;
+            }
+        }
+    }
+
+    /**
+     * Extracts the destination of a Link annotation OBJR. Returns null if the OBJR is not a Link,
+     * has no resolvable destination, or its action type is not /URI or /GoTo. Per PDF spec
+     * §12.6.4.11, an /A action takes precedence over /Dest when both are present.
+     */
+    static Destination destinationOf(PdfObjRef objRef) {
+        PdfDictionary annot = objRef.getReferencedObject();
+        if (annot == null) return null;
+        if (!PdfName.Link.equals(annot.getAsName(PdfName.Subtype))) return null;
+
+        PdfDictionary action = annot.getAsDictionary(PdfName.A);
+        if (action != null) {
+            PdfName actionType = action.getAsName(PdfName.S);
+            if (PdfName.URI.equals(actionType)) {
+                PdfString uri = action.getAsString(PdfName.URI);
+                return uri != null ? new Destination.Uri(uri.toUnicodeString()) : null;
+            }
+            if (PdfName.GoTo.equals(actionType)) {
+                return resolveGoToDest(action.get(PdfName.D));
+            }
+            return null;
+        }
+
+        return resolveGoToDest(annot.get(PdfName.Dest));
+    }
+
+    /** Resolves the /D value of a GoTo action, or a /Dest value, into a typed Destination. */
+    private static Destination resolveGoToDest(PdfObject dest) {
+        if (dest == null) return null;
+        if (dest instanceof PdfArray arr && !arr.isEmpty()) {
+            PdfDictionary pageDict = arr.getAsDictionary(0);
+            if (pageDict == null) return null;
+            PdfIndirectReference ref = pageDict.getIndirectReference();
+            if (ref == null) return null;
+            PdfDocument doc = ref.getDocument();
+            if (doc == null) return null;
+            int pageNum = doc.getPageNumber(pageDict);
+            return pageNum > 0 ? new Destination.GoToPage(pageNum) : null;
+        }
+        if (dest instanceof PdfName name) return new Destination.GoToNamed(name.getValue());
+        if (dest instanceof PdfString str) return new Destination.GoToNamed(str.toUnicodeString());
+        return null;
     }
 
     /**
