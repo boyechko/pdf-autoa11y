@@ -12,7 +12,10 @@ Versioning](https://semver.org/).
   OBJR label: `/URI (https://...)` for URI actions, `/GoTo pN` for explicit
   page-reference destinations resolved to a page number, and `/GoTo Name` for
   named destinations (left unresolved). Only Link annotations are extracted;
-  widgets and other annotation subtypes render as before.
+  widgets and other annotation subtypes render as before. For web-captured
+  PDFs, the link's `/PA` "previously associated URI" (the original URL before
+  Web Capture rewrote the action to an internal `/GoTo`) is also appended,
+  e.g. `<link #N> /GoTo p152 /URI (https://www.uwb.edu/)`.
 - Added `--sidecar <file>` CLI option to explicitly specify a sidecar config
   file, overriding the auto-discovered `<basename>.autoa11y.yaml`.
 - `InvalidLinkUriCheck` flags `Link` elements whose `/A /URI` action is not a
