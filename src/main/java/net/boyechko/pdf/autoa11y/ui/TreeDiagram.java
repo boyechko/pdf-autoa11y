@@ -168,6 +168,10 @@ public final class TreeDiagram {
                     if (dest != null) {
                         sb.append(' ').append(dest);
                     }
+                    DocValue.Destination originalUri = DocValue.originalUriOf(objRef);
+                    if (originalUri != null) {
+                        sb.append(' ').append(originalUri);
+                    }
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {

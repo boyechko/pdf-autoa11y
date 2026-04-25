@@ -182,6 +182,25 @@ public sealed interface DocValue {
         return resolveGoToDest(annot.get(PdfName.Dest));
     }
 
+    /**
+     * Extracts the URI a Link annotation originally pointed to, preserved in its /PA dictionary by
+     * Web Capture (or similar HTML-to-PDF tools) when the link's /A action was rewritten from a URI
+     * to an internal /GoTo. Returns null if the OBJR is not a Link, has no /PA, or /PA is not a URI
+     * action. See PDF spec §12.5.6.5.
+     */
+    static Destination originalUriOf(PdfObjRef objRef) {
+        PdfDictionary annot = objRef.getReferencedObject();
+        if (annot == null) return null;
+        if (!PdfName.Link.equals(annot.getAsName(PdfName.Subtype))) return null;
+
+        PdfDictionary pa = annot.getAsDictionary(PdfName.PA);
+        if (pa == null) return null;
+        if (!PdfName.URI.equals(pa.getAsName(PdfName.S))) return null;
+
+        PdfString uri = pa.getAsString(PdfName.URI);
+        return uri != null ? new Destination.Uri(uri.toUnicodeString()) : null;
+    }
+
     /** Resolves the /D value of a GoTo action, or a /Dest value, into a typed Destination. */
     private static Destination resolveGoToDest(PdfObject dest) {
         if (dest == null) return null;
