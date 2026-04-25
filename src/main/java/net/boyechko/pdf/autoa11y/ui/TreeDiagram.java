@@ -157,8 +157,9 @@ public final class TreeDiagram {
         String childIndent = indentation(depth + 1);
         for (IStructureNode kid : kids) {
             switch (kid) {
-                case PdfStructElem childElem ->
-                        appendDetailedTree(sb, childElem, depth + 1, contentKinds, currentPage);
+                case PdfStructElem childElem -> {
+                    appendDetailedTree(sb, childElem, depth + 1, contentKinds, currentPage);
+                }
                 case PdfObjRef objRef -> {
                     emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
                     sb.append(childIndent);
@@ -166,16 +167,12 @@ public final class TreeDiagram {
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {
-                    int pageNum = pageOf(mcr);
-                    emitPageBreakIfNeeded(sb, pageNum, currentPage);
+                    Content.PageMcid pageMcid = new Content.PageMcid(pageOf(mcr), mcr.getMcid());
+                    DocValue.Mcr mcrLabel =
+                            new DocValue.Mcr(pageMcid.mcid(), contentKinds.get(pageMcid));
+                    emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
                     sb.append(childIndent);
-                    sb.append(
-                            "["
-                                    + new DocValue.Mcr(
-                                            mcr.getMcid(),
-                                            contentKinds.get(
-                                                    new Content.PageMcid(pageNum, mcr.getMcid())))
-                                    + "]");
+                    sb.append("[" + mcrLabel + "]");
                     sb.append('\n');
                 }
                 default -> throw new IllegalArgumentException("Unexpected value: " + kid);
