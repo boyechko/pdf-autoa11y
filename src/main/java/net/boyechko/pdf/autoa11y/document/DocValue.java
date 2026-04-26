@@ -174,12 +174,12 @@ public sealed interface DocValue {
                 return uri != null ? new Destination.Uri(uri.toUnicodeString()) : null;
             }
             if (PdfName.GoTo.equals(actionType)) {
-                return resolveGoToDest(action.get(PdfName.D));
+                return resolveDestination(action.get(PdfName.D));
             }
             return null;
         }
 
-        return resolveGoToDest(annot.get(PdfName.Dest));
+        return resolveDestination(annot.get(PdfName.Dest));
     }
 
     /**
@@ -201,9 +201,21 @@ public sealed interface DocValue {
         return uri != null ? new Destination.Uri(uri.toUnicodeString()) : null;
     }
 
-    /** Resolves the /D value of a GoTo action, or a /Dest value, into a typed Destination. */
-    private static Destination resolveGoToDest(PdfObject dest) {
+    /**
+     * Resolves a raw PDF destination value into a typed {@link Destination}. The input may be the
+     * value of a /D action key, a /Dest annotation key, or an entry from the /Catalog /Names /Dests
+     * name tree. Indirect references and {@code <</D ...>>} wrappers are dereferenced
+     * transparently. Returns null if the value is null, malformed, or its target page cannot be
+     * resolved.
+     */
+    static Destination resolveDestination(PdfObject dest) {
         if (dest == null) return null;
+        if (dest instanceof PdfIndirectReference ref) {
+            return resolveDestination(ref.getRefersTo());
+        }
+        if (dest instanceof PdfDictionary dict) {
+            return resolveDestination(dict.get(PdfName.D));
+        }
         if (dest instanceof PdfArray arr && !arr.isEmpty()) {
             PdfDictionary pageDict = arr.getAsDictionary(0);
             if (pageDict == null) return null;
