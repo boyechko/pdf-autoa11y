@@ -33,6 +33,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
+import net.boyechko.pdf.autoa11y.ui.DestinationLister;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
 import net.boyechko.pdf.autoa11y.ui.LoggingListener;
 import net.boyechko.pdf.autoa11y.ui.SidecarConfig;
@@ -56,6 +57,7 @@ public class PdfAutoA11yCLI {
             boolean analyzeOnly,
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
+            boolean listDestinations,
             Path annotateTreePath,
             Path reportPath,
             VerbosityLevel verbosity,
@@ -72,6 +74,7 @@ public class PdfAutoA11yCLI {
             if (!analyzeOnly
                     && !dumpTreeSimple
                     && !dumpTreeDetailed
+                    && !listDestinations
                     && !createSidecar
                     && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
@@ -111,6 +114,10 @@ public class PdfAutoA11yCLI {
         }
         if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
             dumpTree(config);
+            return;
+        }
+        if (config.listDestinations()) {
+            listDestinations(config);
             return;
         }
         if (config.annotateTreePath() != null) {
@@ -280,6 +287,19 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    /** Prints the named destinations of the input PDF to the console. */
+    private static void listDestinations(CLIConfig config) {
+        try {
+            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+            try (PdfDocument pdfDoc = custodian.openForReading()) {
+                System.out.print(DestinationLister.dumpToString(pdfDoc));
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Failed to read PDF: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
     private static CLIConfig parseArguments(String[] args) throws CLIException {
         if (args.length == 0) {
             throw new CLIException("No input file specified\n" + usageMessage());
@@ -356,6 +376,7 @@ public class PdfAutoA11yCLI {
                     case "-t", "--print-tree" -> b.printStructureTree = true;
                     case "--dump-tree" -> b.dumpTreeDetailed = true;
                     case "--dump-roles" -> b.dumpTreeSimple = true;
+                    case "--list-destinations" -> b.listDestinations = true;
                     case "--create-sidecar" -> b.createSidecar = true;
                     case "-f", "--force" -> b.forceSave = true;
                     case "-a", "--analyze" -> b.analyzeOnly = true;
@@ -404,6 +425,7 @@ public class PdfAutoA11yCLI {
         boolean analyzeOnly;
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
+        boolean listDestinations;
         Path annotateTreePath;
         boolean generateReport;
         Path reportPath;
@@ -439,6 +461,7 @@ public class PdfAutoA11yCLI {
                     analyzeOnly,
                     dumpTreeSimple,
                     dumpTreeDetailed,
+                    listDestinations,
                     annotateTreePath,
                     reportPath,
                     verbosity,
@@ -451,7 +474,11 @@ public class PdfAutoA11yCLI {
         }
 
         private void resolveOutputPath(String baseName) {
-            if (analyzeOnly || dumpTreeSimple || dumpTreeDetailed || createSidecar) {
+            if (analyzeOnly
+                    || dumpTreeSimple
+                    || dumpTreeDetailed
+                    || listDestinations
+                    || createSidecar) {
                 return;
             }
             if (outputPath == null) {
@@ -505,6 +532,7 @@ public class PdfAutoA11yCLI {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
+                + "  --list-destinations  Print named destinations by target page, and exit\n"
                 + "  --annotate-tree <file>  Read scribbles from an edited --dump-tree output\n"
                 + "                          file and write them to matching elements' /T keys\n"
                 + "                          in the output PDF (no checks or fixes run)\n"
