@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added optional `InlineDestinationsCheck` that replaces named-destination
+  references in annotations, outlines, and `/OpenAction` with explicit fit-page
+  destinations. Orphan references (names not in `/Dests`) are left alone with a
+  debug log entry.
 - Added `--list-destinations` CLI option that prints the PDF's named
   destinations (`/Catalog /Names /Dests` tree), one row per destination,
   sorted by target page.
