@@ -32,6 +32,7 @@ import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
@@ -67,15 +68,17 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void documentLevelIssuesAreDetectedAndFixed() throws Exception {
-        Path testPdf =
-                createTestPdf(
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(new Paragraph("Document Issues Test").setFontSize(18));
-                            layoutDoc.add(
-                                    new Paragraph(
-                                            "This PDF has content but may be missing "
-                                                    + "document-level accessibility properties."));
-                        });
+        Path testPdf = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(testPdf.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Document Issues Test").setFontSize(18));
+            layoutDoc.add(
+                    new Paragraph(
+                            "This PDF has content but may be missing "
+                                    + "document-level accessibility properties."));
+        }
         ProcessingResult result = createProcessingService(testPdf).remediate();
 
         assertNotNull(result, "Should return a result");
@@ -85,14 +88,19 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void tagStructureIssuesAreDetected() throws Exception {
-        Path testPdf =
-                createStructuredTestPdf(
-                        (pdfDoc, firstPage, structTreeRoot, documentElem) -> {
-                            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, firstPage);
-                            documentElem.addKid(list);
-                            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
-                            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
-                        });
+        Path testPdf = testOutputPath();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testPdf.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot structTreeRoot = pdfDoc.getStructTreeRoot();
+            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
+            structTreeRoot.addKid(documentElem);
+
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, firstPage);
+            documentElem.addKid(list);
+            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
+            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
+        }
         IssueList issues = createProcessingService(testPdf).analyze();
         assertNotNull(issues, "Should return issues list");
         assertTrue(
@@ -102,37 +110,35 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void completeIssueResolutionWorkflow() throws Exception {
-        Path testPdf =
-                createTestPdf(
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(
-                                    new Paragraph("Multiple Issues Test Document").setFontSize(16));
-                            layoutDoc.add(
-                                    new Paragraph(
-                                            "This document contains various elements that may "
-                                                    + "have accessibility issues."));
+        Path testPdf = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(testPdf.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Multiple Issues Test Document").setFontSize(16));
+            layoutDoc.add(
+                    new Paragraph(
+                            "This document contains various elements that may "
+                                    + "have accessibility issues."));
 
-                            Table table = new Table(3);
-                            table.addCell("Column 1");
-                            table.addCell("Column 2");
-                            table.addCell("Column 3");
-                            table.addCell("Value A");
-                            table.addCell("Value B");
-                            table.addCell("Value C");
-                            layoutDoc.add(table);
+            Table table = new Table(3);
+            table.addCell("Column 1");
+            table.addCell("Column 2");
+            table.addCell("Column 3");
+            table.addCell("Value A");
+            table.addCell("Value B");
+            table.addCell("Value C");
+            layoutDoc.add(table);
 
-                            com.itextpdf.layout.element.List list =
-                                    new com.itextpdf.layout.element.List();
-                            list.add(new ListItem("First item"));
-                            list.add(new ListItem("Second item"));
-                            list.add(new ListItem("Third item"));
-                            layoutDoc.add(list);
+            com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
+            list.add(new ListItem("First item"));
+            list.add(new ListItem("Second item"));
+            list.add(new ListItem("Third item"));
+            layoutDoc.add(list);
 
-                            layoutDoc.add(
-                                    new Paragraph(
-                                            "Additional content to test various accessibility "
-                                                    + "rules."));
-                        });
+            layoutDoc.add(
+                    new Paragraph("Additional content to test various accessibility " + "rules."));
+        }
         ProcessingResult result = createProcessingService(testPdf).remediate();
         saveRemediatedPdf(result);
 
@@ -178,11 +184,13 @@ public class ProcessingServiceTest extends PdfTestBase {
 
     @Test
     void skipChecksExcludesDocumentLevelCheck() throws Exception {
-        Path testPdf =
-                createTestPdf(
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(new Paragraph("Skip check test").setFontSize(16));
-                        });
+        Path testPdf = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(testPdf.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Skip check test").setFontSize(16));
+        }
         // Without skipping, LanguageSetCheck would normally run and potentially
         // find an issue. Skipping it should prevent that issue from appearing.
         ProcessingService service =

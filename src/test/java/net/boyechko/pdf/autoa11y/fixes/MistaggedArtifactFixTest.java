@@ -23,9 +23,11 @@ import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
@@ -42,157 +44,174 @@ class MistaggedArtifactFixTest extends PdfTestBase {
 
     @Test
     void removesElementAndAssociatedLinkAnnotation() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, structTreeRoot, document) -> {
-                    PdfPage page = firstPage;
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfLinkAnnotation linkAnnot =
-                            new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
-                                    .setAction(PdfAction.createURI("https://example.com"));
-                    page.addAnnotation(-1, linkAnnot, false);
+            PdfLinkAnnotation linkAnnot =
+                    new PdfLinkAnnotation(new Rectangle(100, 100, 200, 20))
+                            .setAction(PdfAction.createURI("https://example.com"));
+            page.addAnnotation(-1, linkAnnot, false);
 
-                    PdfStructElem linkElem = new PdfStructElem(pdfDoc, PdfName.Link, page);
-                    document.addKid(linkElem);
+            PdfStructElem linkElem = new PdfStructElem(pdfDoc, PdfName.Link, page);
+            document.addKid(linkElem);
 
-                    int structParentIndex = pdfDoc.getNextStructParentIndex();
-                    PdfObjRef objRef = new PdfObjRef(linkAnnot, linkElem, structParentIndex);
-                    linkElem.addKid(objRef);
+            int structParentIndex = pdfDoc.getNextStructParentIndex();
+            PdfObjRef objRef = new PdfObjRef(linkAnnot, linkElem, structParentIndex);
+            linkElem.addKid(objRef);
 
-                    assertEquals(
-                            1,
-                            document.getKids().size(),
-                            "Document should have Link child before fix");
-                    assertEquals(
-                            1,
-                            page.getAnnotations().size(),
-                            "Page should have Link annotation before fix");
+            assertEquals(
+                    1, document.getKids().size(), "Document should have Link child before fix");
+            assertEquals(
+                    1, page.getAnnotations().size(), "Page should have Link annotation before fix");
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    new MistaggedArtifactFix(linkElem).apply(ctx);
+            DocContext ctx = new DocContext(pdfDoc);
+            new MistaggedArtifactFix(linkElem).apply(ctx);
 
-                    // Element remains in tree but MCRs are stripped; pipeline cleanup removes it
-                    assertFalse(
-                            document.getKids() == null || document.getKids().isEmpty(),
-                            "Element stays in tree (EmptyElementFix cleans up later)");
-                    assertTrue(
-                            page.getAnnotations().isEmpty(),
-                            "Link annotation should be removed from page");
-                });
+            // Element remains in tree but MCRs are stripped; pipeline cleanup removes it
+            assertFalse(
+                    document.getKids() == null || document.getKids().isEmpty(),
+                    "Element stays in tree (EmptyElementFix cleans up later)");
+            assertTrue(
+                    page.getAnnotations().isEmpty(), "Link annotation should be removed from page");
+        }
     }
 
     @Test
     void removesElementFromStructTreeRoot() throws Exception {
-        createTestPdf(
-                (pdfDoc, layoutDoc) -> {
-                    pdfDoc.addNewPage();
-                    PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-                    PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    root.addKid(p);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            root.addKid(p);
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    new MistaggedArtifactFix(p).apply(ctx);
+            DocContext ctx = new DocContext(pdfDoc);
+            new MistaggedArtifactFix(p).apply(ctx);
 
-                    // Element stays in tree; EmptyElementFix cleans up later
-                    assertFalse(
-                            root.getKids() == null || root.getKids().isEmpty(),
-                            "Element stays in tree (EmptyElementFix cleans up later)");
-                });
+            // Element stays in tree; EmptyElementFix cleans up later
+            assertFalse(
+                    root.getKids() == null || root.getKids().isEmpty(),
+                    "Element stays in tree (EmptyElementFix cleans up later)");
+        }
     }
 
     @Test
     void doesNothingWhenNoParent() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    DocContext ctx = new DocContext(pdfDoc);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    MistaggedArtifactFix fix = new MistaggedArtifactFix(p);
-                    assertDoesNotThrow(() -> fix.apply(ctx));
-                });
+            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            DocContext ctx = new DocContext(pdfDoc);
+
+            MistaggedArtifactFix fix = new MistaggedArtifactFix(p);
+            assertDoesNotThrow(() -> fix.apply(ctx));
+        }
     }
 
     @Test
     void invalidatesDescendantFix() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem parent = new PdfStructElem(pdfDoc, new PdfName("Sect"));
-                    PdfStructElem child = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    document.addKid(parent);
-                    parent.addKid(child);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    MistaggedArtifactFix parentFix = new MistaggedArtifactFix(parent);
-                    MistaggedArtifactFix childFix = new MistaggedArtifactFix(child);
+            PdfStructElem parent = new PdfStructElem(pdfDoc, new PdfName("Sect"));
+            PdfStructElem child = new PdfStructElem(pdfDoc, new PdfName("P"));
+            document.addKid(parent);
+            parent.addKid(child);
 
-                    assertTrue(
-                            parentFix.invalidates(childFix),
-                            "Ancestor fix should invalidate descendant fix");
-                    assertFalse(
-                            childFix.invalidates(parentFix),
-                            "Descendant fix should not invalidate ancestor fix");
-                });
+            MistaggedArtifactFix parentFix = new MistaggedArtifactFix(parent);
+            MistaggedArtifactFix childFix = new MistaggedArtifactFix(child);
+
+            assertTrue(
+                    parentFix.invalidates(childFix),
+                    "Ancestor fix should invalidate descendant fix");
+            assertFalse(
+                    childFix.invalidates(parentFix),
+                    "Descendant fix should not invalidate ancestor fix");
+        }
     }
 
     @Test
     void rewritesDirectMcidMarkedContentAsArtifact() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
-                    document.addKid(figure);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
-                    figure.addKid(mcr);
-                    addMarkedText(
-                            firstPage, PdfName.Figure, mcr.getMcid(), "Decorative figure text");
+            PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+            document.addKid(figure);
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    new MistaggedArtifactFix(figure).apply(ctx);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+            figure.addKid(mcr);
+            addMarkedText(firstPage, PdfName.Figure, mcr.getMcid(), "Decorative figure text");
 
-                    // Element stays in tree; MCR entries are stripped
-                    assertTrue(
-                            figure.getKids() == null || figure.getKids().isEmpty(),
-                            "Figure's MCR entries should be stripped");
+            DocContext ctx = new DocContext(pdfDoc);
+            new MistaggedArtifactFix(figure).apply(ctx);
 
-                    String pageContent =
-                            new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
-                    assertTrue(
-                            pageContent.contains("/Artifact BMC"),
-                            "Marked content should be rewritten as artifact");
-                    assertFalse(
-                            pageContent.contains("/MCID " + mcr.getMcid()),
-                            "Original MCID should be removed from content stream");
-                });
+            // Element stays in tree; MCR entries are stripped
+            assertTrue(
+                    figure.getKids() == null || figure.getKids().isEmpty(),
+                    "Figure's MCR entries should be stripped");
+
+            String pageContent =
+                    new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
+            assertTrue(
+                    pageContent.contains("/Artifact BMC"),
+                    "Marked content should be rewritten as artifact");
+            assertFalse(
+                    pageContent.contains("/MCID " + mcr.getMcid()),
+                    "Original MCID should be removed from content stream");
+        }
     }
 
     @Test
     void rewritesDescendantMcidMarkedContentAsArtifact() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem parent = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
-                    PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(parent);
-                    parent.addKid(child);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, child);
-                    child.addKid(mcr);
-                    addMarkedText(firstPage, PdfName.P, mcr.getMcid(), "Decorative paragraph text");
+            PdfStructElem parent = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
+            PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(parent);
+            parent.addKid(child);
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    new MistaggedArtifactFix(parent).apply(ctx);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, child);
+            child.addKid(mcr);
+            addMarkedText(firstPage, PdfName.P, mcr.getMcid(), "Decorative paragraph text");
 
-                    // Element stays in tree; descendant MCR entries are stripped
-                    assertTrue(
-                            child.getKids() == null || child.getKids().isEmpty(),
-                            "Child's MCR entries should be stripped");
+            DocContext ctx = new DocContext(pdfDoc);
+            new MistaggedArtifactFix(parent).apply(ctx);
 
-                    String pageContent =
-                            new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
-                    assertTrue(
-                            pageContent.contains("/Artifact BMC"),
-                            "Descendant marked content should be rewritten as artifact");
-                    assertFalse(
-                            pageContent.contains("/MCID " + mcr.getMcid()),
-                            "Descendant MCID should be removed from content stream");
-                });
+            // Element stays in tree; descendant MCR entries are stripped
+            assertTrue(
+                    child.getKids() == null || child.getKids().isEmpty(),
+                    "Child's MCR entries should be stripped");
+
+            String pageContent =
+                    new String(firstPage.getContentBytes(), StandardCharsets.ISO_8859_1);
+            assertTrue(
+                    pageContent.contains("/Artifact BMC"),
+                    "Descendant marked content should be rewritten as artifact");
+            assertFalse(
+                    pageContent.contains("/MCID " + mcr.getMcid()),
+                    "Descendant MCID should be removed from content stream");
+        }
     }
 
     private static void addMarkedText(PdfPage page, PdfName tag, int mcid, String text)

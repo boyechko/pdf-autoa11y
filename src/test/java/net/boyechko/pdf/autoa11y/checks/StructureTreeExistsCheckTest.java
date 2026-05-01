@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
@@ -50,11 +51,13 @@ class StructureTreeExistsCheckTest extends PdfTestBase {
 
     @Test
     void taggedDocumentPasses() throws Exception {
-        Path taggedPdf =
-                createTestPdf(
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(new Paragraph("Tagged content"));
-                        });
+        Path taggedPdf = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(taggedPdf.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Tagged content"));
+        }
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(taggedPdf.toString()))) {
             DocContext ctx = new DocContext(pdfDoc);
             StructureTreeExistsCheck rule = new StructureTreeExistsCheck();

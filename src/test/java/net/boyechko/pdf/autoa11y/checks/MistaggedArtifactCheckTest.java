@@ -28,11 +28,14 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
@@ -235,28 +238,30 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
 
     /** Creates a tagged PDF with a Span containing a single space-glyph MCR. */
     private Path createSpaceOnlySpanPdf(String filename) throws Exception {
-        return createStructuredTestPdf(
-                testOutputPath(filename),
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, firstPage);
-                    document.addKid(span);
+        Path pdfPath = testOutputPath(filename);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, span);
-                    span.addKid(mcr);
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, firstPage);
+            document.addKid(span);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, span);
+            span.addKid(mcr);
 
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
-                    canvas.beginMarkedContent(PdfName.Span, props);
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 700)
-                            .showText(" ")
-                            .endText();
-                    canvas.endMarkedContent();
-                });
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
+            canvas.beginMarkedContent(PdfName.Span, props);
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 700).showText(" ").endText();
+            canvas.endMarkedContent();
+        }
+        return pdfPath;
     }
 
     private Path createTextPdf(String filename, String... lines) throws Exception {
@@ -272,24 +277,30 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     }
 
     private Path createTaggedPathPdf(String filename, float size) throws Exception {
-        return createStructuredTestPdf(
-                testOutputPath(filename),
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
-                    document.addKid(figure);
+        Path pdfPath = testOutputPath(filename);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
-                    figure.addKid(mcr);
+            PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+            document.addKid(figure);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+            figure.addKid(mcr);
 
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
-                    canvas.beginMarkedContent(PdfName.Figure, props);
-                    canvas.rectangle(100, 650, size, size);
-                    canvas.fill();
-                    canvas.endMarkedContent();
-                });
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+            PdfCanvas canvas = new PdfCanvas(firstPage);
+            canvas.beginMarkedContent(PdfName.Figure, props);
+            canvas.rectangle(100, 650, size, size);
+            canvas.fill();
+            canvas.endMarkedContent();
+        }
+        return pdfPath;
     }
 
     private Path createTaggedImagePdf(String filename, float renderedSize) throws Exception {
@@ -298,29 +309,34 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
 
     private Path createTaggedImagePdf(String filename, float renderedSize, String altText)
             throws Exception {
-        return createStructuredTestPdf(
-                testOutputPath(filename),
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
-                    if (altText != null) {
-                        figure.setAlt(new com.itextpdf.kernel.pdf.PdfString(altText));
-                    }
-                    document.addKid(figure);
+        Path pdfPath = testOutputPath(filename);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
-                    figure.addKid(mcr);
+            PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+            if (altText != null) {
+                figure.setAlt(new PdfString(altText));
+            }
+            document.addKid(figure);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+            figure.addKid(mcr);
 
-                    ImageData imageData =
-                            ImageDataFactory.create(
-                                    Base64.getDecoder().decode(ONE_PIXEL_PNG_BASE64));
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
-                    canvas.beginMarkedContent(PdfName.Figure, props);
-                    canvas.addImageWithTransformationMatrix(
-                            imageData, renderedSize, 0, 0, renderedSize, 100, 650, false);
-                    canvas.endMarkedContent();
-                });
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+            ImageData imageData =
+                    ImageDataFactory.create(Base64.getDecoder().decode(ONE_PIXEL_PNG_BASE64));
+            PdfCanvas canvas = new PdfCanvas(firstPage);
+            canvas.beginMarkedContent(PdfName.Figure, props);
+            canvas.addImageWithTransformationMatrix(
+                    imageData, renderedSize, 0, 0, renderedSize, 100, 650, false);
+            canvas.endMarkedContent();
+        }
+        return pdfPath;
     }
 }

@@ -26,10 +26,13 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -64,31 +67,30 @@ class MisartifactedTextCheckTest extends PdfTestBase {
     @Test
     void ignoresTaggedDigitText() throws Exception {
         // A digit that is properly tagged (not artifacted) should not be flagged
-        createStructuredTestPdf(
-                testOutputPath("ignoresTaggedDigitText.pdf"),
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
-                    p.addKid(mcr);
+        Path pdfFile = testOutputPath("ignoresTaggedDigitText.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
+            p.addKid(mcr);
 
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
-                    canvas.beginMarkedContent(PdfName.P, props);
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 700)
-                            .showText("42")
-                            .endText();
-                    canvas.endMarkedContent();
-                });
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
 
-        try (PdfDocument pdfDoc =
-                new PdfDocument(
-                        new PdfReader(testOutputPath("ignoresTaggedDigitText.pdf").toString()))) {
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
+            canvas.beginMarkedContent(PdfName.P, props);
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 700).showText("42").endText();
+            canvas.endMarkedContent();
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             IssueList issues = new MisartifactedTextCheck().findIssues(new DocContext(pdfDoc));
 
             assertEquals(0, issues.size());
@@ -97,49 +99,45 @@ class MisartifactedTextCheckTest extends PdfTestBase {
 
     @Test
     void detectsMultipleArtifactDigitsOnSamePage() throws Exception {
-        Path pdfFile =
-                createStructuredTestPdf(
-                        testOutputPath("detectsMultipleArtifactDigitsOnSamePage.pdf"),
-                        (pdfDoc, firstPage, root, document) -> {
-                            // Tagged paragraph for context
-                            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                            document.addKid(p);
-                            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
-                            p.addKid(mcr);
+        Path pdfFile = testOutputPath("detectsMultipleArtifactDigitsOnSamePage.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                            PdfDictionary props = new PdfDictionary();
-                            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            // Tagged paragraph for context
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
+            p.addKid(mcr);
 
-                            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                            PdfCanvas canvas = new PdfCanvas(firstPage);
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
 
-                            // First artifact digit
-                            canvas.beginMarkedContent(new PdfName("Artifact"));
-                            canvas.beginText()
-                                    .setFontAndSize(font, 10)
-                                    .moveText(100, 750)
-                                    .showText("1")
-                                    .endText();
-                            canvas.endMarkedContent();
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
 
-                            // Tagged content
-                            canvas.beginMarkedContent(PdfName.P, props);
-                            canvas.beginText()
-                                    .setFontAndSize(font, 10)
-                                    .moveText(100, 700)
-                                    .showText("Some body text")
-                                    .endText();
-                            canvas.endMarkedContent();
+            // First artifact digit
+            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 750).showText("1").endText();
+            canvas.endMarkedContent();
 
-                            // Second artifact digit
-                            canvas.beginMarkedContent(new PdfName("Artifact"));
-                            canvas.beginText()
-                                    .setFontAndSize(font, 10)
-                                    .moveText(100, 650)
-                                    .showText("2")
-                                    .endText();
-                            canvas.endMarkedContent();
-                        });
+            // Tagged content
+            canvas.beginMarkedContent(PdfName.P, props);
+            canvas.beginText()
+                    .setFontAndSize(font, 10)
+                    .moveText(100, 700)
+                    .showText("Some body text")
+                    .endText();
+            canvas.endMarkedContent();
+
+            // Second artifact digit
+            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 650).showText("2").endText();
+            canvas.endMarkedContent();
+        }
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             IssueList issues = new MisartifactedTextCheck().findIssues(new DocContext(pdfDoc));
@@ -150,38 +148,44 @@ class MisartifactedTextCheckTest extends PdfTestBase {
 
     /** Creates a PDF with one tagged paragraph and one artifact block containing the given text. */
     private Path createPdfWithArtifactDigit(String filename, String artifactText) throws Exception {
-        return createStructuredTestPdf(
-                testOutputPath(filename),
-                (pdfDoc, firstPage, root, document) -> {
-                    // Tagged paragraph for neighbor MCID context
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
-                    p.addKid(mcr);
+        Path pdfPath = testOutputPath(filename);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            // Tagged paragraph for neighbor MCID context
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
+            p.addKid(mcr);
 
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
 
-                    // Artifact block with the specified text
-                    canvas.beginMarkedContent(new PdfName("Artifact"));
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 750)
-                            .showText(artifactText)
-                            .endText();
-                    canvas.endMarkedContent();
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
 
-                    // Tagged content (neighbor)
-                    canvas.beginMarkedContent(PdfName.P, props);
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 700)
-                            .showText("Some body text")
-                            .endText();
-                    canvas.endMarkedContent();
-                });
+            // Artifact block with the specified text
+            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginText()
+                    .setFontAndSize(font, 10)
+                    .moveText(100, 750)
+                    .showText(artifactText)
+                    .endText();
+            canvas.endMarkedContent();
+
+            // Tagged content (neighbor)
+            canvas.beginMarkedContent(PdfName.P, props);
+            canvas.beginText()
+                    .setFontAndSize(font, 10)
+                    .moveText(100, 700)
+                    .showText("Some body text")
+                    .endText();
+            canvas.endMarkedContent();
+        }
+        return pdfPath;
     }
 }

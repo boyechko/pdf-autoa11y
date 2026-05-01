@@ -22,9 +22,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -37,17 +39,18 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void detectsInstructionScribble() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject()
-                            .put(
-                                    PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject()
+                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size());
@@ -58,14 +61,17 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void ignoresNonInstructionScribbles() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());
@@ -74,13 +80,16 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void ignoresElementsWithoutScribble() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());
@@ -89,24 +98,23 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void detectsMultipleInstructionScribbles() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p1.getPdfObject()
-                            .put(
-                                    PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
-                    document.addKid(p1);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p2.getPdfObject()
-                            .put(
-                                    PdfName.T,
-                                    new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
-                    document.addKid(p2);
-                });
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p1.getPdfObject()
+                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+            document.addKid(p1);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p2.getPdfObject()
+                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+            document.addKid(p2);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(2, issues.size());
@@ -115,15 +123,17 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void detectsAddParentScribble() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject()
-                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_PARENT Note[]"));
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_PARENT Note[]"));
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size());
@@ -134,14 +144,17 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void detectsArtifactScribble() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size());
@@ -152,19 +165,21 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void skipsChildrenOfArtifactInstruction() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
-                    div.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
-                    document.addKid(div);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    child.getPdfObject()
-                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
-                    div.addKid(child);
-                });
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
+            div.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            document.addKid(div);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            child.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            div.addKid(child);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size(), "Should only flag the parent, not the child");
@@ -173,14 +188,17 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
     @Test
     void ignoresRegularTitle() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
-                    document.addKid(h1);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            h1.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
+            document.addKid(h1);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());

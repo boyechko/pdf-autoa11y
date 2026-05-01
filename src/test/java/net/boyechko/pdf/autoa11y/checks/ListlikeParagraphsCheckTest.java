@@ -25,6 +25,8 @@ import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
 import com.itextpdf.layout.Style;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
@@ -46,40 +48,42 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
             float paragraphMargin,
             int paragraphIndent)
             throws Exception {
-        return createTestPdf(
-                (pdfDoc, layoutDoc) -> {
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    Style headingStyle =
-                            new Style().setFont(font).setFontSize(18).setMarginLeft(headingMargin);
-                    Style paragraphStyle =
-                            new Style()
-                                    .setFont(font)
-                                    .setFontSize(12)
-                                    .setMarginLeft(paragraphMargin);
+        Path pdfPath = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(pdfPath.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
 
-                    Text headingText = new Text("Heading 1").addStyle(headingStyle);
-                    Paragraph heading = new Paragraph(headingText);
-                    layoutDoc.add(heading);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            Style headingStyle =
+                    new Style().setFont(font).setFontSize(18).setMarginLeft(headingMargin);
+            Style paragraphStyle =
+                    new Style().setFont(font).setFontSize(12).setMarginLeft(paragraphMargin);
 
-                    for (int i = 0; i < numParagraphs; i++) {
-                        Paragraph p = new Paragraph(paragraphText).addStyle(paragraphStyle);
-                        layoutDoc.add(p);
-                    }
+            Text headingText = new Text("Heading 1").addStyle(headingStyle);
+            Paragraph heading = new Paragraph(headingText);
+            layoutDoc.add(heading);
 
-                    String longText =
-                            new StringBuilder()
-                                    .append("Paragraph with first line indent")
-                                    .append("Paragraph with first line indent")
-                                    .append(paragraphText)
-                                    .toString();
-                    for (int i = 0; i < 2; i++) {
-                        Paragraph p =
-                                new Paragraph(longText)
-                                        .addStyle(paragraphStyle)
-                                        .setFirstLineIndent(paragraphIndent);
-                        layoutDoc.add(p);
-                    }
-                });
+            for (int i = 0; i < numParagraphs; i++) {
+                Paragraph p = new Paragraph(paragraphText).addStyle(paragraphStyle);
+                layoutDoc.add(p);
+            }
+
+            String longText =
+                    new StringBuilder()
+                            .append("Paragraph with first line indent")
+                            .append("Paragraph with first line indent")
+                            .append(paragraphText)
+                            .toString();
+            for (int i = 0; i < 2; i++) {
+                Paragraph p =
+                        new Paragraph(longText)
+                                .addStyle(paragraphStyle)
+                                .setFirstLineIndent(paragraphIndent);
+                layoutDoc.add(p);
+            }
+        }
+        return pdfPath;
     }
 
     @Test

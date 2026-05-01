@@ -26,6 +26,7 @@ import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.checks.MisartifactedTextCheck;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -37,35 +38,36 @@ class MisartifactedTextFixTest extends PdfTestBase {
 
     @Test
     void insertsScribbledLblSignpost() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
-                    p.addKid(mcr);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputPath().toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, p);
+            p.addKid(mcr);
 
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
 
-                    canvas.beginMarkedContent(new PdfName("Artifact"));
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 750)
-                            .showText("42")
-                            .endText();
-                    canvas.endMarkedContent();
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
 
-                    canvas.beginMarkedContent(PdfName.P, props);
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 700)
-                            .showText("Body text")
-                            .endText();
-                    canvas.endMarkedContent();
-                });
+            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 750).showText("42").endText();
+            canvas.endMarkedContent();
+
+            canvas.beginMarkedContent(PdfName.P, props);
+            canvas.beginText()
+                    .setFontAndSize(font, 10)
+                    .moveText(100, 700)
+                    .showText("Body text")
+                    .endText();
+            canvas.endMarkedContent();
+        }
 
         try (PdfDocument pdfDoc =
                 new PdfDocument(
@@ -93,50 +95,51 @@ class MisartifactedTextFixTest extends PdfTestBase {
 
     @Test
     void insertsSignpostBeforeNeighbor() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    document.addKid(h1);
-                    PdfMcrNumber mcr1 = new PdfMcrNumber(firstPage, h1);
-                    h1.addKid(mcr1);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputPath().toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                    PdfMcrNumber mcr2 = new PdfMcrNumber(firstPage, p);
-                    p.addKid(mcr2);
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            document.addKid(h1);
+            PdfMcrNumber mcr1 = new PdfMcrNumber(firstPage, h1);
+            h1.addKid(mcr1);
 
-                    PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            PdfMcrNumber mcr2 = new PdfMcrNumber(firstPage, p);
+            p.addKid(mcr2);
 
-                    PdfDictionary props1 = new PdfDictionary();
-                    props1.put(PdfName.MCID, new PdfNumber(mcr1.getMcid()));
-                    canvas.beginMarkedContent(PdfName.H1, props1);
-                    canvas.beginText()
-                            .setFontAndSize(font, 14)
-                            .moveText(100, 750)
-                            .showText("Heading")
-                            .endText();
-                    canvas.endMarkedContent();
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(firstPage);
 
-                    // Artifact digit between H1 and P
-                    canvas.beginMarkedContent(new PdfName("Artifact"));
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 730)
-                            .showText("3")
-                            .endText();
-                    canvas.endMarkedContent();
+            PdfDictionary props1 = new PdfDictionary();
+            props1.put(PdfName.MCID, new PdfNumber(mcr1.getMcid()));
+            canvas.beginMarkedContent(PdfName.H1, props1);
+            canvas.beginText()
+                    .setFontAndSize(font, 14)
+                    .moveText(100, 750)
+                    .showText("Heading")
+                    .endText();
+            canvas.endMarkedContent();
 
-                    PdfDictionary props2 = new PdfDictionary();
-                    props2.put(PdfName.MCID, new PdfNumber(mcr2.getMcid()));
-                    canvas.beginMarkedContent(PdfName.P, props2);
-                    canvas.beginText()
-                            .setFontAndSize(font, 10)
-                            .moveText(100, 700)
-                            .showText("Body text")
-                            .endText();
-                    canvas.endMarkedContent();
-                });
+            // Artifact digit between H1 and P
+            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginText().setFontAndSize(font, 10).moveText(100, 730).showText("3").endText();
+            canvas.endMarkedContent();
+
+            PdfDictionary props2 = new PdfDictionary();
+            props2.put(PdfName.MCID, new PdfNumber(mcr2.getMcid()));
+            canvas.beginMarkedContent(PdfName.P, props2);
+            canvas.beginText()
+                    .setFontAndSize(font, 10)
+                    .moveText(100, 700)
+                    .showText("Body text")
+                    .endText();
+            canvas.endMarkedContent();
+        }
 
         try (PdfDocument pdfDoc =
                 new PdfDocument(

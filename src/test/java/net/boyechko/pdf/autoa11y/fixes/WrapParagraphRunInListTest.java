@@ -19,8 +19,11 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -31,49 +34,55 @@ class WrapParagraphRunInListTest extends PdfTestBase {
 
     @Test
     void convertsSuspectedParagraphRunToList() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, structTreeRoot, document) -> {
-                    PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    document.addKid(p1);
-                    document.addKid(p2);
-                    document.addKid(p3);
-                    assertEquals(
-                            "Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    WrapParagraphRunInList fix =
-                            new WrapParagraphRunInList(document, List.of(p1, p2, p3));
-                    fix.apply(ctx);
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            document.addKid(p1);
+            document.addKid(p2);
+            document.addKid(p3);
+            assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
 
-                    assertEquals(
-                            "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
-                            StructTree.toRoleTree(document).toString());
-                });
+            DocContext ctx = new DocContext(pdfDoc);
+            WrapParagraphRunInList fix = new WrapParagraphRunInList(document, List.of(p1, p2, p3));
+            fix.apply(ctx);
+
+            assertEquals(
+                    "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
+                    StructTree.toRoleTree(document).toString());
+        }
     }
 
     @Test
     void doesNothingWithRegularParagraphs() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, structTreeRoot, document) -> {
-                    PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
-                    document.addKid(p1);
-                    document.addKid(p2);
-                    document.addKid(p3);
-                    assertEquals(
-                            "Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    DocContext ctx = new DocContext(pdfDoc);
-                    WrapParagraphRunInList fix =
-                            new WrapParagraphRunInList(document, List.of(p1, p2, p3));
-                    fix.apply(ctx);
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            document.addKid(p1);
+            document.addKid(p2);
+            document.addKid(p3);
+            assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
 
-                    assertEquals(
-                            "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
-                            StructTree.toRoleTree(document).toString());
-                });
+            DocContext ctx = new DocContext(pdfDoc);
+            WrapParagraphRunInList fix = new WrapParagraphRunInList(document, List.of(p1, p2, p3));
+            fix.apply(ctx);
+
+            assertEquals(
+                    "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
+                    StructTree.toRoleTree(document).toString());
+        }
     }
 }
