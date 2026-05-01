@@ -25,11 +25,16 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfString;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import java.util.Base64;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
@@ -87,13 +92,13 @@ class MissingAltTextCheckTest extends PdfTestBase {
     @Test
     void doesNotFlagFigureWithOnlyTextMcrs() throws Exception {
         // A figure with text content but no image MCR — FigureWithTextCheck's territory
-        Path pdfFile =
-                createTestPdf(
-                        testOutputPath("text-figure.pdf"),
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(
-                                    new com.itextpdf.layout.element.Paragraph("Some text content"));
-                        });
+        Path pdfFile = testOutputPath("text-figure.pdf");
+        try (PdfWriter writer = new PdfWriter(pdfFile.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Some text content"));
+        }
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
             StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
             walker.addVisitor(new MissingAltTextCheck());
@@ -105,29 +110,34 @@ class MissingAltTextCheckTest extends PdfTestBase {
 
     private Path createTaggedImagePdf(String filename, float renderedSize, String altText)
             throws Exception {
-        return createStructuredTestPdf(
-                testOutputPath(filename),
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
-                    if (altText != null) {
-                        figure.setAlt(new PdfString(altText));
-                    }
-                    document.addKid(figure);
+        Path pdfPath = testOutputPath(filename);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
-                    figure.addKid(mcr);
+            PdfStructElem figure = new PdfStructElem(pdfDoc, PdfName.Figure, firstPage);
+            if (altText != null) {
+                figure.setAlt(new PdfString(altText));
+            }
+            document.addKid(figure);
 
-                    PdfDictionary props = new PdfDictionary();
-                    props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfMcrNumber mcr = new PdfMcrNumber(firstPage, figure);
+            figure.addKid(mcr);
 
-                    ImageData imageData =
-                            ImageDataFactory.create(
-                                    Base64.getDecoder().decode(ONE_PIXEL_PNG_BASE64));
-                    PdfCanvas canvas = new PdfCanvas(firstPage);
-                    canvas.beginMarkedContent(PdfName.Figure, props);
-                    canvas.addImageWithTransformationMatrix(
-                            imageData, renderedSize, 0, 0, renderedSize, 100, 650, false);
-                    canvas.endMarkedContent();
-                });
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+
+            ImageData imageData =
+                    ImageDataFactory.create(Base64.getDecoder().decode(ONE_PIXEL_PNG_BASE64));
+            PdfCanvas canvas = new PdfCanvas(firstPage);
+            canvas.beginMarkedContent(PdfName.Figure, props);
+            canvas.addImageWithTransformationMatrix(
+                    imageData, renderedSize, 0, 0, renderedSize, 100, 650, false);
+            canvas.endMarkedContent();
+        }
+        return pdfPath;
     }
 }

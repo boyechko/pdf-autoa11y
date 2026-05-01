@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.TreeMap;
@@ -96,13 +98,13 @@ class BadlyMappedLigatureCheckTest extends PdfTestBase {
 
     @Test
     void noIssueForSimpleTaggedPdf() throws Exception {
-        Path testPdf =
-                createTestPdf(
-                        (pdfDoc, layoutDoc) -> {
-                            layoutDoc.add(
-                                    new com.itextpdf.layout.element.Paragraph(
-                                            "Simple text without ligature mapping problems."));
-                        });
+        Path testPdf = testOutputPath();
+        try (PdfWriter writer = new PdfWriter(testPdf.toString());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            layoutDoc.add(new Paragraph("Simple text without ligature mapping problems."));
+        }
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testPdf.toString()))) {
             BadlyMappedLigatureCheck rule = new BadlyMappedLigatureCheck();

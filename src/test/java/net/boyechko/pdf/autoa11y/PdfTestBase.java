@@ -17,13 +17,6 @@
  */
 package net.boyechko.pdf.autoa11y;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import com.itextpdf.layout.Document;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -102,77 +95,6 @@ public abstract class PdfTestBase {
         }
         outputDir = dir;
         return outputDir;
-    }
-
-    // ── PDF creation ────────────────────────────────────────────────
-
-    /**
-     * Callback for adding content to a test PDF via iText's high-level layout API.
-     *
-     * @param pdfDoc Low-level PDF document (tag tree, pages, objects).
-     * @param layoutDoc High-level layout root used to add content elements.
-     */
-    @FunctionalInterface
-    protected interface TestPdfContent {
-        void addTo(PdfDocument pdfDoc, Document layoutDoc) throws Exception;
-    }
-
-    /**
-     * Callback for low-level structured PDF fixtures with common scaffolding pre-created.
-     *
-     * @param pdfDoc Low-level PDF document.
-     * @param firstPage First page created by the fixture helper.
-     * @param structTreeRoot Structure tree root.
-     * @param documentElem Root Document structure element.
-     */
-    @FunctionalInterface
-    protected interface StructuredTestPdfContent {
-        void addTo(
-                PdfDocument pdfDoc,
-                PdfPage firstPage,
-                PdfStructTreeRoot structTreeRoot,
-                PdfStructElem documentElem)
-                throws Exception;
-    }
-
-    /** Creates a tagged PDF at {@code testOutputPath()} with the given content. */
-    protected final Path createTestPdf(TestPdfContent content) throws Exception {
-        return createTestPdf(testOutputPath(), content);
-    }
-
-    /** Creates a tagged PDF at the specified path with the given content. */
-    protected final Path createTestPdf(Path outputPath, TestPdfContent content) throws Exception {
-        try (PdfWriter writer = new PdfWriter(outputPath.toString());
-                PdfDocument pdfDoc = new PdfDocument(writer);
-                Document layoutDoc = new Document(pdfDoc)) {
-            pdfDoc.setTagged();
-            content.addTo(pdfDoc, layoutDoc);
-        }
-        return outputPath;
-    }
-
-    /**
-     * Creates a tagged PDF with common low-level structure scaffold: one initial page, structure
-     * tree root, and top-level Document element.
-     */
-    protected final Path createStructuredTestPdf(StructuredTestPdfContent content)
-            throws Exception {
-        return createStructuredTestPdf(testOutputPath(), content);
-    }
-
-    /** Creates a structured tagged PDF at the specified path. */
-    protected final Path createStructuredTestPdf(Path outputPath, StructuredTestPdfContent content)
-            throws Exception {
-        try (PdfWriter writer = new PdfWriter(outputPath.toString());
-                PdfDocument pdfDoc = new PdfDocument(writer)) {
-            pdfDoc.setTagged();
-            PdfPage firstPage = pdfDoc.addNewPage();
-            PdfStructTreeRoot structTreeRoot = pdfDoc.getStructTreeRoot();
-            PdfStructElem documentElem = new PdfStructElem(pdfDoc, PdfName.Document);
-            structTreeRoot.addKid(documentElem);
-            content.addTo(pdfDoc, firstPage, structTreeRoot, documentElem);
-        }
-        return outputPath;
     }
 
     /**

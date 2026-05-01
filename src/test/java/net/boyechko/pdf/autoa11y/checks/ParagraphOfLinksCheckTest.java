@@ -26,7 +26,6 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Link;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
-import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -38,16 +37,6 @@ import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
 public class ParagraphOfLinksCheckTest extends PdfTestBase {
-    private Path createTestPdf() throws Exception {
-        return createTestPdf(
-                (pdfDoc, layoutDoc) -> {
-                    Paragraph p = new Paragraph();
-                    for (int i = 0; i < 5; i++) {
-                        p.add(new Link("Link " + i, PdfAction.createURI("https://uw.edu")));
-                    }
-                    layoutDoc.add(p);
-                });
-    }
 
     @Test
     void detectsAndFixesParagraphOfLinks() throws Exception {
@@ -89,23 +78,24 @@ public class ParagraphOfLinksCheckTest extends PdfTestBase {
     void ignoresParagraphsWithIntermixedLinks() throws Exception {
         ParagraphOfLinksCheck visitor = new ParagraphOfLinksCheck();
 
-        createTestPdf(
-                (pdfDoc, layoutDoc) -> {
-                    Paragraph p = new Paragraph();
-                    for (int i = 0; i < 5; i++) {
-                        p.add(new Link("Link " + i, PdfAction.createURI("https://uw.edu")));
-                        p.add(new Text("Text between links"));
-                    }
-                    layoutDoc.add(p);
-                    assertEquals(
-                            "Document[P[Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[]]]",
-                            StructTree.toRoleTreeString(
-                                    StructTree.findDocument(pdfDoc.getStructTreeRoot())));
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()));
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            Paragraph p = new Paragraph();
+            for (int i = 0; i < 5; i++) {
+                p.add(new Link("Link " + i, PdfAction.createURI("https://uw.edu")));
+                p.add(new Text("Text between links"));
+            }
+            layoutDoc.add(p);
+            assertEquals(
+                    "Document[P[Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[]]]",
+                    StructTree.toRoleTreeString(
+                            StructTree.findDocument(pdfDoc.getStructTreeRoot())));
 
-                    StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-                    walker.addVisitor(visitor);
-                    walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
-                    assertEquals(0, visitor.getIssues().size(), "Should have 0 issues");
-                });
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(visitor);
+            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            assertEquals(0, visitor.getIssues().size(), "Should have 0 issues");
+        }
     }
 }

@@ -22,9 +22,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -37,15 +39,17 @@ class StaleScribbleCheckTest extends PdfTestBase {
 
     @Test
     void detectsAnnotatedTitle() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject()
-                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
-                    document.addKid(h1);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            document.addKid(h1);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(1, issues.size());
@@ -56,14 +60,17 @@ class StaleScribbleCheckTest extends PdfTestBase {
 
     @Test
     void ignoresRegularTitle() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
-                    document.addKid(h1);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            h1.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
+            document.addKid(h1);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());
@@ -72,13 +79,16 @@ class StaleScribbleCheckTest extends PdfTestBase {
 
     @Test
     void ignoresElementsWithoutTitle() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    document.addKid(p);
-                });
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());
@@ -87,20 +97,21 @@ class StaleScribbleCheckTest extends PdfTestBase {
 
     @Test
     void detectsMultipleStaleScribbles() throws Exception {
-        createStructuredTestPdf(
-                (pdfDoc, firstPage, root, document) -> {
-                    PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-                    h1.getPdfObject()
-                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "FixHeadingLevel"));
-                    document.addKid(h1);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
 
-                    PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-                    p.getPdfObject()
-                            .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
-                    document.addKid(p);
-                });
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "FixHeadingLevel"));
+            document.addKid(h1);
 
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(testOutputPath().toString()))) {
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
+            document.addKid(p);
+
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(2, issues.size());
