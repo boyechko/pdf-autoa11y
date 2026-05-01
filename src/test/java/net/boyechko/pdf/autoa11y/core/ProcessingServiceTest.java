@@ -86,7 +86,13 @@ public class ProcessingServiceTest extends PdfTestBase {
     @Test
     void tagStructureIssuesAreDetected() throws Exception {
         Path testPdf =
-                breakTestPdf(ProcessingServiceTest::listContent, TagBreakage.L_WITH_P_CHILDREN);
+                createStructuredTestPdf(
+                        (pdfDoc, firstPage, structTreeRoot, documentElem) -> {
+                            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, firstPage);
+                            documentElem.addKid(list);
+                            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
+                            list.addKid(new PdfStructElem(pdfDoc, PdfName.P, firstPage));
+                        });
         IssueList issues = createProcessingService(testPdf).analyze();
         assertNotNull(issues, "Should return issues list");
         assertTrue(
@@ -231,28 +237,6 @@ public class ProcessingServiceTest extends PdfTestBase {
                 .withPdfCustodian(new PdfCustodian(testPdf, null))
                 .withListener(new NoOpProcessingListener())
                 .build();
-    }
-
-    /** Reusable content: a tagged PDF with a two-item list (suitable for L breakages). */
-    private static void listContent(PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) {
-        layoutDoc.add(new Paragraph("Tag Structure Test").setFontSize(18));
-        layoutDoc.add(new Paragraph("This PDF will have tag structure issues."));
-
-        com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
-        list.add(new ListItem("Item 1"));
-        list.add(new ListItem("Item 2"));
-        layoutDoc.add(list);
-    }
-
-    /** Reusable content: a tagged PDF with a two-item list (suitable for LI breakages). */
-    private static void fixableListContent(
-            PdfDocument pdfDoc, com.itextpdf.layout.Document layoutDoc) {
-        layoutDoc.add(new Paragraph("Fixable Tag Issues Test").setFontSize(16));
-
-        com.itextpdf.layout.element.List list = new com.itextpdf.layout.element.List();
-        list.add(new ListItem("Item that will be broken"));
-        list.add(new ListItem("Another item"));
-        layoutDoc.add(list);
     }
 
     /** Creates a PDF with a Figure element containing text (low-level structure API). */

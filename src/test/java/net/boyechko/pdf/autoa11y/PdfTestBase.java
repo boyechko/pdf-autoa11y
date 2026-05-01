@@ -20,9 +20,7 @@ package net.boyechko.pdf.autoa11y;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.layout.Document;
@@ -32,8 +30,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -41,8 +37,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Base for tests that optionally persist PDFs via -Dpdf.autoa11y.testOutputDir. */
 public abstract class PdfTestBase {
-    private static final String ORIGINAL_PDF_SUFFIX = "_before.pdf";
-    private static final String BROKEN_PDF_SUFFIX = "_broken.pdf";
     private static final String REMEDIATED_PDF_SUFFIX = "_remediated.pdf";
 
     @TempDir Path tempDir;
@@ -181,78 +175,6 @@ public abstract class PdfTestBase {
         return outputPath;
     }
 
-    // ── Tag breakage ────────────────────────────────────────────────
-
-    /** Known tag structure breakages that can be applied to a valid tagged PDF. */
-    protected enum TagBreakage {
-        /** L > P instead of L > LI > LBody > P */
-        L_WITH_P_CHILDREN(PdfName.L, PdfTestBase::breakListWithParagraphChildren),
-
-        /** LI > P instead of LI > Lbl + LBody */
-        LI_WITH_SINGLE_P(PdfName.LI, PdfTestBase::breakListItemWithSingleParagraph),
-
-        /** LI > Lbl with no LBody */
-        MISSING_LBODY(PdfName.LI, PdfTestBase::breakListItemMissingLBody);
-
-        private final PdfName targetRole;
-        private final BreakageModifier modifier;
-
-        TagBreakage(PdfName targetRole, BreakageModifier modifier) {
-            this.targetRole = targetRole;
-            this.modifier = modifier;
-        }
-
-        boolean applyTo(PdfStructTreeRoot root) {
-            PdfStructElem target = findFirstByRole(root, targetRole);
-            if (target == null) {
-                return false;
-            }
-            return modifier.apply(target);
-        }
-    }
-
-    @FunctionalInterface
-    private interface BreakageModifier {
-        boolean apply(PdfStructElem target);
-    }
-
-    private static boolean applyBreakageOrThrow(PdfStructTreeRoot root, TagBreakage breakage) {
-        if (root == null) {
-            throw new IllegalStateException(
-                    "Cannot apply breakage " + breakage + ": structure tree root is null");
-        }
-        boolean applied = breakage.applyTo(root);
-        if (!applied) {
-            throw new IllegalStateException(
-                    "Failed to apply breakage "
-                            + breakage
-                            + ": target role was not found or no structural change was made");
-        }
-        return true;
-    }
-
-    /**
-     * Creates a valid tagged PDF, then breaks its structure. Saves both:
-     *
-     * <ul>
-     *   <li>{@code {method}{ORIGINAL_PDF_SUFFIX}.pdf} - the valid version
-     *   <li>{@code {method}{BROKEN_PDF_SUFFIX}.pdf} - the broken version (returned)
-     * </ul>
-     */
-    protected final Path breakTestPdf(TestPdfContent content, TagBreakage breakage)
-            throws Exception {
-        String method = testMethodName != null ? testMethodName : "test";
-        Path original = createTestPdf(testOutputPath(method + ORIGINAL_PDF_SUFFIX), content);
-
-        Path broken = testOutputPath(method + BROKEN_PDF_SUFFIX);
-        try (PdfReader reader = new PdfReader(original.toString());
-                PdfWriter writer = new PdfWriter(broken.toString());
-                PdfDocument pdfDoc = new PdfDocument(reader, writer)) {
-            applyBreakageOrThrow(pdfDoc.getStructTreeRoot(), breakage);
-        }
-        return broken;
-    }
-
     /**
      * Copies the remediated PDF to {@code {method}{REMEDIATED_PDF_SUFFIX}.pdf} in the test output
      * directory.
@@ -265,183 +187,6 @@ public abstract class PdfTestBase {
                     testOutputPath(method + REMEDIATED_PDF_SUFFIX),
                     StandardCopyOption.REPLACE_EXISTING);
         }
-    }
-
-    // ── Structure tree helpers ──────────────────────────────────────
-
-    protected final PdfStructElem findNthByRole(PdfStructTreeRoot root, PdfName role, int index) {
-        if (root == null) {
-            throw new IllegalArgumentException("Structure tree root must not be null");
-        }
-        if (index < 0) {
-            throw new IllegalArgumentException("Index must be >= 0, but was " + index);
-        }
-
-        List<PdfStructElem> matches = new ArrayList<>();
-        List<IStructureNode> rootKids = root.getKids();
-        if (rootKids == null || rootKids.isEmpty()) {
-            throw new IllegalArgumentException("Structure tree root has no children");
-        }
-
-        for (IStructureNode kid : rootKids) {
-            if (kid instanceof PdfStructElem elem) {
-                collectByRole(elem, role, matches);
-            }
-        }
-        if (index >= matches.size()) {
-            throw new IllegalArgumentException(
-                    "Requested index "
-                            + index
-                            + " for role "
-                            + role.getValue()
-                            + " but only found "
-                            + matches.size()
-                            + " match(es)");
-        }
-        return matches.get(index);
-    }
-
-    private static PdfStructElem findFirstByRole(PdfStructTreeRoot root, PdfName targetRole) {
-        if (root == null) return null;
-        List<IStructureNode> kids = root.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem) {
-                PdfStructElem found = findByRole(elem, targetRole);
-                if (found != null) return found;
-            }
-        }
-        return null;
-    }
-
-    private static PdfStructElem findByRole(PdfStructElem elem, PdfName targetRole) {
-        if (elem == null) return null;
-        if (targetRole.equals(elem.getRole())) return elem;
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem child) {
-                PdfStructElem found = findByRole(child, targetRole);
-                if (found != null) return found;
-            }
-        }
-        return null;
-    }
-
-    private static PdfStructElem findFirstChild(PdfStructElem parent, PdfName targetRole) {
-        if (parent == null) return null;
-        List<IStructureNode> kids = parent.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem) {
-                if (targetRole.equals(kidElem.getRole())) return kidElem;
-            }
-        }
-        return null;
-    }
-
-    private void collectByRole(PdfStructElem elem, PdfName role, List<PdfStructElem> out) {
-        if (role.equals(elem.getRole())) {
-            out.add(elem);
-        }
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem child) {
-                collectByRole(child, role, out);
-            }
-        }
-    }
-
-    // ── Breakage implementations ────────────────────────────────────
-
-    /** Moves P children out of LI/LBody and directly under L. */
-    private static boolean breakListWithParagraphChildren(PdfStructElem listElem) {
-        List<IStructureNode> originalKids = listElem.getKids();
-        if (originalKids == null || originalKids.isEmpty()) {
-            return false;
-        }
-
-        boolean changed = false;
-        List<IStructureNode> kids = new ArrayList<>(originalKids);
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem && PdfName.LI.equals(kidElem.getRole())) {
-                PdfStructElem pElem = findParagraphInListItem(kidElem);
-                if (pElem != null) {
-                    listElem.removeKid(kidElem);
-                    listElem.addKid(pElem);
-                    changed = true;
-                }
-            }
-        }
-        return changed;
-    }
-
-    /** Strips LBody/Lbl from LI, leaving a bare P child. */
-    private static boolean breakListItemWithSingleParagraph(PdfStructElem liElem) {
-        List<IStructureNode> originalKids = liElem.getKids();
-        if (originalKids == null || originalKids.isEmpty()) {
-            return false;
-        }
-
-        List<IStructureNode> kids = new ArrayList<>(originalKids);
-        PdfStructElem pElem = null;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem) {
-                if (PdfName.LBody.equals(kidElem.getRole())) {
-                    pElem = findFirstChild(kidElem, PdfName.P);
-                    if (pElem != null) {
-                        kidElem.removeKid(pElem);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (pElem == null) {
-            return false;
-        }
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem) {
-                liElem.removeKid(kidElem);
-            }
-        }
-        liElem.addKid(pElem);
-        return true;
-    }
-
-    /** Removes LBody from LI, keeping only Lbl. */
-    private static boolean breakListItemMissingLBody(PdfStructElem liElem) {
-        List<IStructureNode> originalKids = liElem.getKids();
-        if (originalKids == null || originalKids.isEmpty()) {
-            return false;
-        }
-
-        boolean changed = false;
-        List<IStructureNode> kids = new ArrayList<>(originalKids);
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem && PdfName.LBody.equals(kidElem.getRole())) {
-                liElem.removeKid(kidElem);
-                changed = true;
-            }
-        }
-        return changed;
-    }
-
-    private static PdfStructElem findParagraphInListItem(PdfStructElem liElem) {
-        List<IStructureNode> kids = liElem.getKids();
-        if (kids == null) return null;
-
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem kidElem && PdfName.LBody.equals(kidElem.getRole())) {
-                return findFirstChild(kidElem, PdfName.P);
-            }
-        }
-        return null;
     }
 
     // ── Configuration ───────────────────────────────────────────────
