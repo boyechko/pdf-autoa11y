@@ -22,6 +22,7 @@
     <pdf.autoa11y.testOutputDir>/tmp/pdf-autoa11y/test-pdfs</pdf.autoa11y.testOutputDir>
     <logback.version>1.5.16</logback.version>
     <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -84,6 +85,25 @@
             <argument>${exec.args}</argument>
           </arguments>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
