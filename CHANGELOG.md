@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added optional `WrapWebCapturesCheck` (and corresponding
+  `WrapWebCapturesFix`) that wraps each Adobe Web Capture URL's pages in an
+  `<Art>` (Article) structure element, giving assistive-technology users
+  landmark navigation across captured pages.
 - Added optional `InlineDestinationsCheck` that replaces named-destination
   references in annotations, outlines, and `/OpenAction` with explicit fit-page
   destinations. Orphan references (names not in `/Dests`) are left alone with a

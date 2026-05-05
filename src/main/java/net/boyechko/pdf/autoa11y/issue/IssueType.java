@@ -57,7 +57,8 @@ public enum IssueType {
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
     SCRIBBLED_INSTRUCTION("elements with structural-instruction scribbles"),
     STALE_SCRIBBLE("elements with stale workflow scribbles in /T"),
-    NAMED_DESTINATIONS_PRESENT("named destinations in /Catalog /Names /Dests");
+    NAMED_DESTINATIONS_PRESENT("named destinations in /Catalog /Names /Dests"),
+    WEB_CAPTURES_NOT_GROUPED("Web Capture URLs not wrapped in Article elements");
 
     private final String groupLabel;
 
