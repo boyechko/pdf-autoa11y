@@ -45,8 +45,8 @@ import org.slf4j.LoggerFactory;
  * Wraps each Web Capture URL's pages in an {@code <Article>} structure element. Walks {@code
  * /Catalog /Names /URLS}, sorts URLs by their starting page, and for each URL creates an Article
  * whose kids are the previously-direct-kids of {@code <Document>} whose first MCR falls on a page
- * in the URL's {@code /O} array. The Article's {@code /T} scribble is set to a sanitized form of
- * the URL.
+ * in the URL's {@code /O} array. The Article's {@code /T} scribble is set to a somewhat sanitized
+ * form of the URL.
  *
  * <p>Idempotent: elements already inside an Article (or that are themselves Articles) are skipped.
  * Pages outside any /URLS coverage retain their original parent. Sibling order is left for {@code
@@ -210,17 +210,11 @@ public class WrapWebCapturesFix implements IssueFix {
     }
 
     /**
-     * Sanitizes a URL into a scribble-safe identifier: strip protocol and host, take last path
-     * segment, drop {@code .html(.htm)} extension, replace remaining non-ident chars with {@code
-     * -}.
+     * Sanitizes a URL into a scribble-safe identifier: strip protocol, drop {@code .html(.htm)}
+     * extension, replace remaining non-ident chars with {@code -}.
      */
     static String sanitizeUrl(String url) {
         String s = url.replaceFirst("^https?://", "");
-        int firstSlash = s.indexOf('/');
-        s = firstSlash < 0 ? "" : s.substring(firstSlash + 1);
-        s = s.replaceFirst("/$", "");
-        int lastSlash = s.lastIndexOf('/');
-        if (lastSlash >= 0) s = s.substring(lastSlash + 1);
         s = s.replaceFirst("(?i)\\.html?$", "");
         s = s.replaceAll("[^A-Za-z0-9_-]", "-").replaceAll("-+", "-").replaceAll("^-|-$", "");
         return s.isEmpty() ? "index" : s;
