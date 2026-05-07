@@ -29,6 +29,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +53,11 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
+    private static final Pattern REORDER_KIDS_PATTERN = Pattern.compile("!REORDER_KIDS");
     private static final Pattern UNLINK_PATTERN = Pattern.compile("!UNLINK");
+
+    /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
+    private static final Pattern REORDER_POSITION_PATTERN = Pattern.compile("!REORDER\\s+(\\d+)");
 
     private final String instruction;
     private final PdfStructElem element;
@@ -72,6 +77,7 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
         Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
+        Matcher reorderKids = REORDER_KIDS_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
 
         if (addChild.matches()) {
@@ -80,6 +86,8 @@ public class ScribbledInstructionFix implements IssueFix {
             applyAddParent(ctx, addParent.group(1));
         } else if (artifact.matches()) {
             applyArtifact(ctx);
+        } else if (reorderKids.matches()) {
+            applyReorderKids(ctx);
         } else if (unlink.matches()) {
             applyUnlink(ctx);
         } else {
@@ -310,6 +318,75 @@ public class ScribbledInstructionFix implements IssueFix {
     /** Delegates to MistaggedArtifactFix to convert the element's content to artifacts. */
     private void applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
+    }
+
+    /**
+     * Reorders the element's kids based on each kid's {@code !REORDER NNN} scribble segment. Kids
+     * with no {@code !REORDER NNN} are appended at the end in their original relative order. After
+     * reordering, the {@code !REORDER NNN} segments on kids and the {@code !REORDER_KIDS} segment
+     * on the parent are cleared (identity scribbles, if any, are preserved).
+     */
+    private void applyReorderKids(DocContext ctx) {
+        List<IStructureNode> all =
+                element.getKids() == null ? List.of() : new ArrayList<>(element.getKids());
+        if (all.isEmpty()) {
+            StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
+            return;
+        }
+
+        List<AnnotatedKid> annotated = new ArrayList<>();
+        List<IStructureNode> unannotated = new ArrayList<>();
+        for (int i = 0; i < all.size(); i++) {
+            IStructureNode kid = all.get(i);
+            Integer pos = reorderPositionOf(kid);
+            if (pos != null) annotated.add(new AnnotatedKid(kid, pos, i + 1));
+            else unannotated.add(kid);
+        }
+        annotated.sort(Comparator.comparingInt(AnnotatedKid::position));
+
+        // Detach all, then re-attach in the new order. Sequential addKid appends, so the final
+        // K-array ends up: annotated kids in sorted order, then unannotated in their original
+        // order.
+        for (IStructureNode kid : all) element.removeKid(kid);
+        for (AnnotatedKid a : annotated) addToParent(element, a.kid());
+        for (IStructureNode kid : unannotated) addToParent(element, kid);
+
+        // Clear consumed instructions and record the move as a "MOVE old → new" breadcrumb.
+        for (int newIdx = 0; newIdx < annotated.size(); newIdx++) {
+            AnnotatedKid a = annotated.get(newIdx);
+            if (a.kid() instanceof PdfStructElem se) {
+                StructTree.clearScribbleSegments(se, "!REORDER");
+                StructTree.clearScribbleSegments(se, "MOVE");
+                int oldPos = a.originalIndex();
+                int newPos = newIdx + 1;
+                if (oldPos != newPos) {
+                    StructTree.addScribble(se, "MOVE " + oldPos + " -> " + newPos);
+                }
+            }
+        }
+        StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
+    }
+
+    private record AnnotatedKid(IStructureNode kid, int position, int originalIndex) {}
+
+    /** Extracts the {@code NNN} from a kid's {@code !REORDER NNN} scribble segment, or null. */
+    private static Integer reorderPositionOf(IStructureNode kid) {
+        if (!(kid instanceof PdfStructElem se)) return null;
+        var scribble = StructTree.getScribble(se);
+        if (scribble == null) return null;
+        Matcher m = REORDER_POSITION_PATTERN.matcher(scribble.value());
+        return m.find() ? Integer.parseInt(m.group(1)) : null;
+    }
+
+    /** Type-switch dispatcher for addKid (which is typed on PdfStructElem vs. PdfMcr). */
+    private static void addToParent(PdfStructElem parent, IStructureNode kid) {
+        switch (kid) {
+            case PdfStructElem se -> parent.addKid(se);
+            case PdfMcr mcr -> parent.addKid(mcr);
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unsupported kid type: " + kid.getClass().getSimpleName());
+        }
     }
 
     /**
