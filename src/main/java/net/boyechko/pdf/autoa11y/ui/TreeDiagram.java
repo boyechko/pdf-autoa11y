@@ -165,12 +165,10 @@ public final class TreeDiagram {
                     sb.append(childIndent);
                     sb.append("<" + objrLabel(objRef) + ">");
                     DocValue.Destination dest = DocValue.destinationOf(objRef);
-                    if (dest != null) {
-                        sb.append(' ').append(dest);
-                    }
+                    sb.append(' ').append(dest);
                     DocValue.Destination originalUri = DocValue.originalUriOf(objRef);
                     if (originalUri != null) {
-                        sb.append(' ').append(originalUri);
+                        sb.append(" [").append(originalUri).append("]");
                     }
                     sb.append('\n');
                 }
