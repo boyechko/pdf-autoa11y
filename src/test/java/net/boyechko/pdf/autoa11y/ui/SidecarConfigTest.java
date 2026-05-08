@@ -92,7 +92,7 @@ class SidecarConfigTest {
         Path pdf = tempDir.resolve("none.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("none.autoa11y.yaml");
-        Files.writeString(config, "role-map: clear\n");
+        Files.writeString(config, "MistaggedArtifactCheck:\n  page-number: '^Page \\d+$'\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
@@ -100,47 +100,79 @@ class SidecarConfigTest {
     }
 
     @Test
-    void loadsRoleMapMappingsFromSidecarFile() throws IOException {
-        Path pdf = tempDir.resolve("rolemapmappings.pdf");
+    void loadsCheckConfigByClassName() throws IOException {
+        Path pdf = tempDir.resolve("rolemap.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("rolemapmappings.autoa11y.yaml");
+        Path config = tempDir.resolve("rolemap.autoa11y.yaml");
         Files.writeString(
                 config,
                 """
-                role-map:
+                ReplaceRoleMapCheck:
                   CustomHeading: H1
                   FigureAlt: Figure
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertTrue(sidecar.roleMap().isPresent());
-        assertEquals(Map.of("CustomHeading", "H1", "FigureAlt", "Figure"), sidecar.roleMap().get());
+        Map<String, Map<String, String>> configs = sidecar.checkConfigs();
+        assertTrue(configs.containsKey("ReplaceRoleMapCheck"));
+        assertEquals(
+                Map.of("CustomHeading", "H1", "FigureAlt", "Figure"),
+                configs.get("ReplaceRoleMapCheck"));
     }
 
     @Test
-    void roleMapClearReturnsEmptyMap() throws IOException {
-        Path pdf = tempDir.resolve("clearrm.pdf");
+    void loadsMultipleCheckConfigs() throws IOException {
+        Path pdf = tempDir.resolve("multi.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("clearrm.autoa11y.yaml");
-        Files.writeString(config, "role-map: clear\n");
+        Path config = tempDir.resolve("multi.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                checks:
+                  - MistaggedArtifactCheck
+                  - ReplaceRoleMapCheck
+
+                MistaggedArtifactCheck:
+                  page-number: '^Page \\d+$'
+
+                ReplaceRoleMapCheck:
+                  CustomHeading: H1
+                """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertTrue(sidecar.roleMap().isPresent());
-        assertTrue(sidecar.roleMap().get().isEmpty());
+        Map<String, Map<String, String>> configs = sidecar.checkConfigs();
+        assertEquals(2, configs.size());
+        assertEquals(Map.of("page-number", "^Page \\d+$"), configs.get("MistaggedArtifactCheck"));
+        assertEquals(Map.of("CustomHeading", "H1"), configs.get("ReplaceRoleMapCheck"));
     }
 
     @Test
-    void roleMapAbsentWhenNotSpecified() throws IOException {
-        Path pdf = tempDir.resolve("normnomap.pdf");
+    void emptyCheckConfigYieldsEmptyMap() throws IOException {
+        Path pdf = tempDir.resolve("emptycfg.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("normnomap.autoa11y.yaml");
-        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
+        Path config = tempDir.resolve("emptycfg.autoa11y.yaml");
+        Files.writeString(config, "MistaggedArtifactCheck:\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertTrue(sidecar.roleMap().isEmpty());
+        assertTrue(sidecar.checkConfigs().containsKey("MistaggedArtifactCheck"));
+        assertTrue(sidecar.checkConfigs().get("MistaggedArtifactCheck").isEmpty());
+    }
+
+    @Test
+    void unknownTopLevelKeyIsIgnored() throws IOException {
+        Path pdf = tempDir.resolve("unknown.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("unknown.autoa11y.yaml");
+        Files.writeString(config, "NotARealCheck:\n  foo: bar\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        // Unknown keys are not propagated; the warning goes to the log only.
+        assertTrue(sidecar.isPresent());
+        assertTrue(sidecar.checkConfigs().isEmpty());
     }
 
     @Test
@@ -150,8 +182,7 @@ class SidecarConfigTest {
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
         assertTrue(sidecar.checks().isEmpty());
-        assertTrue(sidecar.roleMap().isEmpty());
-        assertTrue(sidecar.artifactPatterns().isEmpty());
+        assertTrue(sidecar.checkConfigs().isEmpty());
         assertFalse(sidecar.isPresent());
     }
 
@@ -178,12 +209,11 @@ class SidecarConfigTest {
 
         assertTrue(sidecar.isPresent());
         assertTrue(sidecar.checks().isEmpty());
-        assertTrue(sidecar.roleMap().isEmpty());
-        assertTrue(sidecar.artifactPatterns().isEmpty());
+        assertTrue(sidecar.checkConfigs().isEmpty());
     }
 
     @Test
-    void legacySkipChecksKeyIsIgnored() throws IOException {
+    void legacyKeysAreIgnored() throws IOException {
         Path pdf = tempDir.resolve("legacy.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("legacy.autoa11y.yaml");
@@ -196,60 +226,39 @@ class SidecarConfigTest {
                   - SchemaValidationCheck
                 include-checks:
                   - ClearRoleMapCheck
+                role-map: clear
+                artifact-patterns:
+                  page-number: '^Page \\d+$'
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        // Legacy keys are not consumed; they generate a warning but no `checks:` is set.
+        // Legacy keys are not consumed; they generate a warning but no checks/checkConfigs are set.
         assertTrue(sidecar.isPresent());
         assertTrue(sidecar.checks().isEmpty());
+        assertTrue(sidecar.checkConfigs().isEmpty());
     }
 
     @Test
-    void loadsArtifactPatternsFromSidecarFile() throws IOException {
+    void loadsArtifactPatternsViaMistaggedArtifactCheckSideKey() throws IOException {
         Path pdf = tempDir.resolve("patterns.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("patterns.autoa11y.yaml");
         Files.writeString(
                 config,
                 """
-                artifact-patterns:
+                MistaggedArtifactCheck:
                   page-number: '^\\s*(Page\\s+)?\\d+\\s*$'
                   chapter-header: 'Chapter \\d+'
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertTrue(sidecar.artifactPatterns().isPresent());
-        Map<String, String> patterns = sidecar.artifactPatterns().get();
+        Map<String, String> patterns = sidecar.checkConfigs().get("MistaggedArtifactCheck");
+        assertNotNull(patterns);
         assertEquals(2, patterns.size());
         assertEquals("^\\s*(Page\\s+)?\\d+\\s*$", patterns.get("page-number"));
         assertEquals("Chapter \\d+", patterns.get("chapter-header"));
-    }
-
-    @Test
-    void emptyArtifactPatternsReturnsEmptyMap() throws IOException {
-        Path pdf = tempDir.resolve("emptypatterns.pdf");
-        Files.createFile(pdf);
-        Path config = tempDir.resolve("emptypatterns.autoa11y.yaml");
-        Files.writeString(config, "artifact-patterns:\n");
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-
-        assertTrue(sidecar.artifactPatterns().isPresent());
-        assertTrue(sidecar.artifactPatterns().get().isEmpty());
-    }
-
-    @Test
-    void artifactPatternsAbsentWhenNotSpecified() throws IOException {
-        Path pdf = tempDir.resolve("nopatterns.pdf");
-        Files.createFile(pdf);
-        Path config = tempDir.resolve("nopatterns.autoa11y.yaml");
-        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-
-        assertTrue(sidecar.artifactPatterns().isEmpty());
     }
 
     @Test

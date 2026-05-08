@@ -69,9 +69,18 @@ Versioning](https://semver.org/).
 ### Changed
 - Sidecar config now uses a single ordered `checks:` list instead of the three
   separate `skip-checks:`, `only-checks:`, and `include-checks:` keys. The
-  listed checks run in the given order, fully specifying the pipeline. The CLI
-  flags `--skip-checks`, `--only-checks`, and `--include-checks` are unchanged
-  but only apply when no sidecar `checks:` list is present.
+  listed checks run in the given order, fully specifying the pipeline. Per-
+  check parameters are supplied via top-level keys whose name matches the
+  check's class (e.g. `MistaggedArtifactCheck:` for artifact patterns,
+  `ReplaceRoleMapCheck:` for role-map replacements). The legacy `role-map:`
+  and `artifact-patterns:` directives are no longer recognized; their behavior
+  is now expressed by listing the corresponding check (`ClearRoleMapCheck`,
+  `ReplaceRoleMapCheck`, `MistaggedArtifactCheck`) in `checks:` together with
+  any side-key configuration. All removed keys (`skip-checks`, `only-checks`,
+  `include-checks`, `role-map`, `artifact-patterns`) are ignored at load with
+  a warning. The CLI flags `--skip-checks`, `--only-checks`, and
+  `--include-checks` are unchanged but only apply when no sidecar `checks:`
+  list is present.
 - Schema and instruction checks now clear their prior scribbles in a tree-wide
   pre-pass and persist side-effect-only changes to the output PDF via a new
   dirty-tracking flag.
