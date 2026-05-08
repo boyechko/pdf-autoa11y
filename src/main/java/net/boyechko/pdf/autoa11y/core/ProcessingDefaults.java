@@ -68,6 +68,7 @@ public final class ProcessingDefaults {
                 () -> new ReplaceRoleMapCheck(Map.of()),
                 InlineDestinationsCheck::new,
                 MisartifactedTextCheck::new,
+                ReorderWebCapturesCheck::new,
                 WrapWebCapturesCheck::new);
     }
 

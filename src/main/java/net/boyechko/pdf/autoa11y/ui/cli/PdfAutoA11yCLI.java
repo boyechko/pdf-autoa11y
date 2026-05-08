@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
+import net.boyechko.pdf.autoa11y.checks.ReorderWebCapturesCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
@@ -216,6 +218,12 @@ public class PdfAutoA11yCLI {
             String checkName, Map<String, String> config) {
         return switch (checkName) {
             case "MistaggedArtifactCheck" -> () -> new MistaggedArtifactCheck(config);
+            case "ReorderWebCapturesCheck" -> {
+                // YAML insertion order is preserved through SidecarConfig's LinkedHashMap, so the
+                // values list reflects the user's stated URL order.
+                List<String> orderedUrls = List.copyOf(config.values());
+                yield () -> new ReorderWebCapturesCheck(orderedUrls);
+            }
             case "ReplaceRoleMapCheck" -> () -> new ReplaceRoleMapCheck(config);
             default -> null;
         };
