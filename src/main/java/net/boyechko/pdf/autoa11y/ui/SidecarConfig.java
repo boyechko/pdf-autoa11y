@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.validation.Check;
@@ -40,20 +39,18 @@ import org.yaml.snakeyaml.Yaml;
  */
 public final class SidecarConfig {
     private static final String SIDECAR_EXTENSION = ".autoa11y.yaml";
+    private static final List<String> LEGACY_CHECK_KEYS =
+            List.of("skip-checks", "only-checks", "include-checks");
     private static final Logger logger = LoggerFactory.getLogger(SidecarConfig.class);
 
     private final boolean present;
-    private final Set<String> skipChecks;
-    private final Set<String> onlyChecks;
-    private final Set<String> includeChecks;
+    private final Optional<List<String>> checks;
     private final Optional<Map<String, String>> roleMap;
     private final Optional<Map<String, String>> artifactPatterns;
 
     private SidecarConfig(Builder builder) {
         this.present = builder.present;
-        this.skipChecks = Set.copyOf(builder.skipChecks);
-        this.onlyChecks = Set.copyOf(builder.onlyChecks);
-        this.includeChecks = Set.copyOf(builder.includeChecks);
+        this.checks = builder.checks;
         this.roleMap = builder.roleMap;
         this.artifactPatterns = builder.artifactPatterns;
     }
@@ -93,16 +90,12 @@ public final class SidecarConfig {
         sb.append("# Sidecar config for ").append(pdfPath.getFileName()).append("\n");
         sb.append("# See --help for details.\n\n");
 
-        sb.append("#skip-checks:\n");
-        sb.append("#  - CheckName\n\n");
-
-        sb.append("#only-checks:\n");
+        sb.append("# Checks to run, in order. If absent, the default pipeline runs.\n");
+        sb.append("#checks:\n");
         for (Supplier<Check> supplier : ProcessingDefaults.defaultChecks()) {
             sb.append("#  - ").append(supplier.get().getClass().getSimpleName()).append("\n");
         }
-        sb.append("\n");
-
-        sb.append("#include-checks:\n");
+        sb.append("# Optional checks (uncomment to enable):\n");
         for (Supplier<Check> supplier : ProcessingDefaults.optionalChecks()) {
             sb.append("#  - ").append(supplier.get().getClass().getSimpleName()).append("\n");
         }
@@ -125,16 +118,12 @@ public final class SidecarConfig {
         return present;
     }
 
-    public Set<String> skipChecks() {
-        return skipChecks;
-    }
-
-    public Set<String> onlyChecks() {
-        return onlyChecks;
-    }
-
-    public Set<String> includeChecks() {
-        return includeChecks;
+    /**
+     * Ordered list of checks to run, if specified in the sidecar. {@code Optional.empty()} means no
+     * {@code checks:} key was set; an empty list means "run nothing".
+     */
+    public Optional<List<String>> checks() {
+        return checks;
     }
 
     /**
@@ -153,45 +142,16 @@ public final class SidecarConfig {
         return artifactPatterns;
     }
 
-    // == Merging ==========================================================
-
-    /** Returns the union of sidecar skip-checks and additional skip-checks. */
-    public Set<String> mergeSkipChecks(Set<String> additionalSkipChecks) {
-        return mergeSets(skipChecks, additionalSkipChecks);
-    }
-
-    /** Returns the union of sidecar only-checks and additional only-checks. */
-    public Set<String> mergeOnlyChecks(Set<String> additionalOnlyChecks) {
-        return mergeSets(onlyChecks, additionalOnlyChecks);
-    }
-
-    /** Returns the union of sidecar include-checks and additional include-checks. */
-    public Set<String> mergeIncludeChecks(Set<String> additionalIncludeChecks) {
-        return mergeSets(includeChecks, additionalIncludeChecks);
-    }
-
     // == Builder ==========================================================
 
     private static class Builder {
         boolean present;
-        Set<String> skipChecks = Set.of();
-        Set<String> onlyChecks = Set.of();
-        Set<String> includeChecks = Set.of();
+        Optional<List<String>> checks = Optional.empty();
         Optional<Map<String, String>> roleMap = Optional.empty();
         Optional<Map<String, String>> artifactPatterns = Optional.empty();
 
-        Builder skipChecks(Set<String> skipChecks) {
-            this.skipChecks = skipChecks;
-            return this;
-        }
-
-        Builder onlyChecks(Set<String> onlyChecks) {
-            this.onlyChecks = onlyChecks;
-            return this;
-        }
-
-        Builder includeChecks(Set<String> includeChecks) {
-            this.includeChecks = includeChecks;
+        Builder checks(Optional<List<String>> checks) {
+            this.checks = checks;
             return this;
         }
 
@@ -220,16 +180,14 @@ public final class SidecarConfig {
         return parent != null ? parent.resolve(sidecarName) : Path.of(sidecarName);
     }
 
-    @SuppressWarnings("unchecked")
     private static SidecarConfig load(Path path) throws IOException {
         try (Reader reader = Files.newBufferedReader(path)) {
             Map<String, Object> data = new Yaml().load(reader);
             Builder b = new Builder();
             b.present = true;
             if (data != null) {
-                b.skipChecks(extractStringList(data, "skip-checks"))
-                        .onlyChecks(extractStringList(data, "only-checks"))
-                        .includeChecks(extractStringList(data, "include-checks"))
+                warnOnLegacyKeys(path, data);
+                b.checks(extractChecks(data))
                         .roleMap(extractRoleMap(data))
                         .artifactPatterns(extractStringMap(data, "artifact-patterns"));
             }
@@ -237,21 +195,41 @@ public final class SidecarConfig {
         }
     }
 
+    private static void warnOnLegacyKeys(Path path, Map<String, Object> data) {
+        for (String key : LEGACY_CHECK_KEYS) {
+            if (data.containsKey(key)) {
+                logger.warn(
+                        "Sidecar config {} uses legacy '{}' key, which is no longer supported."
+                                + " Replace with a single ordered 'checks:' list.",
+                        path,
+                        key);
+            }
+        }
+    }
+
     // == Extraction helpers ===============================================
 
-    @SuppressWarnings("unchecked")
-    private static Set<String> extractStringList(Map<String, Object> data, String key) {
-        Object value = data.get(key);
-        if (value instanceof List<?> list) {
-            Set<String> result = new LinkedHashSet<>();
-            for (Object item : list) {
-                if (item instanceof String s) {
-                    result.add(s);
+    private static Optional<List<String>> extractChecks(Map<String, Object> data) {
+        if (!data.containsKey("checks")) {
+            return Optional.empty();
+        }
+        Object value = data.get("checks");
+        if (value == null) {
+            return Optional.of(List.of());
+        }
+        if (!(value instanceof List<?> list)) {
+            throw new IllegalArgumentException("checks must be a list of check class names");
+        }
+        List<String> result = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof String s) {
+                String trimmed = s.trim();
+                if (!trimmed.isEmpty()) {
+                    result.add(trimmed);
                 }
             }
-            return result;
         }
-        return Set.of();
+        return Optional.of(List.copyOf(result));
     }
 
     /** Extracts an optional String-to-String map from a YAML key. */
@@ -280,7 +258,6 @@ public final class SidecarConfig {
         return Optional.of(Map.copyOf(result));
     }
 
-    @SuppressWarnings("unchecked")
     private static Optional<Map<String, String>> extractRoleMap(Map<String, Object> data) {
         Object value = data.get("role-map");
         if (value == null) {
@@ -304,13 +281,5 @@ public final class SidecarConfig {
             mappings.put(key.trim(), val.trim());
         }
         return Optional.of(Map.copyOf(mappings));
-    }
-
-    private static Set<String> mergeSets(Set<String> a, Set<String> b) {
-        if (a.isEmpty()) return b;
-        if (b.isEmpty()) return a;
-        Set<String> merged = new LinkedHashSet<>(a);
-        merged.addAll(b);
-        return Set.copyOf(merged);
     }
 }

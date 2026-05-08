@@ -4,7 +4,7 @@ PDF-Auto-A11y reads a per-PDF sidecar config file automatically when
 it exists alongside the input. For `document.pdf`, the tool looks for
 `document.autoa11y.yaml` in the same directory.
 
-The sidecar lets you persist per-file settings — which checks to skip,
+The sidecar lets you persist per-file settings — which checks to run,
 custom role mappings, or custom artifact patterns — without repeating
 CLI flags on every run.
 
@@ -35,36 +35,21 @@ keys you need.
 
 ## Keys
 
-### skip-checks
+### checks
 
-Skip specific checks by class name. Useful for silencing checks that
-are not relevant to a particular document.
+Ordered list of checks to run. The pipeline runs exactly these checks,
+in the order given. When the `checks:` key is absent, the default
+pipeline runs (modified by any CLI flags).
 
 ```yaml
-skip-checks:
+checks:
+  - StructureTreeExistsCheck
   - NeedlessNestingCheck
-  - MissingPagePartsCheck
-```
-
-### only-checks
-
-Run only the listed checks. All other checks are skipped.
-
-```yaml
-only-checks:
   - SchemaValidationCheck
-  - StructTreeOrderCheck
 ```
 
-### include-checks
-
-Enable optional checks that are not part of the default pipeline.
-
-```yaml
-include-checks:
-  - ClearRoleMapCheck
-  - MisartifactedTextCheck
-```
+An explicit empty list (`checks: []`) means "run no checks". Unknown
+check names cause the run to fail with an error naming the offender.
 
 ### role-map
 
@@ -86,6 +71,9 @@ role-map:
   CustomFigure: Figure
 ```
 
+The `role-map` directive is honored regardless of whether `checks:`
+is set, so it always takes effect when present.
+
 ### artifact-patterns
 
 Override the built-in text artifact detection patterns. Each entry is
@@ -104,17 +92,13 @@ element.
 
 ## CLI Override Behavior
 
-When both a sidecar config and CLI flags are present, CLI flags take
-precedence for the same key:
+When the sidecar provides a `checks:` list, it fully specifies the
+pipeline and the CLI flags `--skip-checks`, `--only-checks`, and
+`--include-checks` are ignored for that run. To use those flags,
+remove or comment out the `checks:` key in the sidecar.
 
-| Key | CLI flag | Precedence |
+| Sidecar key | CLI flag | Behavior when both present |
 |---|---|---|
-| `skip-checks` | `--skip-checks` | CLI wins |
-| `only-checks` | `--only-checks` | CLI wins |
-| `include-checks` | `--include-checks` | CLI wins |
+| `checks` | `--skip-checks` / `--only-checks` / `--include-checks` | Sidecar wins |
 | `role-map` | _(none)_ | Sidecar only |
 | `artifact-patterns` | _(none)_ | Sidecar only |
-
-When `--only-checks` is given on the CLI, the sidecar's `skip-checks`
-are also ignored — the explicit check list is treated as the complete
-specification.

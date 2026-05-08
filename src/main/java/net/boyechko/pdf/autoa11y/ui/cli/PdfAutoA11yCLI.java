@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.checks.ClearRoleMapCheck;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
@@ -146,32 +147,27 @@ public class PdfAutoA11yCLI {
                                         ? config.sidecarPath()
                                         : config.inputPath().getFileName()));
             }
-            Set<String> onlyChecks =
-                    config.onlyChecks().isEmpty() ? sidecar.onlyChecks() : config.onlyChecks();
-            // When CLI specifies only-checks, don't apply sidecar's skip-checks — the user has
-            // made an explicit choice about what to run, which takes precedence.
-            boolean cliSpecifiedOnly = !config.onlyChecks().isEmpty();
-            Set<String> skipChecks =
-                    (cliSpecifiedOnly || !config.skipChecks().isEmpty())
-                            ? config.skipChecks()
-                            : sidecar.skipChecks();
-            Set<String> includeChecks =
-                    config.includeChecks().isEmpty()
-                            ? sidecar.includeChecks()
-                            : config.includeChecks();
 
             ProcessingService.ProcessingServiceBuilder serviceBuilder =
                     new ProcessingService.ProcessingServiceBuilder()
                             .withPdfCustodian(docFactory)
-                            .withListener(listener)
-                            .skipChecks(skipChecks)
-                            .onlyChecks(onlyChecks)
-                            .includeChecks(includeChecks);
+                            .withListener(listener);
+
+            // Sidecar's ordered `checks:` list, when present, fully specifies the pipeline and
+            // overrides CLI skip/only/include flags. Otherwise, fall back to CLI flags.
+            if (sidecar.checks().isPresent()) {
+                serviceBuilder.withChecks(sidecar.checks().get());
+            } else {
+                serviceBuilder
+                        .skipChecks(config.skipChecks())
+                        .onlyChecks(config.onlyChecks())
+                        .includeChecks(config.includeChecks());
+            }
             sidecar.roleMap()
                     .ifPresent(
                             mappings -> {
                                 if (mappings.isEmpty()) {
-                                    serviceBuilder.includeChecks(Set.of("ClearRoleMapCheck"));
+                                    serviceBuilder.injectCheck(ClearRoleMapCheck::new);
                                 } else {
                                     serviceBuilder.injectCheck(
                                             () -> new ReplaceRoleMapCheck(mappings));

@@ -67,6 +67,11 @@ Versioning](https://semver.org/).
   (more than one child at a level) is rejected.
 
 ### Changed
+- Sidecar config now uses a single ordered `checks:` list instead of the three
+  separate `skip-checks:`, `only-checks:`, and `include-checks:` keys. The
+  listed checks run in the given order, fully specifying the pipeline. The CLI
+  flags `--skip-checks`, `--only-checks`, and `--include-checks` are unchanged
+  but only apply when no sidecar `checks:` list is present.
 - Schema and instruction checks now clear their prior scribbles in a tree-wide
   pre-pass and persist side-effect-only changes to the output PDF via a new
   dirty-tracking flag.

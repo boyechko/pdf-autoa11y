@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -32,75 +32,71 @@ class SidecarConfigTest {
     @TempDir Path tempDir;
 
     @Test
-    void loadsSkipChecksFromSidecarFile() throws IOException {
+    void loadsOrderedChecksFromSidecarFile() throws IOException {
         Path pdf = tempDir.resolve("document.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("document.autoa11y.yaml");
         Files.writeString(
                 config,
                 """
-                skip-checks:
-                  - NeedlessNestingCheck
-                  - MissingPagePartsCheck
-                """);
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-
-        assertEquals(Set.of("NeedlessNestingCheck", "MissingPagePartsCheck"), sidecar.skipChecks());
-    }
-
-    @Test
-    void loadsOnlyChecksFromSidecarFile() throws IOException {
-        Path pdf = tempDir.resolve("textbook.pdf");
-        Files.createFile(pdf);
-        Path config = tempDir.resolve("textbook.autoa11y.yaml");
-        Files.writeString(
-                config,
-                """
-                only-checks:
+                checks:
                   - SchemaValidationCheck
                   - EmptyElementCheck
+                  - NeedlessNestingCheck
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertEquals(Set.of("SchemaValidationCheck", "EmptyElementCheck"), sidecar.onlyChecks());
+        assertTrue(sidecar.checks().isPresent());
+        assertEquals(
+                List.of("SchemaValidationCheck", "EmptyElementCheck", "NeedlessNestingCheck"),
+                sidecar.checks().get());
     }
 
     @Test
-    void loadsIncludeChecksFromSidecarFile() throws IOException {
-        Path pdf = tempDir.resolve("rolemap.pdf");
+    void preservesChecksOrderAcrossLoad() throws IOException {
+        Path pdf = tempDir.resolve("ordered.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("rolemap.autoa11y.yaml");
+        Path config = tempDir.resolve("ordered.autoa11y.yaml");
         Files.writeString(
                 config,
                 """
-                include-checks:
-                  - ClearRoleMapCheck
+                checks:
+                  - WrapWebCapturesCheck
+                  - InlineDestinationsCheck
+                  - SchemaValidationCheck
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertEquals(Set.of("ClearRoleMapCheck"), sidecar.includeChecks());
+        assertEquals(
+                List.of("WrapWebCapturesCheck", "InlineDestinationsCheck", "SchemaValidationCheck"),
+                sidecar.checks().get());
     }
 
     @Test
-    void mergesWithAdditionalIncludeChecks() throws IOException {
-        Path pdf = tempDir.resolve("mergeincl.pdf");
+    void emptyChecksListMeansRunNothing() throws IOException {
+        Path pdf = tempDir.resolve("empty.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("mergeincl.autoa11y.yaml");
-        Files.writeString(
-                config,
-                """
-                include-checks:
-                  - ClearRoleMapCheck
-                """);
+        Path config = tempDir.resolve("empty.autoa11y.yaml");
+        Files.writeString(config, "checks: []\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-        Set<String> additional = Set.of("ReplaceRoleMapCheck");
-        Set<String> merged = sidecar.mergeIncludeChecks(additional);
 
-        assertEquals(Set.of("ClearRoleMapCheck", "ReplaceRoleMapCheck"), merged);
+        assertTrue(sidecar.checks().isPresent());
+        assertTrue(sidecar.checks().get().isEmpty());
+    }
+
+    @Test
+    void checksAbsentWhenNotSpecified() throws IOException {
+        Path pdf = tempDir.resolve("none.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("none.autoa11y.yaml");
+        Files.writeString(config, "role-map: clear\n");
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        assertTrue(sidecar.checks().isEmpty());
     }
 
     @Test
@@ -140,7 +136,7 @@ class SidecarConfigTest {
         Path pdf = tempDir.resolve("normnomap.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("normnomap.autoa11y.yaml");
-        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
@@ -148,14 +144,14 @@ class SidecarConfigTest {
     }
 
     @Test
-    void returnsEmptySetsWhenNoSidecarFileExists() {
+    void returnsEmptyWhenNoSidecarFileExists() {
         Path pdf = tempDir.resolve("no-config.pdf");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertTrue(sidecar.skipChecks().isEmpty());
-        assertTrue(sidecar.onlyChecks().isEmpty());
-        assertTrue(sidecar.includeChecks().isEmpty());
+        assertTrue(sidecar.checks().isEmpty());
+        assertTrue(sidecar.roleMap().isEmpty());
+        assertTrue(sidecar.artifactPatterns().isEmpty());
         assertFalse(sidecar.isPresent());
     }
 
@@ -164,7 +160,7 @@ class SidecarConfigTest {
         Path pdf = tempDir.resolve("doc.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("doc.autoa11y.yaml");
-        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
@@ -181,16 +177,16 @@ class SidecarConfigTest {
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
         assertTrue(sidecar.isPresent());
-        assertTrue(sidecar.skipChecks().isEmpty());
-        assertTrue(sidecar.onlyChecks().isEmpty());
-        assertTrue(sidecar.includeChecks().isEmpty());
+        assertTrue(sidecar.checks().isEmpty());
+        assertTrue(sidecar.roleMap().isEmpty());
+        assertTrue(sidecar.artifactPatterns().isEmpty());
     }
 
     @Test
-    void handlesBothSkipAndOnlyChecks() throws IOException {
-        Path pdf = tempDir.resolve("both.pdf");
+    void legacySkipChecksKeyIsIgnored() throws IOException {
+        Path pdf = tempDir.resolve("legacy.pdf");
         Files.createFile(pdf);
-        Path config = tempDir.resolve("both.autoa11y.yaml");
+        Path config = tempDir.resolve("legacy.autoa11y.yaml");
         Files.writeString(
                 config,
                 """
@@ -198,64 +194,15 @@ class SidecarConfigTest {
                   - NeedlessNestingCheck
                 only-checks:
                   - SchemaValidationCheck
+                include-checks:
+                  - ClearRoleMapCheck
                 """);
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
-        assertEquals(Set.of("NeedlessNestingCheck"), sidecar.skipChecks());
-        assertEquals(Set.of("SchemaValidationCheck"), sidecar.onlyChecks());
-    }
-
-    @Test
-    void mergesWithAdditionalSkipChecks() throws IOException {
-        Path pdf = tempDir.resolve("merge.pdf");
-        Files.createFile(pdf);
-        Path config = tempDir.resolve("merge.autoa11y.yaml");
-        Files.writeString(
-                config,
-                """
-                skip-checks:
-                  - NeedlessNestingCheck
-                  - MissingPagePartsCheck
-                """);
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-        Set<String> additional = Set.of("EmptyElementCheck");
-        Set<String> merged = sidecar.mergeSkipChecks(additional);
-
-        assertEquals(
-                Set.of("NeedlessNestingCheck", "MissingPagePartsCheck", "EmptyElementCheck"),
-                merged);
-    }
-
-    @Test
-    void mergesWithAdditionalOnlyChecks() throws IOException {
-        Path pdf = tempDir.resolve("merge2.pdf");
-        Files.createFile(pdf);
-        Path config = tempDir.resolve("merge2.autoa11y.yaml");
-        Files.writeString(
-                config,
-                """
-                only-checks:
-                  - SchemaValidationCheck
-                """);
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-        Set<String> additional = Set.of("EmptyElementCheck");
-        Set<String> merged = sidecar.mergeOnlyChecks(additional);
-
-        assertEquals(Set.of("SchemaValidationCheck", "EmptyElementCheck"), merged);
-    }
-
-    @Test
-    void additionalChecksAloneWhenNoSidecar() {
-        Path pdf = tempDir.resolve("nosidecar.pdf");
-
-        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
-        Set<String> additional = Set.of("EmptyElementCheck");
-        Set<String> merged = sidecar.mergeSkipChecks(additional);
-
-        assertEquals(Set.of("EmptyElementCheck"), merged);
+        // Legacy keys are not consumed; they generate a warning but no `checks:` is set.
+        assertTrue(sidecar.isPresent());
+        assertTrue(sidecar.checks().isEmpty());
     }
 
     @Test
@@ -298,7 +245,7 @@ class SidecarConfigTest {
         Path pdf = tempDir.resolve("nopatterns.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("nopatterns.autoa11y.yaml");
-        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
@@ -310,11 +257,11 @@ class SidecarConfigTest {
         Path pdf = tempDir.resolve("textbook_autoa11y.pdf");
         Files.createFile(pdf);
         Path config = tempDir.resolve("textbook.autoa11y.yaml");
-        Files.writeString(config, "skip-checks:\n  - EmptyElementCheck\n");
+        Files.writeString(config, "checks:\n  - EmptyElementCheck\n");
 
         SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
 
         assertTrue(sidecar.isPresent());
-        assertEquals(Set.of("EmptyElementCheck"), sidecar.skipChecks());
+        assertEquals(List.of("EmptyElementCheck"), sidecar.checks().get());
     }
 }
