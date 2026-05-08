@@ -22,10 +22,12 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.validation.Check;
@@ -36,23 +38,31 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * Loads per-PDF configuration from a sidecar YAML file. For {@code document.pdf}, looks for {@code
  * document.autoa11y.yaml} in the same directory.
+ *
+ * <p>The sidecar has one structural key, {@code checks:}, plus optional per-check configuration
+ * keys whose names match check class names (e.g. {@code MistaggedArtifactCheck:} or {@code
+ * ReplaceRoleMapCheck:}).
  */
 public final class SidecarConfig {
     private static final String SIDECAR_EXTENSION = ".autoa11y.yaml";
-    private static final List<String> LEGACY_CHECK_KEYS =
-            List.of("skip-checks", "only-checks", "include-checks");
+    private static final String CHECKS_KEY = "checks";
+    private static final List<String> LEGACY_KEYS =
+            List.of(
+                    "skip-checks",
+                    "only-checks",
+                    "include-checks",
+                    "role-map",
+                    "artifact-patterns");
     private static final Logger logger = LoggerFactory.getLogger(SidecarConfig.class);
 
     private final boolean present;
     private final Optional<List<String>> checks;
-    private final Optional<Map<String, String>> roleMap;
-    private final Optional<Map<String, String>> artifactPatterns;
+    private final Map<String, Map<String, String>> checkConfigs;
 
     private SidecarConfig(Builder builder) {
         this.present = builder.present;
         this.checks = builder.checks;
-        this.roleMap = builder.roleMap;
-        this.artifactPatterns = builder.artifactPatterns;
+        this.checkConfigs = Map.copyOf(builder.checkConfigs);
     }
 
     private static SidecarConfig empty() {
@@ -101,11 +111,12 @@ public final class SidecarConfig {
         }
         sb.append("\n");
 
-        sb.append("#role-map:\n");
-        sb.append("#  CustomRole: StandardRole\n\n");
+        sb.append("# Per-check configuration. Each top-level key matches a check class name.\n");
+        sb.append("#MistaggedArtifactCheck:\n");
+        sb.append("#  pattern-name: 'regex'\n\n");
 
-        sb.append("#artifact-patterns:\n");
-        sb.append("#  pattern-name: 'regex'\n");
+        sb.append("#ReplaceRoleMapCheck:\n");
+        sb.append("#  CustomRole: StandardRole\n");
 
         Files.writeString(sidecarPath, sb.toString());
         return sidecarPath;
@@ -127,19 +138,11 @@ public final class SidecarConfig {
     }
 
     /**
-     * Returns the role-map mappings if specified in the sidecar config. An empty map means "clear
-     * the role map"; a non-empty map means "replace with these mappings".
+     * Per-check configuration mappings, keyed by check class name. Values are flat maps of
+     * configuration key/value strings. Empty when no configuration was provided.
      */
-    public Optional<Map<String, String>> roleMap() {
-        return roleMap;
-    }
-
-    /**
-     * Returns artifact text patterns if specified in the sidecar config. A map of pattern name to
-     * regex. When present, these replace the built-in default patterns.
-     */
-    public Optional<Map<String, String>> artifactPatterns() {
-        return artifactPatterns;
+    public Map<String, Map<String, String>> checkConfigs() {
+        return checkConfigs;
     }
 
     // == Builder ==========================================================
@@ -147,21 +150,15 @@ public final class SidecarConfig {
     private static class Builder {
         boolean present;
         Optional<List<String>> checks = Optional.empty();
-        Optional<Map<String, String>> roleMap = Optional.empty();
-        Optional<Map<String, String>> artifactPatterns = Optional.empty();
+        Map<String, Map<String, String>> checkConfigs = Map.of();
 
         Builder checks(Optional<List<String>> checks) {
             this.checks = checks;
             return this;
         }
 
-        Builder roleMap(Optional<Map<String, String>> roleMap) {
-            this.roleMap = roleMap;
-            return this;
-        }
-
-        Builder artifactPatterns(Optional<Map<String, String>> artifactPatterns) {
-            this.artifactPatterns = artifactPatterns;
+        Builder checkConfigs(Map<String, Map<String, String>> checkConfigs) {
+            this.checkConfigs = checkConfigs;
             return this;
         }
 
@@ -186,23 +183,37 @@ public final class SidecarConfig {
             Builder b = new Builder();
             b.present = true;
             if (data != null) {
-                warnOnLegacyKeys(path, data);
+                Set<String> knownCheckNames = collectKnownCheckNames();
+                warnOnUnknownKeys(path, data, knownCheckNames);
                 b.checks(extractChecks(data))
-                        .roleMap(extractRoleMap(data))
-                        .artifactPatterns(extractStringMap(data, "artifact-patterns"));
+                        .checkConfigs(extractCheckConfigs(data, knownCheckNames));
             }
             return b.build();
         }
     }
 
-    private static void warnOnLegacyKeys(Path path, Map<String, Object> data) {
-        for (String key : LEGACY_CHECK_KEYS) {
-            if (data.containsKey(key)) {
+    private static Set<String> collectKnownCheckNames() {
+        Set<String> names = new HashSet<>();
+        for (Supplier<Check> supplier : ProcessingDefaults.allChecks()) {
+            names.add(supplier.get().getClass().getSimpleName());
+        }
+        return names;
+    }
+
+    private static void warnOnUnknownKeys(
+            Path path, Map<String, Object> data, Set<String> knownCheckNames) {
+        for (String key : data.keySet()) {
+            if (CHECKS_KEY.equals(key) || knownCheckNames.contains(key)) {
+                continue;
+            }
+            if (LEGACY_KEYS.contains(key)) {
                 logger.warn(
                         "Sidecar config {} uses legacy '{}' key, which is no longer supported."
-                                + " Replace with a single ordered 'checks:' list.",
+                                + " See docs/sidecar.md for the current schema.",
                         path,
                         key);
+            } else {
+                logger.warn("Sidecar config {} has unrecognized key '{}'", path, key);
             }
         }
     }
@@ -210,10 +221,10 @@ public final class SidecarConfig {
     // == Extraction helpers ===============================================
 
     private static Optional<List<String>> extractChecks(Map<String, Object> data) {
-        if (!data.containsKey("checks")) {
+        if (!data.containsKey(CHECKS_KEY)) {
             return Optional.empty();
         }
-        Object value = data.get("checks");
+        Object value = data.get(CHECKS_KEY);
         if (value == null) {
             return Optional.of(List.of());
         }
@@ -232,54 +243,39 @@ public final class SidecarConfig {
         return Optional.of(List.copyOf(result));
     }
 
-    /** Extracts an optional String-to-String map from a YAML key. */
-    private static Optional<Map<String, String>> extractStringMap(
-            Map<String, Object> data, String key) {
-        if (!data.containsKey(key)) {
-            return Optional.empty();
-        }
-        Object value = data.get(key);
-        if (value == null) {
-            return Optional.of(Map.of());
-        }
-        if (!(value instanceof Map<?, ?> rawMap)) {
-            throw new IllegalArgumentException(key + " must be a mapping of names to values");
-        }
-        Map<String, String> result = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
-            if (!(entry.getKey() instanceof String k)) {
-                throw new IllegalArgumentException(key + " keys must be strings");
+    /**
+     * Extracts every top-level key whose name matches a known check, returning {@code checkName ->
+     * {configKey -> configValue}}.
+     */
+    private static Map<String, Map<String, String>> extractCheckConfigs(
+            Map<String, Object> data, Set<String> knownCheckNames) {
+        Map<String, Map<String, String>> result = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            String key = entry.getKey();
+            if (!knownCheckNames.contains(key)) {
+                continue;
             }
-            if (!(entry.getValue() instanceof String v)) {
-                throw new IllegalArgumentException(key + " values must be strings");
+            Object value = entry.getValue();
+            if (value == null) {
+                result.put(key, Map.of());
+                continue;
             }
-            result.put(k.trim(), v.trim());
-        }
-        return Optional.of(Map.copyOf(result));
-    }
-
-    private static Optional<Map<String, String>> extractRoleMap(Map<String, Object> data) {
-        Object value = data.get("role-map");
-        if (value == null) {
-            return Optional.empty();
-        }
-        if ("clear".equals(value)) {
-            return Optional.of(Map.of());
-        }
-        if (!(value instanceof Map<?, ?> rawMap)) {
-            throw new IllegalArgumentException(
-                    "role-map must be a mapping of custom role names to standard tags, or 'clear'");
-        }
-        Map<String, String> mappings = new LinkedHashMap<>();
-        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
-            if (!(entry.getKey() instanceof String key)) {
-                throw new IllegalArgumentException("role-map keys must be strings");
+            if (!(value instanceof Map<?, ?> rawMap)) {
+                throw new IllegalArgumentException(
+                        key + " must be a mapping of names to values, or null");
             }
-            if (!(entry.getValue() instanceof String val)) {
-                throw new IllegalArgumentException("role-map values must be strings");
+            Map<String, String> config = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> e : rawMap.entrySet()) {
+                if (!(e.getKey() instanceof String k)) {
+                    throw new IllegalArgumentException(key + " keys must be strings");
+                }
+                if (!(e.getValue() instanceof String v)) {
+                    throw new IllegalArgumentException(key + " values must be strings");
+                }
+                config.put(k.trim(), v.trim());
             }
-            mappings.put(key.trim(), val.trim());
+            result.put(key, Map.copyOf(config));
         }
-        return Optional.of(Map.copyOf(mappings));
+        return Map.copyOf(result);
     }
 }

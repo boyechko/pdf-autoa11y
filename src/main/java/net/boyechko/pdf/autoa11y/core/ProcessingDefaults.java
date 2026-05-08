@@ -19,6 +19,7 @@ package net.boyechko.pdf.autoa11y.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import net.boyechko.pdf.autoa11y.checks.*;
 import net.boyechko.pdf.autoa11y.validation.Check;
@@ -64,6 +65,7 @@ public final class ProcessingDefaults {
     public static List<Supplier<Check>> optionalChecks() {
         return List.of(
                 ClearRoleMapCheck::new,
+                () -> new ReplaceRoleMapCheck(Map.of()),
                 InlineDestinationsCheck::new,
                 MisartifactedTextCheck::new,
                 WrapWebCapturesCheck::new);

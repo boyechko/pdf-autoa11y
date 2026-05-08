@@ -24,9 +24,10 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import net.boyechko.pdf.autoa11y.checks.ClearRoleMapCheck;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
@@ -41,6 +42,7 @@ import net.boyechko.pdf.autoa11y.ui.SidecarConfig;
 import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
 import net.boyechko.pdf.autoa11y.ui.TreeDiagram;
 import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,22 +165,7 @@ public class PdfAutoA11yCLI {
                         .onlyChecks(config.onlyChecks())
                         .includeChecks(config.includeChecks());
             }
-            sidecar.roleMap()
-                    .ifPresent(
-                            mappings -> {
-                                if (mappings.isEmpty()) {
-                                    serviceBuilder.injectCheck(ClearRoleMapCheck::new);
-                                } else {
-                                    serviceBuilder.injectCheck(
-                                            () -> new ReplaceRoleMapCheck(mappings));
-                                }
-                            });
-            sidecar.artifactPatterns()
-                    .ifPresent(
-                            patterns ->
-                                    serviceBuilder.replaceCheck(
-                                            "MistaggedArtifactCheck",
-                                            () -> new MistaggedArtifactCheck(patterns)));
+            applyCheckConfigs(sidecar.checkConfigs(), serviceBuilder, listener);
             if (config.printStructureTree()) {
                 serviceBuilder.injectCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));
@@ -196,6 +183,42 @@ public class PdfAutoA11yCLI {
             System.err.println();
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Translates each sidecar check-config entry into a {@code replaceCheck()} call so the
+     * configured check supplier is used in place of the default no-arg one.
+     */
+    private static void applyCheckConfigs(
+            Map<String, Map<String, String>> checkConfigs,
+            ProcessingService.ProcessingServiceBuilder serviceBuilder,
+            ProcessingListener listener) {
+        for (Map.Entry<String, Map<String, String>> entry : checkConfigs.entrySet()) {
+            String checkName = entry.getKey();
+            Map<String, String> config = entry.getValue();
+            Supplier<Check> configured = configuredSupplier(checkName, config);
+            if (configured == null) {
+                listener.onInfo(
+                        "Sidecar check '"
+                                + checkName
+                                + "' does not accept configuration; ignoring side-key");
+                continue;
+            }
+            serviceBuilder.replaceCheck(checkName, configured);
+        }
+    }
+
+    /**
+     * Returns a configured supplier for the named check, or {@code null} if the check does not
+     * accept configuration.
+     */
+    private static Supplier<Check> configuredSupplier(
+            String checkName, Map<String, String> config) {
+        return switch (checkName) {
+            case "MistaggedArtifactCheck" -> () -> new MistaggedArtifactCheck(config);
+            case "ReplaceRoleMapCheck" -> () -> new ReplaceRoleMapCheck(config);
+            default -> null;
+        };
     }
 
     private static void saveRemediationResult(

@@ -4,9 +4,9 @@ PDF-Auto-A11y reads a per-PDF sidecar config file automatically when
 it exists alongside the input. For `document.pdf`, the tool looks for
 `document.autoa11y.yaml` in the same directory.
 
-The sidecar lets you persist per-file settings — which checks to run,
-custom role mappings, or custom artifact patterns — without repeating
-CLI flags on every run.
+The sidecar lets you persist per-file settings — which checks to run
+and how individual checks are configured — without repeating CLI flags
+on every run.
 
 ## File Discovery
 
@@ -33,7 +33,10 @@ This overrides auto-discovery entirely.
 The generated file is fully commented-out. Uncomment and fill in the
 keys you need.
 
-## Keys
+## Schema
+
+The sidecar has one structural key, `checks:`, plus optional per-check
+configuration keys whose names match check class names.
 
 ### checks
 
@@ -44,51 +47,44 @@ pipeline runs (modified by any CLI flags).
 ```yaml
 checks:
   - StructureTreeExistsCheck
-  - NeedlessNestingCheck
+  - MistaggedArtifactCheck
+  - ReplaceRoleMapCheck
   - SchemaValidationCheck
 ```
 
 An explicit empty list (`checks: []`) means "run no checks". Unknown
 check names cause the run to fail with an error naming the offender.
 
-### role-map
+### Per-check configuration
 
-Manage the PDF's `/RoleMap` entry in the structure tree root. Two
-forms are supported:
-
-**Clear**: remove the `/RoleMap` entirely.
-
-```yaml
-role-map: clear
-```
-
-**Replace**: replace the `/RoleMap` with the specified mappings.
-Custom role names map to standard PDF/UA-1 tag names.
+To configure a check that accepts parameters, add a top-level key
+named after the check's class. The value is a flat string-to-string
+mapping passed to the check at construction time.
 
 ```yaml
-role-map:
+MistaggedArtifactCheck:
+  page-number: '^\s*Page\s+\d+\s*(of\s+\d+)?\s*$'
+  footer-url: 'https?://.*\[\d{1,2}/\d{1,2}/\d{4}.*\]'
+
+ReplaceRoleMapCheck:
   CustomHeading: H1
   CustomFigure: Figure
 ```
 
-The `role-map` directive is honored regardless of whether `checks:`
-is set, so it always takes effect when present.
+The check still has to appear in `checks:` (or in the default pipeline
+when `checks:` is absent) for the configuration to take effect. A
+side-key for a check that does not accept configuration is logged and
+ignored.
 
-### artifact-patterns
+#### Configurable checks
 
-Override the built-in text artifact detection patterns. Each entry is
-a name and a Java regex. When this key is present, the supplied
-patterns **replace** the built-in defaults entirely; they are not
-merged.
+| Check | Config shape | Effect |
+|---|---|---|
+| `MistaggedArtifactCheck` | `name: regex` map | Replaces built-in artifact patterns |
+| `ReplaceRoleMapCheck` | `customRole: standardRole` map | Replaces the PDF's `/RoleMap` |
 
-```yaml
-artifact-patterns:
-  page-number: '^\s*Page\s+\d+\s*(of\s+\d+)?\s*$'
-  footer-url: 'https?://.*\[\d{1,2}/\d{1,2}/\d{4}.*\]'
-```
-
-Patterns are matched against the full text content of each structure
-element.
+To clear the role map without specifying replacements, list
+`ClearRoleMapCheck` in `checks:` (it accepts no configuration).
 
 ## CLI Override Behavior
 
@@ -100,5 +96,4 @@ remove or comment out the `checks:` key in the sidecar.
 | Sidecar key | CLI flag | Behavior when both present |
 |---|---|---|
 | `checks` | `--skip-checks` / `--only-checks` / `--include-checks` | Sidecar wins |
-| `role-map` | _(none)_ | Sidecar only |
-| `artifact-patterns` | _(none)_ | Sidecar only |
+| Per-check side-keys | _(none)_ | Sidecar only |
