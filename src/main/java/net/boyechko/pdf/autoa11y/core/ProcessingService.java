@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +64,7 @@ public class ProcessingService {
         private final Set<String> skipChecks = new HashSet<>();
         private final Set<String> onlyChecks = new HashSet<>();
         private final Set<String> includeChecks = new HashSet<>();
+        private List<String> orderedCheckNames;
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
         private final Map<String, Supplier<Check>> replacedChecks = new HashMap<>();
 
@@ -88,6 +90,15 @@ public class ProcessingService {
 
         public ProcessingServiceBuilder includeChecks(Set<String> checkClassNames) {
             includeChecks.addAll(checkClassNames);
+            return this;
+        }
+
+        /**
+         * Runs exactly the named checks in the given order, bypassing skip/only/include filtering.
+         * Used by the sidecar's ordered {@code checks:} list.
+         */
+        public ProcessingServiceBuilder withChecks(List<String> orderedCheckClassNames) {
+            this.orderedCheckNames = List.copyOf(orderedCheckClassNames);
             return this;
         }
 
@@ -120,14 +131,23 @@ public class ProcessingService {
         this.listener = builder.listener;
         this.schema = TagSchema.loadDefault();
 
-        List<Supplier<Check>> filtered =
-                selectChecks(
-                        ProcessingDefaults.allChecks(),
-                        ProcessingDefaults.defaultChecks(),
-                        builder.skipChecks,
-                        builder.onlyChecks,
-                        builder.includeChecks,
-                        builder.replacedChecks);
+        List<Supplier<Check>> filtered;
+        if (builder.orderedCheckNames != null) {
+            filtered =
+                    resolveOrdered(
+                            ProcessingDefaults.allChecks(),
+                            builder.orderedCheckNames,
+                            builder.replacedChecks);
+        } else {
+            filtered =
+                    selectChecks(
+                            ProcessingDefaults.allChecks(),
+                            ProcessingDefaults.defaultChecks(),
+                            builder.skipChecks,
+                            builder.onlyChecks,
+                            builder.includeChecks,
+                            builder.replacedChecks);
+        }
         filtered.addAll(builder.injectedChecks);
         validateCheckPrereqs(filtered);
         this.checks = List.copyOf(filtered);
@@ -163,6 +183,30 @@ public class ProcessingService {
                                     && !skip.contains(name);
         }
         return filterByName(allChecks, predicate, replaceChecks);
+    }
+
+    /**
+     * Resolves an explicitly ordered list of check class names against the known pool, applying any
+     * replacements. Throws {@link IllegalArgumentException} if a name is unknown.
+     */
+    private static ArrayList<Supplier<Check>> resolveOrdered(
+            List<Supplier<Check>> allChecks,
+            List<String> orderedNames,
+            Map<String, Supplier<Check>> replaceChecks) {
+        Map<String, Supplier<Check>> byName = new LinkedHashMap<>();
+        for (Supplier<Check> supplier : allChecks) {
+            byName.put(supplier.get().getClass().getSimpleName(), supplier);
+        }
+        ArrayList<Supplier<Check>> result = new ArrayList<>();
+        for (String name : orderedNames) {
+            Supplier<Check> supplier = byName.get(name);
+            if (supplier == null) {
+                throw new IllegalArgumentException("Unknown check: " + name);
+            }
+            Supplier<Check> replacement = replaceChecks.get(name);
+            result.add(replacement != null ? replacement : supplier);
+        }
+        return result;
     }
 
     private static ArrayList<Supplier<Check>> filterByName(
