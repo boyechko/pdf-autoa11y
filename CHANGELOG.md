@@ -8,6 +8,15 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added optional `ReorderWebCapturesCheck` (and corresponding
+  `ReorderWebCapturesFix`) that reorders the document's pages to match a
+  configured URL order from the sidecar's `ReorderWebCapturesCheck:` key
+  (a YAML map whose values are URLs in desired order). For each configured
+  URL, the check looks up its `/O` page list in `/Catalog /Names /URLS` and
+  moves those pages to the next available position via
+  `pdfDoc.movePage()`. Designed to run *before* `WrapWebCapturesCheck` while
+  the structure is still flat, so iText's `movePage` doesn't split
+  multi-page Articles.
 - Added optional `WrapWebCapturesCheck` (and corresponding
   `WrapWebCapturesFix`) that wraps each Adobe Web Capture URL's pages in an
   `<Art>` (Article) structure element, giving assistive-technology users

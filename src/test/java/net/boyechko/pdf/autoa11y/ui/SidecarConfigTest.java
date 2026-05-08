@@ -149,6 +149,34 @@ class SidecarConfigTest {
     }
 
     @Test
+    void loadsCheckConfigInListForm() throws IOException {
+        Path pdf = tempDir.resolve("listcfg.pdf");
+        Files.createFile(pdf);
+        Path config = tempDir.resolve("listcfg.autoa11y.yaml");
+        Files.writeString(
+                config,
+                """
+                ReorderWebCapturesCheck:
+                  - www.uwb.edu/catalog
+                  - www.uwb.edu/catalog/degree-programs
+                  - www.washington.edu/students/crscatb
+                """);
+
+        SidecarConfig sidecar = SidecarConfig.forPdf(pdf);
+
+        // List entries become entries keyed by "0", "1", "2", ... in YAML order.
+        Map<String, String> cfg = sidecar.checkConfigs().get("ReorderWebCapturesCheck");
+        assertNotNull(cfg);
+        assertEquals(3, cfg.size());
+        assertEquals(
+                List.of(
+                        "www.uwb.edu/catalog",
+                        "www.uwb.edu/catalog/degree-programs",
+                        "www.washington.edu/students/crscatb"),
+                List.copyOf(cfg.values()));
+    }
+
+    @Test
     void emptyCheckConfigYieldsEmptyMap() throws IOException {
         Path pdf = tempDir.resolve("emptycfg.pdf");
         Files.createFile(pdf);

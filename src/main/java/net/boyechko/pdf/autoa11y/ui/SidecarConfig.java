@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,7 +63,7 @@ public final class SidecarConfig {
     private SidecarConfig(Builder builder) {
         this.present = builder.present;
         this.checks = builder.checks;
-        this.checkConfigs = Map.copyOf(builder.checkConfigs);
+        this.checkConfigs = Collections.unmodifiableMap(new LinkedHashMap<>(builder.checkConfigs));
     }
 
     private static SidecarConfig empty() {
@@ -260,22 +261,35 @@ public final class SidecarConfig {
                 result.put(key, Map.of());
                 continue;
             }
-            if (!(value instanceof Map<?, ?> rawMap)) {
-                throw new IllegalArgumentException(
-                        key + " must be a mapping of names to values, or null");
-            }
             Map<String, String> config = new LinkedHashMap<>();
-            for (Map.Entry<?, ?> e : rawMap.entrySet()) {
-                if (!(e.getKey() instanceof String k)) {
-                    throw new IllegalArgumentException(key + " keys must be strings");
+            if (value instanceof List<?> rawList) {
+                // List form: synthesize numeric keys ("0", "1", ...) so the value list
+                // stays accessible via the same Map<String, String> shape used elsewhere.
+                int i = 0;
+                for (Object item : rawList) {
+                    if (!(item instanceof String s)) {
+                        throw new IllegalArgumentException(key + " list items must be strings");
+                    }
+                    config.put(String.valueOf(i++), s.trim());
                 }
-                if (!(e.getValue() instanceof String v)) {
-                    throw new IllegalArgumentException(key + " values must be strings");
+            } else if (value instanceof Map<?, ?> rawMap) {
+                for (Map.Entry<?, ?> e : rawMap.entrySet()) {
+                    if (!(e.getKey() instanceof String k)) {
+                        throw new IllegalArgumentException(key + " keys must be strings");
+                    }
+                    if (!(e.getValue() instanceof String v)) {
+                        throw new IllegalArgumentException(key + " values must be strings");
+                    }
+                    config.put(k.trim(), v.trim());
                 }
-                config.put(k.trim(), v.trim());
+            } else {
+                throw new IllegalArgumentException(
+                        key + " must be a list, a mapping of names to values, or null");
             }
-            result.put(key, Map.copyOf(config));
+            // Wrap in unmodifiableMap (not Map.copyOf) so the LinkedHashMap's insertion order is
+            // preserved — list-form configs like ReorderWebCapturesCheck depend on YAML order.
+            result.put(key, Collections.unmodifiableMap(config));
         }
-        return Map.copyOf(result);
+        return Collections.unmodifiableMap(result);
     }
 }
