@@ -118,7 +118,7 @@ public class PdfAutoA11yCLI {
             return;
         }
         if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
-            dumpTree(config);
+            printTreeDiagram(config);
             return;
         }
         if (config.listDestinations()) {
@@ -277,7 +277,7 @@ public class PdfAutoA11yCLI {
         }
     }
 
-    /** Applies /T scribbles from an annotated dump-tree text file to the input PDF. */
+    /** Applies /T scribbles from an annotated tree diagram file to the input PDF. */
     private static void annotateTree(CLIConfig config) {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
@@ -301,8 +301,8 @@ public class PdfAutoA11yCLI {
         }
     }
 
-    /** Prints the structure tree to the console based on the CLI config. */
-    private static void dumpTree(CLIConfig config) {
+    /** Prints the structure tree diagram to the console based on the CLI config. */
+    private static void printTreeDiagram(CLIConfig config) {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             try (PdfDocument pdfDoc = custodian.openForReading()) {
@@ -560,8 +560,8 @@ public class PdfAutoA11yCLI {
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
-                + "  --annotate-tree <file>  Read scribbles from an edited --dump-tree output\n"
-                + "                          file and write them to matching elements' /T keys\n"
+                + "  --annotate-tree <file>  Read scribbles from an annotated tree diagram\n"
+                + "                          and write them to matching elements' /T keys\n"
                 + "                          in the output PDF (no checks or fixes run)\n"
                 + "  --create-sidecar  Create a template sidecar config file and exit\n"
                 + "  --sidecar <file>  Use this sidecar config instead of <basename>.autoa11y.yaml\n"
