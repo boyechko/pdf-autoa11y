@@ -121,7 +121,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                                         contentKinds.put(
                                                 new Content.PageMcid(pageNum, mcid), kinds));
             }
-            return TreeDiagram.toDetailedTreeString(docElem, contentKinds).strip();
+            return TreeDiagram.toDetailedTreeString(docElem, contentKinds, Map.of()).strip();
         }
     }
 

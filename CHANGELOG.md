@@ -28,6 +28,7 @@ Versioning](https://semver.org/).
 - Added `--list-destinations` CLI option that prints the PDF's named
   destinations (`/Catalog /Names /Dests` tree), one row per destination,
   sorted by target page.
+- `--dump-tree` also appends text MCR content inside Link and H1-H6 elements.
 - `--dump-tree` now appends Link annotation destinations after each `<link #N>`
   OBJR label: `/URI (https://...)` for URI actions, `/GoTo pN` for explicit
   page-reference destinations resolved to a page number, and `/GoTo Name` for

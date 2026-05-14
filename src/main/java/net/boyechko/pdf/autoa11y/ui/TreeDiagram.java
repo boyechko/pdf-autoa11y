@@ -22,14 +22,9 @@ import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,19 +59,65 @@ public final class TreeDiagram {
         PdfStructElem docElem = StructTree.findDocument(root);
         IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
-            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds = new HashMap<>();
-            for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
-                PdfPage page = pdfDoc.getPage(i);
-                int pageNum = i;
-                Content.extractContentKindsForPage(page)
-                        .forEach(
-                                (mcid, kinds) ->
-                                        contentKinds.put(
-                                                new Content.PageMcid(pageNum, mcid), kinds));
-            }
-            return toDetailedTreeString(start, contentKinds);
+            Map<Content.PageMcid, Set<Content.ContentKind>> mcidContentKinds =
+                    gatherMcidContent(pdfDoc);
+            Map<Content.PageMcid, String> mcidText = gatherMcidText(pdfDoc);
+            return toDetailedTreeString(start, mcidContentKinds, mcidText);
         }
         return toIndentedTreeString(start);
+    }
+
+    /**
+     * Gathers content kinds for each marked content ID (MCID) on every page of a given PDF
+     * document.
+     *
+     * @return A map where keys are {@link Content.PageMcid} objects representing a combination of
+     *     the page number and MCID, and values are sets of {@link Content.ContentKind} indicating
+     *     the types of content associated with those MCIDs.
+     */
+    private static Map<Content.PageMcid, Set<Content.ContentKind>> gatherMcidContent(
+            PdfDocument pdfDoc) {
+        Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+            int pageNum = i;
+            Content.extractContentKindsForPage(pdfDoc.getPage(i))
+                    .forEach(
+                            (mcid, kinds) ->
+                                    contentKinds.put(new Content.PageMcid(pageNum, mcid), kinds));
+        }
+        return contentKinds;
+    }
+
+    /**
+     * Gathers text content for each marked content ID (MCID) on every page of a given PDF document.
+     *
+     * @return A map where keys are {@link Content.PageMcid} objects representing a combination of
+     *     the page number and MCID, and values are strings of Unicode text.
+     */
+    private static Map<Content.PageMcid, String> gatherMcidText(PdfDocument pdfDoc) {
+        Map<Content.PageMcid, String> mcidText = new HashMap<>();
+        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+            int pageNum = i;
+            Content.extractTextForPage(pdfDoc.getPage(i))
+                    .forEach(
+                            (mcid, text) ->
+                                    mcidText.put(new Content.PageMcid(pageNum, mcid), text));
+        }
+        return mcidText;
+    }
+
+    /** Gathers text content for all text MCRs in the given {@link PdfStructElem} elemenent. */
+    private static String gatherElemText(
+            PdfStructElem elem, Map<Content.PageMcid, String> mcidText) {
+        StringBuilder sb = new StringBuilder();
+        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
+            String text = mcidText.get(new Content.PageMcid(pageOf(mcr), mcr.getMcid()));
+            if (text != null && !text.isBlank()) {
+                if (!sb.isEmpty()) sb.append(' ');
+                sb.append(text);
+            }
+        }
+        return sb.toString();
     }
 
     // === Indented tree diagram =============================================
@@ -101,7 +142,7 @@ public final class TreeDiagram {
     }
 
     private static void appendIndentedTree(StringBuilder sb, PdfStructElem elem, int depth) {
-        sb.append("  ".repeat(depth));
+        sb.repeat("  ", depth);
         sb.append(elem.getRole().getValue());
         sb.append('\n');
         for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
@@ -114,7 +155,7 @@ public final class TreeDiagram {
      * (OBJRs) as leaf annotations on each element.
      */
     public static String toDetailedTreeString(IStructureNode node) {
-        return toDetailedTreeString(node, Map.of());
+        return toDetailedTreeString(node, Map.of(), Map.of());
     }
 
     /**
@@ -122,26 +163,46 @@ public final class TreeDiagram {
      * (text/image) using the provided map keyed by (page, MCID).
      */
     public static String toDetailedTreeString(
-            IStructureNode node, Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds) {
+            IStructureNode node,
+            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds,
+            Map<Content.PageMcid, String> mcidText) {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
         if (node instanceof PdfStructElem elem) {
-            appendDetailedTree(sb, elem, 0, contentKinds, currentPage);
+            appendDetailedTree(sb, elem, 0, contentKinds, mcidText, currentPage);
         } else {
             for (IStructureNode kid : node.getKids()) {
                 if (kid instanceof PdfStructElem childElem) {
-                    appendDetailedTree(sb, childElem, 0, contentKinds, currentPage);
+                    appendDetailedTree(sb, childElem, 0, contentKinds, mcidText, currentPage);
                 }
             }
         }
         return sb.toString();
     }
 
+    /**
+     * Appends a detailed representation of the structure tree starting from the specified {@link
+     * PdfStructElem} to a {@link StringBuilder}.
+     *
+     * @param sb The {@link StringBuilder} to which the detailed structure tree representation will
+     *     be appended.
+     * @param elem The {@link PdfStructElem} serving as the root of the subtree being processed.
+     * @param depth The current depth of the element in the structure tree, used for determining
+     *     indentation.
+     * @param contentKinds A map associating {@link Content.PageMcid} instances with a set of
+     *     content kinds ({@link Content.ContentKind}), used to label MCRs with their respective
+     *     content kinds.
+     * @param mcidText A map associating {@link Content.PageMcid} instances with the MCR text
+     *     content.
+     * @param currentPage An array representing the current page number during traversal. This is
+     *     updated as elements are processed to handle page breaks appropriately.
+     */
     private static void appendDetailedTree(
             StringBuilder sb,
             PdfStructElem elem,
             int depth,
             Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds,
+            Map<Content.PageMcid, String> mcidText,
             int[] currentPage) {
         // Emit page break before the element if its first leaf is on a new page
         emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
@@ -158,12 +219,13 @@ public final class TreeDiagram {
         for (IStructureNode kid : kids) {
             switch (kid) {
                 case PdfStructElem childElem -> {
-                    appendDetailedTree(sb, childElem, depth + 1, contentKinds, currentPage);
+                    appendDetailedTree(
+                            sb, childElem, depth + 1, contentKinds, mcidText, currentPage);
                 }
                 case PdfObjRef objRef -> {
                     emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
                     sb.append(childIndent);
-                    sb.append("<" + objrLabel(objRef) + ">");
+                    sb.append("<").append(objrLabel(objRef)).append(">");
                     DocValue.Destination dest = DocValue.destinationOf(objRef);
                     sb.append(' ').append(dest);
                     DocValue.Destination originalUri = DocValue.originalUriOf(objRef);
@@ -178,7 +240,19 @@ public final class TreeDiagram {
                             new DocValue.Mcr(pageMcid.mcid(), contentKinds.get(pageMcid));
                     emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
                     sb.append(childIndent);
-                    sb.append("[" + mcrLabel + "]");
+                    sb.append("[").append(mcrLabel).append("]");
+                    if (elem.getRole().equals(PdfName.Link)
+                            || Set.of(
+                                            PdfName.H1,
+                                            PdfName.H2,
+                                            PdfName.H3,
+                                            PdfName.H4,
+                                            PdfName.H5,
+                                            PdfName.H6)
+                                    .contains(elem.getRole())) {
+                        String text = gatherElemText(elem, mcidText);
+                        if (!text.isBlank()) sb.append(" `").append(text).append("'");
+                    }
                     sb.append('\n');
                 }
                 default -> throw new IllegalArgumentException("Unexpected value: " + kid);
