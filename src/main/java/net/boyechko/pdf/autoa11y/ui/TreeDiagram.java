@@ -285,20 +285,20 @@ public final class TreeDiagram {
         return annot.toString();
     }
 
-    // === Annotate tree from edited dump file =================================
+    // === Annotate tree from tree diagram file =================================
 
-    /** Result of applying annotations from a dump-tree file. */
+    /** Result of applying scribbles from an annotated tree diagram. */
     public record AnnotateResult(
             int updated, int cleared, int unchanged, int unmatchedLines, int unmatchedElements) {}
 
     /**
-     * Parses an edited {@code --dump-tree} output and writes quoted scribbles back to the matching
-     * elements' {@code /T} keys. Lines without a quoted scribble clear {@code /T} on the matched
-     * element. Role mismatches and unknown object numbers are reported via {@code warn}.
+     * Parses an annotated tree diagram and writes quoted scribbles back to the matching elements'
+     * {@code /T} keys. Lines without a quoted scribble clear {@code /T} on the matched element.
+     * Role mismatches and unknown object numbers are reported via {@code warn}.
      */
     public static AnnotateResult annotateFromString(
-            PdfDocument doc, String annotatedDump, Consumer<String> warn) {
-        Map<ElemKey, Optional<String>> desired = parseDump(annotatedDump, warn);
+            PdfDocument doc, String annotatedDiagram, Consumer<String> warn) {
+        Map<ElemKey, Optional<String>> desired = parseDiagram(annotatedDiagram, warn);
 
         Map<Integer, PdfStructElem> byObj = new HashMap<>();
         PdfStructTreeRoot root = doc.getStructTreeRoot();
@@ -354,7 +354,23 @@ public final class TreeDiagram {
         return new AnnotateResult(updated, cleared, unchanged, unmatchedLines, unmatchedElements);
     }
 
-    private static Map<ElemKey, Optional<String>> parseDump(String content, Consumer<String> warn) {
+    /**
+     * Parses an annotated tree diagram into a map of element keys to desired scribble values.
+     *
+     * <p>Each non-blank line is matched against {@link #ANNOTATED_LINE}. Lines that match but carry
+     * no quoted scribble produce {@code Optional.empty()}, signalling that {@code /T} should be
+     * cleared on the matched element. Lines that do not match the pattern are silently skipped.
+     * Duplicate keys with conflicting scribble values are reported via {@code warn}.
+     *
+     * @param content text of an annotated tree diagram, possibly with added quoted scribbles
+     * @param warn callback invoked with a human-readable message when the same element key appears
+     *     more than once with differing scribble values
+     * @return map from each parsed {@link ElemKey} to its desired scribble ({@code
+     *     Optional.empty()} means clear {@code /T}); elements not mentioned in the diagram are
+     *     absent from the map
+     */
+    private static Map<ElemKey, Optional<String>> parseDiagram(
+            String content, Consumer<String> warn) {
         Map<ElemKey, Optional<String>> out = new HashMap<>();
         List<String> lines = content.lines().toList();
         for (int i = 0; i < lines.size(); i++) {
@@ -379,6 +395,9 @@ public final class TreeDiagram {
         return out;
     }
 
+    /**
+     * Recursively indexes all {@link PdfStructElem} nodes in a subtree by indirect object number.
+     */
     private static void indexByObjNum(IStructureNode node, Map<Integer, PdfStructElem> out) {
         if (node instanceof PdfStructElem elem) {
             int objNum = StructTree.objNum(elem);
@@ -392,5 +411,6 @@ public final class TreeDiagram {
         }
     }
 
+    /** Structural element key consisting of its role and indirect reference object number. */
     private record ElemKey(String role, int objNum) {}
 }
