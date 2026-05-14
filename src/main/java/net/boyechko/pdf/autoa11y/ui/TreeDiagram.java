@@ -39,9 +39,19 @@ import org.slf4j.LoggerFactory;
 public final class TreeDiagram {
     private static final Logger logger = LoggerFactory.getLogger(TreeDiagram.class);
 
-    /** Matches "Role #objNum" with an optional trailing quoted scribble. */
+    /**
+     * Matches a struct-element line in a tree diagram: optional box-drawing/space prefix, then
+     * "Role #objNum" with an optional trailing quoted scribble. The {@code (?<!<)} lookbehind
+     * prevents matching OBJR lines, where the label appears inside {@code <...>}.
+     */
     private static final Pattern ANNOTATED_LINE =
-            Pattern.compile("^\\s*(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
+            Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
+
+    /* Box drawing characters for detailed tree diagram. */
+    public static final String SELF_PREFIX_MIDDLE = "├── ";
+    public static final String SELF_PREFIX_FINAL = "└── ";
+    public static final String LEAF_PREFIX_MIDDLE = "│   ";
+    public static final String LEAF_PREFIX_FINAL = "    ";
 
     private TreeDiagram() {}
 
@@ -136,12 +146,19 @@ public final class TreeDiagram {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
         if (node instanceof PdfStructElem elem) {
-            appendDetailedTree(sb, elem, 0, mcidInfo, currentPage);
+            appendDetailedTree(sb, elem, "", "", mcidInfo, currentPage);
         } else {
-            for (IStructureNode kid : node.getKids()) {
-                if (kid instanceof PdfStructElem childElem) {
-                    appendDetailedTree(sb, childElem, 0, mcidInfo, currentPage);
-                }
+            List<IStructureNode> kids = node.getKids();
+            for (int i = 0; i < kids.size(); i++) {
+                if (!(kids.get(i) instanceof PdfStructElem childElem)) continue;
+                boolean hasMore = hasStructElemAfter(kids, i);
+                appendDetailedTree(
+                        sb,
+                        childElem,
+                        hasMore ? SELF_PREFIX_MIDDLE : SELF_PREFIX_FINAL,
+                        hasMore ? LEAF_PREFIX_MIDDLE : LEAF_PREFIX_FINAL,
+                        mcidInfo,
+                        currentPage);
             }
         }
         return sb.toString();
@@ -150,29 +167,34 @@ public final class TreeDiagram {
     private static void appendDetailedTree(
             StringBuilder sb,
             PdfStructElem elem,
-            int depth,
+            String selfPrefix,
+            String childrenPrefix,
             Map<Content.PageMcid, Content.McidContent> mcidInfo,
             int[] currentPage) {
-        // Emit page break before the element if its first leaf is on a new page
         emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
+        sb.append(selfPrefix).append(structElemLabel(elem)).append('\n');
 
-        sb.append(indentation(depth));
-        sb.append(structElemLabel(elem));
-        sb.append('\n');
-
-        // Output all children in /K array order
         List<IStructureNode> kids = elem.getKids();
         if (kids == null) return;
 
-        String childIndent = indentation(depth + 1);
-        for (IStructureNode kid : kids) {
-            switch (kid) {
+        for (int i = 0; i < kids.size(); i++) {
+            boolean hasMore = hasStructElemAfter(kids, i);
+            String leafPrefix = hasMore ? LEAF_PREFIX_MIDDLE : LEAF_PREFIX_FINAL;
+
+            switch (kids.get(i)) {
                 case PdfStructElem childElem -> {
-                    appendDetailedTree(sb, childElem, depth + 1, mcidInfo, currentPage);
+                    String connector = hasMore ? SELF_PREFIX_MIDDLE : SELF_PREFIX_FINAL;
+                    appendDetailedTree(
+                            sb,
+                            childElem,
+                            childrenPrefix + connector,
+                            childrenPrefix + leafPrefix,
+                            mcidInfo,
+                            currentPage);
                 }
                 case PdfObjRef objRef -> {
                     emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
-                    sb.append(childIndent);
+                    sb.append(childrenPrefix).append(leafPrefix);
                     sb.append("<").append(objrLabel(objRef)).append(">");
                     DocValue.Destination dest = DocValue.destinationOf(objRef);
                     sb.append(' ').append(dest);
@@ -188,7 +210,7 @@ public final class TreeDiagram {
                     DocValue.Mcr mcrLabel =
                             new DocValue.Mcr(pageMcid.mcid(), mc != null ? mc.kinds() : null);
                     emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
-                    sb.append(childIndent);
+                    sb.append(childrenPrefix).append(leafPrefix);
                     sb.append("[").append(mcrLabel).append("]");
                     if (elem.getRole().equals(PdfName.Link)
                             || Set.of(
@@ -204,9 +226,17 @@ public final class TreeDiagram {
                     }
                     sb.append('\n');
                 }
-                default -> throw new IllegalArgumentException("Unexpected value: " + kid);
+                default -> throw new IllegalArgumentException("Unexpected value: " + kids.get(i));
             }
         }
+    }
+
+    /** Returns true if a {@link PdfStructElem} appears after {@code fromIdx} in {@code kids}. */
+    private static boolean hasStructElemAfter(List<IStructureNode> kids, int fromIdx) {
+        for (int j = fromIdx + 1; j < kids.size(); j++) {
+            if (kids.get(j) instanceof PdfStructElem) return true;
+        }
+        return false;
     }
 
     /** Returns the page number of the first MCR or OBJR leaf in a subtree, or 0 if none. */
@@ -253,10 +283,6 @@ public final class TreeDiagram {
             return "unknown";
         }
         return annot.toString();
-    }
-
-    private static String indentation(int depth) {
-        return " ".repeat(2 * depth);
     }
 
     // === Annotate tree from edited dump file =================================
