@@ -61,7 +61,7 @@ public final class Content {
         PATH
     }
 
-    /** MCIDs are only unique on each page. */
+    /** MCID located on the specified page. */
     public record PageMcid(int pageNum, int mcid) {}
 
     /** Font and text for a contiguous run of same-font text within an MCID. */
