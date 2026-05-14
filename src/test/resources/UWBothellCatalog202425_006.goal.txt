@@ -1,82 +1,82 @@
-Document
-  Part
-    Link
---- Page 1 ---
-      <link #89>
-      <link #88>
-      <link #87>
-      P
-        Link
-          <link #85>
-          [text &2]
+------------------------- Page 1 ---
+Document #22
+  Part #44
+    Link #33
+      <link #89> null [/URI (https://www.uwb.edu/)]
+      <link #88> null [/URI (https://www.uwb.edu/)]
+      <link #87> null [/URI (https://www.uwb.edu/)]
+      P #79
+        Link #34
+          <link #85> null [/URI (https://www.uwb.edu/)]
+          [text &2] `Bothell'
         [image+path &3]
-        Link
-          <link #83>
-          [text &4]
-    P
+        Link #35
+          <link #83> null [/URI (https://www.uwb.edu/catalog)]
+          [text &4] `General Catalog'
+    P #45
       [text &6]
-    P
-      ParagraphSpan
-        Link
-          <link #71>
-          [text &7]
-      ParagraphSpan
+    P #42
+      Span #40
+        Link #38
+          <link #71> null [/URI (https://www.uwb.edu/catalog)]
+          [text &7] `Home'
+      Span #69
         [text &8]
-    H1
-      [text &9]
-    P
+    H1 #46
+      [text &9] `Degree programs'
+    P #47
       [text &10]
-      Link
-        <link #105>
-        [text &11]
+      Link #25
+        <link #105> null [/URI (https://www.washington.edu/students/crscatb/)]
+        [text &11] `click here'
       [text &12]
-    L
-      LI
-        LBody
-          P
-            Link
-              <link #103>
-              [text &13]
-      LI
-        LBody
-          P
-            Link
-              <link #101>
-              [text &14]
-      LI
-        LBody
-          P
-            Link
-              <link #99>
-              [text &15]
-      LI
-        LBody
-          P
-            Link
-              <link #97>
-              [text &16]
-    H1
-      [text &17]
-    P
+    L #659
+      LI #660
+        LBody #661
+          P #48
+            Link #26
+              <link #103> /GoTo p1 [/URI (https://www.uwb.edu/catalog/degree-programs#undergraduate-majors)]
+              [text &13] `Undergraduate degrees'
+      LI #662
+        LBody #663
+          P #49
+            Link #27
+              <link #101> /GoTo p1 [/URI (https://www.uwb.edu/catalog/degree-programs#minors)]
+              [text &14] `Undergraduate minors'
+      LI #664
+        LBody #665
+          P #50
+            Link #28
+              <link #99> /GoTo p1 [/URI (https://www.uwb.edu/catalog/degree-programs#graduate)]
+              [text &15] `Graduate degrees'
+      LI #666
+        LBody #667
+          P #51
+            Link #29
+              <link #97> /GoTo p1 [/URI (https://www.uwb.edu/catalog/degree-programs#certificates)]
+              [text &16] `Certificate programs'
+    H1 #52
+      [text &17] `Undergraduate degrees'
+    P #53
       [text &18]
-    H1
-      [text &19]
-    P
-      Link
-        <link #95>
-        [text &20]
-    L
-      LI
-        LBody
-          P
-            Link
-              <link #93>
-              [text &21]
+    H1 #54
+      [text &19] `School of Business'
+    P #55
+      Link #30
+        <link #95> null [/URI (http://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html)]
+        [text &20] `UW General Catalog’ s School of Business description.'
+    L #668
+      LI #671
+        LBody #672
+          P #673
+            Link #31
+              <link #93> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-49b8611c-43e9-4ea6-ab48-d05866b1679c)]
+              [text &21] `Business Administration'
             [text &22]
-      LI
-        LBody
-          P
-            Link
-              <link #91>
-              [text &23]
+      LI #669
+        LBody #670
+          P #56
+            Link #32
+              <link #91> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-6654cd6c-b46c-428d-bd23-494db288401a)]
+              [text &23] `Business Administration: Accounting'
             [text &24]
