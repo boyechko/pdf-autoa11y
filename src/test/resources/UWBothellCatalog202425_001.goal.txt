@@ -1,60 +1,60 @@
-Document
-  Link
---- Page 1 ---
-    <link #82>
-    <link #81>
-    <link #80>
-    <link #79>
-    Figure
+------------------------- Page 1 ---
+Document #22
+  Link #32
+    <link #82> null [/URI (https://www.uwb.edu/)]
+    <link #81> null [/URI (https://www.uwb.edu/)]
+    <link #80> null [/URI (https://www.uwb.edu/)]
+    <link #79> null [/URI (https://www.uwb.edu/)]
+    Figure #76
       [image &1]
-  P
+  P #97
     [text+path &2]
-  P
+  P #99
     [text &4]
-  H1
-    [text &5]
-  P
+  H1 #43
+    [text &5] `The UW Bothell general catalog 2024-2025'
+  P #44
     [text &6]
-    Link
-      <link #96>
-      [text &7]
+    Link #25
+      <link #96> null [/URI (https://www.uwb.edu/catalog/degree-programs)]
+      [text &7] `academic programs and certificates'
     [text &8]
-  H1
-    [text &9]
-  L
-    LI
-      LBody
-        P
-          Link
-            <link #94>
-            [text &10]
-    LI
-      LBody
-        P
-          Link
-            <link #92>
-            [text &11]
-    LI
-      LBody
-        P
-          Link
-            <link #90>
-            [text &12]
-    LI
-      LBody
-        P
-          Link
-            <link #88>
-            [text &13]
-    LI
-      LBody
-        P
-          Link
-            <link #86>
-            [text &14]
-  P
+  H1 #47
+    [text &9] `Archived catalogs'
+  L #652
+    LI #653
+      LBody #654
+        P #48
+          Link #26
+            <link #94> /URI (https://www.uwb.edu/catalog/2023-2024-general-catalog_a11y)
+            [text &10] `2023-2024'
+    LI #655
+      LBody #656
+        P #49
+          Link #27
+            <link #92> /URI (https://www.uwb.edu/catalog/wp-content/uploads/sites/44/2024/05/2022-2023-General-Catalog_a11y.pdf)
+            [text &11] `2022-2023'
+    LI #657
+      LBody #658
+        P #50
+          Link #28
+            <link #90> /URI (https://www.uwb.edu/catalog/wp-content/uploads/sites/44/2024/05/2021-2022-General-Catalog_a11y.pdf)
+            [text &12] `2021-2022'
+    LI #659
+      LBody #660
+        P #51
+          Link #29
+            <link #88> /URI (https://www.uwb.edu/catalog/wp-content/uploads/sites/44/2023/07/20-21-final-2.pdf)
+            [text &13] `2020-2021'
+    LI #661
+      LBody #662
+        P #52
+          Link #30
+            <link #86> /URI (https://www.uwb.edu/catalog/wp-content/uploads/sites/44/2023/07/19-20-final.pdf)
+            [text &14] `2019-2020'
+  P #53
     [text &15]
-  P
-    Link
-      <link #84>
-      [text &16]
+  P #54
+    Link #31
+      <link #84> /URI (mailto:uwbreg@uw.edu)
+      [text &16] `uwbreg@uw .edu'
