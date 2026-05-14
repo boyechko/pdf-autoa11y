@@ -67,8 +67,8 @@ public final class Content {
     /** Font and text for a contiguous run of same-font text within an MCID. */
     public record TextSpan(String fontName, float fontSize, String text) {}
 
-    /** Aggregated text and font spans for a single MCID. */
-    public record McidContent(String text, List<TextSpan> spans) {
+    /** Aggregated text, font spans, and content kinds for a single MCID. */
+    public record McidContent(String text, List<TextSpan> spans, Set<ContentKind> kinds) {
         /** Returns the font of the first span, typically the dominant/heading font. */
         public TextSpan dominantFont() {
             return spans.isEmpty() ? null : spans.getFirst();
@@ -79,33 +79,12 @@ public final class Content {
 
     // == Content kind extraction =========================================
 
-    /** Determines the content kind (text, image, or both) for each MCID on a page. */
-    public static Map<Integer, Set<ContentKind>> extractContentKindsForPage(PdfPage page) {
-        Map<Integer, Set<ContentKind>> result = new HashMap<>();
-        if (page == null) {
-            return result;
-        }
-
-        try {
-            ContentKindListener listener = new ContentKindListener(result);
-            PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
-            processor.processPageContent(page);
-        } catch (Exception e) {
-            int pageNum = page.getDocument().getPageNumber(page);
-            logger.debug(
-                    "Failed to extract content kinds for page {}: {}", pageNum, e.getMessage());
-        }
-
-        return result;
-    }
-
     /**
-     * Returns the content kinds for each MCR in a structure element (including descendants), keyed
-     * by page-scoped MCID.
+     * Returns the content for each MCR in a structure element (including descendants), keyed by
+     * page-scoped MCID.
      */
-    public static Map<PageMcid, Set<ContentKind>> findMcidsForElem(
-            PdfStructElem elem, DocContext ctx) {
-        Map<PageMcid, Set<ContentKind>> results = new LinkedHashMap<>();
+    public static Map<PageMcid, McidContent> findMcidsForElem(PdfStructElem elem, DocContext ctx) {
+        Map<PageMcid, McidContent> results = new LinkedHashMap<>();
         if (elem == null || ctx == null) {
             return results;
         }
@@ -122,63 +101,13 @@ public final class Content {
                 continue;
             }
 
-            Map<Integer, Set<ContentKind>> contentKinds =
-                    ctx.getOrComputeContentKinds(
-                            pageNum,
-                            () -> Content.extractContentKindsForPage(ctx.doc().getPage(pageNum)));
-            Set<ContentKind> kinds = contentKinds.get(mcid);
-            if (kinds != null && !kinds.isEmpty()) {
-                results.put(new PageMcid(pageNum, mcid), Set.copyOf(kinds));
+            McidContent mc = ctx.getMcidContent(pageNum).get(mcid);
+            if (mc != null && !mc.kinds().isEmpty()) {
+                results.put(new PageMcid(pageNum, mcid), mc);
             }
         }
 
         return results;
-    }
-
-    /** Listener that tracks whether each MCID contains text, images, or both. */
-    private static class ContentKindListener implements IEventListener {
-        private final Map<Integer, Set<ContentKind>> kindsByMcid;
-
-        ContentKindListener(Map<Integer, Set<ContentKind>> kindsByMcid) {
-            this.kindsByMcid = kindsByMcid;
-        }
-
-        @Override
-        public void eventOccurred(IEventData data, EventType type) {
-            if (type == EventType.RENDER_TEXT) {
-                TextRenderInfo textInfo = (TextRenderInfo) data;
-                Integer mcid = textInfo.getMcid();
-                if (mcid != null && mcid >= 0) {
-                    String text = textInfo.getText();
-                    if (text != null && !text.trim().isEmpty()) {
-                        kindsByMcid
-                                .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
-                                .add(ContentKind.TEXT);
-                    }
-                }
-            } else if (type == EventType.RENDER_IMAGE) {
-                ImageRenderInfo imageInfo = (ImageRenderInfo) data;
-                int mcid = imageInfo.getMcid();
-                if (mcid >= 0) {
-                    kindsByMcid
-                            .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
-                            .add(ContentKind.IMAGE);
-                }
-            } else if (type == EventType.RENDER_PATH) {
-                PathRenderInfo pathInfo = (PathRenderInfo) data;
-                int mcid = pathInfo.getMcid();
-                if (mcid >= 0 && pathInfo.getOperation() != PathRenderInfo.NO_OP) {
-                    kindsByMcid
-                            .computeIfAbsent(mcid, k -> EnumSet.noneOf(ContentKind.class))
-                            .add(ContentKind.PATH);
-                }
-            }
-        }
-
-        @Override
-        public Set<EventType> getSupportedEvents() {
-            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE, EventType.RENDER_PATH);
-        }
     }
 
     // == Bullet glyph detection =========================================
@@ -265,7 +194,7 @@ public final class Content {
 
             // Compute center in page coordinates via CTM
             Matrix ctm = pathInfo.getCtm();
-            Point start = path.getSubpaths().get(0).getStartPoint();
+            Point start = path.getSubpaths().getFirst().getStartPoint();
             Vector center = new Vector((float) start.getX(), (float) start.getY(), 1).cross(ctm);
             float cx = center.get(Vector.I1);
             float cy = center.get(Vector.I2);
@@ -289,7 +218,7 @@ public final class Content {
                 return false;
             }
 
-            Subpath subpath = subpaths.get(0);
+            Subpath subpath = subpaths.getFirst();
             List<IShape> segments = subpath.getSegments();
             if (segments.size() != 2) {
                 return false;
@@ -384,13 +313,13 @@ public final class Content {
             if (kid instanceof PdfMcrNumber mcr) {
                 String text = mcidText.getOrDefault(mcr.getMcid(), "");
                 if (!text.isEmpty()) {
-                    if (combinedText.length() > 0) combinedText.append(" ");
+                    if (!combinedText.isEmpty()) combinedText.append(" ");
                     combinedText.append(text);
                 }
             } else if (kid instanceof PdfStructElem childElem) {
                 String childText = getTextForElement(childElem, mcidText);
                 if (!childText.isEmpty()) {
-                    if (combinedText.length() > 0) combinedText.append(" ");
+                    if (!combinedText.isEmpty()) combinedText.append(" ");
                     combinedText.append(childText);
                 }
             }
@@ -399,7 +328,7 @@ public final class Content {
         return combinedText.toString();
     }
 
-    /** Collects text spans with font information for every MCID on a page. */
+    /** Collects text spans, font information, and content kinds for every MCID on a page. */
     private static class McidContentListener implements IEventListener {
         private final Map<Integer, SpanAccumulator> accumulators = new HashMap<>();
 
@@ -407,8 +336,8 @@ public final class Content {
         public void eventOccurred(IEventData data, EventType type) {
             if (type == EventType.RENDER_TEXT) {
                 TextRenderInfo textInfo = (TextRenderInfo) data;
-                Integer mcid = textInfo.getMcid();
-                if (mcid != null && mcid >= 0) {
+                int mcid = textInfo.getMcid();
+                if (mcid >= 0) {
                     String text = textInfo.getText();
                     if (text != null && !text.trim().isEmpty()) {
                         String fontName = extractFontName(textInfo);
@@ -418,6 +347,22 @@ public final class Content {
                                 .add(fontName, fontSize, text);
                     }
                 }
+            } else if (type == EventType.RENDER_IMAGE) {
+                ImageRenderInfo imageInfo = (ImageRenderInfo) data;
+                int mcid = imageInfo.getMcid();
+                if (mcid >= 0) {
+                    accumulators
+                            .computeIfAbsent(mcid, k -> new SpanAccumulator())
+                            .addKind(ContentKind.IMAGE);
+                }
+            } else if (type == EventType.RENDER_PATH) {
+                PathRenderInfo pathInfo = (PathRenderInfo) data;
+                int mcid = pathInfo.getMcid();
+                if (mcid >= 0 && pathInfo.getOperation() != PathRenderInfo.NO_OP) {
+                    accumulators
+                            .computeIfAbsent(mcid, k -> new SpanAccumulator())
+                            .addKind(ContentKind.PATH);
+                }
             }
         }
 
@@ -425,7 +370,7 @@ public final class Content {
             Map<Integer, McidContent> results = new HashMap<>();
             for (Map.Entry<Integer, SpanAccumulator> entry : accumulators.entrySet()) {
                 McidContent content = entry.getValue().build();
-                if (!content.text().isEmpty()) {
+                if (!content.text().isEmpty() || !content.kinds().isEmpty()) {
                     results.put(entry.getKey(), content);
                 }
             }
@@ -434,19 +379,21 @@ public final class Content {
 
         @Override
         public Set<EventType> getSupportedEvents() {
-            return Set.of(EventType.RENDER_TEXT);
+            return Set.of(EventType.RENDER_TEXT, EventType.RENDER_IMAGE, EventType.RENDER_PATH);
         }
     }
 
-    /** Accumulates text spans, merging consecutive runs of the same font. */
+    /** Accumulates text spans, merging consecutive runs of the same font, and content kinds. */
     private static class SpanAccumulator {
         private static final float FONT_SIZE_TOLERANCE = 0.01f;
+        private final Set<ContentKind> kinds = EnumSet.noneOf(ContentKind.class);
         private final List<TextSpan> completedSpans = new ArrayList<>();
         private String currentFontName;
         private float currentFontSize;
         private StringBuilder currentText = new StringBuilder();
 
         void add(String fontName, float fontSize, String text) {
+            kinds.add(ContentKind.TEXT);
             boolean sameFont =
                     currentFontName != null
                             && currentFontName.equals(fontName)
@@ -457,14 +404,18 @@ public final class Content {
                 currentFontSize = fontSize;
             }
 
-            if (currentText.length() > 0) {
+            if (!currentText.isEmpty()) {
                 currentText.append(" ");
             }
             currentText.append(text);
         }
 
+        void addKind(ContentKind kind) {
+            kinds.add(kind);
+        }
+
         private void flush() {
-            if (currentText.length() > 0 && currentFontName != null) {
+            if (!currentText.isEmpty() && currentFontName != null) {
                 completedSpans.add(
                         new TextSpan(currentFontName, currentFontSize, currentText.toString()));
                 currentText = new StringBuilder();
@@ -475,13 +426,13 @@ public final class Content {
             flush();
             StringBuilder combined = new StringBuilder();
             for (TextSpan span : completedSpans) {
-                if (combined.length() > 0) {
+                if (!combined.isEmpty()) {
                     combined.append(" ");
                 }
                 combined.append(span.text());
             }
             String cleaned = cleanExtractedText(combined.toString());
-            return new McidContent(cleaned, List.copyOf(completedSpans));
+            return new McidContent(cleaned, List.copyOf(completedSpans), Set.copyOf(kinds));
         }
     }
 
@@ -582,8 +533,8 @@ public final class Content {
         public void eventOccurred(IEventData data, EventType type) {
             if (type == EventType.RENDER_TEXT) {
                 TextRenderInfo textInfo = (TextRenderInfo) data;
-                Integer mcid = textInfo.getMcid();
-                if (mcid != null && mcid >= 0) {
+                int mcid = textInfo.getMcid();
+                if (mcid >= 0) {
                     addBounds(bounds, mcid, rectFromText(textInfo));
                 }
             } else if (type == EventType.RENDER_IMAGE) {

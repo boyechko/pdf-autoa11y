@@ -25,7 +25,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 
 /** Provides access to the document and its structure. */
@@ -36,7 +35,6 @@ public class DocContext {
     private final Map<Integer, Map<Integer, Content.McidContent>> mcidContentCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
-    private final Map<Integer, Map<Integer, Set<Content.ContentKind>>> contentKindsCache;
     private boolean dirty = false;
 
     /**
@@ -59,7 +57,6 @@ public class DocContext {
         this.mcidContentCache = new HashMap<>();
         this.mcidTextCache = new HashMap<>();
         this.bulletPositionCache = new HashMap<>();
-        this.contentKindsCache = new HashMap<>();
     }
 
     public PdfDocument doc() {
@@ -99,14 +96,6 @@ public class DocContext {
                     content.forEach((mcid, mc) -> text.put(mcid, mc.text()));
                     return text;
                 });
-    }
-
-    /**
-     * Returns content kinds (text, image, or both) per MCID for a page, extracting on first access.
-     */
-    public Map<Integer, Set<Content.ContentKind>> getOrComputeContentKinds(
-            int pageNum, Supplier<Map<Integer, Set<Content.ContentKind>>> supplier) {
-        return contentKindsCache.computeIfAbsent(pageNum, k -> supplier.get());
     }
 
     /** Returns the text for a specific MCID, extracting the page on first access. */

@@ -170,15 +170,8 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (pageNum <= 0) {
                 continue;
             }
-            Map<Integer, Set<Content.ContentKind>> contentKinds =
-                    ctx.docCtx()
-                            .getOrComputeContentKinds(
-                                    pageNum,
-                                    () ->
-                                            Content.extractContentKindsForPage(
-                                                    ctx.doc().getPage(pageNum)));
-            Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-            if (kinds != null && !kinds.isEmpty()) {
+            Content.McidContent mc = ctx.docCtx().getMcidContent(pageNum).get(mcid);
+            if (mc != null && !mc.kinds().isEmpty()) {
                 return false;
             }
         }
@@ -232,18 +225,11 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            Map<Integer, Set<Content.ContentKind>> contentKinds =
-                    ctx.docCtx()
-                            .getOrComputeContentKinds(
-                                    pageNum,
-                                    () ->
-                                            Content.extractContentKindsForPage(
-                                                    ctx.doc().getPage(pageNum)));
-            Set<Content.ContentKind> kinds = contentKinds.get(mcid);
-            if (kinds == null
-                    || kinds.contains(Content.ContentKind.TEXT)
-                    || (!kinds.contains(Content.ContentKind.IMAGE)
-                            && !kinds.contains(Content.ContentKind.PATH))) {
+            Content.McidContent mc = ctx.docCtx().getMcidContent(pageNum).get(mcid);
+            if (mc == null
+                    || mc.kinds().contains(Content.ContentKind.TEXT)
+                    || (!mc.kinds().contains(Content.ContentKind.IMAGE)
+                            && !mc.kinds().contains(Content.ContentKind.PATH))) {
                 continue;
             }
 
