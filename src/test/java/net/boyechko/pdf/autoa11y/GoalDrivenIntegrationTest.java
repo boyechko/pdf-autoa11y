@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import net.boyechko.pdf.autoa11y.core.NoOpProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -111,17 +110,16 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
             if (docElem == null) {
                 return "<no Document element>";
             }
-            Map<Content.PageMcid, Set<Content.ContentKind>> contentKinds = new HashMap<>();
+            Map<Content.PageMcid, Content.McidContent> mcidInfo = new HashMap<>();
             for (int i = 1; i <= doc.getNumberOfPages(); i++) {
                 PdfPage page = doc.getPage(i);
                 int pageNum = i;
-                Content.extractContentKindsForPage(page)
+                Content.extractContentForPage(page)
                         .forEach(
-                                (mcid, kinds) ->
-                                        contentKinds.put(
-                                                new Content.PageMcid(pageNum, mcid), kinds));
+                                (mcid, mc) ->
+                                        mcidInfo.put(new Content.PageMcid(pageNum, mcid), mc));
             }
-            return TreeDiagram.toDetailedTreeString(docElem, contentKinds, Map.of()).strip();
+            return TreeDiagram.toDetailedTreeString(docElem, mcidInfo).strip();
         }
     }
 
