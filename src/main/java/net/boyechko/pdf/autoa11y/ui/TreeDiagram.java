@@ -205,6 +205,12 @@ public final class TreeDiagram {
                     sb.append('\n');
                 }
                 case PdfMcr mcr -> {
+                    if (mcr.getPageIndirectReference() == null) {
+                        sb.append(childrenPrefix).append(leafPrefix);
+                        sb.append("[orphaned mcid ").append(mcr.getMcid()).append("]");
+                        sb.append('\n');
+                        continue;
+                    }
                     Content.PageMcid pageMcid = new Content.PageMcid(pageOf(mcr), mcr.getMcid());
                     Content.McidContent mc = mcidInfo.get(pageMcid);
                     DocValue.Mcr mcrLabel =
