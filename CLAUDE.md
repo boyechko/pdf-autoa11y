@@ -91,6 +91,8 @@ references IssueFix.
 - Tag schema: `src/main/resources/tagschema-PDF-UA1.yaml`
 - Frequent PDF inputs: `inputs/` directory
 - Frequent PDF outputs: `outputs/` directory
+- iText 9.5.0 kernel sources: `.itext-sources/` (gitignored, read with
+  the `Read` tool — no Bash needed)
 
 # Adding New Rules/Fixes
 
