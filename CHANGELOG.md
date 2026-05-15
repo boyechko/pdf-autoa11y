@@ -8,6 +8,13 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `OrphanedContentCheck` (and corresponding `OrphanedContentFix`)
+  that detects MCRs and OBJRs whose page reference no longer resolves --
+  typically structure-tree remnants left after pages are deleted in
+  Acrobat without cleaning up the tags. The fix removes the orphan and
+  cascade-prunes any ancestor that becomes empty (stopping at the
+  Document element). Runs early in the structure-tree check phase so
+  downstream tree-walkers see a cleaned tree.
 - Added optional `ReorderWebCapturesCheck` (and corresponding
   `ReorderWebCapturesFix`) that reorders the document's pages to match a
   configured URL order from the sidecar's `ReorderWebCapturesCheck:` key
