@@ -120,6 +120,8 @@ public final class StructTree {
 
     /** Returns the page number for any MCR or OBJR (since PdfObjRef extends PdfMcr). */
     public static int pageOf(PdfMcr mcr) {
+        // getPageObject() would NPE inside iText when encountering orphaned MCRs.
+        if (mcr.getPageIndirectReference() == null) return 0;
         PdfDictionary pageObj = mcr.getPageObject();
         if (pageObj == null) return 0;
         PdfDocument doc = pageObj.getIndirectReference().getDocument();
