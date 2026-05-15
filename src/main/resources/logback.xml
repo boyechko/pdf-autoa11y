@@ -17,5 +17,12 @@
        malformed PDFs; not actionable by the user -->
   <logger name="com.itextpdf.kernel.pdf.tagging" level="error" />
 
+  <!-- ParentTreeHandler.registerAllMcrs() logs one ERROR per orphaned MCR
+       when opening a PDF whose pages were deleted in Acrobat without tag
+       cleanup. We detect/report orphans ourselves via OrphanedContentCheck,
+       so suppress iText's per-MCR error to keep the box UI readable. This
+       is the only LOGGER.error() in ParentTreeHandler; fatal cases throw. -->
+  <logger name="com.itextpdf.kernel.pdf.tagging.ParentTreeHandler" level="off" />
+
   <root level="warn" />
 </configuration>

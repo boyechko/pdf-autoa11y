@@ -50,6 +50,7 @@ public enum IssueType {
     MISARTIFACTED_TEXT("artifact blocks containing text that should be tagged"),
     UNMARKED_LINK("Link annotations not tagged"),
     UNEXPECTED_WIDGET("non-functional Widget annotations"),
+    ORPHANED_CONTENT("orphaned MCRs"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),

@@ -46,6 +46,7 @@ public final class ProcessingDefaults {
                 TaggedPdfCheck::new,
                 PdfUaConformanceCheck::new,
                 // Structure tree checks
+                OrphanedContentCheck::new,
                 NeedlessNestingCheck::new,
                 MissingPagePartsCheck::new,
                 MistaggedArtifactCheck::new,
