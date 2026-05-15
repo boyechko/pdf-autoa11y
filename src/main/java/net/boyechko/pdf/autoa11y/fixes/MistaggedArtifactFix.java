@@ -31,6 +31,7 @@ import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.canvas.parser.util.PdfCanvasParser;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -96,6 +97,8 @@ public class MistaggedArtifactFix implements IssueFix {
         if (!mcidsByPage.isEmpty()) {
             rewriteMcidsAsArtifacts(mcidsByPage);
             removeMcrEntries(mcidsByPage);
+        }
+        if (targetAll || !mcidsByPage.isEmpty()) {
             pruneEmptySubtree(element);
         }
     }
@@ -313,6 +316,10 @@ public class MistaggedArtifactFix implements IssueFix {
                 PdfName subtype = annotDict.getAsName(PdfName.Subtype);
                 if (subtype != null && PdfName.Link.equals(subtype)) {
                     findAndRemoveAnnotation(annotDict, ctx);
+                    IStructureNode parent = objRef.getParent();
+                    if (parent instanceof PdfStructElem parentElem) {
+                        parentElem.removeKid(objRef);
+                    }
                 }
             }
         }
