@@ -115,7 +115,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
 
         for (IStructureNode kid : documentKids) {
             if (kid instanceof PdfStructElem elem && !PdfName.Part.equals(elem.getRole())) {
-                int pageNum = StructTree.determinePageNumber(ctx, elem);
+                int pageNum = StructTree.pageOf(elem, ctx);
                 if (pageNum > 0) {
                     return true;
                 }

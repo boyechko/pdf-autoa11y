@@ -105,7 +105,7 @@ public class EmptyLinkTagFix implements IssueFix {
             return;
         }
 
-        int resolvedPageNum = pageNum > 0 ? pageNum : StructTree.determinePageNumber(ctx, linkElem);
+        int resolvedPageNum = pageNum > 0 ? pageNum : StructTree.pageOf(linkElem, ctx);
         if (resolvedPageNum <= 0 || resolvedPageNum > ctx.doc().getNumberOfPages()) {
             return;
         }

@@ -89,8 +89,8 @@ public final class StructTree {
         return false;
     }
 
-    /** Determines the page number for a structure element, using cache then recursion. */
-    public static int determinePageNumber(DocContext ctx, PdfStructElem elem) {
+    /** Finds the page via /Pg, then context cache, then recursion into kids. */
+    public static int pageOf(PdfStructElem elem, DocContext ctx) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
             int pageNum = ctx.doc().getPageNumber(pg);
@@ -109,7 +109,7 @@ public final class StructTree {
         if (kids != null) {
             for (IStructureNode kid : kids) {
                 if (kid instanceof PdfStructElem childElem) {
-                    int pageNum = determinePageNumber(ctx, childElem);
+                    int pageNum = pageOf(childElem, ctx);
                     if (pageNum > 0) return pageNum;
                 }
             }

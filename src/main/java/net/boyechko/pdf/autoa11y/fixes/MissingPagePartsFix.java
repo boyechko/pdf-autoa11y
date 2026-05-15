@@ -108,7 +108,7 @@ public class MissingPagePartsFix implements IssueFix {
         }
 
         for (PdfStructElem elem : elementsToMove) {
-            int pageNum = StructTree.determinePageNumber(ctx, elem);
+            int pageNum = StructTree.pageOf(elem, ctx);
             if (pageNum > 0 && pageParts.containsKey(pageNum)) {
                 PdfStructElem targetPart = pageParts.get(pageNum);
                 StructTree.moveKid(elem, documentElem, targetPart);
