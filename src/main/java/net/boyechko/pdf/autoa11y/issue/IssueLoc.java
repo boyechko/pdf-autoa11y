@@ -67,7 +67,7 @@ public sealed interface IssueLoc {
         if (ctx == null || element == null) {
             return none();
         }
-        int pageNum = StructTree.determinePageNumber(ctx, element);
+        int pageNum = StructTree.pageOf(element, ctx);
         Integer maybePage = pageNum > 0 ? pageNum : null;
         String role = element.getRole() != null ? element.getRole().getValue() : null;
         return new AtElem(element, maybePage, role, null);

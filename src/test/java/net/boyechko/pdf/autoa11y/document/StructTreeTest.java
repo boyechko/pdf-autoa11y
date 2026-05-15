@@ -132,7 +132,7 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
-    void determinePageNumberFromPgEntry() throws Exception {
+    void pageOfFromPgEntry() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             PdfPage page = doc.addNewPage();
@@ -143,12 +143,12 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(p);
 
             DocContext ctx = new DocContext(doc);
-            assertEquals(1, StructTree.determinePageNumber(ctx, p));
+            assertEquals(1, StructTree.pageOf(p, ctx));
         }
     }
 
     @Test
-    void determinePageNumberFromChildRecursion() throws Exception {
+    void pageOfFromChildRecursion() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             PdfPage page = doc.addNewPage();
@@ -163,12 +163,12 @@ class StructTreeTest extends PdfTestBase {
 
             DocContext ctx = new DocContext(doc);
             // Div has no /Pg, but its child P does
-            assertEquals(1, StructTree.determinePageNumber(ctx, div));
+            assertEquals(1, StructTree.pageOf(div, ctx));
         }
     }
 
     @Test
-    void determinePageNumberReturnsZeroWhenUnresolvable() throws Exception {
+    void pageOfReturnsZeroWhenUnresolvable() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             doc.addNewPage();
@@ -178,7 +178,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(div);
 
             DocContext ctx = new DocContext(doc);
-            assertEquals(0, StructTree.determinePageNumber(ctx, div));
+            assertEquals(0, StructTree.pageOf(div, ctx));
         }
     }
 

@@ -171,7 +171,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
 
     /** Determines where to insert the new LI based on bullet y-position. */
     private int findInsertPosition(PdfStructElem listElem, DocContext ctx) {
-        int pageNum = StructTree.determinePageNumber(ctx, parent);
+        int pageNum = StructTree.pageOf(parent, ctx);
         List<PdfStructElem> existingLIs = StructTree.childrenOf(listElem, PdfStructElem.class);
 
         for (int i = 0; i < existingLIs.size(); i++) {
