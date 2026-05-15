@@ -32,7 +32,7 @@ if [ ! -d "$CLASSES_DIR" ] || [ ! -f "$CLASSPATH_FILE" ]; then
     fi
 # Recompile if any source file is newer than the last successful compile.
 elif [ -d "$SRC_DIR" ] && \
-     [ -n "$(find "$SRC_DIR" -type f \( -name '*.java' -o -name '*.yaml' \) \
+     [ -n "$(find "$SRC_DIR" -type f \( -name '*.java' -o -name '*.yaml' -o -name '*.xml' -o -name '*.properties' \) \
             -newer "$COMPILE_STAMP" -print -quit 2>/dev/null)" ]; then
     echo "Source files changed since last compile. Recompiling..." >&2
     if ! compile; then
