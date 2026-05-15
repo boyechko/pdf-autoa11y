@@ -102,6 +102,10 @@ Versioning](https://semver.org/).
   is skipped.
 
 ### Fixed
+- `--dump-tree` no longer crashes on PDFs with MCRs that have no page
+  reference (e.g. after pages were deleted in Acrobat). Orphaned MCRs are
+  now displayed as `[orphaned mcid N]` instead of crashing with a
+  `NullPointerException` inside iText's `PdfMcr.getPageObject()`.
 - `!ARTIFACT` on a `Link` element that has no text MCRs (only a `PdfObjRef`
   pointing to its annotation) now correctly prunes the empty `Link` after
   removing the annotation. Previously, `MistaggedArtifactFix` left the `OBJR`
