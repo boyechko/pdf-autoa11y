@@ -67,3 +67,4 @@ Thumbs.db
 # Project specific
 inputs/
 outputs/
+.itext-sources/
