@@ -71,10 +71,9 @@ class MistaggedArtifactFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             new MistaggedArtifactFix(linkElem).apply(ctx);
 
-            // Element remains in tree but MCRs are stripped; pipeline cleanup removes it
-            assertFalse(
+            assertTrue(
                     document.getKids() == null || document.getKids().isEmpty(),
-                    "Element stays in tree (EmptyElementFix cleans up later)");
+                    "Empty Link element should be pruned from the tree");
             assertTrue(
                     page.getAnnotations().isEmpty(), "Link annotation should be removed from page");
         }
@@ -92,10 +91,10 @@ class MistaggedArtifactFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             new MistaggedArtifactFix(p).apply(ctx);
 
-            // Element stays in tree; EmptyElementFix cleans up later
+            // pruneEmpty stops at direct children of StructTreeRoot
             assertFalse(
                     root.getKids() == null || root.getKids().isEmpty(),
-                    "Element stays in tree (EmptyElementFix cleans up later)");
+                    "Direct StructTreeRoot child is not pruned");
         }
     }
 

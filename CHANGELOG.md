@@ -102,6 +102,11 @@ Versioning](https://semver.org/).
   is skipped.
 
 ### Fixed
+- `!ARTIFACT` on a `Link` element that has no text MCRs (only a `PdfObjRef`
+  pointing to its annotation) now correctly prunes the empty `Link` after
+  removing the annotation. Previously, `MistaggedArtifactFix` left the `OBJR`
+  in the structure tree and skipped pruning because the MCID map was empty,
+  leaving a structurally empty `Link` element in the output.
 - `--dump-tree` content-kind labels (`text`, `image`, `path`) on MCRs are now
   correct on multi-page PDFs. Previously, the per-page kind maps were merged by
   raw MCID across pages, so an MCID reused on a later page would overwrite
