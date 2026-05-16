@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.ui;
+package net.boyechko.pdf.autoa11y.tools;
 
 import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
 import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
