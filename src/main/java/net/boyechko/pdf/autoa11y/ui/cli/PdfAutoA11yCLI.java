@@ -37,6 +37,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
+import net.boyechko.pdf.autoa11y.tools.OutlineEditor;
 import net.boyechko.pdf.autoa11y.tools.TreeDiagram;
 import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
 import net.boyechko.pdf.autoa11y.ui.FormattedListener;
@@ -63,7 +64,9 @@ public class PdfAutoA11yCLI {
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
             boolean listDestinations,
+            boolean dumpOutline,
             Path annotateTreePath,
+            Path applyOutlinePath,
             Path reportPath,
             VerbosityLevel verbosity,
             boolean printStructureTree,
@@ -80,6 +83,7 @@ public class PdfAutoA11yCLI {
                     && !dumpTreeSimple
                     && !dumpTreeDetailed
                     && !listDestinations
+                    && !dumpOutline
                     && !createSidecar
                     && outputPath == null) {
                 throw new IllegalArgumentException("Output path is required");
@@ -125,8 +129,16 @@ public class PdfAutoA11yCLI {
             listDestinations(config);
             return;
         }
+        if (config.dumpOutline()) {
+            dumpOutline(config);
+            return;
+        }
         if (config.annotateTreePath() != null) {
             annotateTree(config);
+            return;
+        }
+        if (config.applyOutlinePath() != null) {
+            applyOutline(config);
             return;
         }
 
@@ -314,6 +326,39 @@ public class PdfAutoA11yCLI {
         }
     }
 
+    /** Prints the document outline (bookmarks) of the input PDF to the console. */
+    private static void dumpOutline(CLIConfig config) {
+        try {
+            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+            try (PdfDocument pdfDoc = custodian.openForReading()) {
+                System.out.print(OutlineEditor.dumpToString(pdfDoc));
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Failed to read PDF: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    /** Replaces the document outline of the input PDF with the contents of the supplied file. */
+    private static void applyOutline(CLIConfig config) {
+        try {
+            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+            String content = Files.readString(config.applyOutlinePath());
+            try (PdfDocument pdfDoc = custodian.openForModification(config.outputPath())) {
+                OutlineEditor.ApplyResult result =
+                        OutlineEditor.applyFromString(
+                                pdfDoc, content, msg -> System.err.println("! " + msg));
+                System.out.printf(
+                        "Outline replaced: %d previous entry(ies) removed, %d new entry(ies) written"
+                                + " (%d parse error(s))%n",
+                        result.previousEntries(), result.newEntries(), result.parseErrors());
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Failed to apply outline: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
     /** Prints the named destinations of the input PDF to the console. */
     private static void listDestinations(CLIConfig config) {
         try {
@@ -350,6 +395,8 @@ public class PdfAutoA11yCLI {
                         parseCommaSeparated(args[i].substring("--include-checks=".length()));
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
+            } else if (args[i].startsWith("--apply-outline=")) {
+                b.applyOutlinePath = Paths.get(args[i].substring("--apply-outline=".length()));
             } else if (args[i].startsWith("--sidecar=")) {
                 b.sidecarPath = Paths.get(args[i].substring("--sidecar=".length()));
             } else {
@@ -390,6 +437,13 @@ public class PdfAutoA11yCLI {
                             throw new CLIException("File path not specified after --annotate-tree");
                         }
                     }
+                    case "--apply-outline" -> {
+                        if (i + 1 < args.length) {
+                            b.applyOutlinePath = Paths.get(args[++i]);
+                        } else {
+                            throw new CLIException("File path not specified after --apply-outline");
+                        }
+                    }
                     case "--sidecar" -> {
                         if (i + 1 < args.length) {
                             b.sidecarPath = Paths.get(args[++i]);
@@ -404,6 +458,7 @@ public class PdfAutoA11yCLI {
                     case "--dump-tree" -> b.dumpTreeDetailed = true;
                     case "--dump-roles" -> b.dumpTreeSimple = true;
                     case "--list-destinations" -> b.listDestinations = true;
+                    case "--dump-outline" -> b.dumpOutline = true;
                     case "--create-sidecar" -> b.createSidecar = true;
                     case "-f", "--force" -> b.forceSave = true;
                     case "-a", "--analyze" -> b.analyzeOnly = true;
@@ -453,7 +508,9 @@ public class PdfAutoA11yCLI {
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
         boolean listDestinations;
+        boolean dumpOutline;
         Path annotateTreePath;
+        Path applyOutlinePath;
         boolean generateReport;
         Path reportPath;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
@@ -489,7 +546,9 @@ public class PdfAutoA11yCLI {
                     dumpTreeSimple,
                     dumpTreeDetailed,
                     listDestinations,
+                    dumpOutline,
                     annotateTreePath,
+                    applyOutlinePath,
                     reportPath,
                     verbosity,
                     printStructureTree,
@@ -505,6 +564,7 @@ public class PdfAutoA11yCLI {
                     || dumpTreeSimple
                     || dumpTreeDetailed
                     || listDestinations
+                    || dumpOutline
                     || createSidecar) {
                 return;
             }
@@ -560,9 +620,12 @@ public class PdfAutoA11yCLI {
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
+                + "  --dump-outline    Print the document outline (bookmarks) and exit\n"
                 + "  --annotate-tree <file>  Read scribbles from an annotated tree diagram\n"
                 + "                          and write them to matching elements' /T keys\n"
                 + "                          in the output PDF (no checks or fixes run)\n"
+                + "  --apply-outline <file>  Replace the document outline with the contents of\n"
+                + "                          <file> (see docs/outline-editor.md for format)\n"
                 + "  --create-sidecar  Create a template sidecar config file and exit\n"
                 + "  --sidecar <file>  Use this sidecar config instead of <basename>.autoa11y.yaml\n"
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"

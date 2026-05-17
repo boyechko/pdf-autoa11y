@@ -8,6 +8,11 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Added `--dump-outline` and `--apply-outline <file>` CLI options for
+  round-tripping a PDF's outline (bookmarks) through an editable text file.
+  Useful for cleaning up the noisy outlines that Adobe Web Capture and
+  similar HTML-to-PDF tools produce. See `docs/outline-editor.md` for the
+  format and workflow.
 - Added `OrphanedContentCheck` (and corresponding `OrphanedContentFix`)
   that detects MCRs and OBJRs whose page reference no longer resolves --
   typically structure-tree remnants left after pages are deleted in
