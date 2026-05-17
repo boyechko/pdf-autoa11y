@@ -80,7 +80,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>${exec-maven-plugin.version}</version>
         <configuration>
-          <mainClass>net.boyechko.pdf.autoa11y.ui.cli.PdfAutoA11yCLI</mainClass>
+          <mainClass>net.boyechko.pdf.autoa11y.ui.Cli</mainClass>
           <arguments>
             <argument>${exec.args}</argument>
           </arguments>

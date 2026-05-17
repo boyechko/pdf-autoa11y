@@ -41,4 +41,4 @@ elif [ -d "$SRC_DIR" ] && \
 fi
 
 java -cp "$CLASSES_DIR:$(cat "$CLASSPATH_FILE")" \
-    net.boyechko.pdf.autoa11y.ui.cli.PdfAutoA11yCLI "$@"
+    net.boyechko.pdf.autoa11y.ui.Cli "$@"
