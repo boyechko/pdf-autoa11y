@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.ui.cli;
+package net.boyechko.pdf.autoa11y.ui;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
@@ -39,17 +39,11 @@ import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
 import net.boyechko.pdf.autoa11y.tools.OutlineEditor;
 import net.boyechko.pdf.autoa11y.tools.TreeDiagram;
-import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
-import net.boyechko.pdf.autoa11y.ui.FormattedListener;
-import net.boyechko.pdf.autoa11y.ui.LoggingListener;
-import net.boyechko.pdf.autoa11y.ui.SidecarConfig;
-import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
-import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PdfAutoA11yCLI {
+public class Cli {
     private static final String DEFAULT_OUTPUT_SUFFIX = "_autoa11y";
 
     private static Logger logger;
@@ -493,7 +487,7 @@ public class PdfAutoA11yCLI {
 
     private static Logger logger() {
         if (logger == null) {
-            logger = LoggerFactory.getLogger(PdfAutoA11yCLI.class);
+            logger = LoggerFactory.getLogger(Cli.class);
         }
         return logger;
     }
@@ -606,7 +600,7 @@ public class PdfAutoA11yCLI {
     }
 
     private static String usageMessage() {
-        return "Usage: java PdfAutoA11yCLI [-a] [-q|-v|-vv] [-t] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
+        return "Usage: java Cli [-a] [-q|-v|-vv] [-t] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
                 + "  -h, --help        Show this help message\n"
                 + "  -a, --analyze     Analyze only (no remediation or output PDF)\n"
                 + "  -q, --quiet       Only show errors and final status\n"
@@ -637,10 +631,10 @@ public class PdfAutoA11yCLI {
                 + "with --create-sidecar argument."
                 + "\n"
                 + "Examples:\n"
-                + "  java PdfAutoA11yCLI -a -v document.pdf\n"
-                + "  java PdfAutoA11yCLI -r -t document.pdf\n"
-                + "  java PdfAutoA11yCLI --dump-tree document.pdf\n"
-                + "  java PdfAutoA11yCLI --report=report.txt -v document.pdf output.pdf\n"
-                + "  java PdfAutoA11yCLI --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
+                + "  java Cli -a -v document.pdf\n"
+                + "  java Cli -r -t document.pdf\n"
+                + "  java Cli --dump-tree document.pdf\n"
+                + "  java Cli --report=report.txt -v document.pdf output.pdf\n"
+                + "  java Cli --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
     }
 }

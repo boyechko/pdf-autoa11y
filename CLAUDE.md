@@ -55,9 +55,7 @@ net.boyechko.pdf.autoa11y/
 ├── document/        # Utilities for extracting data from PDF (Content, DocContext, PdfCustodian, StructTree, etc.)
 ├── fixes/           # Isue fixes (NeedlessNestingFix, BadlyMappedLigatureFix, etc.)
 ├── issue/           # Issue, IssueFix, IssueLoc, IssueType, IssueSev, IssueList
-├── ui/              # UI modules shared by CLI and GUI; LoggingListener, FormattedListener
-├── ui/cli/          # CLI entry point and listener
-├── ui/gui/          # GUI entry point and listener
+├── ui/              # UI entry points (Cli, Gui) and shared reporting (LoggingListener, FormattedListener)
 ├── validation/      # RuleEngine, Rule interface, PatternMatcher
 ```
 

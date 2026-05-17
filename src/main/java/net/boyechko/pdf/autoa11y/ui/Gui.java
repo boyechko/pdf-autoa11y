@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package net.boyechko.pdf.autoa11y.ui.gui;
+package net.boyechko.pdf.autoa11y.ui;
 
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
@@ -29,12 +29,8 @@ import javax.swing.border.TitledBorder;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.ui.AccessibilityReport;
-import net.boyechko.pdf.autoa11y.ui.FormattedListener;
-import net.boyechko.pdf.autoa11y.ui.StructTreeTablePrinter;
-import net.boyechko.pdf.autoa11y.ui.VerbosityLevel;
 
-public class PdfAutoA11yGUI extends JFrame {
+public class Gui extends JFrame {
     private JLabel dropLabel;
     private JTextArea outputArea;
     private JButton processButton;
@@ -45,7 +41,7 @@ public class PdfAutoA11yGUI extends JFrame {
     private File tempResultFile;
     private ProcessingResult lastResult;
 
-    public PdfAutoA11yGUI() {
+    public Gui() {
         initializeGUI();
     }
 
@@ -159,7 +155,7 @@ public class PdfAutoA11yGUI extends JFrame {
                         showSaveDialog();
                     } else {
                         JOptionPane.showMessageDialog(
-                                PdfAutoA11yGUI.this, "No processed file available to save.");
+                                Gui.this, "No processed file available to save.");
                     }
                 });
 
@@ -189,14 +185,13 @@ public class PdfAutoA11yGUI extends JFrame {
                     if (file.getName().toLowerCase().endsWith(".pdf")) {
                         setSelectedFile(file);
                     } else {
-                        JOptionPane.showMessageDialog(
-                                PdfAutoA11yGUI.this, "Please select a PDF file");
+                        JOptionPane.showMessageDialog(Gui.this, "Please select a PDF file");
                     }
                 }
                 dtde.dropComplete(true);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(
-                        PdfAutoA11yGUI.this, "Error handling dropped file: " + e.getMessage());
+                        Gui.this, "Error handling dropped file: " + e.getMessage());
             }
         }
     }
@@ -411,7 +406,7 @@ public class PdfAutoA11yGUI extends JFrame {
                     } catch (Exception e) {
                         // Use default look and feel
                     }
-                    new PdfAutoA11yGUI();
+                    new Gui();
                 });
     }
 }
