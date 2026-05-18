@@ -37,9 +37,9 @@ class RoleMapTest extends PdfTestBase {
                     .getPdfObject()
                     .put(PdfName.RoleMap, mapping("CustomHeading", "H1"));
 
-            boolean changed = RoleMap.clear(pdfDoc);
+            int cleared = RoleMap.clear(pdfDoc);
 
-            assertTrue(changed);
+            assertEquals(1, cleared);
             assertFalse(pdfDoc.getStructTreeRoot().getPdfObject().containsKey(PdfName.RoleMap));
         }
     }

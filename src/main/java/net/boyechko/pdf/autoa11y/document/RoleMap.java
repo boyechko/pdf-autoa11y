@@ -27,10 +27,16 @@ import java.util.Map;
 public final class RoleMap {
     private RoleMap() {}
 
-    /** Removes /RoleMap from /StructTreeRoot. Returns true when a /RoleMap entry existed. */
-    public static boolean clear(PdfDocument pdfDoc) {
+    /** Removes /RoleMap from /StructTreeRoot. Returns the number of entries that were cleared. */
+    public static int clear(PdfDocument pdfDoc) {
         PdfDictionary rootDict = requireStructTreeRoot(pdfDoc).getPdfObject();
-        return rootDict.remove(PdfName.RoleMap) != null;
+        PdfDictionary existing = rootDict.getAsDictionary(PdfName.RoleMap);
+        if (existing == null) {
+            return 0;
+        }
+        int count = existing.size();
+        rootDict.remove(PdfName.RoleMap);
+        return count;
     }
 
     /**
