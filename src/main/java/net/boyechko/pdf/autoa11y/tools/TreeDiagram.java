@@ -339,9 +339,22 @@ public final class TreeDiagram {
 
             Optional<String> scribble = entry.getValue();
             if (scribble.isPresent()) {
-                elem.put(PdfName.T, new PdfString(scribble.get()));
-                updated++;
+                DocValue.Scribble existing = DocValue.Scribble.of(elem);
+                String existingRaw = existing != null ? existing.rawValue() : null;
+                if (scribble.get().equals(existingRaw)) {
+                    unchanged++;
+                } else {
+                    logger.debug(
+                            "update {} #{}: {} -> {}",
+                            key.role(),
+                            key.objNum(),
+                            existingRaw,
+                            scribble.get());
+                    elem.put(PdfName.T, new PdfString(scribble.get()));
+                    updated++;
+                }
             } else if (elem.getPdfObject().containsKey(PdfName.T)) {
+                logger.debug("clear {} #{}", key.role(), key.objNum());
                 elem.getPdfObject().remove(PdfName.T);
                 cleared++;
             } else {

@@ -105,6 +105,11 @@ public sealed interface DocValue {
             return new Scribble(value.replaceFirst(StructTree.SCRIBBLE_PREFIX, ""));
         }
 
+        /** Returns the raw {@code /T} storage value (prefix included, no surrounding quotes). */
+        public String rawValue() {
+            return StructTree.SCRIBBLE_PREFIX + value;
+        }
+
         @Override
         public String toString() {
             return "\"" + StructTree.SCRIBBLE_PREFIX + value + "\"";
