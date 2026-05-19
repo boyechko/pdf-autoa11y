@@ -90,6 +90,7 @@ public class UnexpectedWidgetCheck extends DocumentCheck {
         return issues;
     }
 
+    /** Returns true if {@code annotDict} is a Widget with /FT /Btn and the PushButton flag set. */
     private boolean isPushbuttonWidget(PdfDictionary annotDict, int pageNum) {
         PdfName subtype = annotDict.getAsName(PdfName.Subtype);
         if (!PdfName.Widget.equals(subtype)) {

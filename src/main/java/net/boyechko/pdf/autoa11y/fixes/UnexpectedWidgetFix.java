@@ -118,6 +118,11 @@ public class UnexpectedWidgetFix implements IssueFix {
         }
     }
 
+    /**
+     * Removes the OBJR (object reference) associated with the current annotation from the structure
+     * tree. The method traverses the structure tree, starting from the document's structural root,
+     * and deletes any matching PdfObjRef elements.
+     */
     private void removeObjRefFromStructureTree(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null) {
@@ -148,6 +153,7 @@ public class UnexpectedWidgetFix implements IssueFix {
                 if (refObj instanceof PdfDictionary refDict && matchesAnnotation(refDict)) {
                     removeObjRefFromElement(elem, objRef);
                     logger.debug("Removed OBJR for {} from {}", widgetRef(), Format.elem(elem));
+                    StructTree.pruneEmpty(elem);
                     return true;
                 }
             } else if (kid instanceof PdfStructElem childElem) {
@@ -159,7 +165,14 @@ public class UnexpectedWidgetFix implements IssueFix {
         return false;
     }
 
-    /** Removes a specific OBJR entry from a structure element's /K array. */
+    /**
+     * Removes a specific OBJR entry from a structure element's /K array by direct array
+     * manipulation. {@code PdfStructElem.removeKid()} only exposes typed overloads for {@code
+     * PdfStructElem} and {@code PdfMcr} children — there is no {@code removeKid(PdfObjRef)}
+     * variant. Raw array access is also necessary to avoid iText's flush-on-modification semantics,
+     * which can produce "Flushed object contains indirect reference which is free" errors when the
+     * same annotation dict is being removed from the page and AcroForm in the same pass.
+     */
     private void removeObjRefFromElement(PdfStructElem elem, PdfObjRef objRef) {
         PdfArray kArray = StructTree.normalizeKArray(elem);
         if (kArray == null) {
@@ -183,6 +196,11 @@ public class UnexpectedWidgetFix implements IssueFix {
         }
     }
 
+    /**
+     * Returns true if {@code candidate} refers to the same PDF object as the stored annotation,
+     * checking Java reference equality, indirect-reference equality, and structural equality in
+     * that order.
+     */
     private boolean matchesAnnotation(PdfDictionary candidate) {
         if (candidate == annotDict) {
             return true;
@@ -194,12 +212,14 @@ public class UnexpectedWidgetFix implements IssueFix {
         return candidate.equals(annotDict);
     }
 
+    /** Returns the annotation's PDF object number, or null if the reference is direct. */
     private Integer objNumberOrNull() {
         return annotDict.getIndirectReference() != null
                 ? annotDict.getIndirectReference().getObjNumber()
                 : null;
     }
 
+    /** Builds an {@link IssueLoc} for the widget, preferring object-number precision over page. */
     private IssueLoc widgetLoc() {
         Integer objNum = objNumberOrNull();
         if (objNum != null) {
@@ -211,6 +231,7 @@ public class UnexpectedWidgetFix implements IssueFix {
         return IssueLoc.none();
     }
 
+    /** Returns a log-friendly reference string identifying the widget and its location. */
     private String widgetRef() {
         return "Widget annotation" + Format.loc(widgetLoc());
     }
