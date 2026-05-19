@@ -485,6 +485,9 @@ public class Cli {
                 };
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
         ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.toLevel(level));
+        if (verbosity == VerbosityLevel.DEBUG) {
+            LoggingListener.ensureConsoleAppender();
+        }
     }
 
     private static Logger logger() {

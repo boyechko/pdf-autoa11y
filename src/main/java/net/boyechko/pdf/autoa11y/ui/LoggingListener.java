@@ -52,7 +52,11 @@ public class LoggingListener implements ProcessingListener {
         return new LoggingListener();
     }
 
-    private static void ensureConsoleAppender() {
+    /**
+     * Attaches a {@code ConsoleAppender} to the root logger if one is not already present. No
+     * appender is declared in {@code logback.xml} by design; see that file for rationale.
+     */
+    static void ensureConsoleAppender() {
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
         ch.qos.logback.classic.Logger root = ctx.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 
