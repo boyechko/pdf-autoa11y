@@ -320,41 +320,42 @@ public final class TreeDiagram {
             ElemKey key = entry.getKey();
             PdfStructElem elem = byObj.get(key.objNum());
             if (elem == null) {
-                warn.accept("no element found for " + key.role() + " #" + key.objNum());
+                warn.accept("no element found for " + key.label());
                 unmatchedLines++;
                 continue;
             }
             String actualRole = StructTree.mappedRole(elem);
             if (!key.role().equals(actualRole)) {
-                warn.accept(
-                        "line says "
-                                + key.role()
-                                + " #"
-                                + key.objNum()
-                                + " but element's role is "
-                                + actualRole);
+                warn.accept("line says " + key.label() + " but element's role is " + actualRole);
                 unmatchedLines++;
                 continue;
             }
 
-            Optional<String> scribble = entry.getValue();
-            if (scribble.isPresent()) {
-                DocValue.Scribble existing = DocValue.Scribble.of(elem);
-                String existingRaw = existing != null ? existing.rawValue() : null;
-                if (scribble.get().equals(existingRaw)) {
+            DocValue.Scribble existing = DocValue.Scribble.of(elem);
+            String existingRaw = existing != null ? existing.rawValue() : null;
+            Optional<String> newScribble = entry.getValue();
+            if (newScribble.isPresent()) {
+                if (newScribble.get().equals(existingRaw)) {
                     unchanged++;
                 } else {
-                    logger.debug(
-                            "update {} #{}: {} -> {}",
-                            key.role(),
-                            key.objNum(),
-                            existingRaw,
-                            scribble.get());
-                    elem.put(PdfName.T, new PdfString(scribble.get()));
+                    if (existing == null) {
+                        logger.debug("set {}: {}", key.label(), newScribble.get());
+                    } else {
+                        logger.debug(
+                                "update {}: {} -> {}",
+                                key.label(),
+                                existing.value(),
+                                newScribble.get());
+                    }
+                    elem.put(PdfName.T, new PdfString(newScribble.get()));
                     updated++;
                 }
             } else if (elem.getPdfObject().containsKey(PdfName.T)) {
-                logger.debug("clear {} #{}", key.role(), key.objNum());
+                if (existing == null) {
+                    logger.debug("clear empty /T from {}", key.label());
+                } else {
+                    logger.debug("clear {}: {}", key.label(), existing.value());
+                }
                 elem.getPdfObject().remove(PdfName.T);
                 cleared++;
             } else {
@@ -407,8 +408,7 @@ public final class TreeDiagram {
             Optional<String> value = scribble != null ? Optional.of(scribble) : Optional.empty();
             Optional<String> prior = out.put(key, value);
             if (prior != null && !prior.equals(value)) {
-                warn.accept(
-                        "duplicate line for " + role + " #" + objNum + " (line " + (i + 1) + ")");
+                warn.accept("duplicate line for " + key.label() + " (line " + (i + 1) + ")");
             }
         }
         return out;
@@ -431,5 +431,9 @@ public final class TreeDiagram {
     }
 
     /** Structural element key consisting of its role and indirect reference object number. */
-    private record ElemKey(String role, int objNum) {}
+    private record ElemKey(String role, int objNum) {
+        String label() {
+            return Label.of(new DocValue.Role(role)).add(new DocValue.ObjNum(objNum)).toString();
+        }
+    }
 }
