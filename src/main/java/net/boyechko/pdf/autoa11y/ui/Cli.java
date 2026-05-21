@@ -36,6 +36,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.document.SafeOutput;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
 import net.boyechko.pdf.autoa11y.tools.OutlineEditor;
 import net.boyechko.pdf.autoa11y.tools.TreeDiagram;
@@ -247,13 +248,13 @@ public class Cli {
             return;
         }
 
-        Path outputParent = config.outputPath().getParent();
-        if (outputParent != null) {
-            Files.createDirectories(outputParent);
+        try (SafeOutput out = SafeOutput.at(config.outputPath())) {
+            Files.copy(
+                    result.tempOutputFile(),
+                    out.workingPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+            out.commit();
         }
-
-        Files.copy(
-                result.tempOutputFile(), config.outputPath(), StandardCopyOption.REPLACE_EXISTING);
 
         listener.onSuccess("Output saved to " + config.outputPath().toString());
 
@@ -288,9 +289,14 @@ public class Cli {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             String content = Files.readString(config.annotateTreePath());
-            try (PdfDocument pdfDoc = custodian.openForModification(config.outputPath())) {
-                TreeDiagram.AnnotateResult result =
-                        TreeDiagram.annotateFromString(pdfDoc, content, msg -> logger().warn(msg));
+            try (SafeOutput out = SafeOutput.at(config.outputPath())) {
+                TreeDiagram.AnnotateResult result;
+                try (PdfDocument pdfDoc = custodian.openForModification(out.workingPath())) {
+                    result =
+                            TreeDiagram.annotateFromString(
+                                    pdfDoc, content, msg -> logger().warn(msg));
+                }
+                out.commit();
                 if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
                     System.out.printf(
                             "Annotations applied: %d updated, %d cleared, %d unchanged"
@@ -339,9 +345,14 @@ public class Cli {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             String content = Files.readString(config.applyOutlinePath());
-            try (PdfDocument pdfDoc = custodian.openForModification(config.outputPath())) {
-                OutlineEditor.ApplyResult result =
-                        OutlineEditor.applyFromString(pdfDoc, content, msg -> logger().warn(msg));
+            try (SafeOutput out = SafeOutput.at(config.outputPath())) {
+                OutlineEditor.ApplyResult result;
+                try (PdfDocument pdfDoc = custodian.openForModification(out.workingPath())) {
+                    result =
+                            OutlineEditor.applyFromString(
+                                    pdfDoc, content, msg -> logger().warn(msg));
+                }
+                out.commit();
                 if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
                     System.out.printf(
                             "Outline replaced: %d previous entry(ies) removed,"

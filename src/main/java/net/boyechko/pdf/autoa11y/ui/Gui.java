@@ -29,6 +29,7 @@ import javax.swing.border.TitledBorder;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.document.SafeOutput;
 
 public class Gui extends JFrame {
     private JLabel dropLabel;
@@ -331,11 +332,12 @@ public class Gui extends JFrame {
                     return;
                 }
             }
-            try {
+            try (SafeOutput out = SafeOutput.at(targetFile.toPath())) {
                 Files.copy(
                         tempResultFile.toPath(),
-                        targetFile.toPath(),
+                        out.workingPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                out.commit();
                 JOptionPane.showMessageDialog(
                         this, "File saved to: " + targetFile.getAbsolutePath());
                 writeAccessibilityReport(targetFile.toPath());

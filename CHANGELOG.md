@@ -114,6 +114,13 @@ Versioning](https://semver.org/).
   is skipped.
 
 ### Fixed
+- Passing the same path for input and output now works (e.g.
+  `pdf-autoa11y --annotate-tree=foo.tree.txt foo.pdf foo.pdf`). Output is
+  staged in a sibling `.autoa11y-tmp` file and atomically renamed into place,
+  so the input is no longer truncated underneath iText's memory-mapped reader
+  (which previously crashed with `InternalError: a fault occurred in an
+  unsafe memory access operation`). Applies to remediation, `--annotate-tree`,
+  and `--apply-outline`.
 - `--dump-tree` no longer crashes on PDFs with MCRs that have no page
   reference (e.g. after pages were deleted in Acrobat). Orphaned MCRs are
   now displayed as `[orphaned mcid N]` instead of crashing with a
