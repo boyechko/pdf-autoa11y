@@ -116,7 +116,7 @@ public class ScribbledInstructionFix implements IssueFix {
 
         PdfObject effectivePg = StructTree.effectivePageDict(element);
         for (ChildSpec spec : specs) {
-            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(spec.tag()));
+            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), resolvePdfName(spec.tag()));
             element.addKid(wrapper);
             populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount, effectivePg);
         }
@@ -134,7 +134,7 @@ public class ScribbledInstructionFix implements IssueFix {
             PdfObject effectivePg) {
         if (spec instanceof NewStructure ns) {
             for (ChildSpec child : ns.children()) {
-                PdfStructElem nested = new PdfStructElem(doc, new PdfName(child.tag()));
+                PdfStructElem nested = new PdfStructElem(doc, resolvePdfName(child.tag()));
                 wrapper.addKid(nested);
                 populateWrapper(doc, nested, child, origKids, kidCount, effectivePg);
             }
@@ -516,7 +516,7 @@ public class ScribbledInstructionFix implements IssueFix {
         PdfStructElem innermost = parent;
         PdfStructElem outermost = null;
         for (String wrapperName : chain) {
-            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), new PdfName(wrapperName));
+            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), resolvePdfName(wrapperName));
             if (outermost == null) {
                 parent.addKid(index, wrapper);
                 outermost = wrapper;
