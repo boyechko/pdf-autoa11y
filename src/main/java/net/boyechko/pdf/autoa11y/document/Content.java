@@ -341,7 +341,7 @@ public final class Content {
                     String text = textInfo.getText();
                     if (text != null && !text.trim().isEmpty()) {
                         String fontName = extractFontName(textInfo);
-                        float fontSize = textInfo.getFontSize();
+                        float fontSize = effectiveFontSize(textInfo);
                         accumulators
                                 .computeIfAbsent(mcid, k -> new SpanAccumulator())
                                 .add(fontName, fontSize, text);
@@ -443,6 +443,20 @@ public final class Content {
         } catch (NullPointerException e) {
             return "unknown";
         }
+    }
+
+    /**
+     * Computes the effective rendered font size from the ascent-descent distance. This handles PDFs
+     * where the Tf operator is set to 1pt and the text matrix scales to the actual size.
+     */
+    private static float effectiveFontSize(TextRenderInfo info) {
+        LineSegment ascent = info.getAscentLine();
+        LineSegment descent = info.getDescentLine();
+        Vector ascentStart = ascent.getStartPoint();
+        Vector descentStart = descent.getStartPoint();
+        float dx = ascentStart.get(Vector.I1) - descentStart.get(Vector.I1);
+        float dy = ascentStart.get(Vector.I2) - descentStart.get(Vector.I2);
+        return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
     /** Cleans extracted text by removing replacement characters and normalizing whitespace. */
