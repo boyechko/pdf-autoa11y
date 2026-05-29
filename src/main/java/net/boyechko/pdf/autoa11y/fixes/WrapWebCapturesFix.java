@@ -57,7 +57,6 @@ public class WrapWebCapturesFix implements IssueFix {
 
     private static final int P_WRAP_CAPTURES = 8;
     private static final PdfName N_SPS = new PdfName("SPS");
-    private static final PdfName N_O = new PdfName("O");
 
     private int wrapped = 0;
     private int skippedEmpty = 0;
@@ -115,7 +114,7 @@ public class WrapWebCapturesFix implements IssueFix {
             String url = e.getKey().toUnicodeString();
             if (!(e.getValue() instanceof PdfDictionary cs)) continue;
             if (!N_SPS.equals(cs.getAsName(PdfName.S))) continue;
-            PdfArray o = cs.getAsArray(N_O);
+            PdfArray o = cs.getAsArray(PdfName.O);
             if (o == null || o.isEmpty()) continue;
             List<Integer> pages = new ArrayList<>();
             for (int i = 0; i < o.size(); i++) {

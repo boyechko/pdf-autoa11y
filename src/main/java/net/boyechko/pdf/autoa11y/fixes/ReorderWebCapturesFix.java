@@ -49,7 +49,6 @@ public class ReorderWebCapturesFix implements IssueFix {
 
     private static final int P_REORDER_PAGES = 7;
     private static final PdfName N_SPS = new PdfName("SPS");
-    private static final PdfName N_O = new PdfName("O");
 
     private final List<String> orderedUrls;
     private int movedPages = 0;
@@ -150,7 +149,7 @@ public class ReorderWebCapturesFix implements IssueFix {
             String url = e.getKey().toUnicodeString();
             if (!(e.getValue() instanceof PdfDictionary cs)) continue;
             if (!N_SPS.equals(cs.getAsName(PdfName.S))) continue;
-            PdfArray o = cs.getAsArray(N_O);
+            PdfArray o = cs.getAsArray(PdfName.O);
             if (o == null || o.isEmpty()) continue;
             List<PdfDictionary> pageDicts = new ArrayList<>();
             for (int i = 0; i < o.size(); i++) {

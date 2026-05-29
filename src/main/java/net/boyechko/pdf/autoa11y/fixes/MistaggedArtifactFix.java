@@ -341,7 +341,7 @@ public class MistaggedArtifactFix implements IssueFix {
         PdfDictionary pageDict = annotDict.getAsDictionary(PdfName.P);
 
         if (pageDict == null) {
-            pageDict = annotDict.getAsDictionary(new PdfName("Pg"));
+            pageDict = annotDict.getAsDictionary(PdfName.Pg);
         }
 
         if (pageDict != null) {
