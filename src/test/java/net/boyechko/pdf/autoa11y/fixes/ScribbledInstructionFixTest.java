@@ -675,4 +675,36 @@ class ScribbledInstructionFixTest extends PdfTestBase {
                     () -> new ScribbledInstructionFix(p, "!UNLINK").apply(ctx));
         }
     }
+
+    @Test
+    void setRoleChangesElementRole() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(p, "!SET_ROLE H4").apply(ctx);
+
+            assertEquals(PdfName.H4, p.getRole());
+        }
+    }
+
+    @Test
+    void setRoleAcceptsNonStandardRole() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(p, "!SET_ROLE CustomRole").apply(ctx);
+
+            assertEquals("CustomRole", p.getRole().getValue());
+        }
+    }
 }

@@ -54,6 +54,7 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
     private static final Pattern REORDER_KIDS_PATTERN = Pattern.compile("!REORDER_KIDS");
+    private static final Pattern SET_ROLE_PATTERN = Pattern.compile("!SET_ROLE\\s+(\\S+)");
     private static final Pattern UNLINK_PATTERN = Pattern.compile("!UNLINK");
 
     /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
@@ -78,6 +79,7 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
         Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
         Matcher reorderKids = REORDER_KIDS_PATTERN.matcher(instruction);
+        Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
 
         if (addChild.matches()) {
@@ -88,6 +90,8 @@ public class ScribbledInstructionFix implements IssueFix {
             applyArtifact(ctx);
         } else if (reorderKids.matches()) {
             applyReorderKids(ctx);
+        } else if (setRole.matches()) {
+            applySetRole(setRole.group(1));
         } else if (unlink.matches()) {
             applyUnlink(ctx);
         } else {
@@ -312,6 +316,21 @@ public class ScribbledInstructionFix implements IssueFix {
         while (pos[0] < expr.length()
                 && (expr.charAt(pos[0]) == ' ' || expr.charAt(pos[0]) == ',')) {
             pos[0]++;
+        }
+    }
+
+    private void applySetRole(String roleName) {
+        element.setRole(resolvePdfName(roleName));
+        element.getPdfObject().remove(PdfName.T);
+        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+    }
+
+    /** Resolves a PDF name string to a standard {@link PdfName} constant when one exists. */
+    private static PdfName resolvePdfName(String name) {
+        try {
+            return (PdfName) PdfName.class.getField(name).get(null);
+        } catch (ReflectiveOperationException e) {
+            return new PdfName(name);
         }
     }
 
