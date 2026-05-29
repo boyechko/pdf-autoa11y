@@ -315,6 +315,11 @@ public class ScribbledInstructionFix implements IssueFix {
         }
     }
 
+    /** Returns true if the instruction operates on the entire subtree, not just the element. */
+    public static boolean isSubtreeInstruction(String instruction) {
+        return ARTIFACT_PATTERN.matcher(instruction).matches();
+    }
+
     /** Delegates to MistaggedArtifactFix to convert the element's content to artifacts. */
     private void applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
