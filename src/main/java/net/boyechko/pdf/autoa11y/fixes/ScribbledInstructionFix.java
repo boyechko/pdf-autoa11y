@@ -99,6 +99,8 @@ public class ScribbledInstructionFix implements IssueFix {
         }
     }
 
+    // === Instruction: ADD_CHILD ==============================================
+
     /**
      * Parses the tag expression and redistributes the element's kids into the new wrappers per the
      * template. Enforces strict coverage: every existing kid must land in some range. On an empty
@@ -319,6 +321,8 @@ public class ScribbledInstructionFix implements IssueFix {
         }
     }
 
+    // === Instruction: SET_ROLE ===============================================
+
     private void applySetRole(String roleName) {
         element.setRole(resolvePdfName(roleName));
         element.getPdfObject().remove(PdfName.T);
@@ -334,15 +338,19 @@ public class ScribbledInstructionFix implements IssueFix {
         }
     }
 
-    /** Returns true if the instruction operates on the entire subtree, not just the element. */
-    public static boolean isSubtreeInstruction(String instruction) {
-        return ARTIFACT_PATTERN.matcher(instruction).matches();
-    }
+    // === Instruction: ARTIFACT ===============================================
 
     /** Delegates to MistaggedArtifactFix to convert the element's content to artifacts. */
     private void applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
     }
+
+    /** Returns true if the instruction operates on the entire subtree, not just the element. */
+    public static boolean isSubtreeInstruction(String instruction) {
+        return ARTIFACT_PATTERN.matcher(instruction).matches();
+    }
+
+    // === Instruction: REORDER ================================================
 
     /**
      * Reorders the element's kids based on each kid's {@code !REORDER NNN} scribble segment. Kids
@@ -412,6 +420,8 @@ public class ScribbledInstructionFix implements IssueFix {
                             "Unsupported kid type: " + kid.getClass().getSimpleName());
         }
     }
+
+    // === Instruction: UNLINK =================================================
 
     /**
      * Unwraps a Link struct element: promotes its non-OBJR kids to its parent at its original
@@ -488,6 +498,8 @@ public class ScribbledInstructionFix implements IssueFix {
             logger.debug("Link annotation {} not found in any page /Annots", Format.objNum(objNum));
         }
     }
+
+    // === Instruction: ADD_PARENT =============================================
 
     /**
      * Parses the tag expression, which must be a linear chain (each node has at most one child and
