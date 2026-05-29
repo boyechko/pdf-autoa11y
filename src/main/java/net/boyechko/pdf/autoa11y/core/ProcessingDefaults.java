@@ -56,6 +56,7 @@ public final class ProcessingDefaults {
                 InvalidLinkUriCheck::new,
                 MistaggedBulletedListCheck::new,
                 ParagraphOfLinksCheck::new,
+                MistaggedHeadingCheck::new,
                 EmptyElementCheck::new,
                 ScribbledInstructionCheck::new,
                 SchemaValidationCheck::new,

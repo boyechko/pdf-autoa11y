@@ -17,7 +17,7 @@
  */
 package net.boyechko.pdf.autoa11y.issue;
 
-/** Represents the type of an accessibility issue found in a PDF document. */
+/** Represents the type of accessibility issue found in a PDF document. */
 public enum IssueType {
     // Fatal issues (processing cannot continue)
     IMAGE_ONLY_DOCUMENT("image-only document with no text"),
@@ -60,7 +60,8 @@ public enum IssueType {
     STALE_SCRIBBLE("elements with stale workflow scribbles in /T"),
     NAMED_DESTINATIONS_PRESENT("named destinations in /Catalog /Names /Dests"),
     WEB_CAPTURES_NOT_GROUPED("Web Capture URLs not wrapped in Article elements"),
-    WEB_CAPTURES_BADLY_ORDERED("Web Capture pages not in configured URL order");
+    WEB_CAPTURES_BADLY_ORDERED("Web Capture pages not in configured URL order"),
+    MISTAGGED_HEADING("headings tagged as paragraphs");
 
     private final String groupLabel;
 
