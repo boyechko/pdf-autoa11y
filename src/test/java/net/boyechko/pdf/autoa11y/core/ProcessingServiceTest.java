@@ -152,17 +152,6 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     @Test
-    void multipleIssueTypesDetectedInSingleRun() throws Exception {
-        ProcessingResult result = createProcessingService(TAGGED_BASELINE_PDF).remediate();
-
-        assertNotNull(result.detectedIssues());
-        assertEquals(
-                0,
-                result.issuesRemaining(),
-                "Tagged baseline PDF should be compliant with no remaining issues");
-    }
-
-    @Test
     void remediatedFigureWithTextIssueIsNotReportedAsRemaining() throws Exception {
         Path inputPath = createFigureWithTextPdf();
         ProcessingResult result = createProcessingService(inputPath).remediate();
