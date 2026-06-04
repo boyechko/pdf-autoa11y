@@ -10,7 +10,10 @@ Versioning](https://semver.org/).
 ### Added
 - Added `MistaggedHeadingCheck` that flags paragraphs and mis-leveled
   headings using per-Article font-size analysis and marks them for
-  retagging at the appropriate heading level.
+  retagging at the appropriate heading level. Headings that would skip a
+  level (e.g. H3 to H5, or a subheading before any top-level heading) are
+  reported separately as improperly nested for manual review rather than
+  retagged.
 - Added `--dump-outline` and `--apply-outline <file>` CLI options for
   round-tripping a PDF's outline (bookmarks) through an editable text file.
   Useful for cleaning up the noisy outlines that Adobe Web Capture and

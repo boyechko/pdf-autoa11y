@@ -34,8 +34,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
@@ -180,6 +182,99 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
             long headingIssues =
                     issues.stream().filter(i -> i.type() == IssueType.MISTAGGED_HEADING).count();
             assertEquals(1, headingIssues, "A heading tagged at the wrong level should be flagged");
+        }
+    }
+
+    @Test
+    void skippedHeadingLevelIsFlaggedNotRetagged() throws Exception {
+        Path pdfFile = testOutputPath("skippedHeadingLevelIsFlaggedNotRetagged.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem docElem = newDocument(pdfDoc);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(page);
+
+            // Sizes 24/20/16/14 rank as H1/H2/H3/H4. In reading order H1, H2, then the 14pt (H4)
+            // element appears before any H3 -- a skipped level.
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 24, "Heading One", 740);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 20, "Heading Two", 710);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 14, "Skipped Level", 680);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 16, "Heading Three", 650);
+
+            for (int i = 0; i < 8; i++) {
+                addTaggedText(
+                        pdfDoc,
+                        page,
+                        docElem,
+                        canvas,
+                        font,
+                        10,
+                        "Body text paragraph " + (i + 1) + " with enough content to dominate.",
+                        620 - i * 18);
+            }
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            IssueList issues = new MistaggedHeadingCheck().findIssues(new DocContext(pdfDoc));
+
+            List<Issue> retags =
+                    issues.stream().filter(i -> i.type() == IssueType.MISTAGGED_HEADING).toList();
+            List<Issue> nestingIssues =
+                    issues.stream()
+                            .filter(i -> i.type() == IssueType.IMPROPERLY_NESTED_HEADING)
+                            .toList();
+            assertEquals(3, retags.size(), "retag H1, H2, and H3");
+            assertEquals(1, nestingIssues.size(), "skipped H4 is flagged, not retagged");
+            assertTrue(
+                    nestingIssues.getFirst().message().contains("Improperly nested H4"),
+                    "flagged at the skipped level H4");
+        }
+    }
+
+    @Test
+    void headingTooDeepToStartIsFlagged() throws Exception {
+        Path pdfFile = testOutputPath("headingTooDeepToStartIsFlagged.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem docElem = newDocument(pdfDoc);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(page);
+
+            // Sizes 24/20/16 rank as H1/H2/H3. The 16pt (H3) element comes first, before any H1 --
+            // a heading too deep to open the outline.
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 16, "Premature Sub", 740);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 24, "Heading One", 710);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 20, "Heading Two", 680);
+
+            for (int i = 0; i < 8; i++) {
+                addTaggedText(
+                        pdfDoc,
+                        page,
+                        docElem,
+                        canvas,
+                        font,
+                        10,
+                        "Body text paragraph " + (i + 1) + " with enough content to dominate.",
+                        650 - i * 18);
+            }
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            IssueList issues = new MistaggedHeadingCheck().findIssues(new DocContext(pdfDoc));
+
+            List<Issue> retags =
+                    issues.stream().filter(i -> i.type() == IssueType.MISTAGGED_HEADING).toList();
+            List<Issue> nestingIssues =
+                    issues.stream()
+                            .filter(i -> i.type() == IssueType.IMPROPERLY_NESTED_HEADING)
+                            .toList();
+            assertEquals(2, retags.size(), "retag H1 and H2");
+            assertEquals(1, nestingIssues.size(), "premature H3 is flagged, not retagged");
+            assertTrue(
+                    nestingIssues.getFirst().message().contains("Improperly nested H3"),
+                    "flagged at the premature level H3");
         }
     }
 

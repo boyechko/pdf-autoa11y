@@ -110,14 +110,30 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             return true;
         }
 
+        // Heading levels must not skip a level (H3 -> H5 with no H4 between). Flag for review
+        // rather than retagging.
+        int level = HEADING_LEVELS.indexOf(headingLevel) + 1;
+        if (level > scope.prevLevel() + 1) {
+            StructTree.addScribble(node, "improperly nested " + headingLevel.getValue());
+            issues.add(
+                    new Issue(
+                            IssueType.IMPROPERLY_NESTED_HEADING,
+                            IssueSev.WARNING,
+                            locAtElem(ctx),
+                            "Improperly nested "
+                                    + headingLevel.getValue()
+                                    + ": \""
+                                    + getTruncatedText(ctx)
+                                    + "\"",
+                            null));
+            return true;
+        }
+        scope.setPrevLevel(level);
+
         // Already at the correct level: nothing to fix.
         if (headingLevel.getValue().equals(role)) {
             return true;
         }
-
-        String text = getTextContent(ctx);
-        String truncated =
-                text.length() > TRUNCATED_LENGTH ? text.substring(0, TRUNCATED_LENGTH) + "…" : text;
 
         IssueFix fix = new MistaggedHeadingFix(node, headingLevel);
         issues.add(
@@ -125,7 +141,11 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                         IssueType.MISTAGGED_HEADING,
                         IssueSev.WARNING,
                         locAtElem(ctx),
-                        role + " should be " + headingLevel.getValue() + ": \"" + truncated + "\"",
+                        "Mistagged "
+                                + headingLevel.getValue()
+                                + ": \""
+                                + getTruncatedText(ctx)
+                                + "\"",
                         fix));
 
         return true;
@@ -145,9 +165,38 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
 
     // == Scope ===========================================================
 
-    /** Font-size histogram for one grouping element: body text size and the heading-level map. */
-    private record HeadingScope(Map<Float, PdfName> headingMap, float bodySize) {
+    /**
+     * Font-size histogram for one grouping element: body text size, the heading-level map, and the
+     * deepest valid heading level seen so far in this scope (for nesting checks).
+     */
+    private static final class HeadingScope {
         static final HeadingScope EMPTY = new HeadingScope(Map.of(), 0f);
+
+        private final Map<Float, PdfName> headingMap;
+        private final float bodySize;
+        private int prevLevel = 0;
+
+        HeadingScope(Map<Float, PdfName> headingMap, float bodySize) {
+            this.headingMap = headingMap;
+            this.bodySize = bodySize;
+        }
+
+        Map<Float, PdfName> headingMap() {
+            return headingMap;
+        }
+
+        float bodySize() {
+            return bodySize;
+        }
+
+        /** Deepest properly nested heading level seen so far (0 = none yet). */
+        int prevLevel() {
+            return prevLevel;
+        }
+
+        void setPrevLevel(int level) {
+            prevLevel = level;
+        }
 
         boolean isEmpty() {
             return headingMap.isEmpty();
@@ -248,12 +297,15 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 .orElse(null);
     }
 
-    private String getTextContent(StructTreeContext ctx) {
+    /** Returns a truncated text content of the given @code{StructTreeContext}. */
+    private String getTruncatedText(StructTreeContext ctx) {
         int pageNum = ctx.getPageNumber();
         if (pageNum <= 0) {
             return "";
         }
-        return Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
+
+        String text = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
+        return text.length() > TRUNCATED_LENGTH ? text.substring(0, TRUNCATED_LENGTH) + "…" : text;
     }
 
     /** Rounds font size to the nearest 0.25pt to handle floating-point noise. */
@@ -268,8 +320,8 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         String levels =
                 scope.headingMap().entrySet().stream()
                         .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder()))
-                        .map(e -> e.getValue().getValue() + "=" + e.getKey() + "pt")
-                        .collect(Collectors.joining(", "));
-        logger.info("{}: body={}pt, headings: {}", label, scope.bodySize(), levels);
+                        .map(e -> String.format("%s=%5.2fpt", e.getValue().getValue(), e.getKey()))
+                        .collect(Collectors.joining("  "));
+        logger.debug("{}: body={}pt, headings: {}", label, scope.bodySize(), levels);
     }
 }

@@ -61,7 +61,8 @@ public enum IssueType {
     NAMED_DESTINATIONS_PRESENT("named destinations in /Catalog /Names /Dests"),
     WEB_CAPTURES_NOT_GROUPED("Web Capture URLs not wrapped in Article elements"),
     WEB_CAPTURES_BADLY_ORDERED("Web Capture pages not in configured URL order"),
-    MISTAGGED_HEADING("headings tagged as paragraphs");
+    MISTAGGED_HEADING("headings tagged as paragraphs"),
+    IMPROPERLY_NESTED_HEADING("headings with skipped or out-of-order levels");
 
     private final String groupLabel;
 
