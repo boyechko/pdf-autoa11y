@@ -324,9 +324,10 @@ public class ScribbledInstructionFix implements IssueFix {
     // === Instruction: SET_ROLE ===============================================
 
     private void applySetRole(String roleName) {
+        String prevRole = element.getRole().getValue();
         element.setRole(resolvePdfName(roleName));
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK (was: " + prevRole + ")");
     }
 
     /** Resolves a PDF name string to a standard {@link PdfName} constant when one exists. */
