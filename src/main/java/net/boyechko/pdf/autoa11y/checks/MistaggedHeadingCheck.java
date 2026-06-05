@@ -29,9 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import net.boyechko.pdf.autoa11y.document.Content;
-import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.*;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedHeadingFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -88,7 +86,14 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         if (ART_ROLE.equals(role)) {
             HeadingScope scope = buildScope(charCountsForElement(node, ctx.docCtx()));
             scopeStack.push(scope);
-            logScope("Art #" + StructTree.objNum(node), scope);
+            logScope(
+                    Label.of(new DocValue.Role("Art"))
+                            .add("(")
+                            .separator("")
+                            .add(new DocValue.PageNum(StructTree.pageOf(node, ctx.docCtx())))
+                            .add(")")
+                            .toString(),
+                    scope);
         }
 
         if (!MistaggedHeadingFix.ELEMENTS_TO_TAG.contains(role)) {
@@ -113,8 +118,11 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         // Heading levels must not skip a level (H3 -> H5 with no H4 between). Flag for review
         // rather than retagging.
         int level = HEADING_LEVELS.indexOf(headingLevel) + 1;
-        if (level > scope.prevLevel() + 1) {
-            StructTree.addScribble(node, "improperly nested " + headingLevel.getValue());
+        int expectedLevel = scope.prevLevel() + 1;
+        if (level > expectedLevel) {
+            StructTree.addScribble(
+                    node, headingLevel.getValue() + " (expected H" + expectedLevel + ")");
+            StructTree.addScribble(node, dominantSize + "pt");
             issues.add(
                     new Issue(
                             IssueType.IMPROPERLY_NESTED_HEADING,
