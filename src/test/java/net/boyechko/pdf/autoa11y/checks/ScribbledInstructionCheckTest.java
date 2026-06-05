@@ -29,6 +29,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -93,6 +94,35 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size());
+        }
+    }
+
+    @Test
+    void detectsInstructionAmongOtherSegments() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            // The instruction is not the whole scribble: a trailing note segment follows it.
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            p.getPdfObject()
+                    .put(
+                            PdfName.T,
+                            new PdfString(
+                                    SCRIBBLE_PREFIX
+                                            + "!SET_ROLE H2"
+                                            + StructTree.SCRIBBLE_SEPARATOR
+                                            + "36.5pt"));
+            document.addKid(p);
+
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(1, issues.size());
+            assertEquals(IssueType.SCRIBBLED_INSTRUCTION, issues.get(0).type());
+            assertNotNull(issues.get(0).fix());
         }
     }
 

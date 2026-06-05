@@ -110,6 +110,12 @@ public sealed interface DocValue {
             return StructTree.SCRIBBLE_PREFIX + value;
         }
 
+        /** Splits the scribble into its segments on the shared separator. */
+        public List<String> segments() {
+            return List.of(
+                    value.split(java.util.regex.Pattern.quote(StructTree.SCRIBBLE_SEPARATOR)));
+        }
+
         @Override
         public String toString() {
             return "\"" + StructTree.SCRIBBLE_PREFIX + value + "\"";

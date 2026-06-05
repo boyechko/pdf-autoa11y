@@ -61,17 +61,28 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
         if (scribble == null) {
             return true;
         }
-        if (scribble.value().startsWith(SCRIBBLED_INSTRUCTION_PREFIX)) {
+        String instruction = instructionSegment(scribble);
+        if (instruction != null) {
             issues.add(
                     new Issue(
                             IssueType.SCRIBBLED_INSTRUCTION,
                             IssueSev.WARNING,
                             locAtElem(ctx),
                             "Scribbled instruction: " + scribble.value(),
-                            new ScribbledInstructionFix(ctx.node(), scribble.value())));
-            return !ScribbledInstructionFix.isSubtreeInstruction(scribble.value());
+                            new ScribbledInstructionFix(ctx.node(), instruction)));
+            return !ScribbledInstructionFix.isSubtreeInstruction(instruction);
         }
         return true;
+    }
+
+    /** Returns the first instruction-bearing segment, or null when the scribble has none. */
+    private static String instructionSegment(DocValue.Scribble scribble) {
+        for (String segment : scribble.segments()) {
+            if (segment.startsWith(SCRIBBLED_INSTRUCTION_PREFIX)) {
+                return segment;
+            }
+        }
+        return null;
     }
 
     @Override
