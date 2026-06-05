@@ -110,10 +110,20 @@ public sealed interface DocValue {
             return StructTree.SCRIBBLE_PREFIX + value;
         }
 
-        /** Splits the scribble into its segments on the shared separator. */
+        /** Whether this scribble was authored by the tool (carries the leading tool mark). */
+        public boolean toolAuthored() {
+            return value.startsWith(StructTree.SCRIBBLE_TOOL_MARK);
+        }
+
+        /** The scribble content with any leading tool-authorship mark removed. */
+        public String body() {
+            return toolAuthored() ? value.substring(StructTree.SCRIBBLE_TOOL_MARK.length()) : value;
+        }
+
+        /** Splits the scribble body into its segments on the shared separator. */
         public List<String> segments() {
             return List.of(
-                    value.split(java.util.regex.Pattern.quote(StructTree.SCRIBBLE_SEPARATOR)));
+                    body().split(java.util.regex.Pattern.quote(StructTree.SCRIBBLE_SEPARATOR)));
         }
 
         @Override

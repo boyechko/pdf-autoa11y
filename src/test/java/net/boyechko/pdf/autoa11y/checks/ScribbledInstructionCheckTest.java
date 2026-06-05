@@ -127,6 +127,49 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
     }
 
     @Test
+    void detectsToolAuthoredInstruction() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            // Tool-authored instruction: ':' authorship mark before the '!' directive.
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            StructTree.setToolScribble(p, "!SET_ROLE H2");
+            document.addKid(p);
+
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(1, issues.size());
+            assertEquals(IssueType.SCRIBBLED_INSTRUCTION, issues.get(0).type());
+            assertNotNull(issues.get(0).fix());
+        }
+    }
+
+    @Test
+    void ignoresToolAuthoredFinding() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            // A '?' finding is informational, not an instruction; it must never execute.
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            StructTree.setToolScribble(
+                    p, "?H3 (expected H2)" + StructTree.SCRIBBLE_SEPARATOR + "23.75pt");
+            document.addKid(p);
+
+            IssueList issues = runCheck(pdfDoc);
+
+            assertEquals(0, issues.size());
+        }
+    }
+
+    @Test
     void detectsMultipleInstructionScribbles() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();

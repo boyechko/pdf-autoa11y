@@ -124,7 +124,7 @@ public class ScribbledInstructionFix implements IssueFix {
         }
 
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
     }
 
     private void populateWrapper(
@@ -327,7 +327,7 @@ public class ScribbledInstructionFix implements IssueFix {
         String prevRole = element.getRole().getValue();
         element.setRole(resolvePdfName(roleName));
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK (was: " + prevRole + ")");
+        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK (was: " + prevRole + ")");
     }
 
     /** Resolves a PDF name string to a standard {@link PdfName} constant when one exists. */
@@ -543,7 +543,7 @@ public class ScribbledInstructionFix implements IssueFix {
         innermost.addKid(element);
 
         element.getPdfObject().remove(PdfName.T);
-        StructTree.setScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
     }
 
     /**

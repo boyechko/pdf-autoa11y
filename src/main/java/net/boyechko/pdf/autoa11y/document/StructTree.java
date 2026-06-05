@@ -437,6 +437,9 @@ public final class StructTree {
     public static final String SCRIBBLE_PREFIX = "__";
     public static final String SCRIBBLE_SEPARATOR = " // ";
 
+    /** Leading mark distinguishing a tool-authored scribble from a user-authored one. */
+    public static final String SCRIBBLE_TOOL_MARK = ":";
+
     /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
     public static DocValue.Scribble getScribble(PdfStructElem elem) {
         return DocValue.Scribble.of(elem);
@@ -444,6 +447,13 @@ public final class StructTree {
 
     public static void setScribble(PdfStructElem elem, String scribble) {
         elem.put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + scribble));
+    }
+
+    /**
+     * Writes a tool-authored scribble, marked so it reads as the tool's own rather than the user's.
+     */
+    public static void setToolScribble(PdfStructElem elem, String scribble) {
+        setScribble(elem, SCRIBBLE_TOOL_MARK + scribble);
     }
 
     /** Appends to an existing scribble or creates a new one if none exists. */
@@ -467,11 +477,9 @@ public final class StructTree {
         DocValue.Scribble existing = getScribble(elem);
         if (existing == null) return false;
 
-        String[] segments =
-                existing.value().split(java.util.regex.Pattern.quote(SCRIBBLE_SEPARATOR));
         StringBuilder kept = new StringBuilder();
         boolean removedAny = false;
-        for (String seg : segments) {
+        for (String seg : existing.segments()) {
             int sp = seg.indexOf(' ');
             String head = (sp < 0) ? seg : seg.substring(0, sp);
             if (head.equals(tag)) {
@@ -484,6 +492,8 @@ public final class StructTree {
         if (!removedAny) return false;
         if (kept.length() == 0) {
             elem.getPdfObject().remove(PdfName.T);
+        } else if (existing.toolAuthored()) {
+            setToolScribble(elem, kept.toString());
         } else {
             setScribble(elem, kept.toString());
         }

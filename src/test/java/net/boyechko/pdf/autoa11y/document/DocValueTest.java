@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.Test;
 
@@ -130,5 +131,35 @@ class DocValueTest extends PdfTestBase {
 
             assertNull(DocValue.resolveDestination(dest));
         }
+    }
+
+    @Test
+    void toolAuthoredScribbleStripsMarkFromBody() {
+        DocValue.Scribble scribble =
+                new DocValue.Scribble(StructTree.SCRIBBLE_TOOL_MARK + "!SET_ROLE H1");
+
+        assertTrue(scribble.toolAuthored());
+        assertEquals("!SET_ROLE H1", scribble.body());
+    }
+
+    @Test
+    void userAuthoredScribbleHasNoToolMark() {
+        DocValue.Scribble scribble = new DocValue.Scribble("!SET_ROLE H1");
+
+        assertFalse(scribble.toolAuthored());
+        assertEquals("!SET_ROLE H1", scribble.body());
+    }
+
+    @Test
+    void segmentsSplitBodyAndExcludeToolMark() {
+        DocValue.Scribble scribble =
+                new DocValue.Scribble(
+                        StructTree.SCRIBBLE_TOOL_MARK
+                                + "?H3 (expected H2)"
+                                + StructTree.SCRIBBLE_SEPARATOR
+                                + "23.75pt");
+
+        assertTrue(scribble.toolAuthored());
+        assertEquals(List.of("?H3 (expected H2)", "23.75pt"), scribble.segments());
     }
 }
