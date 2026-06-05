@@ -582,15 +582,16 @@ class ScribbledInstructionFixTest extends PdfTestBase {
 
             PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.H1);
             document.addKid(first);
-            StructTree.setScribble(first, "first; !REORDER 002");
+            StructTree.setScribble(first, "first" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 002");
 
             PdfStructElem second = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(second);
-            StructTree.setScribble(second, "second; !REORDER 001");
+            StructTree.setScribble(
+                    second, "second" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
 
             PdfStructElem third = new PdfStructElem(pdfDoc, PdfName.H2);
             document.addKid(third);
-            StructTree.setScribble(third, "third; !REORDER 003");
+            StructTree.setScribble(third, "third" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 003");
 
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);
@@ -614,7 +615,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
 
             PdfStructElem kid = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(kid);
-            StructTree.setScribble(kid, "alpha; !REORDER 001");
+            StructTree.setScribble(kid, "alpha" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
 
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);
@@ -644,7 +645,8 @@ class ScribbledInstructionFixTest extends PdfTestBase {
 
             PdfStructElem ann = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(ann);
-            StructTree.setScribble(ann, "annotated; !REORDER 001");
+            StructTree.setScribble(
+                    ann, "annotated" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
 
             PdfStructElem unann2 = new PdfStructElem(pdfDoc, PdfName.H2);
             document.addKid(unann2);

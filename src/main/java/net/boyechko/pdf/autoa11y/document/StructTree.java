@@ -435,7 +435,7 @@ public final class StructTree {
     // === Miscellaneous utilities ===========================================
 
     public static final String SCRIBBLE_PREFIX = "__";
-    public static final String SCRIBBLE_SEPARATOR = "; ";
+    public static final String SCRIBBLE_SEPARATOR = " // ";
 
     /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
     public static DocValue.Scribble getScribble(PdfStructElem elem) {
