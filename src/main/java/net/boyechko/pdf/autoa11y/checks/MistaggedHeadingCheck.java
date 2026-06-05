@@ -58,6 +58,9 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     private static final String ART_ROLE = "Art";
     private static final int TRUNCATED_LENGTH = 20;
 
+    /** Mood mark for a tool finding: informational, never executed (cf. '!' for instructions). */
+    private static final String FINDING_MARK = "?";
+
     private final IssueList issues = new IssueList();
     private final Deque<HeadingScope> scopeStack = new ArrayDeque<>();
     private HeadingScope docScope = HeadingScope.EMPTY;
@@ -120,9 +123,19 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         int level = HEADING_LEVELS.indexOf(headingLevel) + 1;
         int expectedLevel = scope.prevLevel() + 1;
         if (level > expectedLevel) {
-            StructTree.addScribble(
-                    node, headingLevel.getValue() + " (expected H" + expectedLevel + ")");
-            StructTree.addScribble(node, dominantSize + "pt");
+            // A tool-authored finding (":?"): the level the size suggests, why it was rejected,
+            // and the measured size. It is informational only -- never an executable instruction,
+            // since retagging to this level would itself be improperly nested.
+            StructTree.setToolScribble(
+                    node,
+                    FINDING_MARK
+                            + headingLevel.getValue()
+                            + " (expected H"
+                            + expectedLevel
+                            + ")"
+                            + StructTree.SCRIBBLE_SEPARATOR
+                            + dominantSize
+                            + "pt");
             issues.add(
                     new Issue(
                             IssueType.IMPROPERLY_NESTED_HEADING,

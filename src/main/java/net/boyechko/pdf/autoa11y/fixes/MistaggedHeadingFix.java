@@ -51,7 +51,7 @@ public class MistaggedHeadingFix implements IssueFix {
         if (!ELEMENTS_TO_TAG.contains(StructTree.mappedRole(element))) {
             return;
         }
-        StructTree.setScribble(element, "!SET_ROLE " + headingLevel.getValue());
+        StructTree.setToolScribble(element, "!SET_ROLE " + headingLevel.getValue());
     }
 
     @Override

@@ -95,6 +95,11 @@ Versioning](https://semver.org/).
   (more than one child at a level) is rejected.
 
 ### Changed
+- Scribble (`/T`) notes now use a small authored grammar: a leading `:`
+  marks a scribble as tool-written (vs. user-written), `:!` is a directive
+  the tool auto-runs on the next pass, and `:?` is an informational finding
+  that is never executed. Segments are separated by ` // ` instead of `; `,
+  so notes may contain semicolons and parentheticals freely.
 - Sidecar config now uses a single ordered `checks:` list instead of the three
   separate `skip-checks:`, `only-checks:`, and `include-checks:` keys. The
   listed checks run in the given order, fully specifying the pipeline. Per-
