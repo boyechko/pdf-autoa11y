@@ -278,6 +278,89 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
         }
     }
 
+    @Test
+    void existingH2AtTitleSizeIsNotPromotedToSecondH1() throws Exception {
+        Path pdfFile = testOutputPath("existingH2AtTitleSizeIsNotPromotedToSecondH1.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem docElem = newDocument(pdfDoc);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(page);
+
+            // The source reuses the title's 24pt size for a section header already tagged H2. The
+            // title claims the single H1; the H2 must be left alone, not promoted to a second H1.
+            addTaggedText(
+                    pdfDoc, page, docElem, canvas, font, 24, "Catalog Title", PdfName.H1, 740);
+            addTaggedText(
+                    pdfDoc, page, docElem, canvas, font, 24, "Accreditation", PdfName.H2, 710);
+
+            for (int i = 0; i < 8; i++) {
+                addTaggedText(
+                        pdfDoc,
+                        page,
+                        docElem,
+                        canvas,
+                        font,
+                        10,
+                        "Body text paragraph " + (i + 1) + " with enough content to dominate.",
+                        680 - i * 18);
+            }
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            IssueList issues = new MistaggedHeadingCheck().findIssues(new DocContext(pdfDoc));
+
+            assertTrue(
+                    issues.stream().noneMatch(i -> i.type() == IssueType.MISTAGGED_HEADING),
+                    "Existing H2 at the title size is left as H2, not retagged");
+            assertTrue(
+                    issues.stream().noneMatch(i -> i.type() == IssueType.IMPROPERLY_NESTED_HEADING),
+                    "Capping to H2 keeps nesting valid");
+        }
+    }
+
+    @Test
+    void secondTopSizeParagraphCappedToH2() throws Exception {
+        Path pdfFile = testOutputPath("secondTopSizeParagraphCappedToH2.pdf");
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem docElem = newDocument(pdfDoc);
+            PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfCanvas canvas = new PdfCanvas(page);
+
+            // Title claims the single H1. A later untagged paragraph at the same 24pt size is a
+            // genuine heading, but capped to H2 rather than promoted to a second H1.
+            addTaggedText(
+                    pdfDoc, page, docElem, canvas, font, 24, "Catalog Title", PdfName.H1, 740);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 24, "Accreditation", 710);
+
+            for (int i = 0; i < 8; i++) {
+                addTaggedText(
+                        pdfDoc,
+                        page,
+                        docElem,
+                        canvas,
+                        font,
+                        10,
+                        "Body text paragraph " + (i + 1) + " with enough content to dominate.",
+                        680 - i * 18);
+            }
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
+            IssueList issues = new MistaggedHeadingCheck().findIssues(new DocContext(pdfDoc));
+
+            List<Issue> retags =
+                    issues.stream().filter(i -> i.type() == IssueType.MISTAGGED_HEADING).toList();
+            assertEquals(1, retags.size(), "Only the second top-size paragraph is retagged");
+            assertTrue(
+                    retags.getFirst().message().contains("Mistagged H2"),
+                    "Retagged to H2, not a second H1");
+        }
+    }
+
     // == Helpers =========================================================
 
     private static PdfStructElem newDocument(PdfDocument pdfDoc) {

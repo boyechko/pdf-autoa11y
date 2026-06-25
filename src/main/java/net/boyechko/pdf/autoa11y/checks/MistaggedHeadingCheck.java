@@ -121,6 +121,18 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         // Heading levels must not skip a level (H3 -> H5 with no H4 between). Flag for review
         // rather than retagging.
         int level = HEADING_LEVELS.indexOf(headingLevel) + 1;
+
+        // At most one H1 per scope: the first top-size heading is the Article title; later headings
+        // at that same size are subordinate, so cap them at H2 rather than introducing a second H1.
+        if (level == 1) {
+            if (scope.hasH1()) {
+                level = 2;
+                headingLevel = PdfName.H2;
+            } else {
+                scope.markH1();
+            }
+        }
+
         int expectedLevel = scope.prevLevel() + 1;
         if (level > expectedLevel) {
             // A tool-authored finding (":?"): the level the size suggests, why it was rejected,
@@ -196,6 +208,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         private final Map<Float, PdfName> headingMap;
         private final float bodySize;
         private int prevLevel = 0;
+        private boolean h1Assigned = false;
 
         HeadingScope(Map<Float, PdfName> headingMap, float bodySize) {
             this.headingMap = headingMap;
@@ -217,6 +230,15 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
 
         void setPrevLevel(int level) {
             prevLevel = level;
+        }
+
+        /** Whether an H1 has already been assigned in this scope (at most one per Art). */
+        boolean hasH1() {
+            return h1Assigned;
+        }
+
+        void markH1() {
+            h1Assigned = true;
         }
 
         boolean isEmpty() {
