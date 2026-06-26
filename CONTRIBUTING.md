@@ -80,6 +80,11 @@ carry an `issue/IssueFix` reference:
 - Automatic remediation: implement `IssueFix` (often in `fixes/`) and
   attach it when creating the corresponding `Issue`.
 
+## Releasing
+
+See `docs/releasing.md` for the release checklist (changelog roll, annotated
+tag, version conventions).
+
 ## Testing
 
 ### Running Tests

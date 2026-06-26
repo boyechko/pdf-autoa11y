@@ -132,3 +132,10 @@ Changelog entries should follow Keep a Changelog style:
 Before wrapping up substantial work, explicitly state either:
 - that `CHANGELOG.md` was updated
 - or why no changelog entry is needed
+
+## Releasing
+
+See `docs/releasing.md` for the release workflow. In brief: the version lives
+only in the `CHANGELOG.md` header and an annotated git tag (`pom.xml` stays at
+`1.0-SNAPSHOT`); a release is a changelog roll plus a `vX.Y.Z` tag dated to the
+release date.
