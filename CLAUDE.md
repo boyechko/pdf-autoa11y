@@ -42,6 +42,22 @@ mvn exec:java -Dexec.args="--dump-tree inputss/input.pdf"  # print structure tre
 # After build, it's also possible to use wrapper scripts
 ./pdf-autoa11y inputs/input.pdf outputs/
 ./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck inputs/input.pdf
+
+# Edit the PDF outline (bookmarks): dump to text, edit, then apply back
+./pdf-autoa11y --dump-outline input.pdf > outline.txt
+./pdf-autoa11y --apply-outline=outline.txt input.pdf outputs/
+
+# Edit /T scribbles via the tree diagram: dump to text, annotate, then apply back.
+# Append a quoted scribble after an element's `Role #objNum` to set it; matching
+# is keyed on the object number, so box-drawing/indentation need not be preserved.
+./pdf-autoa11y --dump-tree input.pdf > tree.txt
+./pdf-autoa11y --annotate-tree=tree.txt input.pdf outputs/
+
+# For bulk scribbling, drive the annotation with sed keyed on object number.
+# Anchor the number with `$` so it matches the struct-elem line (not <link #...>
+# refs or longer-number substrings) and stays idempotent on re-runs:
+sed -i '' '/#8018$/s/$/ "__!ARTIFACT"/; /#8019$/s/$/ "__!ARTIFACT"/' tree.txt
+./pdf-autoa11y --annotate-tree=tree.txt input.pdf outputs/
 ```
 
 ## Architecture
