@@ -7,6 +7,8 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.4.0] - 2026-06-04
+
 ### Added
 - Added `MistaggedHeadingCheck` that flags paragraphs and mis-leveled
   headings using per-Article font-size analysis and marks them for
