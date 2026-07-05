@@ -57,6 +57,25 @@ class TreeDiagramTest {
     }
 
     @Test
+    void plainStyleIndentsByDepthWithoutBoxDrawing() throws Exception {
+        try (PdfDocument doc = openForReading()) {
+            PdfStructElem docElem = StructTree.findDocument(doc.getStructTreeRoot());
+
+            String plain =
+                    TreeDiagram.toDetailedTreeString(
+                            docElem, java.util.Map.of(), TreeDiagram.Style.PLAIN);
+
+            assertTrue(plain.lines().noneMatch(l -> l.matches(".*[│├└─].*")));
+            assertTrue(
+                    plain.lines().anyMatch(l -> l.startsWith("Document #")),
+                    "Top element should not be indented");
+            assertTrue(
+                    plain.lines().anyMatch(l -> l.matches("  \\w+ #\\d+.*")),
+                    "Direct kids of Document should be indented by exactly two spaces");
+        }
+    }
+
+    @Test
     void annotateFromStringWritesScribbleToMatchingElement() throws Exception {
         Path outPdf = tempDir.resolve("annotated.pdf");
 

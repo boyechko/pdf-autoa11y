@@ -25,6 +25,7 @@ import java.nio.file.*;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -58,6 +59,7 @@ public class Cli {
             boolean analyzeOnly,
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
+            TreeDiagram.Style treeStyle,
             boolean listDestinations,
             boolean dumpOutline,
             Path annotateTreePath,
@@ -319,7 +321,9 @@ public class Cli {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             try (PdfDocument pdfDoc = custodian.openForReading()) {
-                System.out.print(TreeDiagram.dumpToString(pdfDoc, config.dumpTreeDetailed()));
+                System.out.print(
+                        TreeDiagram.dumpToString(
+                                pdfDoc, config.dumpTreeDetailed(), config.treeStyle()));
             }
         } catch (Exception e) {
             System.err.println("✗ Failed to read PDF: " + e.getMessage());
@@ -400,6 +404,9 @@ public class Cli {
             } else if (args[i].startsWith("--include-checks=")) {
                 b.includeChecks =
                         parseCommaSeparated(args[i].substring("--include-checks=".length()));
+            } else if (args[i].startsWith("--dump-tree=")) {
+                b.dumpTreeDetailed = true;
+                b.treeStyle = parseTreeStyle(args[i].substring("--dump-tree=".length()));
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else if (args[i].startsWith("--apply-outline=")) {
@@ -517,6 +524,7 @@ public class Cli {
         boolean analyzeOnly;
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
+        TreeDiagram.Style treeStyle = TreeDiagram.Style.BOX;
         boolean listDestinations;
         boolean dumpOutline;
         Path annotateTreePath;
@@ -555,6 +563,7 @@ public class Cli {
                     analyzeOnly,
                     dumpTreeSimple,
                     dumpTreeDetailed,
+                    treeStyle,
                     listDestinations,
                     dumpOutline,
                     annotateTreePath,
@@ -599,6 +608,16 @@ public class Cli {
         }
     }
 
+    /** Maps a {@code --dump-tree=<style>} value onto {@link TreeDiagram.Style}. */
+    private static TreeDiagram.Style parseTreeStyle(String value) throws CLIException {
+        try {
+            return TreeDiagram.Style.valueOf(value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new CLIException(
+                    "Unknown tree style '" + value + "' (expected 'box' or 'plain')");
+        }
+    }
+
     private static Set<String> parseCommaSeparated(String value) {
         return Arrays.stream(value.split(","))
                 .map(String::trim)
@@ -628,6 +647,9 @@ public class Cli {
                 + "  -r, --report      Save accessibility report (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
+                + "                    Use --dump-tree=<box|plain> to choose the line style:\n"
+                + "                    box-drawing connectors (default) or plain 2-space\n"
+                + "                    indentation (stable format for goal snapshots and diffing)\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
                 + "  --dump-outline    Print the document outline (bookmarks) and exit\n"

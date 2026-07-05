@@ -7,6 +7,11 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- Added `--dump-tree=<box|plain>` CLI option for choosing the tree line
+  style: box-drawing connectors (default) or plain 2-space indentation —
+  the latter a stable format for goal snapshots and diffing.
+
 ## [0.4.0] - 2026-06-04
 
 ### Added

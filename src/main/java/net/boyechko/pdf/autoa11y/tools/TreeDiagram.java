@@ -47,11 +47,35 @@ public final class TreeDiagram {
     private static final Pattern ANNOTATED_LINE =
             Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
 
-    /* Box drawing characters for detailed tree diagram. */
-    public static final String SELF_PREFIX_MIDDLE = "├── ";
-    public static final String SELF_PREFIX_FINAL = "└── ";
-    public static final String LEAF_PREFIX_MIDDLE = "│   ";
-    public static final String LEAF_PREFIX_FINAL = "    ";
+    /**
+     * Line-prefix style for detailed tree diagrams. {@link #BOX} is the human-facing default;
+     * {@link #PLAIN} is the stable machine-facing format used for goal snapshots, immune to
+     * cosmetic changes in the box-drawing rendering.
+     */
+    public enum Style {
+        BOX("├── ", "└── ", "│   ", "    "),
+        PLAIN("  ", "  ", "  ", "  ");
+
+        private final String selfMiddle;
+        private final String selfFinal;
+        private final String leafMiddle;
+        private final String leafFinal;
+
+        Style(String selfMiddle, String selfFinal, String leafMiddle, String leafFinal) {
+            this.selfMiddle = selfMiddle;
+            this.selfFinal = selfFinal;
+            this.leafMiddle = leafMiddle;
+            this.leafFinal = leafFinal;
+        }
+
+        String selfPrefix(boolean hasMore) {
+            return hasMore ? selfMiddle : selfFinal;
+        }
+
+        String leafPrefix(boolean hasMore) {
+            return hasMore ? leafMiddle : leafFinal;
+        }
+    }
 
     private TreeDiagram() {}
 
@@ -62,6 +86,11 @@ public final class TreeDiagram {
      * @throws IllegalStateException if the document has no structure tree
      */
     public static String dumpToString(PdfDocument pdfDoc, boolean detailed) {
+        return dumpToString(pdfDoc, detailed, Style.BOX);
+    }
+
+    /** Like {@link #dumpToString(PdfDocument, boolean)}, with an explicit line-prefix style. */
+    public static String dumpToString(PdfDocument pdfDoc, boolean detailed, Style style) {
         PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
         if (root == null) {
             throw new IllegalStateException("PDF has no structure tree");
@@ -69,7 +98,7 @@ public final class TreeDiagram {
         PdfStructElem docElem = StructTree.findDocument(root);
         IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
-            return toDetailedTreeString(start, gatherMcidInfo(pdfDoc));
+            return toDetailedTreeString(start, gatherMcidInfo(pdfDoc), style);
         }
         return toIndentedTreeString(start);
     }
@@ -143,10 +172,18 @@ public final class TreeDiagram {
      */
     public static String toDetailedTreeString(
             IStructureNode node, Map<Content.PageMcid, Content.McidContent> mcidInfo) {
+        return toDetailedTreeString(node, mcidInfo, Style.BOX);
+    }
+
+    /**
+     * Like {@link #toDetailedTreeString(IStructureNode, Map)}, with an explicit line-prefix style.
+     */
+    public static String toDetailedTreeString(
+            IStructureNode node, Map<Content.PageMcid, Content.McidContent> mcidInfo, Style style) {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
         if (node instanceof PdfStructElem elem) {
-            appendDetailedTree(sb, elem, "", "", mcidInfo, currentPage);
+            appendDetailedTree(sb, elem, "", "", style, mcidInfo, currentPage);
         } else {
             List<IStructureNode> kids = node.getKids();
             for (int i = 0; i < kids.size(); i++) {
@@ -155,8 +192,9 @@ public final class TreeDiagram {
                 appendDetailedTree(
                         sb,
                         childElem,
-                        hasMore ? SELF_PREFIX_MIDDLE : SELF_PREFIX_FINAL,
-                        hasMore ? LEAF_PREFIX_MIDDLE : LEAF_PREFIX_FINAL,
+                        style.selfPrefix(hasMore),
+                        style.leafPrefix(hasMore),
+                        style,
                         mcidInfo,
                         currentPage);
             }
@@ -169,6 +207,7 @@ public final class TreeDiagram {
             PdfStructElem elem,
             String selfPrefix,
             String childrenPrefix,
+            Style style,
             Map<Content.PageMcid, Content.McidContent> mcidInfo,
             int[] currentPage) {
         emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
@@ -179,16 +218,16 @@ public final class TreeDiagram {
 
         for (int i = 0; i < kids.size(); i++) {
             boolean hasMore = hasStructElemAfter(kids, i);
-            String leafPrefix = hasMore ? LEAF_PREFIX_MIDDLE : LEAF_PREFIX_FINAL;
+            String leafPrefix = style.leafPrefix(hasMore);
 
             switch (kids.get(i)) {
                 case PdfStructElem childElem -> {
-                    String connector = hasMore ? SELF_PREFIX_MIDDLE : SELF_PREFIX_FINAL;
                     appendDetailedTree(
                             sb,
                             childElem,
-                            childrenPrefix + connector,
+                            childrenPrefix + style.selfPrefix(hasMore),
                             childrenPrefix + leafPrefix,
+                            style,
                             mcidInfo,
                             currentPage);
                 }

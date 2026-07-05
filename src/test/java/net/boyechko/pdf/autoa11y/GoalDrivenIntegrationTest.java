@@ -52,8 +52,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  * <ol>
  *   <li>Run {@code ./pdf-autoa11y --dump-tree inputs/foo.pdf} to see the "before" tree
  *   <li>Manually remediate the PDF (e.g., in Acrobat)
- *   <li>Run {@code ./pdf-autoa11y --dump-tree foo_fixed.pdf >
- *       src/test/resources/snapshots/foo.goal.txt}
+ *   <li>Run {@code ./pdf-autoa11y --dump-tree=plain foo_fixed.pdf >
+ *       src/test/resources/foo.goal.txt}
  *   <li>Add "foo.pdf" to the {@code @ValueSource} below
  *   <li>Run tests — they fail (red) until automated fixes match the goal (green)
  * </ol>
@@ -97,7 +97,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                             + pdfName
                             + " does not match goal.\n"
                             + "To update the goal, manually remediate the PDF and run:\n"
-                            + "  ./pdf-autoa11y --dump-tree <fixed.pdf> > "
+                            + "  ./pdf-autoa11y --dump-tree=plain <fixed.pdf> > "
                             + goalFile
                             + "\n\n"
                             + unifiedDiff(expectedTree, actualTree));
@@ -119,7 +119,8 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                                 (mcid, mc) ->
                                         mcidInfo.put(new Content.PageMcid(pageNum, mcid), mc));
             }
-            return TreeDiagram.toDetailedTreeString(docElem, mcidInfo).strip();
+            return TreeDiagram.toDetailedTreeString(docElem, mcidInfo, TreeDiagram.Style.PLAIN)
+                    .strip();
         }
     }
 
