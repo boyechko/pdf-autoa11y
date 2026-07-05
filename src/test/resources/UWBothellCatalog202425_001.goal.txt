@@ -7,11 +7,11 @@ Document #22
     <link #79> null [/URI (https://www.uwb.edu/)]
     Figure #76
       [image &1]
-  P #97
-    [text+path &2]
+  H1 #97
+    [text+path &2] `General Catalog'
   P #99
     [text &4]
-  H1 #43
+  H2 #43
     [text &5] `The UW Bothell general catalog 2024-2025'
   P #44
     [text &6]
@@ -19,7 +19,7 @@ Document #22
       <link #96> null [/URI (https://www.uwb.edu/catalog/degree-programs)]
       [text &7] `academic programs and certificates'
     [text &8]
-  H1 #47
+  H3 #47
     [text &9] `Archived catalogs'
   L #652
     LI #653
