@@ -39,6 +39,9 @@ import org.slf4j.LoggerFactory;
  * Wraps a group of consecutive raw kids (MCRs and struct elements) inside a parent element into an
  * L > LI > LBody > P structure. The L element is placed as a sibling of the parent, reusing an
  * existing adjacent L if one exists. The bullet y-position determines insertion order within the L.
+ *
+ * <p>Kids are captured as PdfObjects at detection time and re-located by identity at apply time, so
+ * earlier fixes that reshape the parent's K array cannot redirect this fix to the wrong kids.
  */
 public final class WrapBulletAlignedKidsInLBody implements IssueFix {
 
@@ -46,14 +49,16 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
             LoggerFactory.getLogger(WrapBulletAlignedKidsInLBody.class);
 
     private final PdfStructElem parent;
-    private final List<Integer> kidIndices;
+    private final List<PdfObject> kidObjects;
     private final float bulletY;
+    private final int pageNum;
 
     public WrapBulletAlignedKidsInLBody(
-            PdfStructElem parent, List<Integer> kidIndices, float bulletY) {
+            PdfStructElem parent, List<PdfObject> kidObjects, float bulletY, int pageNum) {
         this.parent = parent;
-        this.kidIndices = kidIndices;
+        this.kidObjects = kidObjects != null ? List.copyOf(kidObjects) : List.of();
         this.bulletY = bulletY;
+        this.pageNum = pageNum;
     }
 
     @Override
@@ -75,23 +80,31 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
             return;
         }
 
-        // 1. Collect objects to move from parent's K array (forward order)
-        List<PdfObject> collectedObjects = new ArrayList<>();
-        for (int idx : kidIndices) {
-            if (idx < parentK.size()) {
-                collectedObjects.add(parentK.get(idx, false));
+        // 1. Re-locate the captured kids in the parent's current K array by identity;
+        //    kids that earlier fixes moved elsewhere are skipped
+        List<Integer> foundIndices = new ArrayList<>();
+        for (PdfObject captured : kidObjects) {
+            int idx = indexOfInKArray(parentK, captured);
+            if (idx >= 0) {
+                foundIndices.add(idx);
+            } else {
+                logger.debug(
+                        "Captured kid no longer in K array of obj. #{}; skipping it",
+                        StructTree.objNum(parent));
             }
         }
-        if (collectedObjects.isEmpty()) {
+        if (foundIndices.isEmpty()) {
             return;
         }
+        foundIndices.sort(null);
 
-        // 2. Remove from parent K array in reverse order to preserve indices
-        for (int i = kidIndices.size() - 1; i >= 0; i--) {
-            int idx = kidIndices.get(i);
-            if (idx < parentK.size()) {
-                parentK.remove(idx);
-            }
+        // 2. Collect entries in K order, then remove in reverse order to preserve indices
+        List<PdfObject> collectedObjects = new ArrayList<>();
+        for (int idx : foundIndices) {
+            collectedObjects.add(parentK.get(idx, false));
+        }
+        for (int i = foundIndices.size() - 1; i >= 0; i--) {
+            parentK.remove(foundIndices.get(i));
         }
 
         // 3. Build L > LI > LBody > P structure as a sibling of the parent
@@ -128,11 +141,26 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
             }
         }
 
+        // 5. Prune the parent if the move emptied it (e.g., a P that held only list items)
+        if (parentK.isEmpty() && parent.getParent() instanceof PdfStructElem containerElem) {
+            containerElem.removeKid(parent);
+        }
+
         logger.debug(
                 "Wrapped {} raw kids into L>LI>LBody>P near obj. #{} (bulletY={})",
-                kidIndices.size(),
+                collectedObjects.size(),
                 StructTree.objNum(parent),
                 String.format("%.1f", bulletY));
+    }
+
+    /** Finds a captured kid in a K array, matching indirect references against resolved objects. */
+    private static int indexOfInKArray(PdfArray kArray, PdfObject captured) {
+        for (int i = 0; i < kArray.size(); i++) {
+            if (StructTree.isSame(kArray.get(i, false), captured)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** Finds an existing L element adjacent to the parent, or creates one. */
@@ -152,15 +180,19 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
             return l;
         }
 
-        // Look for an existing L element immediately after the parent
+        // Look for an existing L element immediately before or after the parent —
+        // a run-detected head or tail of the same list may already be wrapped
         List<IStructureNode> containerKids = containerElem.getKids();
+        if (parentIndex > 0
+                && containerKids.get(parentIndex - 1) instanceof PdfStructElem prevElem
+                && "L".equals(StructTree.mappedRole(prevElem))) {
+            return prevElem;
+        }
         int listIndex = parentIndex + 1;
-        if (listIndex < containerKids.size()) {
-            IStructureNode nextSibling = containerKids.get(listIndex);
-            if (nextSibling instanceof PdfStructElem nextElem
-                    && "L".equals(StructTree.mappedRole(nextElem))) {
-                return nextElem;
-            }
+        if (listIndex < containerKids.size()
+                && containerKids.get(listIndex) instanceof PdfStructElem nextElem
+                && "L".equals(StructTree.mappedRole(nextElem))) {
+            return nextElem;
         }
 
         // No adjacent L — create one after the parent
@@ -169,13 +201,23 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         return l;
     }
 
-    /** Determines where to insert the new LI based on bullet y-position. */
+    /** Determines where to insert the new LI, ordered by page then bullet y-position. */
     private int findInsertPosition(PdfStructElem listElem, DocContext ctx) {
-        int pageNum = StructTree.pageOf(parent, ctx);
         List<PdfStructElem> existingLIs = StructTree.childrenOf(listElem, PdfStructElem.class);
 
         for (int i = 0; i < existingLIs.size(); i++) {
-            Rectangle liBounds = Content.getBoundsForElement(existingLIs.get(i), ctx, pageNum);
+            PdfStructElem li = existingLIs.get(i);
+            int liPage = StructTree.pageOf(li, ctx);
+            if (liPage <= 0) {
+                continue;
+            }
+            if (liPage > pageNum) {
+                return i;
+            }
+            if (liPage < pageNum) {
+                continue;
+            }
+            Rectangle liBounds = Content.getBoundsForElement(li, ctx, liPage);
             if (liBounds != null) {
                 float liCenterY = liBounds.getBottom() + liBounds.getHeight() / 2;
                 if (bulletY > liCenterY) {
@@ -189,7 +231,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
 
     @Override
     public String describe() {
-        return "Wrapped " + kidIndices.size() + " bullet-aligned kids in LBody";
+        return "Wrapped " + kidObjects.size() + " bullet-aligned kids in LBody";
     }
 
     @Override

@@ -7,6 +7,20 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixed
+- Fixed `MistaggedBulletedListCheck` misdetecting lists in Articles that
+  span multiple pages: every element was evaluated against the Article's
+  first page's bullets and content, producing false positives and mangled
+  lists on later pages. Elements are now judged against their own page,
+  runs may continue across page breaks, and rebuilt lists keep reading
+  order. Paragraphs fully drained of list items are removed, and items
+  recovered from a split list rejoin the adjacent rebuilt list.
+- Fixed `MistaggedBulletedListCheck` corrupting the structure tree when
+  bulleted paragraphs sat inside an `Art` container: the same paragraphs
+  were detected twice, and the second batch of fixes wrapped the wrong
+  elements. Bullet-aligned kids are now located by object identity rather
+  than by position, so earlier fixes can no longer redirect them.
+
 ### Added
 - Added `--dump-tree=<box|plain>` CLI option for choosing the tree line
   style: box-drawing connectors (default) or plain 2-space indentation —
