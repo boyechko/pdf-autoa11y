@@ -22,6 +22,10 @@ Versioning](https://semver.org/).
   than by position, so earlier fixes can no longer redirect them.
 
 ### Added
+- Added the `OK` scribble mark for elements reviewed to be correct: a
+  user-authored `OK` scribble segment (e.g. `__OK`) shields the element
+  and its entire subtree from all checks and fixes, and the mark itself
+  persists across runs.
 - Added `--dump-tree=<box|plain>` CLI option for choosing the tree line
   style: box-drawing connectors (default) or plain 2-space indentation —
   the latter a stable format for goal snapshots and diffing.

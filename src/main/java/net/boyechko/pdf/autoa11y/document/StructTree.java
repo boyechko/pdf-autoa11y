@@ -440,6 +440,31 @@ public final class StructTree {
     /** Leading mark distinguishing a tool-authored scribble from a user-authored one. */
     public static final String SCRIBBLE_TOOL_MARK = ":";
 
+    /**
+     * User-authored scribble segment marking the element (and its subtree) as reviewed and correct,
+     * e.g. {@code __OK} or {@code __OK // check figure later}.
+     */
+    public static final String SCRIBBLE_VERIFIED_TOKEN = "OK";
+
+    /**
+     * Whether the user has marked this element as reviewed and correct. Only a user-authored
+     * scribble counts; the mark shields the element's whole subtree from checks and fixes.
+     */
+    public static boolean isVerified(PdfStructElem elem) {
+        DocValue.Scribble scribble = getScribble(elem);
+        if (scribble == null || scribble.toolAuthored()) return false;
+        for (String seg : scribble.segments()) {
+            if (seg.trim().equals(SCRIBBLE_VERIFIED_TOKEN)) return true;
+        }
+        return false;
+    }
+
+    /** Returns the first whitespace-separated token of a scribble segment. */
+    private static String segmentHead(String segment) {
+        int sp = segment.indexOf(' ');
+        return (sp < 0) ? segment : segment.substring(0, sp);
+    }
+
     /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
     public static DocValue.Scribble getScribble(PdfStructElem elem) {
         return DocValue.Scribble.of(elem);
@@ -480,9 +505,7 @@ public final class StructTree {
         StringBuilder kept = new StringBuilder();
         boolean removedAny = false;
         for (String seg : existing.segments()) {
-            int sp = seg.indexOf(' ');
-            String head = (sp < 0) ? seg : seg.substring(0, sp);
-            if (head.equals(tag)) {
+            if (segmentHead(seg).equals(tag)) {
                 removedAny = true;
                 continue;
             }

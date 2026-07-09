@@ -20,6 +20,7 @@ package net.boyechko.pdf.autoa11y.validation;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.io.OutputStream;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
@@ -200,6 +202,66 @@ class StructTreeWalkerTest extends PdfTestBase {
 
         // Both visitors should see the same elements in the same order
         assertEquals(visitor1Indices, visitor2Indices, "Both visitors should see same indices");
+    }
+
+    @Test
+    void verifiedSubtreeIsHiddenFromVisitors() throws Exception {
+        List<String> entered = new ArrayList<>();
+        List<String> left = new ArrayList<>();
+        StructTreeCheck trackingVisitor =
+                new StructTreeCheck() {
+                    private final IssueList issues = new IssueList();
+
+                    @Override
+                    public String name() {
+                        return "Tracking Visitor";
+                    }
+
+                    @Override
+                    public String description() {
+                        return "Tracks entered and left roles";
+                    }
+
+                    @Override
+                    public boolean enterElement(StructTreeContext ctx) {
+                        entered.add(ctx.role());
+                        return true;
+                    }
+
+                    @Override
+                    public void leaveElement(StructTreeContext ctx) {
+                        left.add(ctx.role());
+                    }
+
+                    @Override
+                    public IssueList getIssues() {
+                        return issues;
+                    }
+                };
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            var root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem verifiedArt = new PdfStructElem(pdfDoc, PdfName.Art);
+            document.addKid(verifiedArt);
+            PdfStructElem pInsideArt = new PdfStructElem(pdfDoc, PdfName.P);
+            verifiedArt.addKid(pInsideArt);
+            StructTree.setScribble(verifiedArt, StructTree.SCRIBBLE_VERIFIED_TOKEN);
+
+            PdfStructElem siblingP = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(siblingP);
+
+            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            walker.addVisitor(trackingVisitor);
+            walker.walk(root, new DocContext(pdfDoc));
+        }
+
+        assertEquals(List.of("Document", "P"), entered, "verified Art and its P must be skipped");
+        assertEquals(List.of("P", "Document"), left, "leaveElement must also skip the subtree");
     }
 
     @Test

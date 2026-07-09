@@ -45,6 +45,20 @@ previous step in the execution order listed below.
 | EmptyElementCheck | Detects empty structure elements | Removes empty elements |
 | SchemaValidationCheck | Validates elements against the PDF/UA-1 tag schema | Restructures children to match schema |
 
+## Verified elements: the `OK` scribble
+
+An element whose scribble has a user-authored segment that is exactly
+`OK` (e.g. `__OK`, or `__OK // check figure later` to carry a note in a
+separate segment) is treated as reviewed to be correct. The
+structure-tree walker skips the element and
+its entire subtree, so no check sees it and no fix touches it — including
+`StaleScribbleCheck`, so the mark itself persists across runs. Remove the
+scribble to bring the subtree back under remediation.
+
+Only a user-authored mark counts: a tool-authored scribble (leading `:`)
+never verifies an element, and the `INST OK` receipt left by executed
+instructions does not either.
+
 ## ScribbledInstructionCheck
 
 `ScribbledInstructionCheck` detects structure elements whose `/T`

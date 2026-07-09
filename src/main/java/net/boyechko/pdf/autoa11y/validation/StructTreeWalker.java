@@ -23,11 +23,16 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Walks the PDF structure tree once, invoking one or more visitors at each node. */
+/**
+ * Walks the PDF structure tree once, invoking one or more visitors at each node. Subtrees the user
+ * has marked verified (see {@link StructTree#isVerified}) are skipped entirely, so no check sees or
+ * touches them.
+ */
 public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
 
@@ -79,6 +84,15 @@ public class StructTreeWalker {
     }
 
     private void walkElement(PdfStructElem node, String parentPath, int depth) {
+        if (StructTree.isVerified(node)) {
+            logger.debug(
+                    "Skipping user-verified subtree at {}{} #{}",
+                    parentPath,
+                    StructTree.mappedRole(node),
+                    StructTree.objNum(node));
+            return;
+        }
+
         globalIndex++;
 
         StructTreeContext ctx =

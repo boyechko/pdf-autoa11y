@@ -568,6 +568,78 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void okScribbleMarksElementVerified() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            assertFalse(StructTree.isVerified(art), "no scribble means not verified");
+
+            StructTree.setScribble(art, StructTree.SCRIBBLE_VERIFIED_TOKEN);
+            assertTrue(StructTree.isVerified(art));
+        }
+    }
+
+    @Test
+    void okWithTrailingNoteDoesNotMarkElementVerified() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.setScribble(art, "OK reviewed 2026-07-09");
+            assertFalse(StructTree.isVerified(art), "notes belong in their own segment");
+        }
+    }
+
+    @Test
+    void okInLaterScribbleSegmentMarksElementVerified() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.setScribble(art, "check spacing" + StructTree.SCRIBBLE_SEPARATOR + "OK");
+            assertTrue(StructTree.isVerified(art));
+        }
+    }
+
+    @Test
+    void toolAuthoredOkScribbleDoesNotMarkElementVerified() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.setToolScribble(art, "OK");
+            assertFalse(StructTree.isVerified(art), "verification is a user-only mark");
+        }
+    }
+
+    @Test
+    void okAsWordPrefixDoesNotMarkElementVerified() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.setScribble(art, "OKAY but check figures");
+            assertFalse(StructTree.isVerified(art));
+        }
+    }
+
+    @Test
     void isSameMatchesKArrayEntryAgainstChildDict() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
