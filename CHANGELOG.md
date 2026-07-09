@@ -22,6 +22,9 @@ Versioning](https://semver.org/).
   than by position, so earlier fixes can no longer redirect them.
 
 ### Added
+- `MistaggedBulletedListCheck` now recognizes hollow (stroke-only) bullet
+  circles in addition to filled ones, so indented sub-level list items
+  marked with hollow bullets are detected and wrapped as lists.
 - Added the `OK` scribble mark for elements reviewed to be correct: a
   user-authored `OK` scribble segment (e.g. `__OK`) shields the element
   and its entire subtree from all checks and fixes, and the mark itself

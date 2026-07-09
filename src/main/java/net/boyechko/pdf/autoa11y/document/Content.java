@@ -194,7 +194,15 @@ public final class Content {
 
             // Compute center in page coordinates via CTM
             Matrix ctm = pathInfo.getCtm();
-            Point start = path.getSubpaths().getFirst().getStartPoint();
+            Point start =
+                    path.getSubpaths().stream()
+                            .map(Subpath::getStartPoint)
+                            .filter(p -> p != null)
+                            .findFirst()
+                            .orElse(null);
+            if (start == null) {
+                return;
+            }
             Vector center = new Vector((float) start.getX(), (float) start.getY(), 1).cross(ctm);
             float cx = center.get(Vector.I1);
             float cy = center.get(Vector.I2);
@@ -211,15 +219,16 @@ public final class Content {
             }
         }
 
-        /** Checks if a path is a two-cubic-Bézier circle of the expected bullet dimensions. */
+        /**
+         * Checks if a path is a two-cubic-Bézier circle of the expected bullet dimensions. Hollow
+         * (stroke-only) bullets close their outline with an `h` op, which iText parses as an extra,
+         * degenerate subpath — so segments are validated across all subpaths.
+         */
         private boolean isBezierCircle(Path path) {
-            List<Subpath> subpaths = path.getSubpaths();
-            if (subpaths.size() != 1) {
-                return false;
+            List<IShape> segments = new ArrayList<>();
+            for (Subpath subpath : path.getSubpaths()) {
+                segments.addAll(subpath.getSegments());
             }
-
-            Subpath subpath = subpaths.getFirst();
-            List<IShape> segments = subpath.getSegments();
             if (segments.size() != 2) {
                 return false;
             }
@@ -238,13 +247,6 @@ public final class Content {
             float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE;
             float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
 
-            Point start = subpath.getStartPoint();
-            if (start != null) {
-                minX = Math.min(minX, (float) start.getX());
-                minY = Math.min(minY, (float) start.getY());
-                maxX = Math.max(maxX, (float) start.getX());
-                maxY = Math.max(maxY, (float) start.getY());
-            }
             for (IShape segment : segments) {
                 for (Point pt : segment.getBasePoints()) {
                     minX = Math.min(minX, (float) pt.getX());
