@@ -145,9 +145,8 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
         ProcessingResult result = service.remediate();
         saveRemediatedPdf(result);
 
-        // Remove obj numbers (#) and MCID (&) from tree to make it easier to compare
-        String actualTree = readStructureTree(result.tempOutputFile()).replaceAll(" [#&]\\d+", "");
-        String expectedTree = Files.readString(goalFile).strip().replaceAll(" [#&]\\d+", "");
+        String actualTree = normalizeTree(readStructureTree(result.tempOutputFile()));
+        String expectedTree = normalizeTree(Files.readString(goalFile).strip());
 
         if (!expectedTree.equals(actualTree)) {
             fail(
@@ -160,6 +159,14 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                             + "\n\n"
                             + unifiedDiff(expectedTree, actualTree));
         }
+    }
+
+    /**
+     * Strips obj numbers (#), MCIDs (&), and /T values ("...") — none are structural, and
+     * scribble/title preservation is asserted by unit tests, not goal comparison.
+     */
+    private static String normalizeTree(String tree) {
+        return tree.replaceAll(" [#&]\\d+", "").replaceAll(" \"[^\"]*\"", "");
     }
 
     private String readStructureTree(Path pdfPath) throws Exception {
