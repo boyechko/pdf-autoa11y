@@ -28,19 +28,30 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Wraps a run of consecutive P elements in L > LI > LBody structure. */
+/**
+ * Wraps a run of consecutive P elements in L > LI > LBody structure. With a {@code nestIntoList}
+ * target, the new L becomes a sublist appended inside that list's last LI > LBody instead of a
+ * sibling at the run's position.
+ */
 public final class WrapParagraphRunInList implements IssueFix {
     protected static final Logger logger = LoggerFactory.getLogger(WrapParagraphRunInList.class);
 
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
+    private final PdfStructElem nestIntoList;
 
     public WrapParagraphRunInList(PdfStructElem parent, List<PdfStructElem> kids) {
+        this(parent, kids, null);
+    }
+
+    public WrapParagraphRunInList(
+            PdfStructElem parent, List<PdfStructElem> kids, PdfStructElem nestIntoList) {
         this.parent = parent;
         this.kids =
                 kids != null
                         ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
                         : List.of();
+        this.nestIntoList = nestIntoList;
     }
 
     @Override
@@ -79,9 +90,15 @@ public final class WrapParagraphRunInList implements IssueFix {
             actualParent.removeKid(p);
         }
 
-        // Create an L element and add it at the saved position
+        // Create an L element: nested inside the preceding list item for a sublist,
+        // otherwise a sibling at the saved position
         PdfStructElem listElem = new PdfStructElem(ctx.doc(), PdfName.L);
-        actualParent.addKid(insertIndex, listElem);
+        PdfStructElem sublistHost = findSublistHost();
+        if (sublistHost != null) {
+            sublistHost.addKid(listElem);
+        } else {
+            actualParent.addKid(insertIndex, listElem);
+        }
 
         // Build LI > LBody > P structure under L
         for (PdfStructElem p : kids) {
@@ -97,6 +114,31 @@ public final class WrapParagraphRunInList implements IssueFix {
                 "Wrapped {} P elements in L > LI > LBody under obj. #{}",
                 kids.size(),
                 StructTree.objNum(actualParent));
+    }
+
+    /**
+     * Resolves the LBody of the nest target's last LI at apply time, or null when not nesting or
+     * when the target no longer has an LI > LBody to host the sublist.
+     */
+    private PdfStructElem findSublistHost() {
+        if (nestIntoList == null) {
+            return null;
+        }
+        PdfStructElem lastLi = lastChildWithRole(nestIntoList, "LI");
+        if (lastLi == null) {
+            return null;
+        }
+        return lastChildWithRole(lastLi, "LBody");
+    }
+
+    private static PdfStructElem lastChildWithRole(PdfStructElem elem, String role) {
+        List<PdfStructElem> children = StructTree.childrenOf(elem, PdfStructElem.class);
+        for (int i = children.size() - 1; i >= 0; i--) {
+            if (role.equals(StructTree.mappedRole(children.get(i)))) {
+                return children.get(i);
+            }
+        }
+        return null;
     }
 
     /**
@@ -126,7 +168,9 @@ public final class WrapParagraphRunInList implements IssueFix {
 
     @Override
     public String describe() {
-        return "Retagged suspected list of " + kids.size() + " P elements as a list";
+        return nestIntoList != null
+                ? "Retagged suspected sublist of " + kids.size() + " P elements as a nested list"
+                : "Retagged suspected list of " + kids.size() + " P elements as a list";
     }
 
     @Override

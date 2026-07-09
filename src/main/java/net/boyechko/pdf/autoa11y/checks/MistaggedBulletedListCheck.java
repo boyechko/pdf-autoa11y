@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletAlignedKidsInLBody;
 import net.boyechko.pdf.autoa11y.fixes.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -74,6 +75,12 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
     /** Maximum element height to match — roughly two lines of text. */
     private static final float MAX_ELEMENT_HEIGHT = 30.0f;
 
+    /** Minimum bullet indent (pt) for a run to count as a sublist of the preceding list. */
+    private static final float SUBLIST_INDENT_MIN = 10.0f;
+
+    /** Maximum bullet x-difference (pt) for bullets to count as the same list level. */
+    private static final float SAME_LEVEL_TOLERANCE = 3.0f;
+
     private final IssueList issues = new IssueList();
 
     @Override
@@ -105,6 +112,9 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
 
     private void findBulletMatchedRuns(StructTreeContext ctx) {
         List<PdfStructElem> currentRun = new ArrayList<>();
+        PdfStructElem runPredecessor = null;
+        float runBulletX = Float.NaN;
+        boolean runUniform = true;
 
         for (int i = 0; i < ctx.children().size(); i++) {
             PdfStructElem child = ctx.children().get(i);
@@ -112,8 +122,16 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
 
             // Skip containers, lists, tables — only match leaf-like content elements
             if (SKIP_ROLES.contains(childRole)) {
-                emitRunIfLongEnough(ctx, currentRun);
+                PdfStructElem host =
+                        emitRun(ctx, currentRun, runPredecessor, runBulletX, runUniform);
+                if (host != null && "L".equals(childRole)) {
+                    // The nested run vacates the space between the two lists —
+                    // if they sit at the same indent, they were one list
+                    emitMergeIfSameLevel(ctx, host, child);
+                }
                 currentRun = new ArrayList<>();
+                runBulletX = Float.NaN;
+                runUniform = true;
                 continue;
             }
 
@@ -122,13 +140,23 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
             int pageNum = StructTree.pageOf(child, ctx.docCtx());
             Rectangle bounds =
                     pageNum > 0 ? Content.getBoundsForElement(child, ctx.docCtx(), pageNum) : null;
-            if (bounds != null
-                    && bounds.getHeight() <= MAX_ELEMENT_HEIGHT
-                    && hasBulletAtY(bulletsFor(ctx, pageNum), bounds)) {
+            Content.BulletPosition bullet =
+                    bounds != null && bounds.getHeight() <= MAX_ELEMENT_HEIGHT
+                            ? findMatchingBullet(bulletsFor(ctx, pageNum), bounds)
+                            : null;
+            if (bullet != null) {
+                if (currentRun.isEmpty()) {
+                    runPredecessor = i > 0 ? ctx.children().get(i - 1) : null;
+                    runBulletX = bullet.x();
+                } else if (Math.abs(bullet.x() - runBulletX) > SAME_LEVEL_TOLERANCE) {
+                    runUniform = false;
+                }
                 currentRun.add(child);
             } else {
-                emitRunIfLongEnough(ctx, currentRun);
+                emitRun(ctx, currentRun, runPredecessor, runBulletX, runUniform);
                 currentRun = new ArrayList<>();
+                runBulletX = Float.NaN;
+                runUniform = true;
 
                 // Drill into too-tall elements to find bullet-aligned raw kids
                 if (bounds != null && bounds.getHeight() > MAX_ELEMENT_HEIGHT) {
@@ -136,7 +164,7 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                 }
             }
         }
-        emitRunIfLongEnough(ctx, currentRun);
+        emitRun(ctx, currentRun, runPredecessor, runBulletX, runUniform);
     }
 
     /** Returns the (cached) bullet glyph positions for a page. */
@@ -147,32 +175,106 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                         () -> Content.extractBulletPositionsForPage(ctx.doc().getPage(pageNum)));
     }
 
-    private boolean hasBulletAtY(List<Content.BulletPosition> bullets, Rectangle bounds) {
-        float bottom = bounds.getBottom() - Y_OVERLAP_TOLERANCE;
-        float top = bounds.getTop() + Y_OVERLAP_TOLERANCE;
-        return bullets.stream().anyMatch(b -> b.y() >= bottom && b.y() <= top);
-    }
-
-    private void emitRunIfLongEnough(StructTreeContext ctx, List<PdfStructElem> run) {
+    /**
+     * Emits a wrap fix for a run. Returns the preceding list the run will nest into as a sublist,
+     * or null when the run is wrapped as a plain sibling list (or is too short).
+     */
+    private PdfStructElem emitRun(
+            StructTreeContext ctx,
+            List<PdfStructElem> run,
+            PdfStructElem predecessor,
+            float bulletX,
+            boolean uniform) {
         if (run.size() < MIN_RUN_LENGTH) {
-            return;
+            return null;
         }
 
-        IssueFix fix = new WrapParagraphRunInList(ctx.node(), run);
+        PdfStructElem nestTarget = sublistTarget(ctx, predecessor, bulletX, uniform);
+        IssueFix fix = new WrapParagraphRunInList(ctx.node(), run, nestTarget);
         Issue issue =
                 new Issue(
-                        IssueType.LIST_TAGGED_AS_PARAGRAPHS,
+                        nestTarget != null
+                                ? IssueType.SUBLIST_TAGGED_AS_PARAGRAPHS
+                                : IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
                         locAtElem(ctx),
-                        run.size() + " elements appear to be a list",
+                        run.size()
+                                + " elements appear to be a "
+                                + (nestTarget != null ? "sublist" : "list"),
                         fix);
         issues.add(issue);
 
         logger.debug(
-                "Detected {} elements with bullet glyphs under obj. #{} on page {}",
+                "Detected {} elements with bullet glyphs under obj. #{} on page {}{}",
                 run.size(),
                 StructTree.objNum(ctx.node()),
-                StructTree.pageOf(run.get(0), ctx.docCtx()));
+                StructTree.pageOf(run.get(0), ctx.docCtx()),
+                nestTarget != null ? " (sublist of #" + StructTree.objNum(nestTarget) + ")" : "");
+        return nestTarget;
+    }
+
+    /** Returns the preceding list an indented, uniform run should nest into, or null. */
+    private PdfStructElem sublistTarget(
+            StructTreeContext ctx, PdfStructElem predecessor, float bulletX, boolean uniform) {
+        if (!uniform || predecessor == null || Float.isNaN(bulletX)) {
+            return null;
+        }
+        if (!"L".equals(StructTree.mappedRole(predecessor))) {
+            return null;
+        }
+        float listX = listItemBulletX(ctx, predecessor, true);
+        if (Float.isNaN(listX) || bulletX - listX < SUBLIST_INDENT_MIN) {
+            return null;
+        }
+        return predecessor;
+    }
+
+    /** Emits a merge fix when two lists flanking a nested sublist share the same indent. */
+    private void emitMergeIfSameLevel(
+            StructTreeContext ctx, PdfStructElem first, PdfStructElem second) {
+        float firstX = listItemBulletX(ctx, first, true);
+        float secondX = listItemBulletX(ctx, second, false);
+        if (Float.isNaN(firstX)
+                || Float.isNaN(secondX)
+                || Math.abs(firstX - secondX) > SAME_LEVEL_TOLERANCE) {
+            return;
+        }
+
+        Issue issue =
+                new Issue(
+                        IssueType.LIST_SPLIT_BY_SUBLIST,
+                        IssueSev.WARNING,
+                        locAtElem(ctx, second),
+                        "list split in two around a sublist",
+                        new MergeAdjacentListsFix(first, second));
+        issues.add(issue);
+
+        logger.debug(
+                "Detected split list: #{} and #{} flank a sublist at the same indent",
+                StructTree.objNum(first),
+                StructTree.objNum(second));
+    }
+
+    /** Returns the bullet x-position matched to a list's first or last item, or NaN. */
+    private float listItemBulletX(StructTreeContext ctx, PdfStructElem list, boolean lastItem) {
+        List<PdfStructElem> items =
+                StructTree.childrenOf(list, PdfStructElem.class).stream()
+                        .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+                        .toList();
+        if (items.isEmpty()) {
+            return Float.NaN;
+        }
+        PdfStructElem li = items.get(lastItem ? items.size() - 1 : 0);
+        int pageNum = StructTree.pageOf(li, ctx.docCtx());
+        if (pageNum <= 0) {
+            return Float.NaN;
+        }
+        Rectangle bounds = Content.getBoundsForElement(li, ctx.docCtx(), pageNum);
+        if (bounds == null) {
+            return Float.NaN;
+        }
+        Content.BulletPosition bullet = findMatchingBullet(bulletsFor(ctx, pageNum), bounds);
+        return bullet != null ? bullet.x() : Float.NaN;
     }
 
     /** A group of consecutive raw kids that align with the same bullet y-position. */

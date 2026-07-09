@@ -22,6 +22,10 @@ Versioning](https://semver.org/).
   than by position, so earlier fixes can no longer redirect them.
 
 ### Added
+- `MistaggedBulletedListCheck` now recognizes sublists: a bullet run
+  indented relative to the list immediately before it is nested inside
+  that list's last item rather than wrapped as a sibling list, and a
+  list split in two around such a sublist is merged back into one.
 - `MistaggedBulletedListCheck` now recognizes hollow (stroke-only) bullet
   circles in addition to filled ones, so indented sub-level list items
   marked with hollow bullets are detected and wrapped as lists.

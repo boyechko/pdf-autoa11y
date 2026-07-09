@@ -53,6 +53,8 @@ public enum IssueType {
     ORPHANED_CONTENT("orphaned MCRs"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
+    SUBLIST_TAGGED_AS_PARAGRAPHS("sublist tagged as a series of paragraphs"),
+    LIST_SPLIT_BY_SUBLIST("list split in two around a sublist"),
     BULLET_ALIGNED_KIDS_IN_ELEMENT("bullet-aligned content inside non-list element"),
     PARAGRAPH_OF_LINKS("paragraphs containing only links"),
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
