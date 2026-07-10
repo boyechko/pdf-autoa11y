@@ -18,22 +18,27 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
+import net.boyechko.pdf.autoa11y.fixes.ParagraphOfLinksFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletAlignedKidsInLBody;
 import net.boyechko.pdf.autoa11y.fixes.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -42,12 +47,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Detects vector bullet glyphs in the content stream and matches them to tagged structure elements
- * by y-position overlap. Elements aligned with bullets are wrapped in L > LI > LBody structure.
+ * Detects content that reads as a list but is not tagged as one, using three kinds of evidence in
+ * order of strength:
+ *
+ * <ol>
+ *   <li><b>Bullet glyphs</b>: vector bullet circles in the content stream matched to elements by
+ *       y-position. Runs become lists; indented runs become sublists nested in the preceding list;
+ *       lists split around a sublist are merged; tall elements are drilled into for bullet-aligned
+ *       raw kids.
+ *   <li><b>Indentation</b>: runs of 3+ consecutive P siblings sharing a left edge indented past
+ *       their non-run siblings.
+ *   <li><b>Link-only paragraphs</b>: elements whose children are all Links.
+ * </ol>
+ *
+ * <p>Each element is claimed by the strongest evidence that matches it, so the strategies never
+ * emit competing fixes for the same content.
+ *
+ * @see WrapParagraphRunInList
+ * @see WrapBulletAlignedKidsInLBody
+ * @see MergeAdjacentListsFix
+ * @see ParagraphOfLinksFix
  */
-public class MistaggedBulletedListCheck extends StructTreeCheck {
+public class MistaggedListCheck extends StructTreeCheck {
 
-    private static final Logger logger = LoggerFactory.getLogger(MistaggedBulletedListCheck.class);
+    private static final Logger logger = LoggerFactory.getLogger(MistaggedListCheck.class);
 
     private static final Set<String> CONTAINER_ROLES =
             Set.of("Art", "Part", "Sect", "Div", "Document");
@@ -69,7 +92,9 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                     "THead",
                     "TBody",
                     "TFoot");
-    private static final int MIN_RUN_LENGTH = 1;
+
+    // -- Bullet evidence --
+    private static final int BULLET_MIN_RUN_LENGTH = 1;
     private static final float Y_OVERLAP_TOLERANCE = 3.0f;
 
     /** Maximum element height to match — roughly two lines of text. */
@@ -81,16 +106,39 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
     /** Maximum bullet x-difference (pt) for bullets to count as the same list level. */
     private static final float SAME_LEVEL_TOLERANCE = 3.0f;
 
+    // -- Indent evidence --
+    private static final int INDENT_MIN_RUN_LENGTH = 3;
+    private static final float LEFT_EDGE_TOLERANCE = 2.0f;
+    private static final float INDENT_THRESHOLD = 10.0f;
+
+    // -- Link evidence --
+    private static final int MIN_LINKS_COUNT = 2;
+
     private final IssueList issues = new IssueList();
+
+    /** Object numbers of elements already claimed by a stronger evidence pass. */
+    private final Set<Integer> claimed = new HashSet<>();
+
+    /** Link-only paragraphs collected during traversal, reconciled in afterTraversal. */
+    private final List<LinkParagraphCandidate> linkParagraphs = new ArrayList<>();
+
+    private record LinkParagraphCandidate(
+            PdfStructElem node, List<PdfStructElem> children, IssueLoc loc) {}
 
     @Override
     public String name() {
-        return "Mistagged Bulleted List Check";
+        return "Mistagged List Check";
     }
 
     @Override
     public String description() {
-        return "Detects vector bullet glyphs near elements that should be lists";
+        return "Detects bulleted, indented, or link-only content that should be lists";
+    }
+
+    @Override
+    public boolean enterElement(StructTreeContext ctx) {
+        collectLinkParagraphCandidate(ctx);
+        return true;
     }
 
     @Override
@@ -103,12 +151,28 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
         }
 
         findBulletMatchedRuns(ctx);
+        findIndentedRuns(ctx);
+    }
+
+    @Override
+    public void afterTraversal(DocContext docCtx) {
+        emitUnclaimedLinkParagraphs();
     }
 
     @Override
     public IssueList getIssues() {
         return issues;
     }
+
+    private void claim(PdfStructElem elem) {
+        claimed.add(StructTree.objNum(elem));
+    }
+
+    private boolean isClaimed(PdfStructElem elem) {
+        return claimed.contains(StructTree.objNum(elem));
+    }
+
+    // == Bullet evidence =================================================
 
     private void findBulletMatchedRuns(StructTreeContext ctx) {
         List<PdfStructElem> currentRun = new ArrayList<>();
@@ -185,7 +249,7 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
             PdfStructElem predecessor,
             float bulletX,
             boolean uniform) {
-        if (run.size() < MIN_RUN_LENGTH) {
+        if (run.size() < BULLET_MIN_RUN_LENGTH) {
             return null;
         }
 
@@ -203,6 +267,7 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                                 + (nestTarget != null ? "sublist" : "list"),
                         fix);
         issues.add(issue);
+        run.forEach(this::claim);
 
         logger.debug(
                 "Detected {} elements with bullet glyphs under obj. #{} on page {}{}",
@@ -341,6 +406,10 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                             new ArrayList<>(currentGroup), currentBulletY, currentPage));
         }
 
+        if (!groups.isEmpty()) {
+            claim(element);
+        }
+
         // Emit issues for each group
         for (BulletAlignedGroup group : groups) {
             IssueFix fix =
@@ -364,6 +433,225 @@ public class MistaggedBulletedListCheck extends StructTreeCheck {
                     String.format("%.1f", group.bulletY()));
         }
     }
+
+    // == Indent evidence =================================================
+
+    private void findIndentedRuns(StructTreeContext ctx) {
+        for (List<Integer> runIndices : findUnclaimedParagraphRuns(ctx)) {
+            checkRunForListFeatures(ctx, runIndices);
+        }
+    }
+
+    /** Finds maximal runs of 3+ consecutive unclaimed "P" children. */
+    private List<List<Integer>> findUnclaimedParagraphRuns(StructTreeContext ctx) {
+        List<List<Integer>> runs = new ArrayList<>();
+        List<Integer> currentRun = new ArrayList<>();
+
+        for (int i = 0; i < ctx.childRoles().size(); i++) {
+            if ("P".equals(ctx.childRoles().get(i)) && !isClaimed(ctx.children().get(i))) {
+                currentRun.add(i);
+            } else {
+                if (currentRun.size() >= INDENT_MIN_RUN_LENGTH) {
+                    runs.add(currentRun);
+                }
+                currentRun = new ArrayList<>();
+            }
+        }
+        if (currentRun.size() >= INDENT_MIN_RUN_LENGTH) {
+            runs.add(currentRun);
+        }
+
+        return runs;
+    }
+
+    /**
+     * Validates a candidate run using spatial analysis. If left edges are inconsistent across the
+     * whole run (e.g., the last few elements aren't indented), splits it into contiguous sub-runs
+     * of elements sharing the same left edge and checks each sub-run independently.
+     */
+    private void checkRunForListFeatures(StructTreeContext ctx, List<Integer> runIndices) {
+        List<Float> leftEdges = new ArrayList<>();
+        List<PdfStructElem> elements = new ArrayList<>();
+        List<Integer> validIndices = new ArrayList<>();
+
+        for (int idx : runIndices) {
+            PdfStructElem p = ctx.children().get(idx);
+            int pageNum = StructTree.pageOf(p, ctx.docCtx());
+            Rectangle bounds =
+                    pageNum > 0 ? Content.getBoundsForElement(p, ctx.docCtx(), pageNum) : null;
+            if (bounds != null) {
+                leftEdges.add(bounds.getLeft());
+                elements.add(p);
+                validIndices.add(idx);
+            }
+        }
+
+        if (elements.size() < INDENT_MIN_RUN_LENGTH) {
+            return;
+        }
+
+        for (SubRun subRun : splitByLeftEdge(leftEdges, elements, validIndices)) {
+            checkSubRunForListFeatures(ctx, subRun);
+        }
+    }
+
+    /** Splits elements into contiguous sub-runs where left edges match within tolerance. */
+    private List<SubRun> splitByLeftEdge(
+            List<Float> leftEdges, List<PdfStructElem> elements, List<Integer> indices) {
+        List<SubRun> subRuns = new ArrayList<>();
+        int start = 0;
+
+        while (start < leftEdges.size()) {
+            float anchor = leftEdges.get(start);
+            int end = start + 1;
+
+            while (end < leftEdges.size()
+                    && Math.abs(leftEdges.get(end) - anchor) <= LEFT_EDGE_TOLERANCE) {
+                end++;
+            }
+
+            int length = end - start;
+            if (length >= INDENT_MIN_RUN_LENGTH) {
+                subRuns.add(
+                        new SubRun(
+                                elements.subList(start, end),
+                                indices.subList(start, end),
+                                leftEdges.subList(start, end)));
+            }
+
+            start = end;
+        }
+
+        return subRuns;
+    }
+
+    /** Checks a sub-run against reference siblings for indentation and creates an issue. */
+    private void checkSubRunForListFeatures(StructTreeContext ctx, SubRun subRun) {
+        float runMedianLeft = median(subRun.leftEdges);
+        float referenceLeft = getReferenceLeftEdge(ctx, subRun.indices);
+
+        if (referenceLeft < 0) {
+            logger.debug(
+                    "No reference left edge for P sub-run under obj. #{}, skipping",
+                    StructTree.objNum(ctx.node()));
+            return;
+        }
+
+        float indent = runMedianLeft - referenceLeft;
+        if (indent < INDENT_THRESHOLD) {
+            logger.debug(
+                    "P sub-run under obj. #{} indent {}pt < threshold {}pt, skipping",
+                    StructTree.objNum(ctx.node()),
+                    String.format("%.1f", indent),
+                    INDENT_THRESHOLD);
+            return;
+        }
+
+        IssueFix fix = new WrapParagraphRunInList(ctx.node(), subRun.elements);
+        Issue issue =
+                new Issue(
+                        IssueType.LIST_TAGGED_AS_PARAGRAPHS,
+                        IssueSev.WARNING,
+                        locAtElem(ctx),
+                        subRun.elements.size()
+                                + " consecutive P elements appear to be a list (indented "
+                                + String.format("%.0f", indent)
+                                + "pt)",
+                        fix);
+        issues.add(issue);
+        subRun.elements.forEach(this::claim);
+
+        logger.debug(
+                "Detected suspected list of {} elements under obj. #{} (indent {}pt)",
+                subRun.elements.size(),
+                StructTree.objNum(ctx.node()),
+                String.format("%.1f", indent));
+    }
+
+    private record SubRun(
+            List<PdfStructElem> elements, List<Integer> indices, List<Float> leftEdges) {}
+
+    /**
+     * Gets the minimum left edge from non-run siblings (H1, H2, other P elements, etc.) to use as a
+     * reference for indentation comparison.
+     */
+    private float getReferenceLeftEdge(StructTreeContext ctx, List<Integer> runIndices) {
+        Set<Integer> runIndexSet = Set.copyOf(runIndices);
+        float minLeft = -1;
+
+        for (int i = 0; i < ctx.children().size(); i++) {
+            if (runIndexSet.contains(i)) {
+                continue;
+            }
+
+            PdfStructElem sibling = ctx.children().get(i);
+            int pageNum = StructTree.pageOf(sibling, ctx.docCtx());
+            Rectangle bounds =
+                    pageNum > 0
+                            ? Content.getBoundsForElement(sibling, ctx.docCtx(), pageNum)
+                            : null;
+            if (bounds != null && bounds.getWidth() > 0) {
+                float left = bounds.getLeft();
+                if (minLeft < 0 || left < minLeft) {
+                    minLeft = left;
+                }
+            }
+        }
+
+        return minLeft;
+    }
+
+    private float median(List<Float> values) {
+        List<Float> sorted = new ArrayList<>(values);
+        sorted.sort(Float::compare);
+        int n = sorted.size();
+        if (n % 2 == 0) {
+            return (sorted.get(n / 2 - 1) + sorted.get(n / 2)) / 2.0f;
+        }
+        return sorted.get(n / 2);
+    }
+
+    // == Link evidence ===================================================
+
+    /** Collects elements whose children are all Links; emitted later unless claimed. */
+    private void collectLinkParagraphCandidate(StructTreeContext ctx) {
+        if (ctx.children().size() < MIN_LINKS_COUNT) {
+            return;
+        }
+
+        // Skip if the element has non-struct-elem kids (MCRs/OBJRs) that would
+        // be orphaned when we convert Link children to LI > LBody > Link.
+        var allKids = ctx.node().getKids();
+        if (allKids != null && allKids.size() != ctx.children().size()) {
+            return;
+        }
+
+        if (ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
+            linkParagraphs.add(
+                    new LinkParagraphCandidate(ctx.node(), ctx.children(), locAtElem(ctx)));
+        }
+    }
+
+    /** Emits link-paragraph issues for candidates no stronger evidence pass claimed. */
+    private void emitUnclaimedLinkParagraphs() {
+        for (LinkParagraphCandidate candidate : linkParagraphs) {
+            if (isClaimed(candidate.node())) {
+                continue;
+            }
+
+            IssueFix fix = new ParagraphOfLinksFix(candidate.node(), candidate.children());
+            Issue issue =
+                    new Issue(
+                            IssueType.PARAGRAPH_OF_LINKS,
+                            IssueSev.ERROR,
+                            candidate.loc(),
+                            "Paragraph contains only links",
+                            fix);
+            issues.add(issue);
+        }
+    }
+
+    // == Shared helpers ==================================================
 
     /** Returns the underlying PdfObject for a raw kid (struct element, MCR, or OBJR). */
     private static PdfObject pdfObjectOf(IStructureNode kid) {

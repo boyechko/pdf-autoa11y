@@ -7,6 +7,14 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Changed
+- Consolidated `ListlikeParagraphsCheck`, `MistaggedBulletedListCheck`, and
+  `ParagraphOfLinksCheck` into a single `MistaggedListCheck` covering all
+  three kinds of evidence (bullet glyphs, indentation, link-only
+  paragraphs). Each element is claimed by the strongest matching evidence,
+  so the strategies no longer emit competing fixes. Sidecar configs
+  referencing the old check names must be updated.
+
 ### Fixed
 - Fixed `MistaggedBulletedListCheck` misdetecting lists in Articles that
   span multiple pages: every element was evaluated against the Article's

@@ -26,20 +26,32 @@ import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.Style;
+import com.itextpdf.layout.element.Link;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import net.boyechko.pdf.autoa11y.validation.TagSchema;
 import org.junit.jupiter.api.Test;
 
-class ListlikeParagraphsCheckTest extends PdfTestBase {
+class MistaggedListCheckTest extends PdfTestBase {
+
+    private static void walkWith(PdfDocument pdfDoc, MistaggedListCheck check) throws Exception {
+        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        walker.addVisitor(check);
+        walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+    }
+
+    // == Indent evidence =================================================
 
     private Path createTestPdfWithParagraphRun(
             int numParagraphs,
@@ -91,15 +103,13 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         // 1 heading + 2 first-line-indent paragraphs = 3 P elements, all at same edge.
         // They form one run, but no non-run siblings exist → no reference → skipped.
         Path pdfFile = createTestPdfWithParagraphRun(0, "text", 0, 0, 0);
-        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
+        MistaggedListCheck check = new MistaggedListCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            walkWith(pdfDoc, check);
         }
 
-        assertTrue(visitor.getIssues().isEmpty(), "Should have no issues");
+        assertTrue(check.getIssues().isEmpty(), "Should have no issues");
     }
 
     @Test
@@ -109,16 +119,14 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         // indent = 30pt > 10pt threshold → detected.
         String paragraphText = "These paragraphs are indented relative to the heading.";
         Path pdfFile = createTestPdfWithParagraphRun(5, paragraphText, 0, 30, 0);
-        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
+        MistaggedListCheck check = new MistaggedListCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            walkWith(pdfDoc, check);
         }
 
-        assertEquals(1, visitor.getIssues().size(), "Should have 1 issue");
-        Issue issue = visitor.getIssues().get(0);
+        assertEquals(1, check.getIssues().size(), "Should have 1 issue");
+        Issue issue = check.getIssues().get(0);
         assertEquals(IssueType.LIST_TAGGED_AS_PARAGRAPHS, issue.type());
     }
 
@@ -128,16 +136,73 @@ class ListlikeParagraphsCheckTest extends PdfTestBase {
         // Paragraphs are LESS indented than heading → negative indent → not detected.
         String paragraphText = "These paragraphs are not indented relative to the heading.";
         Path pdfFile = createTestPdfWithParagraphRun(5, paragraphText, 30, 0, 0);
-        ListlikeParagraphsCheck visitor = new ListlikeParagraphsCheck();
+        MistaggedListCheck check = new MistaggedListCheck();
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
-            walker.addVisitor(visitor);
-            walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+            walkWith(pdfDoc, check);
         }
 
         assertTrue(
-                visitor.getIssues().isEmpty(),
+                check.getIssues().isEmpty(),
                 "Should have no issues when paragraphs are not indented");
+    }
+
+    // == Link evidence ===================================================
+
+    @Test
+    void detectsAndFixesParagraphOfLinks() throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            Document layoutDoc = new Document(pdfDoc);
+            Paragraph p = new Paragraph();
+            for (int i = 0; i < 5; i++) {
+                Link link = new Link("Link " + i, PdfAction.createURI("https://uw.edu"));
+                p.add(link);
+            }
+            layoutDoc.add(p);
+
+            walkWith(pdfDoc, check);
+
+            assertEquals(1, check.getIssues().size(), "Should have 1 issue");
+            Issue issue = check.getIssues().get(0);
+            assertEquals(
+                    IssueType.PARAGRAPH_OF_LINKS,
+                    issue.type(),
+                    "Issue type should be PARAGRAPH_OF_LINKS");
+
+            issue.fix().apply(new DocContext(pdfDoc));
+
+            Node<String> roleTree =
+                    StructTree.toRoleTree(StructTree.findDocument(pdfDoc.getStructTreeRoot()));
+            assertEquals(
+                    "Document[L[LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]], LI[LBody[Link[]]]]]",
+                    roleTree.toString());
+            layoutDoc.close();
+        }
+    }
+
+    @Test
+    void ignoresParagraphsWithIntermixedLinks() throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()));
+                Document layoutDoc = new Document(pdfDoc)) {
+            pdfDoc.setTagged();
+            Paragraph p = new Paragraph();
+            for (int i = 0; i < 5; i++) {
+                p.add(new Link("Link " + i, PdfAction.createURI("https://uw.edu")));
+                p.add(new Text("Text between links"));
+            }
+            layoutDoc.add(p);
+            assertEquals(
+                    "Document[P[Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[],Link[],Span[]]]",
+                    StructTree.toRoleTreeString(
+                            StructTree.findDocument(pdfDoc.getStructTreeRoot())));
+
+            walkWith(pdfDoc, check);
+            assertEquals(0, check.getIssues().size(), "Should have 0 issues");
+        }
     }
 }

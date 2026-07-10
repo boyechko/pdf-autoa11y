@@ -90,3 +90,15 @@ merged class would obscure.
 * Neutral: if CLI wiring or registration grows repetitive, a thin `Rule`
   aggregator pairing a `Check` with a default fix factory could be introduced
   *on top* of the existing abstractions without merging them.
+
+## Postscript (2026-07-10)
+
+`ListlikeParagraphsCheck`, `MistaggedBulletedListCheck`, and
+`ParagraphOfLinksCheck` --- three detection strategies for the same
+user-facing problem --- have since been consolidated into
+`MistaggedListCheck`. This resolved the naming asymmetry at the *check*
+level (one check owns all list-detection evidence) while keeping its four
+fixes (`WrapParagraphRunInList`, `WrapBulletAlignedKidsInLBody`,
+`MergeAdjacentListsFix`, `ParagraphOfLinksFix`) as separate classes, as
+this decision prescribes. The check's Javadoc lists its fixes via `@see`;
+transformation-named fixes remain the convention for multi-fix checks.
