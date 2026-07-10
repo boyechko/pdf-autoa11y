@@ -1,0 +1,62 @@
+------------------------- Page 1 ---
+Document #17
+  Art #31 "__www-uwb-edu-catalog-academic-standards"
+    H1 #32
+      [text &9] `Academic Standards'
+    L #30
+      LI #29 "__list item"
+        LBody #28
+          P #26
+            Link #24
+              <link #67> /GoTo p1 [/URI (https://www.uwb.edu/catalog/academic-standards#academic-standards)]
+              Link #23
+                <link #69> /GoTo p1 [/URI (https://www.uwb.edu/catalog/academic-standards#academic-standing)]
+                [text &10] `Academic st'
+              [text &11] `Academic st anding'
+          L #489
+            LI #490
+              LBody #497
+                P #33 "__sublist item"
+                  [text &12]
+            LI #491
+              LBody #496
+                P #34 "__sublist item"
+                  [text &13]
+            LI #492
+              LBody #495
+                P #35 "__sublist item"
+                  [text &14]
+            LI #493
+              LBody #494
+                P #36 "__sublist item"
+                  [text &15]
+      LI #50 "__list item"
+        LBody #59
+          P #60
+            Link #22
+              <link #71> null [/URI (https://www.uwb.edu/catalog/academic-standards#Quarterly-Deans-List)]
+              [text &16] `Quarterly Dean’s List'
+      LI #51 "__list item"
+        LBody #56
+          P #57
+            Link #21
+              <link #73> null [/URI (https://www.uwb.edu/catalog/academic-standards#annual-deans-list)]
+              [text &17] `Annual Dean’s List'
+      LI #52 "__list item"
+        LBody #53
+          P #54
+            Link #20
+              <link #75> null [/URI (https://www.uwb.edu/catalog/academic-standards#academic-standing-graduate)]
+              [text &18] `Academic standing – graduate'
+    P #38
+      [text &19]
+    P #39
+      [text &20]
+    P #40
+      [text &21]
+    P #41
+      [text &22]
+    P #42
+      [text &23]
+    H2 #43
+      [text &24] `Academic Standing- undergraduates'

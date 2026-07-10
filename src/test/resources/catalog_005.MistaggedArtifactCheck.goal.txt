@@ -1,0 +1,11 @@
+------------------------- Page 1 ---
+Document #17
+  Part #29
+    Sect #27
+      Sect #25
+        Figure #31
+          Link #20
+            <link #42> /URI (https://www.tacoma.uw.edu/)
+            [text &2] `UW TACOMA'
+        P #33
+          [text &4]

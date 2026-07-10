@@ -36,8 +36,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
 class BadlyMappedLigatureCheckTest extends PdfTestBase {
-    private static final Path CATALOG_P1_PDF =
-            Path.of("src/test/resources/UWBothellCatalog202425_001.pdf");
+    private static final Path CATALOG_P1_PDF = Path.of("src/test/resources/catalog_001.pdf");
 
     @Test
     void detectsBrokenLigatureMappingsInCatalogSample() throws Exception {
