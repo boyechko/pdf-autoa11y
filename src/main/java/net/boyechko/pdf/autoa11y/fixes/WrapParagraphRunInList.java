@@ -109,6 +109,7 @@ public final class WrapParagraphRunInList implements IssueFix {
             li.addKid(lBody);
             lBody.addKid(p);
         }
+        ListItemScribble.update(listElem);
 
         logger.debug(
                 "Wrapped {} P elements in L > LI > LBody under obj. #{}",

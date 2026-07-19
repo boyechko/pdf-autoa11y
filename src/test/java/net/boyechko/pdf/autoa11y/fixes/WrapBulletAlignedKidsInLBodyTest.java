@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +60,10 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
             assertEquals(
                     "Document[Sect[Span[]], L[LI[LBody[P[Span[], Span[]]]]]]",
                     StructTree.toRoleTree(document).toString());
+            PdfStructElem list = (PdfStructElem) document.getKids().get(1);
+            DocValue.Scribble scribble = StructTree.getScribble(list);
+            assertTrue(scribble.toolAuthored());
+            assertEquals("1 item", scribble.body());
         }
     }
 
@@ -183,6 +188,9 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
             assertEquals(
                     "Document[L[LI[], LI[LBody[P[Span[]]]]]]",
                     StructTree.toRoleTree(document).toString());
+            DocValue.Scribble scribble = StructTree.getScribble(existingList);
+            assertTrue(scribble.toolAuthored());
+            assertEquals("2 items", scribble.body());
         }
     }
 }

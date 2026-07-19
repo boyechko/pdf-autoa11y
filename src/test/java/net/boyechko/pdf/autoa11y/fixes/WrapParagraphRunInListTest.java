@@ -27,6 +27,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
@@ -56,6 +57,10 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             assertEquals(
                     "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
                     StructTree.toRoleTree(document).toString());
+            PdfStructElem list = (PdfStructElem) document.getKids().get(0);
+            DocValue.Scribble scribble = StructTree.getScribble(list);
+            assertTrue(scribble.toolAuthored());
+            assertEquals("3 items", scribble.body());
         }
     }
 

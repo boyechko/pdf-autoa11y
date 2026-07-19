@@ -145,6 +145,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         if (parentK.isEmpty() && parent.getParent() instanceof PdfStructElem containerElem) {
             containerElem.removeKid(parent);
         }
+        ListItemScribble.update(listElem);
 
         logger.debug(
                 "Wrapped {} raw kids into L>LI>LBody>P near obj. #{} (bulletY={})",

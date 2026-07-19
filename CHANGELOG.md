@@ -11,39 +11,36 @@ Versioning](https://semver.org/).
 - Consolidated `ListlikeParagraphsCheck`, `MistaggedBulletedListCheck`, and
   `ParagraphOfLinksCheck` into a single `MistaggedListCheck` covering all
   three kinds of evidence (bullet glyphs, indentation, link-only
-  paragraphs). Each element is claimed by the strongest matching evidence,
-  so the strategies no longer emit competing fixes. Sidecar configs
-  referencing the old check names must be updated.
+  paragraphs). Sidecar configs referencing the old check names must be updated.
 
 ### Fixed
-- Fixed `MistaggedBulletedListCheck` misdetecting lists in Articles that
-  span multiple pages: every element was evaluated against the Article's
-  first page's bullets and content, producing false positives and mangled
-  lists on later pages. Elements are now judged against their own page,
-  runs may continue across page breaks, and rebuilt lists keep reading
-  order. Paragraphs fully drained of list items are removed, and items
-  recovered from a split list rejoin the adjacent rebuilt list.
-- Fixed `MistaggedBulletedListCheck` corrupting the structure tree when
-  bulleted paragraphs sat inside an `Art` container: the same paragraphs
-  were detected twice, and the second batch of fixes wrapped the wrong
-  elements. Bullet-aligned kids are now located by object identity rather
-  than by position, so earlier fixes can no longer redirect them.
+- Fixed `MistaggedBulletedListCheck` misdetecting lists in Articles that span
+  multiple pages. Elements are now judged against their own page, runs may
+  continue across page breaks, and rebuilt lists keep reading order. Paragraphs
+  fully drained of list items are removed, and items recovered from a split list
+  rejoin the adjacent rebuilt list.
+- Fixed `MistaggedBulletedListCheck` corrupting the structure tree when bulleted
+  paragraphs sat inside an `Art` container. Bullet-aligned kids are now located
+  by object identity rather than by position, so earlier fixes can no longer
+  redirect them.
 
 ### Added
-- `MistaggedBulletedListCheck` now recognizes sublists: a bullet run
-  indented relative to the list immediately before it is nested inside
-  that list's last item rather than wrapped as a sibling list, and a
-  list split in two around such a sublist is merged back into one.
+- Lists created or reshaped by `MistaggedListCheck`'s fixes now carry a tool
+  scribble noting their direct item count (e.g. `__:5 items`), so rebuilt lists
+  can be sanity-checked at a glance.
+- `MistaggedBulletedListCheck` now recognizes sublists: a bullet run indented
+  relative to the list immediately before it is nested inside that list's last
+  item rather than wrapped as a sibling list, and a list split in two around
+  such a sublist is merged back into one.
 - `MistaggedBulletedListCheck` now recognizes hollow (stroke-only) bullet
-  circles in addition to filled ones, so indented sub-level list items
-  marked with hollow bullets are detected and wrapped as lists.
+  circles in addition to filled ones, so indented sub-level list items marked
+  with hollow bullets are detected and wrapped as lists.
 - Added the `OK` scribble mark for elements reviewed to be correct: a
-  user-authored `OK` scribble segment (e.g. `__OK`) shields the element
-  and its entire subtree from all checks and fixes, and the mark itself
-  persists across runs.
-- Added `--dump-tree=<box|plain>` CLI option for choosing the tree line
-  style: box-drawing connectors (default) or plain 2-space indentation —
-  the latter a stable format for goal snapshots and diffing.
+  user-authored `OK` scribble segment (e.g. `__OK`) shields the element and its
+  entire subtree from all checks and fixes.
+- Added `--dump-tree=<box|plain>` CLI option for choosing the tree line style:
+  box-drawing connectors (default) or plain 2-space indentation — the latter a
+  stable format for goal snapshots and diffing.
 
 ## [0.4.0] - 2026-06-04
 
