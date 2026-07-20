@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 /** Moves a sibling MCR into a Link tag. */
 public class EmptyLinkTagFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(EmptyLinkTagFix.class);
-    private static final int P_MOVE_LINK_CONTENT = 24;
 
     private final int linkObjNum;
     private final int mcid;
@@ -49,11 +48,6 @@ public class EmptyLinkTagFix implements IssueFix {
         this.linkObjNum = StructTree.objNum(linkElem);
         this.mcid = mcid;
         this.pageNum = pageNum;
-    }
-
-    @Override
-    public int priority() {
-        return P_MOVE_LINK_CONTENT;
     }
 
     @Override

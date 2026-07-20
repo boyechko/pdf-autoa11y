@@ -49,7 +49,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
 
     @Override
     public int priority() {
-        return 30;
+        return 30; // last: the wrap fixes (10, 20) must first make the lists adjacent
     }
 
     @Override

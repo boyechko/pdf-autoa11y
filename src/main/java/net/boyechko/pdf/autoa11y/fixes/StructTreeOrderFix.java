@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 /** Reorders structure tree siblings to match reading order (page, then MCID within page). */
 public class StructTreeOrderFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeOrderFix.class);
-    private static final int P_REORDER = 10; // Before artifact removal (12) and flatten (15)
 
     private final PdfStructElem element;
     private final Map<Integer, ReadingPosition> cache;
@@ -48,11 +47,6 @@ public class StructTreeOrderFix implements IssueFix {
         this.element = element;
         this.cache = cache;
         this.reorderedCount = 0;
-    }
-
-    @Override
-    public int priority() {
-        return P_REORDER;
     }
 
     @Override

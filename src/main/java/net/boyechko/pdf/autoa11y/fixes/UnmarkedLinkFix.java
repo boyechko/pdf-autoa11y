@@ -44,8 +44,6 @@ import org.slf4j.LoggerFactory;
 /** Creates a Link tag for an annotation. */
 public class UnmarkedLinkFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(UnmarkedLinkFix.class);
-    // After document structure normalization fixes
-    private static final int P_CREATE_LINK = 22;
 
     private final PdfDictionary annotDict;
     private final int pageNum;
@@ -53,11 +51,6 @@ public class UnmarkedLinkFix implements IssueFix {
     public UnmarkedLinkFix(PdfDictionary annotDict, int pageNum) {
         this.annotDict = annotDict;
         this.pageNum = pageNum;
-    }
-
-    @Override
-    public int priority() {
-        return P_CREATE_LINK;
     }
 
     @Override

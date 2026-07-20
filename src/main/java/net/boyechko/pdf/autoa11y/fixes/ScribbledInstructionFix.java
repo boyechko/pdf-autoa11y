@@ -69,11 +69,6 @@ public class ScribbledInstructionFix implements IssueFix {
     }
 
     @Override
-    public int priority() {
-        return 0;
-    }
-
-    @Override
     public void apply(DocContext ctx) throws Exception {
         Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);

@@ -227,11 +227,6 @@ class AccessibilityReportTest {
         }
 
         @Override
-        public int priority() {
-            return 0;
-        }
-
-        @Override
         public void apply(DocContext ctx) {
             // No-op for reporting tests.
         }

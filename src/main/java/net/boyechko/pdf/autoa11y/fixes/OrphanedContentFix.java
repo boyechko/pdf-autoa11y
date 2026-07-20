@@ -33,7 +33,6 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
  * as a result.
  */
 public class OrphanedContentFix implements IssueFix {
-    private static final int P_REMOVE_ORPHANED = 25;
 
     private final PdfStructElem parent;
     private final PdfMcr orphan;
@@ -42,11 +41,6 @@ public class OrphanedContentFix implements IssueFix {
     public OrphanedContentFix(PdfStructElem parent, PdfMcr orphan) {
         this.parent = parent;
         this.orphan = orphan;
-    }
-
-    @Override
-    public int priority() {
-        return P_REMOVE_ORPHANED;
     }
 
     @Override

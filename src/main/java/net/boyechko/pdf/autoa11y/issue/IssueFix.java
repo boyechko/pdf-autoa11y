@@ -21,7 +21,15 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 
 /** Represents a fix for an accessibility issue found in a PDF document. */
 public interface IssueFix {
-    int priority();
+    /**
+     * Orders fixes within a single check's {@link IssueList#applyFixes} pass (lower runs first;
+     * ties keep emission order). Each check runs on its own copy of the PDF, so priorities never
+     * interact across checks. Override only when one check emits multiple fix classes whose apply
+     * order matters, as MistaggedListCheck's fixes do.
+     */
+    default int priority() {
+        return 0;
+    }
 
     void apply(DocContext ctx) throws Exception;
 

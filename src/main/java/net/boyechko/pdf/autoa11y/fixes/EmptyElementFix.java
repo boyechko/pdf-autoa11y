@@ -30,18 +30,12 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
  * parent empty, the parent is removed too (like {@code rm -r}).
  */
 public class EmptyElementFix implements IssueFix {
-    private static final int P_REMOVE_EMPTY = 25; // After structure fixes (20)
 
     private final List<PdfStructElem> elements;
     private int removedCount;
 
     public EmptyElementFix(List<PdfStructElem> elements) {
         this.elements = elements;
-    }
-
-    @Override
-    public int priority() {
-        return P_REMOVE_EMPTY;
     }
 
     @Override

@@ -41,16 +41,9 @@ import org.slf4j.LoggerFactory;
 /** Organizes direct Document children into page-level Part containers. */
 public class MissingPagePartsFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(MissingPagePartsFix.class);
-    // After MissingDocumentFix (18), before link creation (22)
-    private static final int P_PAGE_PARTS = 19;
 
     private int partsCreated = 0;
     private int elementsMoved = 0;
-
-    @Override
-    public int priority() {
-        return P_PAGE_PARTS;
-    }
 
     @Override
     public void apply(DocContext ctx) throws Exception {

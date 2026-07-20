@@ -41,15 +41,8 @@ import org.slf4j.LoggerFactory;
 public class InlineDestinationsFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(InlineDestinationsFix.class);
 
-    private static final int P_INLINE_DESTS = 30;
-
     private int replaced = 0;
     private int orphaned = 0;
-
-    @Override
-    public int priority() {
-        return P_INLINE_DESTS;
-    }
 
     @Override
     public void apply(DocContext ctx) {

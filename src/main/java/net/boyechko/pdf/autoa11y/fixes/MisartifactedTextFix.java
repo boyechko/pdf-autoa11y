@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MisartifactedTextFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(MisartifactedTextFix.class);
-    private static final int P_MISARTIFACTED = 13;
 
     private final int pageNum;
     private final PdfStructElem neighborElem;
@@ -46,11 +45,6 @@ public class MisartifactedTextFix implements IssueFix {
         this.pageNum = pageNum;
         this.neighborElem = neighborElem;
         this.text = text;
-    }
-
-    @Override
-    public int priority() {
-        return P_MISARTIFACTED;
     }
 
     @Override

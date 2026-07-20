@@ -26,7 +26,6 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Changes the role of a Figure element to a specified role. */
 public class FigureWithTextFix implements IssueFix {
-    private static final int P_STRUCTURE = 20;
 
     private final PdfStructElem figure;
     private final PdfName newRole;
@@ -34,11 +33,6 @@ public class FigureWithTextFix implements IssueFix {
     public FigureWithTextFix(PdfStructElem figure, PdfName newRole) {
         this.figure = figure;
         this.newRole = newRole;
-    }
-
-    @Override
-    public int priority() {
-        return P_STRUCTURE;
     }
 
     @Override

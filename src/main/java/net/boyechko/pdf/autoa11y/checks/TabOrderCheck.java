@@ -24,7 +24,6 @@ import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the document tab order is set to follow the structure tree order. */
 public class TabOrderCheck extends DocumentCheck {
-    private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
@@ -54,11 +53,6 @@ public class TabOrderCheck extends DocumentCheck {
 
         IssueFix fix =
                 new IssueFix() {
-                    @Override
-                    public int priority() {
-                        return P_DOC_SETUP;
-                    }
-
                     @Override
                     public String describe() {
                         return "Set document tab order to follow the structure tree";

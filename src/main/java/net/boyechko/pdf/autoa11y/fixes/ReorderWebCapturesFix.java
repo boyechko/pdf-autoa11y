@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 public class ReorderWebCapturesFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ReorderWebCapturesFix.class);
 
-    private static final int P_REORDER_PAGES = 7;
     private static final PdfName N_SPS = new PdfName("SPS");
 
     private final List<String> orderedUrls;
@@ -56,11 +55,6 @@ public class ReorderWebCapturesFix implements IssueFix {
 
     public ReorderWebCapturesFix(List<String> orderedUrls) {
         this.orderedUrls = List.copyOf(orderedUrls);
-    }
-
-    @Override
-    public int priority() {
-        return P_REORDER_PAGES;
     }
 
     @Override

@@ -24,7 +24,6 @@ import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the document is marked as tagged PDF. */
 public class TaggedPdfCheck extends DocumentCheck {
-    private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
@@ -61,11 +60,6 @@ public class TaggedPdfCheck extends DocumentCheck {
 
         IssueFix fix =
                 new IssueFix() {
-                    @Override
-                    public int priority() {
-                        return P_DOC_SETUP;
-                    }
-
                     @Override
                     public String describe() {
                         return "Set Marked flag to true in MarkInfo dictionary";

@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MistaggedArtifactFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(MistaggedArtifactFix.class);
-    private static final int P_ARTIFACT = 12; // After doc setup (10), before flatten (15)
     private static final byte[] ARTIFACT_BMC = "/Artifact BMC".getBytes(StandardCharsets.US_ASCII);
 
     private final PdfStructElem element;
@@ -75,11 +74,6 @@ public class MistaggedArtifactFix implements IssueFix {
     public MistaggedArtifactFix(PdfStructElem element, Map<PdfPage, Set<Integer>> targetMcids) {
         this.element = element;
         this.targetMcids = targetMcids;
-    }
-
-    @Override
-    public int priority() {
-        return P_ARTIFACT;
     }
 
     @Override

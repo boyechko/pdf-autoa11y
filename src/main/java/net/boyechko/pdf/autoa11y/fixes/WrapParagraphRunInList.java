@@ -164,7 +164,7 @@ public final class WrapParagraphRunInList implements IssueFix {
 
     @Override
     public int priority() {
-        return 10;
+        return 10; // list-creation phase: before LBody wraps (20) and merges (30)
     }
 
     @Override

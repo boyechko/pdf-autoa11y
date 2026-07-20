@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
  */
 public class UnexpectedWidgetFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(UnexpectedWidgetFix.class);
-    private static final int P_REMOVE_WIDGET = 12;
 
     private final PdfDictionary annotDict;
     private final int pageNum;
@@ -52,11 +51,6 @@ public class UnexpectedWidgetFix implements IssueFix {
     public UnexpectedWidgetFix(PdfDictionary annotDict, int pageNum) {
         this.annotDict = annotDict;
         this.pageNum = pageNum;
-    }
-
-    @Override
-    public int priority() {
-        return P_REMOVE_WIDGET;
     }
 
     @Override

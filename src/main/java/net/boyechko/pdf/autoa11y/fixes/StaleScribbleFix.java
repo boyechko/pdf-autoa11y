@@ -26,7 +26,6 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
 /** Clears the /T key from a structure element that contains a stale workflow scribble. */
 public class StaleScribbleFix implements IssueFix {
-    private static final int P_CLEAR_SCRIBBLE = 50;
 
     private final PdfStructElem element;
     private final String scribble;
@@ -34,11 +33,6 @@ public class StaleScribbleFix implements IssueFix {
     public StaleScribbleFix(PdfStructElem element, String scribble) {
         this.element = element;
         this.scribble = scribble;
-    }
-
-    @Override
-    public int priority() {
-        return P_CLEAR_SCRIBBLE;
     }
 
     @Override

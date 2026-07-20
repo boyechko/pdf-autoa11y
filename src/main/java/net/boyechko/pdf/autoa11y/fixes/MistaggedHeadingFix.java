@@ -28,7 +28,6 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Retags a P or H1-H6 element as a heading of an appropriate level. */
 public class MistaggedHeadingFix implements IssueFix {
-    private static final int P_STRUCTURE = 20;
 
     public static final List<String> ELEMENTS_TO_TAG =
             List.of("P", "H1", "H2", "H3", "H4", "H5", "H6");
@@ -39,11 +38,6 @@ public class MistaggedHeadingFix implements IssueFix {
     public MistaggedHeadingFix(PdfStructElem element, PdfName headingLevel) {
         this.element = element;
         this.headingLevel = headingLevel;
-    }
-
-    @Override
-    public int priority() {
-        return P_STRUCTURE;
     }
 
     @Override

@@ -63,7 +63,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
 
     @Override
     public int priority() {
-        return 20;
+        return 20; // after list creation (10), before merges (30)
     }
 
     @Override

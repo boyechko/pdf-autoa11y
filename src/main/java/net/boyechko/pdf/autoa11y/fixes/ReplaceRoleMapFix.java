@@ -24,17 +24,11 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Replaces /RoleMap with the supplied mappings. */
 public class ReplaceRoleMapFix implements IssueFix {
-    private static final int P_ROLEMAP = 5;
 
     private final Map<String, String> mappings;
 
     public ReplaceRoleMapFix(Map<String, String> mappings) {
         this.mappings = Map.copyOf(mappings);
-    }
-
-    @Override
-    public int priority() {
-        return P_ROLEMAP;
     }
 
     @Override

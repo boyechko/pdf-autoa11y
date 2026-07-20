@@ -23,14 +23,8 @@ import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Removes /RoleMap from /StructTreeRoot. */
 public class ClearRoleMapFix implements IssueFix {
-    private static final int P_ROLEMAP = 5;
 
     private int clearedCount = 0;
-
-    @Override
-    public int priority() {
-        return P_ROLEMAP;
-    }
 
     @Override
     public void apply(DocContext ctx) {

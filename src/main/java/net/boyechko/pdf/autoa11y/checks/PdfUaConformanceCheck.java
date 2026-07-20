@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class PdfUaConformanceCheck extends DocumentCheck {
     private static final Logger logger = LoggerFactory.getLogger(PdfUaConformanceCheck.class);
 
-    private static final int P_DOC_SETUP = 10;
     private static final String PDFUAID_NS = "http://www.aiim.org/pdfua/ns/id/";
 
     @Override
@@ -62,11 +61,6 @@ public class PdfUaConformanceCheck extends DocumentCheck {
 
         IssueFix fix =
                 new IssueFix() {
-                    @Override
-                    public int priority() {
-                        return P_DOC_SETUP;
-                    }
-
                     @Override
                     public String describe() {
                         return "Removed unlikely PDF/UA conformance claim from XMP metadata";

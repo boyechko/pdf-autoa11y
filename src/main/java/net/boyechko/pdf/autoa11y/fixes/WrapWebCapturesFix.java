@@ -55,16 +55,10 @@ import org.slf4j.LoggerFactory;
 public class WrapWebCapturesFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(WrapWebCapturesFix.class);
 
-    private static final int P_WRAP_CAPTURES = 8;
     private static final PdfName N_SPS = new PdfName("SPS");
 
     private int wrapped = 0;
     private int skippedEmpty = 0;
-
-    @Override
-    public int priority() {
-        return P_WRAP_CAPTURES;
-    }
 
     @Override
     public String describe() {

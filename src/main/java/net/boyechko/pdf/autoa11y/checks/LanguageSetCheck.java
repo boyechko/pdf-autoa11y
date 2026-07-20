@@ -24,7 +24,6 @@ import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /** Detects if the document language is set. */
 public class LanguageSetCheck extends DocumentCheck {
-    private static final int P_DOC_SETUP = 10; // early phase
 
     @Override
     public String name() {
@@ -57,11 +56,6 @@ public class LanguageSetCheck extends DocumentCheck {
 
         IssueFix fix =
                 new IssueFix() {
-                    @Override
-                    public int priority() {
-                        return P_DOC_SETUP;
-                    }
-
                     @Override
                     public String describe() {
                         return "Set document language to English (en-US)";
