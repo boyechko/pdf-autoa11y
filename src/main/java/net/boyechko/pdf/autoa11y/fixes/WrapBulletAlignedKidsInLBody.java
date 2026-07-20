@@ -5,9 +5,13 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +58,10 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         /*
-         * For moving MCRs between parents, raw K-array manipulation is
-         * unavoidable (iText has no MCR-move API). But for struct element
-         * insertion, always use addKid() to ensure proper indirect reference
-         * handling. The hybrid approach works: remove items from the K array
-         * manually, but insert new struct elements via addKid.
+         * We remove the captured kids from the parent's K array by hand (there is no bulk
+         * MCR-move API), but we re-attach them to the new P via addKid() -- both struct elements
+         * and MCRs -- so the ParentTreeHandler re-registers relocated marked content. See step 4
+         * for why raw K-array moves are unsafe for MCR kids.
          */
         PdfArray parentK = StructTree.normalizeKArray(parent);
         if (parentK == null) {
@@ -107,22 +110,32 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
         lBody.addKid(newP);
 
-        // 4. Build newP's K array with the collected objects
+        // 4. Move the collected kids into newP.
+        //
+        //    Struct-element kids (dicts with /S) may be relocated by a raw K-array entry plus a
+        //    /P re-point: MCR registration keys off the leaf element that owns the marked content,
+        //    not the container, so reparenting a struct element does not disturb the ParentTree.
+        //
+        //    MCR kids (bare-int MCIDs or /Type /MCR dicts) are different: they ARE the marked
+        //    content, so they must go through addKid(), which re-registers them under newP via the
+        //    ParentTreeHandler. A raw move leaves the page ParentTree pointing at the old parent,
+        //    producing the "inconsistent ParentTree mapping" that breaks page extraction and trips
+        //    Acrobat preflight.
         PdfArray newPK = new PdfArray();
         newP.getPdfObject().put(PdfName.K, newPK);
 
         for (PdfObject obj : collectedObjects) {
-            newPK.add(obj);
-            // Update /P reference on struct elem kids (stored as indirect refs)
             PdfObject resolved =
-                    obj.isIndirectReference()
-                            ? ctx.doc()
-                                    .getPdfObject(
-                                            ((com.itextpdf.kernel.pdf.PdfIndirectReference) obj)
-                                                    .getObjNumber())
-                            : obj;
+                    obj.isIndirectReference() ? ((PdfIndirectReference) obj).getRefersTo() : obj;
             if (resolved instanceof PdfDictionary dict && dict.containsKey(PdfName.S)) {
+                newPK.add(obj);
                 dict.put(PdfName.P, newP.getPdfObject());
+            } else if (resolved instanceof PdfNumber num) {
+                newP.addKid(new PdfMcrNumber(num, newP));
+            } else if (resolved instanceof PdfDictionary mcrDict) {
+                newP.addKid(new PdfMcrDictionary(mcrDict, newP));
+            } else {
+                newPK.add(obj);
             }
         }
 

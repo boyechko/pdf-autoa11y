@@ -6,7 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
@@ -49,6 +53,46 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
             DocValue.Scribble scribble = StructTree.getScribble(list);
             assertTrue(scribble.toolAuthored());
             assertEquals("1 item", scribble.body());
+        }
+    }
+
+    @Test
+    void reregistersMovedNumericMcrsInParentTree() throws Exception {
+        // Bare-int MCID kids (real marked content) must be re-registered under the new P so the
+        // page ParentTree points at it; a raw K-array move leaves the reverse index pointing at
+        // the old parent, producing an "inconsistent ParentTree mapping" that breaks extraction.
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem sect = new PdfStructElem(pdfDoc, PdfName.Sect);
+            document.addKid(sect);
+            // Sect's /Pg lets its bare-int MCRs resolve their page for registration.
+            sect.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            PdfMcr mcr0 = sect.addKid(new PdfMcrNumber(new PdfNumber(0), sect));
+            PdfMcr mcr1 = sect.addKid(new PdfMcrNumber(new PdfNumber(1), sect));
+
+            // Precondition: the ParentTree maps both MCIDs to sect.
+            assertSame(sect.getPdfObject(), parentDictOf(root, page, 0));
+            assertSame(sect.getPdfObject(), parentDictOf(root, page, 1));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new WrapBulletAlignedKidsInLBody(
+                            sect, List.of(mcr0.getPdfObject(), mcr1.getPdfObject()), 100f, 1)
+                    .apply(ctx);
+
+            // After the move, the ParentTree must resolve both MCIDs to the new P element, not
+            // to the now-pruned sect and not to nothing.
+            PdfStructElem newP = descendantWithRole(document, "P");
+            assertNotNull(newP, "Expected a new P element from the wrap");
+            assertSame(
+                    newP.getPdfObject(),
+                    parentDictOf(root, page, 0),
+                    "MCID 0 should be re-registered under the new P");
+            assertSame(newP.getPdfObject(), parentDictOf(root, page, 1));
         }
     }
 
@@ -177,5 +221,28 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
             assertTrue(scribble.toolAuthored());
             assertEquals("2 items", scribble.body());
         }
+    }
+
+    /** Returns the struct-elem dictionary the page ParentTree maps {@code mcid} to, or null. */
+    private static com.itextpdf.kernel.pdf.PdfDictionary parentDictOf(
+            PdfStructTreeRoot root, PdfPage page, int mcid) {
+        PdfMcr mcr = root.findMcrByMcid(page.getPdfObject(), mcid);
+        return mcr == null ? null : ((PdfStructElem) mcr.getParent()).getPdfObject();
+    }
+
+    /** Depth-first search for the first descendant with the given mapped role, or null. */
+    private static PdfStructElem descendantWithRole(PdfStructElem node, String role) {
+        if (role.equals(StructTree.mappedRole(node))) {
+            return node;
+        }
+        for (var kid : node.getKids()) {
+            if (kid instanceof PdfStructElem elem) {
+                PdfStructElem found = descendantWithRole(elem, role);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 }

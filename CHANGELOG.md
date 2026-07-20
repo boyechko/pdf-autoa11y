@@ -14,6 +14,12 @@ Versioning](https://semver.org/).
   paragraphs). Sidecar configs referencing the old check names must be updated.
 
 ### Fixed
+- Fixed `MistaggedListCheck`'s bullet-alignment fix corrupting the page
+  ParentTree: when it wrapped bare text runs into a list, the moved marked
+  content was not re-registered, so the reverse index kept pointing at the old
+  parent. Affected content became invisible to page extraction and was flagged
+  by Acrobat preflight as "inconsistent ParentTree mapping". Moved marked
+  content is now re-registered under its new element.
 - Fixed `MistaggedBulletedListCheck` misdetecting lists in Articles that span
   multiple pages. Elements are now judged against their own page, runs may
   continue across page breaks, and rebuilt lists keep reading order. Paragraphs
