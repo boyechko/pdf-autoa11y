@@ -7,6 +7,16 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- New `!SPLIT_LINES [spec]` scribble instruction: splits marked-content
+  blocks that lump several one-line list items into individual
+  `LI > LBody > P` items, rewriting the content stream so each line gets its
+  own MCID. Handles elements holding several MCRs, joins an enclosing list
+  or wraps a bare paragraph in a new one. The optional spec is an expected
+  line count that makes the fix refuse when the actual count differs, or
+  per-item line counts (e.g. `1,1,2`) that group wrapped lines into
+  multi-line items.
+
 ### Changed
 - Consolidated `ListlikeParagraphsCheck`, `MistaggedBulletedListCheck`, and
   `ParagraphOfLinksCheck` into a single `MistaggedListCheck` covering all

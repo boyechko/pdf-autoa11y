@@ -46,6 +46,8 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
     private static final Pattern REORDER_KIDS_PATTERN = Pattern.compile("!REORDER_KIDS");
     private static final Pattern SET_ROLE_PATTERN = Pattern.compile("!SET_ROLE\\s+(\\S+)");
+    private static final Pattern SPLIT_LINES_PATTERN =
+            Pattern.compile("!SPLIT_LINES(?:\\s+([\\d,]+))?");
     private static final Pattern UNLINK_PATTERN = Pattern.compile("!UNLINK");
 
     /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
@@ -66,6 +68,7 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
         Matcher reorderKids = REORDER_KIDS_PATTERN.matcher(instruction);
         Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
+        Matcher splitLines = SPLIT_LINES_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
 
         // Each applyXxx returns the scribble to stamp onto /T ("INST OK", or "INST OK (was: P)"
@@ -82,6 +85,8 @@ public class ScribbledInstructionFix implements IssueFix {
             okScribble = applyReorderKids(ctx);
         } else if (setRole.matches()) {
             okScribble = applySetRole(setRole.group(1));
+        } else if (splitLines.matches()) {
+            okScribble = applySplitLines(ctx, splitLines.group(1));
         } else if (unlink.matches()) {
             okScribble = applyUnlink(ctx);
         } else {
@@ -340,6 +345,14 @@ public class ScribbledInstructionFix implements IssueFix {
     private String applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
         return null;
+    }
+
+    // === Instruction: SPLIT_LINES ============================================
+
+    /** Delegates to SplitIntoListItemsFix to split the element's lumped blocks into list items. */
+    private String applySplitLines(DocContext ctx, String spec) throws Exception {
+        new SplitIntoListItemsFix(element, spec).apply(ctx);
+        return OK_SCRIBBLE;
     }
 
     /** Returns true if the instruction operates on the entire subtree, not just the element. */

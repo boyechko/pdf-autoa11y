@@ -7,9 +7,7 @@ import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
-import com.itextpdf.kernel.pdf.PdfLiteral;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfResources;
@@ -29,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
@@ -222,56 +221,11 @@ public class MistaggedArtifactFix implements IssueFix {
             PdfResources resources,
             PdfPage page,
             Set<Integer> targetMcids) {
-        if (!isOperator(operands, "BDC") || operands.size() < 3) {
-            return null;
-        }
-        PdfObject propertiesOperand = resolvePropertiesOperand(operands, page);
-        Integer mcid = resolveMcid(propertiesOperand, resources);
+        Integer mcid = ContentStream.mcidOfBdc(operands, page, resources);
         if (mcid == null || !targetMcids.contains(mcid)) {
             return null;
         }
         return mcid;
-    }
-
-    private PdfObject resolvePropertiesOperand(List<PdfObject> operands, PdfPage page) {
-        // BDC uses tag + properties + operator.
-        if (operands.size() == 3) {
-            return operands.get(1);
-        }
-
-        // Some producers emit an indirect reference: /Tag objNum genNum R BDC
-        if (operands.size() == 5
-                && operands.get(1) instanceof PdfNumber objNum
-                && operands.get(2) instanceof PdfNumber
-                && isLiteral(operands.get(3), "R")) {
-            return page.getDocument().getPdfObject(objNum.intValue());
-        }
-
-        return null;
-    }
-
-    private static boolean isOperator(List<PdfObject> operands, String op) {
-        if (operands.isEmpty()) {
-            return false;
-        }
-        return isLiteral(operands.get(operands.size() - 1), op);
-    }
-
-    private static boolean isLiteral(PdfObject object, String literalText) {
-        return object instanceof PdfLiteral literal && literalText.equals(literal.toString());
-    }
-
-    private Integer resolveMcid(PdfObject propertiesOperand, PdfResources resources) {
-        if (propertiesOperand instanceof PdfDictionary dict) {
-            return dict.getAsInt(PdfName.MCID);
-        }
-        if (propertiesOperand instanceof PdfName name && resources != null) {
-            PdfObject propertiesObj = resources.getProperties(name);
-            if (propertiesObj instanceof PdfDictionary propertiesDict) {
-                return propertiesDict.getAsInt(PdfName.MCID);
-            }
-        }
-        return null;
     }
 
     private record StreamRewriteResult(byte[] rewrittenBytes, Set<Integer> rewrittenMcids) {

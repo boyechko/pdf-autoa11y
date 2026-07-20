@@ -133,6 +133,63 @@ Instruction := "!ARTIFACT"
 |---|---|---|
 | `!ARTIFACT` | `P[Span[MCR₁]]` | *(element and MCRs removed; content marked as artifact)* |
 
+### !SPLIT_LINES [\<N\>]
+
+Splits marked-content blocks that lump several one-line list items
+into one item per line. Acrobat's auto-tagger often marks a whole run of
+one-line items (e.g. course listings) as a single MCR under one `P`;
+retagging them by hand is laborious. This instruction rewrites the
+content stream so each line becomes its own `BDC...EMC` block with a
+fresh MCID, and gives each line its own `LI > LBody > P`.
+
+The scribbled element's kids must all be MCRs (one or more, e.g. a
+`P` holding two MCRs that an artifact interrupts); each block is
+split at its line boundaries and every resulting line becomes an
+item, in reading order. If the element already
+sits inside an `LBody > LI > L` chain, the new items join that list
+right after the original item. A bare element (e.g. a `P` under a
+container) is first wrapped in a new `L > LI > LBody` at its own
+position.
+
+All the element's MCRs must lie on the same page; an element whose
+marked content spans a page break is refused, and the scribble stays
+in place. Intervening content between the MCRs (artifacted text,
+other marked-content blocks) is fine — each block is located and
+split independently.
+
+Line boundaries are text-positioning operators (`Td`, `TD`, `T*`,
+`Tm`, `'`, `"`) that follow shown text. The spec is optional: without
+it, the blocks split at every detected line. A plain number is the
+expected total line count and acts as a safety catch — if the actual
+count differs, for example because an item wraps onto a second line,
+the instruction refuses rather than mis-split, and the scribble stays
+for review.
+
+A comma-separated spec gives each item's line count in reading order
+(counting lines across all the element's MCRs), so wrapped items can
+be expressed: `1,1,2` makes two one-line items and one two-line item.
+Consecutive lines grouped into one item keep a single unsplit block;
+a multi-line item whose lines straddle an MCR boundary holds one MCR
+per fragment. Whether a line is a new item or a continuation is a
+judgment call the content stream cannot settle, which is why it is
+expressed in the scribble. The sizes must sum to the actual line
+count, or the instruction refuses.
+
+```text
+Instruction := "!SPLIT_LINES" [ Spec ]
+Spec        := N                          (* expected total lines, one item each, ≥ 2 *)
+             | N { "," N }                (* per-item line counts, in reading order *)
+```
+
+**Example:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!SPLIT_LINES 3` | `L[LI[LBody[P[MCR₁₋₃]]]]` | `L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]` |
+| `!SPLIT_LINES 3` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]]` |
+| `!SPLIT_LINES 1,2` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂₋₃]]]]]` — lines 2-3 stay one block |
+| `!SPLIT_LINES 2,1` | `Sect[P[MCR₁₋₂, MCR₃]]` | `Sect[L[LI[LBody[P[MCR₁₋₂]]], LI[LBody[P[MCR₃]]]]]` |
+
 ### !UNLINK
 
 Unwraps a `Link` element: promotes its non-`OBJR` kids to the parent

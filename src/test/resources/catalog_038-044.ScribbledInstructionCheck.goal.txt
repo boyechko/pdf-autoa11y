@@ -1,0 +1,431 @@
+------------------------- Page 1 ---
+Document #48
+  Art #64 "__www-washington-edu-students-gencat-program-B-BusinessAdministration-881"
+    H5 #65
+      [text &10] `Required Business Core (30 Credits)'
+    L #719 "__:6 items"
+      LI #720
+        LBody #721
+          P #66 "__:INST OK"
+            [text &9]
+      LI #722
+        LBody #723
+          P #724
+            [text &19]
+      LI #725
+        LBody #726
+          P #727
+            [text &20]
+      LI #728
+        LBody #729
+          P #730
+            [text &21]
+      LI #731
+        LBody #732
+          P #733
+            [text &22]
+      LI #734
+        LBody #735
+          P #736
+            [text &23]
+    H5 #67
+      [text &12] `Capstone (10 Credits)'
+    L #737 "__:2 items"
+      LI #738
+        LBody #739
+          P #68 "__:INST OK"
+            [text &11]
+      LI #740
+        LBody #741
+          P #742
+            [text &24]
+    H5 #69
+      [text &2] `Supply Chain Management Core Courses (30 credits)'
+    L #743 "__:6 items"
+      LI #744
+        LBody #745
+          P #70 "__:INST OK"
+            [text &3]
+      LI #746
+        LBody #747
+          P #748
+            [text &25]
+      LI #749
+        LBody #750
+          P #751
+            [text &26]
+      LI #752
+        LBody #753
+          P #754
+            [text &18]
+      LI #755
+        LBody #756
+          P #757
+            [text &27]
+      LI #758
+        LBody #759
+          P #760
+            [text &28]
+            [text &17]
+    H5 #71
+      [text &14] `Supply Chain Management Electives (10 credits)'
+    P #72
+      [text &13]
+    H5 #73
+      [text &16] `General Electives (10 Credits)'
+    P #74
+      [text &15]
+------------------------- Page 2 ---
+      [text &11]
+    P #62
+      StyleSpan #59
+        Link #57
+          <link #286> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &1] `Back to Top'
+    H3 #75
+      [text &2] `Bachelor of Arts in Business Administration degree: Supply Chain Management (ELC)'
+    H4 #76
+      [text &3] `Completion Requirements'
+    L #77
+      LI #256
+        LBody #270
+          P #271
+            [text &17]
+          L #272 "__:9 items"
+            LI #273
+              LBody #274
+                P #275 "__:INST OK"
+                  [text &16]
+            LI #761
+              LBody #762
+                P #763
+                  [text &27]
+            LI #764
+              LBody #765
+                P #766
+                  [text &28]
+            LI #767
+              LBody #768
+                P #769
+                  [text &29]
+            LI #770
+              LBody #771
+                P #772
+                  [text &30]
+            LI #773
+              LBody #774
+                P #775
+                  [text &31]
+            LI #776
+              LBody #777
+                P #778
+                  [text &32]
+            LI #779
+              LBody #780
+                P #781
+                  [text &33]
+            LI #782
+              LBody #783
+                P #784
+                  [text &34]
+      LI #257
+        LBody #265
+          P #266
+            [text &19]
+            [text &23]
+            StyleSpan #267
+              Link #56
+                <link #288> /URI (https://www.uwb.edu/babusiness/elcbabusiness)
+                [text &6] `https://www.uwb.edu/babusiness/elcbabusiness'
+            [text &22]
+      LI #258
+        LBody #263
+          P #264
+            [text &21]
+            [text &26]
+      LI #259
+        LBody #260
+          P #261 "__split"
+            [text &24]
+    H4 #78
+      [text &9] `Additional Completion Requirements'
+    L #79
+      LI #233
+        LBody #249
+          P #250
+            [text &14]
+          L #251
+            LI #252
+              LBody #253
+                P #254 "__!SPLIT_LINES 1,1,1,1,2"
+                  [text &15]
+------------------------- Page 3 ---
+                  [text &9]
+      LI #234
+        LBody #242
+          P #243
+            [text &8]
+          L #244 "__:2 items"
+            LI #245
+              LBody #246
+                P #247 "__:INST OK"
+                  [text &10]
+            LI #785
+              LBody #786
+                P #787
+                  [text &14]
+      LI #235
+        LBody #236
+          P #237
+            [text &12]
+          L #238 "__:9 items"
+            LI #239
+              LBody #240
+                P #241 "__:INST OK"
+                  [text &13]
+            LI #788
+              LBody #789
+                P #790
+                  [text &15]
+            LI #791
+              LBody #792
+                P #793
+                  [text &16]
+            LI #794
+              LBody #795
+                P #796
+                  [text &17]
+            LI #797
+              LBody #798
+                P #799
+                  [text &18]
+            LI #800
+              LBody #801
+                P #802
+                  [text &19]
+            LI #803
+              LBody #804
+                P #805
+                  [text &20]
+            LI #806
+              LBody #807
+                P #808
+                  [text &21]
+            LI #809
+              LBody #810
+                P #811
+                  [text &22]
+    P #80
+      StyleSpan #230
+        Link #55
+          <link #290> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &1] `Back to Top'
+    H4 #81
+      [text &2] `Additional Information'
+    P #82
+      [text &3]
+    P #83
+      [text &4]
+    P #84
+      [text &5]
+------------------------- Page 4 ---
+    P #85
+      StyleSpan #222
+        Link #54
+          <link #292> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &0] `Back to Top'
+    H3 #86
+      [text &16] `Program of Study: Minor: Business Administration'
+    H4 #87
+      [text &15] `Program Overview'
+    P #88
+      [text &2]
+    P #89
+      [text &3]
+      [text &17]
+    H4 #90
+      [text &5] `Admission Requirements'
+    P #91
+      [text &6]
+    L #812 "__:6 items"
+      LI #813
+        LBody #814
+          P #92 "__:INST OK"
+            [text &7]
+      LI #815
+        LBody #816
+          P #817
+            [text &18]
+      LI #818
+        LBody #819
+          P #820
+            [text &19]
+      LI #821
+        LBody #822
+          P #823
+            [text &20]
+      LI #824
+        LBody #825
+          P #826
+            [text &21]
+      LI #827
+        LBody #828
+          P #829
+            [text &22]
+    H4 #93
+      [text &9] `Completion Requirements'
+    L #94
+      LI #194
+        LBody #211
+          P #212
+            [text &10]
+      LI #195
+        LBody #208
+          P #209
+            [text &11]
+      LI #196
+        LBody #205
+          P #206
+            [text &12]
+      LI #197
+        LBody #202
+          P #203
+            [text &13]
+------------------------- Page 5 ---
+      LI #198
+        LBody #199
+          P #200
+            [text &0]
+    P #95
+      [text &1]
+      [text &17]
+    P #96
+      StyleSpan #190
+        Link #53
+          <link #294> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &3] `Back to Top'
+    H3 #97
+      [text &18] `Program of Study: Minor: Economics'
+    H4 #98
+      [text &19] `Program Overview'
+    P #99
+      [text &5]
+    P #100
+      [text &6]
+      [text &23]
+    H4 #101
+      [text &8] `Admission Requirements'
+    L #102
+      LI #172
+        LBody #181
+          P #182
+            [text &9]
+            [text &22]
+            [text &21]
+      LI #173
+        LBody #178
+          P #179
+            [text &12]
+      LI #174
+        LBody #175
+          P #176
+            [text &13]
+    H4 #103
+      [text &15] `Completion Requirements'
+    L #104
+      LI #141
+        LBody #154
+          P #155
+            [text &24]
+------------------------- Page 6 ---
+          L #156
+            LI #157
+              LBody #166
+                P #167
+                  [text &0]
+            LI #158
+              LBody #163
+                P #164
+                  [text &1]
+            LI #159
+              LBody #160
+                P #161
+                  [text &2]
+      LI #142
+        LBody #147
+          P #148
+            [text &3]
+          P #149
+            [text &4]
+            [text &17]
+          P #150
+            [text &6]
+            [text &18]
+      LI #143
+        LBody #144
+          P #145
+            [text &8]
+    P #105
+      StyleSpan #138
+        Link #52
+          <link #296> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &9] `Back to Top'
+    H3 #106
+      [text &20] `Program of Study: Minor: Retail Management'
+    H4 #107
+      [text &19] `Program Overview'
+    P #108
+      [text &11]
+    P #109
+      [text &12]
+      [text &21]
+    H4 #110
+      [text &14] `Admission Requirements'
+    P #111
+      [text &15]
+      HyphenSpan #130
+        [text &16]
+------------------------- Page 7 ---
+      [text &9]
+    H4 #112
+      [text &2] `Completion Requirements'
+    L #830 "__:6 items"
+      LI #831
+        LBody #832
+          P #113 "__:INST OK"
+            [text &3]
+      LI #833
+        LBody #834
+          P #835
+            [text &13]
+      LI #836
+        LBody #837
+          P #838
+            [text &14]
+      LI #839
+        LBody #840
+          P #841
+            [text &15]
+      LI #842
+        LBody #843
+          P #844
+            [text &16]
+      LI #845
+        LBody #846
+          P #847
+            [text &17]
+    P #114
+      [text &4]
+    P #115
+      StyleSpan #124
+        Link #51
+          <link #298> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#top)]
+          [text &5] `Back to Top'
+    H2 #116
+      [text &12] `Graduate Programs'
+    H3 #117
+      [text &11] `Program of Study: Master Of Business Administration'
+    H4 #118
+      [text &10] `Program Overview'
+    P #119
+      [text &8]
