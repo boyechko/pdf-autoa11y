@@ -72,23 +72,28 @@ public final class Issue {
         return fix;
     }
 
+    /** True if the fix was attempted and threw; failed issues are never also resolved. */
     public boolean hasFailed() {
         return failed;
     }
 
+    /** True once a fix resolved the issue, including fixes skipped as covered by another fix. */
     public boolean isResolved() {
         return resolved;
     }
 
+    /** Outcome message recorded by markResolved/markFailed; null while the issue is open. */
     public IssueMsg resolution() {
         return resolution;
     }
 
+    /** Records a successful (or superseded) fix outcome. */
     public void markResolved(IssueMsg resolution) {
         this.resolved = true;
         this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 
+    /** Records a failed fix attempt; the issue stays unresolved for manual-review reporting. */
     public void markFailed(IssueMsg resolution) {
         this.failed = true;
         this.resolution = Objects.requireNonNull(resolution, "resolution");

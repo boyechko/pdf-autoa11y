@@ -23,18 +23,24 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
 public sealed interface IssueLoc {
+    /** No location — a document-wide issue (e.g. missing metadata). */
     record None() implements IssueLoc {}
 
+    /** A whole page, 1-based. */
     record AtPage(int pageNum) implements IssueLoc {}
 
+    /** An indirect object such as an annotation or font; pageNum is optional context. */
     record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements IssueLoc {}
 
+    /** A structure element; pageNum, role, and structPath are optional reporting context. */
     record AtElem(PdfStructElem element, Integer pageNum, String role, String structPath)
             implements IssueLoc {}
 
+    /** A marked-content sequence on a page; ownerObjNum is the owning structure element. */
     record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String role, String structPath)
             implements IssueLoc {}
 
+    /** What kind of indirect object an {@link AtObj} points at. */
     enum ObjKind {
         ANNOT,
         STRUCT_ELEM,
@@ -63,6 +69,7 @@ public sealed interface IssueLoc {
         return new AtElem(element, pageNum, role, structPath);
     }
 
+    /** Element location with page and role resolved from the document; none() on null input. */
     static IssueLoc atElem(DocContext ctx, PdfStructElem element) {
         if (ctx == null || element == null) {
             return none();

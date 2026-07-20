@@ -31,24 +31,33 @@ public interface IssueFix {
         return 0;
     }
 
+    /** Mutates the document to resolve the issue; must be idempotent. */
     void apply(DocContext ctx) throws Exception;
 
+    /** Past-tense, context-free summary of what the fix did, for reports. */
     default String describe() {
         return getClass().getSimpleName();
     }
 
+    /** Like {@link #describe()}, but may consult the document for detail (e.g. counts). */
     default String describe(DocContext ctx) {
         return describe();
     }
 
+    /** Description plus location; becomes the issue's resolution (or failure) message. */
     default IssueMsg describeLocated(DocContext ctx) {
         return new IssueMsg(describe(ctx), IssueLoc.none());
     }
 
+    /** Headline for report groups when several fixes of this kind are batched together. */
     default String groupLabel() {
         return getClass().getSimpleName();
     }
 
+    /**
+     * True if applying this fix made {@code otherFix} unnecessary; skipped fixes are marked
+     * resolved.
+     */
     default boolean invalidates(IssueFix otherFix) {
         return false;
     }
