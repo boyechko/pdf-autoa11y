@@ -36,6 +36,7 @@ public enum IssueType {
     UNMARKED_LINK("Link annotations not tagged"),
     UNEXPECTED_WIDGET("non-functional Widget annotations"),
     ORPHANED_CONTENT("orphaned MCRs"),
+    INCONSISTENT_PARENT_TREE("marked content missing from the page ParentTree"),
     EMPTY_ELEMENT("empty structure elements"),
     LIST_TAGGED_AS_PARAGRAPHS("list tagged as a series of paragraphs"),
     SUBLIST_TAGGED_AS_PARAGRAPHS("sublist tagged as a series of paragraphs"),

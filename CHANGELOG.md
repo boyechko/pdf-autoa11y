@@ -31,6 +31,11 @@ Versioning](https://semver.org/).
   redirect them.
 
 ### Added
+- Added `InconsistentParentTreeCheck`, which detects and repairs marked content
+  that is present in the structure tree but missing from (or mismatched in) the
+  page ParentTree — the reverse index that page extraction and Acrobat rely on.
+  Runs by default and re-registers the affected references so the ParentTree is
+  rewritten consistently, fixing files corrupted by earlier tooling.
 - Lists created or reshaped by `MistaggedListCheck`'s fixes now carry a tool
   scribble noting their direct item count (e.g. `__:5 items`), so rebuilt lists
   can be sanity-checked at a glance.

@@ -52,6 +52,7 @@ public final class ProcessingDefaults {
         return List.of(
                 ClearRoleMapCheck::new,
                 () -> new ReplaceRoleMapCheck(Map.of()),
+                InconsistentParentTreeCheck::new,
                 InlineDestinationsCheck::new,
                 MisartifactedTextCheck::new,
                 ReorderWebCapturesCheck::new,
