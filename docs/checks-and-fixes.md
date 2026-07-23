@@ -151,10 +151,12 @@ right after the original item. A bare element (e.g. a `P` under a
 container) is first wrapped in a new `L > LI > LBody` at its own
 position.
 
-All the element's MCRs must lie on the same page; an element whose
-marked content spans a page break is refused, and the scribble stays
-in place. Intervening content between the MCRs (artifacted text,
-other marked-content blocks) is fine — each block is located and
+The element's MCRs may span pages (e.g. a lumped listing that runs
+over a page break); each block is located and split in its own page's
+content stream, and moved or newly minted MCRs carry an explicit
+`/Pg` where a bare MCID number would resolve to the wrong page.
+Intervening content between the MCRs (artifacted text, other
+marked-content blocks) is likewise fine — each block is located and
 split independently.
 
 Line boundaries are text-positioning operators (`Td`, `TD`, `T*`,

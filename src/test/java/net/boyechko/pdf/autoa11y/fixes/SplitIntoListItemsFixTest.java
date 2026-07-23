@@ -154,6 +154,37 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
     }
 
     @Test
+    void splitsElementWhoseMcrsSpanPages() throws Exception {
+        try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 2, 15);
+            PdfStructElem list = grandListOf(p);
+
+            new SplitIntoListItemsFix(p, "1,1,1,1,2").apply(ctx);
+
+            List<PdfStructElem> items = listItems(list);
+            assertEquals(5, items.size(), "6 lines across two pages grouped into 5 items");
+
+            List<Integer> itemPages =
+                    items.stream()
+                            .map(li -> StructTree.descendantsOf(li, PdfMcr.class).get(0))
+                            .map(StructTree::pageOf)
+                            .toList();
+            assertEquals(List.of(2, 2, 3, 3, 3), itemPages);
+
+            Map<Integer, Content.McidContent> page2 = Content.extractContentForPage(doc.getPage(2));
+            Map<Integer, Content.McidContent> page3 = Content.extractContentForPage(doc.getPage(3));
+            assertTrue(itemText(items.get(0), page2).startsWith("B BUS/ELCBUS 482"));
+            assertTrue(itemText(items.get(1), page2).startsWith("B BUS/ELCBUS 483"));
+            assertTrue(itemText(items.get(2), page3).startsWith("B BUS 441"));
+            assertTrue(itemText(items.get(3), page3).startsWith("B BUS/ELCBUS 487"));
+            String lastText = itemText(items.get(4), page3);
+            assertTrue(lastText.startsWith("B BUS/ELCBUS 497"), lastText);
+            assertTrue(lastText.contains("Undergraduate"), lastText);
+        }
+    }
+
+    @Test
     void keepsMultiLineItemAsSingleUnsplitMcr() throws Exception {
         try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
             DocContext ctx = new DocContext(doc);

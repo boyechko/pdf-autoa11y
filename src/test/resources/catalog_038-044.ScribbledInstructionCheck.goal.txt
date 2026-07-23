@@ -154,13 +154,28 @@ Document #48
         LBody #249
           P #250
             [text &14]
-          L #251
+          L #251 "__:5 items"
             LI #252
               LBody #253
-                P #254 "__!SPLIT_LINES 1,1,1,1,2"
+                P #254 "__:INST OK"
                   [text &15]
+            LI #785
+              LBody #786
+                P #787
+                  [text &35]
 ------------------------- Page 3 ---
+            LI #788
+              LBody #789
+                P #790
                   [text &9]
+            LI #791
+              LBody #792
+                P #793
+                  [text &14]
+            LI #794
+              LBody #795
+                P #796
+                  [text &15]
       LI #234
         LBody #242
           P #243
@@ -170,10 +185,10 @@ Document #48
               LBody #246
                 P #247 "__:INST OK"
                   [text &10]
-            LI #785
-              LBody #786
-                P #787
-                  [text &14]
+            LI #797
+              LBody #798
+                P #799
+                  [text &16]
       LI #235
         LBody #236
           P #237
@@ -183,38 +198,38 @@ Document #48
               LBody #240
                 P #241 "__:INST OK"
                   [text &13]
-            LI #788
-              LBody #789
-                P #790
-                  [text &15]
-            LI #791
-              LBody #792
-                P #793
-                  [text &16]
-            LI #794
-              LBody #795
-                P #796
-                  [text &17]
-            LI #797
-              LBody #798
-                P #799
-                  [text &18]
             LI #800
               LBody #801
                 P #802
-                  [text &19]
+                  [text &17]
             LI #803
               LBody #804
                 P #805
-                  [text &20]
+                  [text &18]
             LI #806
               LBody #807
                 P #808
-                  [text &21]
+                  [text &19]
             LI #809
               LBody #810
                 P #811
+                  [text &20]
+            LI #812
+              LBody #813
+                P #814
+                  [text &21]
+            LI #815
+              LBody #816
+                P #817
                   [text &22]
+            LI #818
+              LBody #819
+                P #820
+                  [text &23]
+            LI #821
+              LBody #822
+                P #823
+                  [text &24]
     P #80
       StyleSpan #230
         Link #55
@@ -247,30 +262,30 @@ Document #48
       [text &5] `Admission Requirements'
     P #91
       [text &6]
-    L #812 "__:6 items"
-      LI #813
-        LBody #814
+    L #824 "__:6 items"
+      LI #825
+        LBody #826
           P #92 "__:INST OK"
             [text &7]
-      LI #815
-        LBody #816
-          P #817
-            [text &18]
-      LI #818
-        LBody #819
-          P #820
-            [text &19]
-      LI #821
-        LBody #822
-          P #823
-            [text &20]
-      LI #824
-        LBody #825
-          P #826
-            [text &21]
       LI #827
         LBody #828
           P #829
+            [text &18]
+      LI #830
+        LBody #831
+          P #832
+            [text &19]
+      LI #833
+        LBody #834
+          P #835
+            [text &20]
+      LI #836
+        LBody #837
+          P #838
+            [text &21]
+      LI #839
+        LBody #840
+          P #841
             [text &22]
     H4 #93
       [text &9] `Completion Requirements'
@@ -389,30 +404,30 @@ Document #48
       [text &9]
     H4 #112
       [text &2] `Completion Requirements'
-    L #830 "__:6 items"
-      LI #831
-        LBody #832
+    L #842 "__:6 items"
+      LI #843
+        LBody #844
           P #113 "__:INST OK"
             [text &3]
-      LI #833
-        LBody #834
-          P #835
-            [text &13]
-      LI #836
-        LBody #837
-          P #838
-            [text &14]
-      LI #839
-        LBody #840
-          P #841
-            [text &15]
-      LI #842
-        LBody #843
-          P #844
-            [text &16]
       LI #845
         LBody #846
           P #847
+            [text &13]
+      LI #848
+        LBody #849
+          P #850
+            [text &14]
+      LI #851
+        LBody #852
+          P #853
+            [text &15]
+      LI #854
+        LBody #855
+          P #856
+            [text &16]
+      LI #857
+        LBody #858
+          P #859
             [text &17]
     P #114
       [text &4]

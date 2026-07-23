@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Splits an element whose marked-content blocks lump several one-line list items into one list item
  * per line. The element's kids must all be MCRs; each block is split at its line boundaries, and
- * every resulting line becomes an item.
+ * every resulting line becomes an item. The MCRs may span pages — each block is located and split
+ * in its own page's content stream, and moved or fresh MCRs carry an explicit /Pg where needed.
  *
  * <p>The content stream is spliced at each line boundary (a text-positioning operator following a
  * show operator) so every line becomes its own BDC...EMC block with a fresh MCID, and the structure
@@ -116,31 +117,31 @@ public final class SplitIntoListItemsFix implements IssueFix {
                     "Splitting requires at least 2 lines, got " + expectedLines);
         }
         List<PdfMcr> mcrs = mcrKidsOf(element);
-        PdfPage page = commonPageOf(ctx, mcrs);
 
         List<McrPlan> plans = new ArrayList<>();
         int lineCount = 0;
         for (PdfMcr mcr : mcrs) {
+            PdfPage page = pageOf(ctx, mcr);
             SplitPlan plan = planSplit(page, mcr.getMcid());
-            plans.add(new McrPlan(mcr, plan));
+            plans.add(new McrPlan(mcr, page, plan));
             lineCount += plan.splitOffsets().size() + 1;
         }
-        int pageNum = ctx.doc().getPageNumber(page);
-        List<Integer> sizes = resolveItemSizes(lineCount, pageNum);
+        String pages = pageLabelOf(ctx, plans);
+        List<Integer> sizes = resolveItemSizes(lineCount, pages);
         if (sizes.size() < 2) {
             throw new IllegalStateException(
-                    "Splitting on page " + pageNum + " would produce fewer than 2 items");
+                    "Splitting on " + pages + " would produce fewer than 2 items");
         }
 
-        PdfStructElem li = ensureListItemChain(ctx, page);
+        PdfStructElem li = ensureListItemChain(ctx, plans.get(0).page());
         PdfStructElem list = (PdfStructElem) li.getParent();
-        List<Integer> newMcids = buildItems(ctx, list, li, page, plans, sizes);
+        List<Integer> newMcids = buildItems(ctx, list, li, plans, sizes);
         ListItemScribble.update(list);
 
         logger.debug(
-                "Split {} MCR(s) on page {} into {} items (new MCIDs {})",
+                "Split {} MCR(s) on {} into {} items (new MCIDs {})",
                 mcrs.size(),
-                pageNum,
+                pages,
                 sizes.size(),
                 newMcids);
     }
@@ -149,7 +150,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
      * Verifies the detected total line count against the spec and returns the per-item line counts:
      * the given sizes, or one line per item when no sizes were specified.
      */
-    private List<Integer> resolveItemSizes(int lineCount, int pageNum) {
+    private List<Integer> resolveItemSizes(int lineCount, String pages) {
         if (itemSizes != null) {
             int specTotal = itemSizes.stream().mapToInt(Integer::intValue).sum();
             if (specTotal != lineCount) {
@@ -158,8 +159,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
                                 + specTotal
                                 + " lines but found "
                                 + lineCount
-                                + " on page "
-                                + pageNum);
+                                + " on "
+                                + pages);
             }
             if (itemSizes.stream().anyMatch(size -> size < 1)) {
                 throw new IllegalArgumentException("Item sizes must be at least 1");
@@ -168,12 +169,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         }
         if (expectedLines != null && lineCount != expectedLines) {
             throw new IllegalStateException(
-                    "Expected "
-                            + expectedLines
-                            + " lines but found "
-                            + lineCount
-                            + " on page "
-                            + pageNum);
+                    "Expected " + expectedLines + " lines but found " + lineCount + " on " + pages);
         }
         return Collections.nCopies(lineCount, 1);
     }
@@ -196,23 +192,20 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return mcrs;
     }
 
-    /** Returns the page shared by all the MCRs, refusing when they span pages. */
-    private PdfPage commonPageOf(DocContext ctx, List<PdfMcr> mcrs) {
-        int pageNum = StructTree.pageOf(mcrs.get(0));
+    /** Resolves the MCR's page, refusing when it cannot be determined. */
+    private static PdfPage pageOf(DocContext ctx, PdfMcr mcr) {
+        int pageNum = StructTree.pageOf(mcr);
         if (pageNum <= 0) {
-            throw new IllegalStateException(
-                    "Cannot resolve the page of MCID " + mcrs.get(0).getMcid());
-        }
-        for (PdfMcr mcr : mcrs) {
-            if (StructTree.pageOf(mcr) != pageNum) {
-                throw new IllegalStateException(
-                        "Splitting requires all MCRs on one page; MCID "
-                                + mcr.getMcid()
-                                + " is not on page "
-                                + pageNum);
-            }
+            throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
         }
         return ctx.doc().getPage(pageNum);
+    }
+
+    /** Returns "page N" or "pages N-M" spanning the plans' pages in reading order. */
+    private static String pageLabelOf(DocContext ctx, List<McrPlan> plans) {
+        int first = ctx.doc().getPageNumber(plans.get(0).page());
+        int last = ctx.doc().getPageNumber(plans.get(plans.size() - 1).page());
+        return first == last ? "page " + first : "pages " + first + "-" + last;
     }
 
     // == Structure tree ==================================================
@@ -266,7 +259,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
             DocContext ctx,
             PdfStructElem list,
             PdfStructElem li,
-            PdfPage page,
             List<McrPlan> plans,
             List<Integer> sizes)
             throws IOException {
@@ -280,6 +272,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         int linesLeftInItem = sizes.get(0);
 
         for (McrPlan mcrPlan : plans) {
+            PdfPage page = mcrPlan.page();
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
             for (int line = 0; line < mcrLines; line++) {
                 boolean startsItem = linesLeftInItem == 0;
@@ -289,10 +282,10 @@ public final class SplitIntoListItemsFix implements IssueFix {
                 }
                 if (line == 0) {
                     if (mcrPlan.mcr() != plans.get(0).mcr()) {
-                        moveMcr(mcrPlan.mcr(), itemBody);
+                        moveMcr(mcrPlan.mcr(), page, itemBody);
                     }
                 } else if (startsItem) {
-                    PdfMcr newMcr = new PdfMcrNumber(page, itemBody);
+                    PdfMcr newMcr = newMcrOn(page, itemBody);
                     itemBody.addKid(newMcr);
                     newMcids.add(newMcr.getMcid());
                     insertionsByStream
@@ -327,15 +320,43 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return p;
     }
 
-    /** Moves an MCR from the element into a new parent, re-registering it there. */
-    private void moveMcr(PdfMcr mcr, PdfStructElem newParent) {
+    /**
+     * Moves an MCR from the element into a new parent, re-registering it there. A bare-number MCR
+     * resolves its page through the parent's /Pg, so one landing under a parent pinned to a
+     * different page is upgraded to an MCR dictionary carrying its own /Pg.
+     */
+    private void moveMcr(PdfMcr mcr, PdfPage page, PdfStructElem newParent) {
         PdfObject underlying = mcr.getPdfObject();
         element.removeKid(mcr);
-        PdfMcr rebound =
-                underlying instanceof PdfNumber num
-                        ? new PdfMcrNumber(num, newParent)
-                        : new PdfMcrDictionary((PdfDictionary) underlying, newParent);
+        PdfMcr rebound;
+        if (!(underlying instanceof PdfNumber num)) {
+            rebound = new PdfMcrDictionary((PdfDictionary) underlying, newParent);
+        } else if (parentIsPinnedTo(newParent, page)) {
+            rebound = new PdfMcrNumber(num, newParent);
+        } else {
+            PdfDictionary dict = new PdfDictionary();
+            dict.put(PdfName.Type, PdfName.MCR);
+            dict.put(PdfName.Pg, page.getPdfObject().getIndirectReference());
+            dict.put(PdfName.MCID, num);
+            rebound = new PdfMcrDictionary(dict, newParent);
+        }
         newParent.addKid(rebound);
+    }
+
+    /**
+     * Creates a fresh-MCID kid for the item body on the given page: a bare number when the body is
+     * pinned to that page, an MCR dictionary otherwise.
+     */
+    private static PdfMcr newMcrOn(PdfPage page, PdfStructElem itemBody) {
+        return parentIsPinnedTo(itemBody, page)
+                ? new PdfMcrNumber(page, itemBody)
+                : new PdfMcrDictionary(page, itemBody);
+    }
+
+    /** Checks whether the element's own /Pg refers to the given page. */
+    private static boolean parentIsPinnedTo(PdfStructElem elem, PdfPage page) {
+        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
+        return pg != null && StructTree.isSamePage(pg, page);
     }
 
     // == Content stream ==================================================
@@ -343,8 +364,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
     /** One marked-content block's split plan: its stream, tag, and line-split offsets. */
     private record SplitPlan(PdfStream stream, PdfName tag, List<Integer> splitOffsets) {}
 
-    /** A block plan paired with the MCR it belongs to. */
-    private record McrPlan(PdfMcr mcr, SplitPlan plan) {}
+    /** A block plan paired with the MCR it belongs to and the page holding its block. */
+    private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan) {}
 
     /** A planned EMC/BDC splice: the byte offset, block tag, and new MCID. */
     private record Insertion(int offset, PdfName tag, int mcid) {}
