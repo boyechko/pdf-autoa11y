@@ -17,19 +17,19 @@ Document #17
             LI #490
               LBody #497
                 P #33 "__sublist item"
-                  [text &12]
+                  [text &12] `Academic Alert'
             LI #491
               LBody #496
                 P #34 "__sublist item"
-                  [text &13]
+                  [text &13] `Academic warning and…'
             LI #492
               LBody #495
                 P #35 "__sublist item"
-                  [text &14]
+                  [text &14] `Reinstatement'
             LI #493
               LBody #494
                 P #36 "__sublist item"
-                  [text &15]
+                  [text &15] `Senior in final quarter'
       LI #50 "__list item"
         LBody #59
           P #60
@@ -49,14 +49,14 @@ Document #17
               <link #75> null [/URI (https://www.uwb.edu/catalog/academic-standards#academic-standing-graduate)]
               [text &18] `Academic standing – graduate'
     P #38
-      [text &19]
+      [text &19] `Students are expected to…'
     P #39
-      [text &20]
+      [text &20] `assignments, including…'
     P #40
-      [text &21]
+      [text &21] `reports, must be free of…'
     P #41
-      [text &22]
+      [text &22] `without formally…'
     P #42
-      [text &23]
+      [text &23] `satisfactory by the…'
     H2 #43
       [text &24] `Academic Standing- undergraduates'

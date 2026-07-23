@@ -6,18 +6,18 @@ Document #22
       <link #88> null [/URI (https://www.uwb.edu/)]
       <link #87> null [/URI (https://www.uwb.edu/)]
       P #79
-        [image+path &1]
+        [image+path &1] `Bothell General Catalog'
         Link #34
           <link #85> null [/URI (https://www.uwb.edu/)]
           [text &2] `Bothell'
-        [image+path &3]
+        [image+path &3] `Bothell General Catalog'
         Link #35
           <link #83> null [/URI (https://www.uwb.edu/catalog)]
           [text &4] `General Catalog'
         Form #36
           <widget #76> null
     P #45
-      [text &6]
+      [text &6] `IN THIS SECTION'
     P #42
       Span #40
         Form #37
@@ -26,15 +26,15 @@ Document #22
           <link #71> null [/URI (https://www.uwb.edu/catalog)]
           [text &7] `Home'
       Span #69
-        [text &8]
+        [text &8] `'
     H1 #46
       [text &9] `Degree programs'
     P #47
-      [text &10]
+      [text &10] `The following are the ofcial…'
       Link #25
         <link #105> null [/URI (https://www.washington.edu/students/crscatb/)]
         [text &11] `click here'
-      [text &12]
+      [text &12] `The following are the ofcial…'
     L #533
       LI #534
         LBody #535
@@ -63,7 +63,7 @@ Document #22
     H1 #52
       [text &17] `Undergraduate degrees'
     P #53
-      [text &18]
+      [text &18] `(BA) = Bachelor of Arts,…'
     H1 #54
       [text &19] `School of Business'
     P #55
@@ -77,11 +77,11 @@ Document #22
             Link #31
               <link #93> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-49b8611c-43e9-4ea6-ab48-d05866b1679c)]
               [text &21] `Business Administration'
-            [text &22]
+            [text &22] `Business Administration…'
       LI #543
         LBody #544
           P #56
             Link #32
               <link #91> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-6654cd6c-b46c-428d-bd23-494db288401a)]
               [text &23] `Business Administration: Accounting'
-            [text &24]
+            [text &24] `Business Administration:…'

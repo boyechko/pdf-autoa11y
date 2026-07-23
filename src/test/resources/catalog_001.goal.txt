@@ -10,15 +10,15 @@ Document #22
   H1 #97
     [text+path &2] `General Catalog'
   P #99
-    [text &4]
+    [text &4] `IN THIS SECTION'
   H2 #43
     [text &5] `The UW Bothell general catalog 2024-2025'
   P #44
-    [text &6]
+    [text &6] `The University of W…'
     Link #25
       <link #96> null [/URI (https://www.uwb.edu/catalog/degree-programs)]
       [text &7] `academic programs and certificates'
-    [text &8]
+    [text &8] `The University of W…'
   H3 #47
     [text &9] `Archived catalogs'
   L #652
@@ -53,7 +53,7 @@ Document #22
             <link #86> /URI (https://www.uwb.edu/catalog/wp-content/uploads/sites/44/2023/07/19-20-final.pdf)
             [text &14] `2019-2020'
   P #53
-    [text &15]
+    [text &15] `For prior catalogs contact:'
   P #54
     Link #31
       <link #84> /URI (mailto:uwbreg@uw.edu)

@@ -8,4 +8,4 @@ Document #17
             <link #42> /URI (https://www.tacoma.uw.edu/)
             [text &2] `UW TACOMA'
         P #33
-          [text &4]
+          [text &4] `© 2024 University of W…'
