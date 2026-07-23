@@ -18,6 +18,10 @@ Versioning](https://semver.org/).
   multi-line items.
 
 ### Changed
+- `--dump-tree` now shows a text excerpt for every element with marked
+  content, not just links and headings; excerpts other than those are
+  clipped. Text excerpts in issue messages and the structure table now clip
+  to a uniform width.
 - Consolidated `ListlikeParagraphsCheck`, `MistaggedBulletedListCheck`, and
   `ParagraphOfLinksCheck` into a single `MistaggedListCheck` covering all
   three kinds of evidence (bullet glyphs, indentation, link-only

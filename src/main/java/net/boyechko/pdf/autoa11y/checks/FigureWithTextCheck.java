@@ -4,6 +4,7 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.FigureWithTextFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -15,7 +16,6 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 
 /** Detects Figure elements containing text content rather than actual images. */
 public class FigureWithTextCheck extends StructTreeCheck {
-    private static final int MAX_DISPLAY_LENGTH = 30;
     private final IssueList issues = new IssueList();
 
     @Override
@@ -43,16 +43,12 @@ public class FigureWithTextCheck extends StructTreeCheck {
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new FigureWithTextFix(ctx.node(), PdfName.P);
-            String truncated =
-                    textContent.length() > MAX_DISPLAY_LENGTH
-                            ? textContent.substring(0, MAX_DISPLAY_LENGTH) + "…"
-                            : textContent;
             Issue issue =
                     new Issue(
                             IssueType.FIGURE_WITH_TEXT,
                             IssueSev.WARNING,
                             locAtElem(ctx),
-                            "Figure contains text: \"" + truncated + "\"",
+                            "Figure contains text: \"" + Format.truncate(textContent) + "\"",
                             fix);
             issues.add(issue);
         }

@@ -13,6 +13,9 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
  * primitive tokens when only those components are needed.
  */
 public final class Format {
+    /** Default width for text excerpts shown in messages, reports, and diagrams. */
+    public static final int TRUNCATE_MAX_WIDTH = 30;
+
     private Format() {}
 
     /** Returns a short label for a structure element: role and object number. */
@@ -54,6 +57,20 @@ public final class Format {
     /** Returns a short label for a marked content identifier. */
     public static String mcid(int mcid) {
         return new DocValue.Mcid(mcid).toString();
+    }
+
+    /** Returns {@code text} clipped to {@link #TRUNCATE_MAX_WIDTH} characters. */
+    public static String truncate(String text) {
+        return truncate(text, TRUNCATE_MAX_WIDTH);
+    }
+
+    /**
+     * Returns {@code text} clipped to at most {@code maxWidth} characters, with the last character
+     * replaced by an ellipsis when clipping occurs.
+     */
+    public static String truncate(String text, int maxWidth) {
+        if (text == null || text.length() <= maxWidth) return text;
+        return text.substring(0, maxWidth - 1) + "…";
     }
 
     /**

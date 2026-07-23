@@ -77,8 +77,7 @@ public class UnmarkedLinkCheck extends DocumentCheck {
         StringBuilder sb = new StringBuilder("Link annotation ").append(Format.objNum(objNumber));
 
         if (uri != null) {
-            String displayUri = uri.length() > 30 ? uri.substring(0, 29) + "…" : uri;
-            sb.append(" to ").append(displayUri);
+            sb.append(" to ").append(Format.truncate(uri));
         }
 
         return sb.toString();

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -126,8 +127,7 @@ public class EmptyLinkTagFix implements IssueFix {
         if (text.isEmpty()) {
             return describe();
         }
-        String truncated = text.length() > 30 ? text.substring(0, 29) + "…" : text;
-        return "Moved sibling MCR \"" + truncated + "\" into Link";
+        return "Moved sibling MCR \"" + Format.truncate(text) + "\" into Link";
     }
 
     @Override

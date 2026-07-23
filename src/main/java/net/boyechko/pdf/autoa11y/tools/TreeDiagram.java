@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Label;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.slf4j.Logger;
@@ -31,6 +32,17 @@ public final class TreeDiagram {
      */
     private static final Pattern ANNOTATED_LINE =
             Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
+
+    /** Roles whose text is worth showing in full, since it identifies the element. */
+    private static final Set<PdfName> SHOWN_IN_FULL =
+            Set.of(
+                    PdfName.Link,
+                    PdfName.H1,
+                    PdfName.H2,
+                    PdfName.H3,
+                    PdfName.H4,
+                    PdfName.H5,
+                    PdfName.H6);
 
     /**
      * Line-prefix style for detailed tree diagrams. {@link #BOX} is the human-facing default;
@@ -242,18 +254,11 @@ public final class TreeDiagram {
                     emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
                     sb.append(childrenPrefix).append(leafPrefix);
                     sb.append("[").append(mcrLabel).append("]");
-                    if (elem.getRole().equals(PdfName.Link)
-                            || Set.of(
-                                            PdfName.H1,
-                                            PdfName.H2,
-                                            PdfName.H3,
-                                            PdfName.H4,
-                                            PdfName.H5,
-                                            PdfName.H6)
-                                    .contains(elem.getRole())) {
-                        String text = gatherElemText(elem, mcidInfo);
-                        if (!text.isBlank()) sb.append(" `").append(text).append("'");
+                    String text = gatherElemText(elem, mcidInfo);
+                    if (!SHOWN_IN_FULL.contains(elem.getRole())) {
+                        text = Format.truncate(text);
                     }
+                    if (!text.isBlank()) sb.append(" `").append(text).append("'");
                     sb.append('\n');
                 }
                 default -> throw new IllegalArgumentException("Unexpected value: " + kids.get(i));

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -79,14 +80,14 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         String textContent = getTextContent(ctx);
         if (matchesTextArtifactPattern(textContent)) {
             IssueFix fix = new MistaggedArtifactFix(ctx.node());
-            String truncated =
-                    textContent.length() > 40 ? textContent.substring(0, 39) + "…" : textContent;
             issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
                             locAtElem(ctx),
-                            "Tagged content should be artifact: \"" + truncated + "\"",
+                            "Tagged content should be artifact: \""
+                                    + Format.truncate(textContent)
+                                    + "\"",
                             fix));
             return false;
         }

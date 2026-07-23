@@ -41,7 +41,6 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     private static final List<PdfName> HEADING_LEVELS =
             List.of(PdfName.H1, PdfName.H2, PdfName.H3, PdfName.H4, PdfName.H5, PdfName.H6);
     private static final String ART_ROLE = "Art";
-    private static final int TRUNCATED_LENGTH = 20;
 
     /** Mood mark for a tool finding: informational, never executed (cf. '!' for instructions). */
     private static final String FINDING_MARK = "?";
@@ -332,8 +331,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             return "";
         }
 
-        String text = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
-        return text.length() > TRUNCATED_LENGTH ? text.substring(0, TRUNCATED_LENGTH) + "…" : text;
+        return Format.truncate(Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum));
     }
 
     /** Rounds font size to the nearest 0.25pt to handle floating-point noise. */

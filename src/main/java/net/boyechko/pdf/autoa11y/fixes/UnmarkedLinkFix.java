@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -237,8 +238,7 @@ public class UnmarkedLinkFix implements IssueFix {
         if (uri == null || uri.isBlank()) {
             return describe();
         }
-        String displayUri = uri.length() > 30 ? uri.substring(0, 29) + "…" : uri;
-        return describe() + " to " + displayUri;
+        return describe() + " to " + Format.truncate(uri);
     }
 
     @Override
