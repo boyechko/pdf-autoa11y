@@ -65,12 +65,17 @@ public final class Format {
     }
 
     /**
-     * Returns {@code text} clipped to at most {@code maxWidth} characters, with the last character
-     * replaced by an ellipsis when clipping occurs.
+     * Returns {@code text} clipped to at most {@code maxWidth} characters, ending with an ellipsis.
+     *
+     * <p>Clipping prefers the last word boundary that fits, falling back to a mid-word cut when
+     * that would discard more than half the available width.
      */
     public static String truncate(String text, int maxWidth) {
         if (text == null || text.length() <= maxWidth) return text;
-        return text.substring(0, maxWidth - 1) + "…";
+        String clipped = text.substring(0, maxWidth - 1);
+        int lastSpace = clipped.lastIndexOf(' ');
+        if (lastSpace >= maxWidth / 2) clipped = clipped.substring(0, lastSpace);
+        return clipped.stripTrailing() + "…";
     }
 
     /**
