@@ -664,6 +664,142 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
+    void unwrapListHoistsWrappedElementsPreservingPosition() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem before = new PdfStructElem(pdfDoc, PdfName.H4);
+            document.addKid(before);
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            document.addKid(list);
+            PdfStructElem after = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(after);
+
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P);
+            for (PdfStructElem wrapped : new PdfStructElem[] {p1, p2}) {
+                PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+                list.addKid(li);
+                PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"));
+                li.addKid(lBody);
+                lBody.addKid(wrapped);
+            }
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx);
+
+            var kids = document.getKids();
+            assertEquals(4, kids.size(), "Document should hold H4, P1, P2, trailing P");
+            assertEquals(before.getPdfObject(), ((PdfStructElem) kids.get(0)).getPdfObject());
+            assertEquals(p1.getPdfObject(), ((PdfStructElem) kids.get(1)).getPdfObject());
+            assertEquals(p2.getPdfObject(), ((PdfStructElem) kids.get(2)).getPdfObject());
+            assertEquals(after.getPdfObject(), ((PdfStructElem) kids.get(3)).getPdfObject());
+            assertEquals(
+                    document.getPdfObject(),
+                    ((PdfStructElem) p1.getParent()).getPdfObject(),
+                    "Hoisted element's parent pointer should be rebound to Document");
+        }
+    }
+
+    @Test
+    void unwrapListRejectsNonListElement() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new ScribbledInstructionFix(p, "!UNWRAP_LIST").apply(ctx));
+        }
+    }
+
+    @Test
+    void unwrapListRejectsListWithLabelsLeavingTreeUntouched() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            document.addKid(list);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            list.addKid(li);
+            li.addKid(new PdfStructElem(pdfDoc, new PdfName("Lbl")));
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"));
+            li.addKid(lBody);
+            lBody.addKid(new PdfStructElem(pdfDoc, PdfName.P));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx));
+
+            assertEquals(1, document.getKids().size(), "List should remain in place");
+            assertEquals(2, li.getKids().size(), "LI should keep its Lbl and LBody");
+        }
+    }
+
+    @Test
+    void unwrapListRejectsDirectContentInLBody() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, page);
+            document.addKid(list);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
+            list.addKid(li);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"), page);
+            li.addKid(lBody);
+            lBody.addKid(new PdfMcrNumber(page, lBody));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx));
+        }
+    }
+
+    @Test
+    void unwrapListPinsPageOnHoistedElementLackingPg() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            root.addKid(document);
+
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            document.addKid(list);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            list.addKid(li);
+            // Only LBody carries /Pg; the wrapped P's bare-int MCR resolves through it.
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"), page);
+            li.addKid(lBody);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            lBody.addKid(p);
+            p.addKid(new PdfMcrNumber(page, p));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx);
+
+            assertNotNull(
+                    p.getPdfObject().get(PdfName.Pg),
+                    "Hoisted P should have gained /Pg so its bare-int MCR still resolves");
+            assertEquals(page.getPdfObject(), p.getPdfObject().get(PdfName.Pg));
+        }
+    }
+
+    @Test
     void setRoleChangesElementRole() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);

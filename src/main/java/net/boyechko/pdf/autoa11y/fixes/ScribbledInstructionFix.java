@@ -49,6 +49,7 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern SPLIT_LINES_PATTERN =
             Pattern.compile("!SPLIT_LINES(?:\\s+([\\d,]+))?");
     private static final Pattern UNLINK_PATTERN = Pattern.compile("!UNLINK");
+    private static final Pattern UNWRAP_LIST_PATTERN = Pattern.compile("!UNWRAP_LIST");
 
     /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
     private static final Pattern REORDER_POSITION_PATTERN = Pattern.compile("!REORDER\\s+(\\d+)");
@@ -70,6 +71,7 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
         Matcher splitLines = SPLIT_LINES_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
+        Matcher unwrapList = UNWRAP_LIST_PATTERN.matcher(instruction);
 
         // Each applyXxx returns the scribble to stamp onto /T ("INST OK", or "INST OK (was: P)"
         // for a role change), or null to leave /T untouched because the instruction manages its
@@ -89,6 +91,8 @@ public class ScribbledInstructionFix implements IssueFix {
             okScribble = applySplitLines(ctx, splitLines.group(1));
         } else if (unlink.matches()) {
             okScribble = applyUnlink(ctx);
+        } else if (unwrapList.matches()) {
+            okScribble = applyUnwrapList();
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
         }
@@ -509,6 +513,81 @@ public class ScribbledInstructionFix implements IssueFix {
             logger.debug("Link annotation {} not found in any page /Annots", Format.objNum(objNum));
         }
         return null;
+    }
+
+    // === Instruction: UNWRAP_LIST ============================================
+
+    /**
+     * Undoes a bare list conversion: hoists each LI &gt; LBody's wrapped elements back to the L's
+     * parent at the L's position, then removes the L and its wrappers. Only lists whose every item
+     * is an Lbl-less LI &gt; LBody chain wrapping structure elements qualify; anything else (real
+     * bullets, direct MCR content) is refused before any mutation, leaving the tree untouched. The
+     * element is destroyed, so no breadcrumb is written.
+     */
+    private String applyUnwrapList() {
+        String role = StructTree.mappedRole(element);
+        if (!"L".equals(role)) {
+            throw new IllegalArgumentException("!UNWRAP_LIST requires an L element, got: " + role);
+        }
+        PdfStructElem parent = (PdfStructElem) element.getParent();
+        if (parent == null) {
+            logger.warn("Cannot unwrap list: element has no parent");
+            return null;
+        }
+        int insertAt = StructTree.findKidIndex(parent, element);
+        if (insertAt < 0) {
+            logger.warn("Cannot unwrap list: element not found in parent's kids");
+            return null;
+        }
+
+        // Validate the whole list before touching anything, so a refusal is side-effect free.
+        List<PdfStructElem> hoistees = new ArrayList<>();
+        for (IStructureNode kid : kidsOf(element)) {
+            PdfStructElem li = requireRole(kid, "LI", "list item");
+            for (IStructureNode liKid : kidsOf(li)) {
+                PdfStructElem lBody = requireRole(liKid, "LBody", "LI kid");
+                for (IStructureNode bodyKid : kidsOf(lBody)) {
+                    if (!(bodyKid instanceof PdfStructElem wrapped)) {
+                        throw new IllegalArgumentException(
+                                "!UNWRAP_LIST refuses: LBody holds direct content, not a wrapped"
+                                        + " element");
+                    }
+                    hoistees.add(wrapped);
+                }
+            }
+        }
+
+        for (PdfStructElem wrapped : hoistees) {
+            // Pin the page the element resolved through its old ancestors, so bare-int MCRs
+            // inside it still find their page under the new parent.
+            PdfObject effectivePg = StructTree.effectivePageDict(wrapped);
+            if (effectivePg != null && wrapped.getPdfObject().get(PdfName.Pg) == null) {
+                wrapped.getPdfObject().put(PdfName.Pg, effectivePg);
+                wrapped.setModified();
+            }
+            ((PdfStructElem) wrapped.getParent()).removeKid(wrapped);
+            parent.addKid(insertAt++, wrapped);
+        }
+        parent.removeKid(element);
+        return null;
+    }
+
+    /** Returns the node's kids, or an empty list when it has none. */
+    private static List<IStructureNode> kidsOf(PdfStructElem elem) {
+        return elem.getKids() == null ? List.of() : new ArrayList<>(elem.getKids());
+    }
+
+    /** Asserts the kid is a struct elem with the given mapped role, or refuses the unwrap. */
+    private static PdfStructElem requireRole(IStructureNode kid, String role, String what) {
+        if (kid instanceof PdfStructElem se && role.equals(StructTree.mappedRole(se))) {
+            return se;
+        }
+        String got =
+                kid instanceof PdfStructElem se
+                        ? StructTree.mappedRole(se)
+                        : kid.getClass().getSimpleName();
+        throw new IllegalArgumentException(
+                "!UNWRAP_LIST refuses: expected " + what + " to be " + role + ", got " + got);
     }
 
     // === Instruction: ADD_PARENT =============================================

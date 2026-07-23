@@ -215,6 +215,37 @@ offenders as `!UNLINK`, then rerun the tool.
 |---|---|---|
 | `!UNLINK` | `P[Link[Span[MCR₁], OBJR]]` | `P[Span[MCR₁]]` *(annotation also removed from page)* |
 
+### !UNWRAP_LIST
+
+Undoes a bare list conversion: hoists the elements wrapped inside each
+`LI > LBody` back to the list's parent at the list's position, in
+order, and removes the `L` and its wrappers. The element is destroyed,
+so no breadcrumb is written.
+
+Only lists whose every item is an `Lbl`-less `LI > LBody` chain
+wrapping structure elements qualify — the shape `MistaggedListCheck`
+produces when it wraps paragraphs (its lists carry a tool scribble
+like `:7 items`). A list with real `Lbl` bullets or direct
+marked content inside an `LBody` is refused before any mutation,
+since it was likely a genuine list to begin with.
+
+```text
+Instruction := "!UNWRAP_LIST"
+```
+
+Typical use: reviewing `MistaggedListCheck` conversions via
+`--dump-tree`, scribble `!UNWRAP_LIST` onto the false positives, and
+apply with `--annotate-tree`. Note that a later run of
+`MistaggedListCheck` sees the restored paragraphs afresh and may
+convert them again; keep that check in `--skip-checks` for the
+document once its output has been triaged.
+
+**Example:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!UNWRAP_LIST` | `Sect[L[LI[LBody[P₁]], LI[LBody[P₂]]]]` | `Sect[P₁, P₂]` |
+
 ## RoleMap Checks
 
 `ClearRoleMapCheck` and `ReplaceRoleMapCheck` are not part of the default

@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `!UNWRAP_LIST` scribble instruction: undoes a false-positive list
+  conversion by hoisting the elements wrapped in each `LI > LBody` back to
+  the list's original position and removing the wrappers. Refuses lists
+  with `Lbl` bullets or direct marked content, which are likely genuine.
 - New `!SPLIT_LINES [spec]` scribble instruction: splits marked-content
   blocks that lump several one-line list items into individual
   `LI > LBody > P` items, rewriting the content stream so each line gets its
