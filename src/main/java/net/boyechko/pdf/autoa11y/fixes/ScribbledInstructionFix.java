@@ -32,8 +32,14 @@ import org.slf4j.LoggerFactory;
 public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
 
-    /** Tag written to /T after a successful fix (as "INST OK") and cleared on each run. */
-    public static final String CHECK_SCRIBBLE_PREFIX = "INST";
+    /**
+     * Scribble segment head identifying this fix's own /T output (e.g. "INST OK"). Segments with
+     * this head are cleared before each run so completion markers don't accumulate.
+     */
+    public static final String INSTRUCTION_TAG = "INST";
+
+    /** Full completion scribble ("INST OK") an applyXxx returns for the dispatcher to stamp. */
+    private static final String OK_SCRIBBLE = INSTRUCTION_TAG + " OK";
 
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
@@ -62,20 +68,29 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
 
+        // Each applyXxx returns the scribble to stamp onto /T ("INST OK", or "INST OK (was: P)"
+        // for a role change), or null to leave /T untouched because the instruction manages its
+        // own scribble or destroys the element.
+        String okScribble;
         if (addChild.matches()) {
-            applyAddChild(ctx, addChild.group(1));
+            okScribble = applyAddChild(ctx, addChild.group(1));
         } else if (addParent.matches()) {
-            applyAddParent(ctx, addParent.group(1));
+            okScribble = applyAddParent(ctx, addParent.group(1));
         } else if (artifact.matches()) {
-            applyArtifact(ctx);
+            okScribble = applyArtifact(ctx);
         } else if (reorderKids.matches()) {
-            applyReorderKids(ctx);
+            okScribble = applyReorderKids(ctx);
         } else if (setRole.matches()) {
-            applySetRole(setRole.group(1));
+            okScribble = applySetRole(setRole.group(1));
         } else if (unlink.matches()) {
-            applyUnlink(ctx);
+            okScribble = applyUnlink(ctx);
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
+        }
+
+        // setToolScribble replaces /T wholesale, so the scribbled instruction is cleared here.
+        if (okScribble != null) {
+            StructTree.setToolScribble(element, okScribble);
         }
     }
 
@@ -86,7 +101,7 @@ public class ScribbledInstructionFix implements IssueFix {
      * template. Enforces strict coverage: every existing kid must land in some range. On an empty
      * element, coverage is trivially satisfied and only new empty wrappers are created.
      */
-    private void applyAddChild(DocContext ctx, String tagExpr) {
+    private String applyAddChild(DocContext ctx, String tagExpr) {
         List<ChildSpec> specs = parseTemplate(tagExpr);
 
         // Snapshot original kids as IStructureNode wrappers (so removeKid/addKid calls can
@@ -102,9 +117,7 @@ public class ScribbledInstructionFix implements IssueFix {
             element.addKid(wrapper);
             populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount, effectivePg);
         }
-
-        element.getPdfObject().remove(PdfName.T);
-        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+        return OK_SCRIBBLE;
     }
 
     private void populateWrapper(
@@ -303,11 +316,10 @@ public class ScribbledInstructionFix implements IssueFix {
 
     // === Instruction: SET_ROLE ===============================================
 
-    private void applySetRole(String roleName) {
+    private String applySetRole(String roleName) {
         String prevRole = element.getRole().getValue();
         element.setRole(resolvePdfName(roleName));
-        element.getPdfObject().remove(PdfName.T);
-        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK (was: " + prevRole + ")");
+        return OK_SCRIBBLE + " (was: " + prevRole + ")";
     }
 
     /** Resolves a PDF name string to a standard {@link PdfName} constant when one exists. */
@@ -321,9 +333,13 @@ public class ScribbledInstructionFix implements IssueFix {
 
     // === Instruction: ARTIFACT ===============================================
 
-    /** Delegates to MistaggedArtifactFix to convert the element's content to artifacts. */
-    private void applyArtifact(DocContext ctx) throws Exception {
+    /**
+     * Delegates to MistaggedArtifactFix to convert the element's content to artifacts. Returns null
+     * because the element is removed from the tree, so there is nothing left to mark "INST OK".
+     */
+    private String applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
+        return null;
     }
 
     /** Returns true if the instruction operates on the entire subtree, not just the element. */
@@ -339,12 +355,12 @@ public class ScribbledInstructionFix implements IssueFix {
      * reordering, the {@code !REORDER NNN} segments on kids and the {@code !REORDER_KIDS} segment
      * on the parent are cleared (identity scribbles, if any, are preserved).
      */
-    private void applyReorderKids(DocContext ctx) {
+    private String applyReorderKids(DocContext ctx) {
         List<IStructureNode> all =
                 element.getKids() == null ? List.of() : new ArrayList<>(element.getKids());
         if (all.isEmpty()) {
             StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
-            return;
+            return null;
         }
 
         List<AnnotatedKid> annotated = new ArrayList<>();
@@ -378,6 +394,7 @@ public class ScribbledInstructionFix implements IssueFix {
             }
         }
         StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
+        return null;
     }
 
     private record AnnotatedKid(IStructureNode kid, int position, int originalIndex) {}
@@ -409,7 +426,7 @@ public class ScribbledInstructionFix implements IssueFix {
      * position, removes the Link element, and deletes the associated Link annotation from its
      * page's /Annots array. The element is destroyed, so no breadcrumb is written.
      */
-    private void applyUnlink(DocContext ctx) {
+    private String applyUnlink(DocContext ctx) {
         if (!PdfName.Link.equals(element.getRole())) {
             throw new IllegalArgumentException(
                     "!UNLINK requires a Link element, got: " + element.getRole());
@@ -418,12 +435,12 @@ public class ScribbledInstructionFix implements IssueFix {
         PdfStructElem parent = (PdfStructElem) element.getParent();
         if (parent == null) {
             logger.warn("Cannot unlink: element has no parent");
-            return;
+            return null;
         }
         int origIdx = StructTree.findKidIndex(parent, element);
         if (origIdx < 0) {
             logger.warn("Cannot unlink: element not found in parent's kids");
-            return;
+            return null;
         }
 
         List<IStructureNode> origKids =
@@ -478,6 +495,7 @@ public class ScribbledInstructionFix implements IssueFix {
                             : 0;
             logger.debug("Link annotation {} not found in any page /Annots", Format.objNum(objNum));
         }
+        return null;
     }
 
     // === Instruction: ADD_PARENT =============================================
@@ -487,11 +505,11 @@ public class ScribbledInstructionFix implements IssueFix {
      * the innermost is a leaf), and wraps the element in that chain. For example, {@code
      * Reference[Link[P[]]]} applied to a Span produces {@code Reference[Link[P[Span]]]}.
      */
-    private void applyAddParent(DocContext ctx, String tagExpr) {
+    private String applyAddParent(DocContext ctx, String tagExpr) {
         PdfStructElem parent = (PdfStructElem) element.getParent();
         if (parent == null) {
             logger.warn("Cannot add parent: element has no parent");
-            return;
+            return null;
         }
 
         List<Node<String>> nodes = Node.fromString(tagExpr);
@@ -521,9 +539,7 @@ public class ScribbledInstructionFix implements IssueFix {
 
         parent.removeKid(element);
         innermost.addKid(element);
-
-        element.getPdfObject().remove(PdfName.T);
-        StructTree.setToolScribble(element, CHECK_SCRIBBLE_PREFIX + " OK");
+        return OK_SCRIBBLE;
     }
 
     /**

@@ -35,7 +35,7 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
         PdfStructTreeRoot root = docCtx.doc().getStructTreeRoot();
         if (root != null
                 && StructTree.clearScribbleSegmentsInTree(
-                        root, ScribbledInstructionFix.CHECK_SCRIBBLE_PREFIX)) {
+                        root, ScribbledInstructionFix.INSTRUCTION_TAG)) {
             docCtx.markDirty();
         }
     }
