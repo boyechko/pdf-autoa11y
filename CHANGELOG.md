@@ -32,6 +32,11 @@ Versioning](https://semver.org/).
   paragraphs). Sidecar configs referencing the old check names must be updated.
 
 ### Fixed
+- Fixed `!SPLIT_LINES` producing unbalanced content-stream operators
+  (Acrobat preflight: "Unbalanced operators at end of content stream") when a
+  block's `BDC` opens outside the text objects it marks. The splice now
+  relocates marked-content boundaries inside each `BT`/`ET` pair, and refuses
+  shapes it cannot rewrite legally.
 - `--annotate-tree` no longer clears (and miscounts as "cleared") empty `/T`
   keys that render as nothing in the dump. Feeding an unchanged dump back is
   now a true no-op instead of silently stripping invisible keys.

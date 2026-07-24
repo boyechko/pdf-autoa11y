@@ -5,12 +5,17 @@ package net.boyechko.pdf.autoa11y.fixes;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.source.PdfTokenizer;
+import com.itextpdf.io.source.RandomAccessFileOrArray;
+import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +53,8 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertTrue(texts.get(1).startsWith("ELCBUS 301"), texts.get(1));
             assertTrue(texts.get(4).startsWith("ELCBUS 330"), texts.get(4));
             assertTrue(texts.get(8).startsWith("ELCBUS 382"), texts.get(8));
+
+            assertProperlyNestedOperators(doc.getPage(2).getContentBytes());
         }
     }
 
@@ -181,6 +188,10 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             String lastText = itemText(items.get(4), page3);
             assertTrue(lastText.startsWith("B BUS/ELCBUS 497"), lastText);
             assertTrue(lastText.contains("Undergraduate"), lastText);
+
+            // Page 3's block opens its BDC outside the text objects; splicing must not
+            // leave BT/ET and BDC/EMC pairs interleaved (Acrobat: "Unbalanced operators").
+            assertProperlyNestedOperators(doc.getPage(3).getContentBytes());
         }
     }
 
@@ -209,6 +220,32 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertTrue(text.contains("ELCBUS 320"), text);
             assertTrue(itemText(items.get(3), content).startsWith("ELCBUS 330"));
         }
+    }
+
+    /**
+     * Asserts that BT/ET and BDC/BMC/EMC pairs are balanced and properly nested — a marked-content
+     * block must open and close on the same side of a text-object boundary.
+     */
+    private static void assertProperlyNestedOperators(byte[] content) throws Exception {
+        Deque<String> stack = new ArrayDeque<>();
+        try (PdfTokenizer tokenizer =
+                new PdfTokenizer(
+                        new RandomAccessFileOrArray(
+                                new RandomAccessSourceFactory().createSource(content)))) {
+            while (tokenizer.nextToken()) {
+                if (tokenizer.getTokenType() != PdfTokenizer.TokenType.Other) {
+                    continue;
+                }
+                switch (tokenizer.getStringValue()) {
+                    case "BT" -> stack.push("BT");
+                    case "BDC", "BMC" -> stack.push("MC");
+                    case "ET" -> assertEquals("BT", stack.poll(), "ET must close the open BT");
+                    case "EMC" -> assertEquals("MC", stack.poll(), "EMC must close the open BDC");
+                    default -> {}
+                }
+            }
+        }
+        assertTrue(stack.isEmpty(), "unclosed operators: " + stack);
     }
 
     private PdfDocument openForStamping(Path input) throws Exception {

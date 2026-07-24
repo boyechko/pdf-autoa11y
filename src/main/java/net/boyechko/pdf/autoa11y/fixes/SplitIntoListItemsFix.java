@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -46,9 +47,14 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The content stream is spliced at each line boundary (a text-positioning operator following a
  * show operator) so every line becomes its own BDC...EMC block with a fresh MCID, and the structure
- * tree gains one LI &gt; LBody &gt; P per additional line. When the element already sits inside an
- * LBody &gt; LI &gt; L chain the new items join that list after the original item; a bare element
- * is first wrapped in a new L at its own position.
+ * tree gains one LI &gt; LBody &gt; P per additional line. When the block's BDC opens outside the
+ * text objects it marks, splicing inside a BT...ET pair would interleave the marked-content and
+ * text-object operators; the splice then relocates the block's boundaries so each text object opens
+ * and closes its marked content inside its own BT...ET pair, refusing shapes it cannot relocate
+ * legally (painted content between text objects, nested blocks, an item whose lines sit in separate
+ * text objects). When the element already sits inside an LBody &gt; LI &gt; L chain the new items
+ * join that list after the original item; a bare element is first wrapped in a new L at its own
+ * position.
  *
  * <p>The spec is an optional safety catch and grouping control: a plain expected line count makes
  * the fix refuse when the actual total differs (e.g. an item wraps over two lines), and per-item
@@ -66,6 +72,12 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     /** Operators that both move to the next line and show text. */
     private static final Set<String> NEXT_LINE_SHOW_OPS = Set.of("'", "\"");
+
+    /** Operators that paint content, which must not end up outside marked-content blocks. */
+    private static final Set<String> PAINT_OPS =
+            Set.of("S", "s", "f", "F", "f*", "B", "B*", "b", "b*", "sh", "Do", "BI", "ID", "EI");
+
+    private static final byte[] NO_BYTES = new byte[0];
 
     private final PdfStructElem element;
     private final Integer expectedLines;
@@ -132,6 +144,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
             throw new IllegalStateException(
                     "Splitting on " + pages + " would produce fewer than 2 items");
         }
+        validateSplices(plans, sizes);
 
         PdfStructElem li = ensureListItemChain(ctx, plans.get(0).page());
         PdfStructElem list = (PdfStructElem) li.getParent();
@@ -172,6 +185,42 @@ public final class SplitIntoListItemsFix implements IssueFix {
                     "Expected " + expectedLines + " lines but found " + lineCount + " on " + pages);
         }
         return Collections.nCopies(lineCount, 1);
+    }
+
+    /**
+     * Dry-runs every planned splice against its block's operator geometry so illegal shapes are
+     * refused before any structure-tree mutation.
+     */
+    private void validateSplices(List<McrPlan> plans, List<Integer> sizes) {
+        List<List<Integer>> offsets = spliceOffsetsPerPlan(plans, sizes);
+        for (int i = 0; i < plans.size(); i++) {
+            if (!offsets.get(i).isEmpty()) {
+                blockEditsFor(plans.get(i).plan(), offsets.get(i), idx -> 0);
+            }
+        }
+    }
+
+    /** Returns, per plan, the split offsets that will receive an MCID switch under the sizes. */
+    private static List<List<Integer>> spliceOffsetsPerPlan(
+            List<McrPlan> plans, List<Integer> sizes) {
+        List<List<Integer>> result = new ArrayList<>();
+        int itemIndex = 0;
+        int linesLeftInItem = sizes.get(0);
+        for (McrPlan mcrPlan : plans) {
+            List<Integer> offsets = new ArrayList<>();
+            result.add(offsets);
+            int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
+            for (int line = 0; line < mcrLines; line++) {
+                if (linesLeftInItem == 0) {
+                    linesLeftInItem = sizes.get(++itemIndex);
+                    if (line > 0) {
+                        offsets.add(mcrPlan.plan().splitOffsets().get(line - 1));
+                    }
+                }
+                linesLeftInItem--;
+            }
+        }
+        return result;
     }
 
     /** Returns the element's kids, which must all be marked-content references. */
@@ -265,7 +314,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         int liIndex = StructTree.findKidIndex(list, li);
         int nextItem = 1;
         List<Integer> newMcids = new ArrayList<>();
-        Map<PdfStream, List<Insertion>> insertionsByStream = new LinkedHashMap<>();
+        Map<PdfStream, List<Edit>> editsByStream = new LinkedHashMap<>();
 
         PdfStructElem itemBody = element; // item 1's P; the element keeps the first MCR
         int itemIndex = 0;
@@ -273,6 +322,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
         for (McrPlan mcrPlan : plans) {
             PdfPage page = mcrPlan.page();
+            List<Insertion> insertions = new ArrayList<>();
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
             for (int line = 0; line < mcrLines; line++) {
                 boolean startsItem = linesLeftInItem == 0;
@@ -288,21 +338,27 @@ public final class SplitIntoListItemsFix implements IssueFix {
                     PdfMcr newMcr = newMcrOn(page, itemBody);
                     itemBody.addKid(newMcr);
                     newMcids.add(newMcr.getMcid());
-                    insertionsByStream
-                            .computeIfAbsent(mcrPlan.plan().stream(), s -> new ArrayList<>())
-                            .add(
-                                    new Insertion(
-                                            mcrPlan.plan().splitOffsets().get(line - 1),
-                                            mcrPlan.plan().tag(),
-                                            newMcr.getMcid()));
+                    insertions.add(
+                            new Insertion(
+                                    mcrPlan.plan().splitOffsets().get(line - 1), newMcr.getMcid()));
                 }
                 // A line continuing its item within the same MCR needs no action.
                 linesLeftInItem--;
             }
+            if (!insertions.isEmpty()) {
+                List<Edit> edits =
+                        blockEditsFor(
+                                mcrPlan.plan(),
+                                insertions.stream().map(Insertion::offset).toList(),
+                                idx -> insertions.get(idx).mcid());
+                editsByStream
+                        .computeIfAbsent(mcrPlan.plan().stream(), s -> new ArrayList<>())
+                        .addAll(edits);
+            }
         }
 
-        for (Map.Entry<PdfStream, List<Insertion>> entry : insertionsByStream.entrySet()) {
-            spliceStream(entry.getKey(), entry.getValue());
+        for (Map.Entry<PdfStream, List<Edit>> entry : editsByStream.entrySet()) {
+            applyEdits(entry.getKey(), entry.getValue());
         }
         return newMcids;
     }
@@ -361,14 +417,45 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     // == Content stream ==================================================
 
-    /** One marked-content block's split plan: its stream, tag, and line-split offsets. */
-    private record SplitPlan(PdfStream stream, PdfName tag, List<Integer> splitOffsets) {}
+    /** One text object (BT...ET) inside the block: positions just after the BT and at the ET. */
+    private record TextSpan(int afterBt, int etStart) {}
+
+    /**
+     * The block's operator geometry: the opening BDC's bytes and byte range, the closing EMC's byte
+     * range, the text objects and show operators inside the block, and hazards that rule out
+     * relocating the marked-content boundaries.
+     */
+    private record BlockShape(
+            byte[] bdcBytes,
+            int bdcStart,
+            int bdcEnd,
+            int emcStart,
+            int emcEnd,
+            List<TextSpan> textSpans,
+            List<Integer> showOffsets,
+            boolean irregular,
+            boolean paintsOutsideText) {}
+
+    /**
+     * One marked-content block's split plan: its stream, tag, line-split offsets, whether its BDC
+     * opened inside a text object (and where that text object ends), and the block's geometry.
+     */
+    private record SplitPlan(
+            PdfStream stream,
+            PdfName tag,
+            List<Integer> splitOffsets,
+            boolean bdcInsideText,
+            int bdcTextEnd,
+            BlockShape shape) {}
 
     /** A block plan paired with the MCR it belongs to and the page holding its block. */
     private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan) {}
 
-    /** A planned EMC/BDC splice: the byte offset, block tag, and new MCID. */
-    private record Insertion(int offset, PdfName tag, int mcid) {}
+    /** A planned MCID switch: the byte offset where the new MCID's block takes over. */
+    private record Insertion(int offset, int mcid) {}
+
+    /** A byte-level stream edit: replaces deleteLen bytes at offset with the given text. */
+    private record Edit(int offset, int deleteLen, byte[] text) {}
 
     /** Locates the MCID's BDC...EMC block on the page and plans the line splits. */
     private SplitPlan planSplit(PdfPage page, int targetMcid) throws IOException {
@@ -400,61 +487,147 @@ public final class SplitIntoListItemsFix implements IssueFix {
         try (PdfTokenizer tokenizer = new PdfTokenizer(source)) {
             PdfCanvasParser parser = new PdfCanvasParser(tokenizer, resources);
             List<PdfObject> operands = new ArrayList<>();
-
-            PdfName tag = null;
-            int depth = 0;
-            boolean lineHasShownText = false;
-            int pendingSplit = -1;
-            List<Integer> splits = new ArrayList<>();
+            boolean insideText = false;
 
             while (true) {
                 int opStart = (int) tokenizer.getPosition();
                 parser.parse(operands);
                 if (operands.isEmpty()) {
-                    return null; // stream ended before the block (or block never started)
+                    return null; // stream ended before the block started
                 }
-
-                if (tag == null) {
-                    Integer mcid = ContentStream.mcidOfBdc(operands, page, resources);
-                    if (mcid != null && mcid == targetMcid) {
-                        tag = ContentStream.tagOfBdc(operands);
-                        depth = 1;
-                    }
-                    continue;
+                Integer mcid = ContentStream.mcidOfBdc(operands, page, resources);
+                if (mcid != null && mcid == targetMcid) {
+                    PdfName tag = ContentStream.tagOfBdc(operands);
+                    int bdcEnd = (int) tokenizer.getPosition();
+                    return scanBlock(
+                            stream,
+                            tag,
+                            contentBytes,
+                            tokenizer,
+                            parser,
+                            insideText,
+                            opStart,
+                            bdcEnd);
                 }
-
                 String op = operatorOf(operands);
-                if ("BDC".equals(op) || "BMC".equals(op)) {
-                    depth++;
-                } else if ("EMC".equals(op)) {
-                    if (--depth == 0) {
-                        return new SplitPlan(stream, tag, splits);
-                    }
-                } else if (SHOW_OPS.contains(op)) {
-                    if (pendingSplit >= 0) {
-                        splits.add(pendingSplit);
-                        pendingSplit = -1;
-                    }
-                    lineHasShownText = true;
-                } else if (NEXT_LINE_SHOW_OPS.contains(op)) {
-                    if (pendingSplit >= 0) {
-                        splits.add(pendingSplit);
-                        pendingSplit = -1;
-                    } else if (depth == 1 && lineHasShownText) {
-                        splits.add(opStart);
-                    }
-                    lineHasShownText = true;
-                } else if (depth == 1 && LINE_OPS.contains(op) && lineHasShownText) {
-                    // Split before the first positioning operator of the run; further
-                    // positioning operators belong to the same upcoming line.
-                    if (pendingSplit < 0) {
-                        pendingSplit = opStart;
-                        lineHasShownText = false;
-                    }
+                if ("BT".equals(op)) {
+                    insideText = true;
+                } else if ("ET".equals(op)) {
+                    insideText = false;
                 }
             }
         } finally {
             source.close();
+        }
+    }
+
+    /**
+     * Scans the found block to its closing EMC, collecting the line-split offsets plus the operator
+     * geometry needed to splice without interleaving BT/ET and BDC/EMC pairs.
+     */
+    private SplitPlan scanBlock(
+            PdfStream stream,
+            PdfName tag,
+            byte[] contentBytes,
+            PdfTokenizer tokenizer,
+            PdfCanvasParser parser,
+            boolean bdcInsideText,
+            int bdcStart,
+            int bdcEnd)
+            throws IOException {
+        List<PdfObject> operands = new ArrayList<>();
+        int depth = 1;
+        boolean lineHasShownText = false;
+        int pendingSplit = -1;
+        List<Integer> splits = new ArrayList<>();
+
+        boolean insideText = bdcInsideText;
+        int bdcTextEnd = Integer.MAX_VALUE;
+        List<TextSpan> textSpans = new ArrayList<>();
+        int openSpanStart = -1;
+        List<Integer> showOffsets = new ArrayList<>();
+        boolean irregular = false;
+        boolean paintsOutsideText = false;
+
+        while (true) {
+            int opStart = (int) tokenizer.getPosition();
+            parser.parse(operands);
+            if (operands.isEmpty()) {
+                return null; // stream ended before the block closed
+            }
+
+            String op = operatorOf(operands);
+            if ("BDC".equals(op) || "BMC".equals(op)) {
+                depth++;
+                irregular = true; // nested blocks defeat boundary relocation
+            } else if ("EMC".equals(op)) {
+                if (--depth == 0) {
+                    if (insideText && !bdcInsideText) {
+                        irregular = true; // block closes inside a text object it did not open in
+                    }
+                    BlockShape shape =
+                            new BlockShape(
+                                    Arrays.copyOfRange(contentBytes, bdcStart, bdcEnd),
+                                    bdcStart,
+                                    bdcEnd,
+                                    opStart,
+                                    (int) tokenizer.getPosition(),
+                                    List.copyOf(textSpans),
+                                    List.copyOf(showOffsets),
+                                    irregular,
+                                    paintsOutsideText);
+                    return new SplitPlan(stream, tag, splits, bdcInsideText, bdcTextEnd, shape);
+                }
+            } else if ("BT".equals(op)) {
+                if (insideText) {
+                    irregular = true;
+                }
+                insideText = true;
+                openSpanStart = (int) tokenizer.getPosition();
+            } else if ("ET".equals(op)) {
+                insideText = false;
+                if (openSpanStart >= 0) {
+                    textSpans.add(new TextSpan(openSpanStart, opStart));
+                    openSpanStart = -1;
+                } else if (bdcInsideText && bdcTextEnd == Integer.MAX_VALUE) {
+                    bdcTextEnd = opStart;
+                } else {
+                    irregular = true;
+                }
+            } else if (SHOW_OPS.contains(op)) {
+                if (insideText) {
+                    showOffsets.add(opStart);
+                } else {
+                    paintsOutsideText = true;
+                }
+                if (pendingSplit >= 0) {
+                    splits.add(pendingSplit);
+                    pendingSplit = -1;
+                }
+                lineHasShownText = true;
+            } else if (NEXT_LINE_SHOW_OPS.contains(op)) {
+                if (insideText) {
+                    showOffsets.add(opStart);
+                } else {
+                    paintsOutsideText = true;
+                }
+                if (pendingSplit >= 0) {
+                    splits.add(pendingSplit);
+                    pendingSplit = -1;
+                } else if (depth == 1 && lineHasShownText) {
+                    splits.add(opStart);
+                }
+                lineHasShownText = true;
+            } else if (depth == 1 && LINE_OPS.contains(op) && lineHasShownText) {
+                // Split before the first positioning operator of the run; further
+                // positioning operators belong to the same upcoming line.
+                if (pendingSplit < 0) {
+                    pendingSplit = opStart;
+                    lineHasShownText = false;
+                }
+            } else if (!insideText && PAINT_OPS.contains(op)) {
+                paintsOutsideText = true;
+            }
         }
     }
 
@@ -463,24 +636,149 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return operands.get(operands.size() - 1).toString();
     }
 
-    /** Splices EMC/BDC pairs with the new MCIDs into the stream at the planned offsets. */
-    private void spliceStream(PdfStream stream, List<Insertion> insertions) throws IOException {
-        List<Insertion> ordered = new ArrayList<>(insertions);
-        ordered.sort(Comparator.comparingInt(Insertion::offset));
+    /**
+     * Builds the byte edits realizing one block's MCID switches, refusing shapes that cannot be
+     * spliced without interleaving operator pairs or orphaning painted content. When the block's
+     * BDC opened inside a text object, every splice must stay in that text object and the plain
+     * EMC/BDC splice is legal; otherwise the boundaries are relocated around the text objects.
+     */
+    private List<Edit> blockEditsFor(
+            SplitPlan plan, List<Integer> spliceOffsets, IntUnaryOperator mcidOf) {
+        if (plan.bdcInsideText()) {
+            if (spliceOffsets.get(spliceOffsets.size() - 1) >= plan.bdcTextEnd()) {
+                throw new IllegalStateException(
+                        "Splitting the "
+                                + plan.tag().getValue()
+                                + " block would splice outside the text object enclosing its BDC");
+            }
+            List<Edit> edits = new ArrayList<>();
+            for (int i = 0; i < spliceOffsets.size(); i++) {
+                String marker = "\nEMC " + bdcMarker(plan.tag(), mcidOf.applyAsInt(i)) + "\n";
+                edits.add(new Edit(spliceOffsets.get(i), 0, ascii(marker)));
+            }
+            return edits;
+        }
+        BlockShape shape = plan.shape();
+        if (shape.irregular()) {
+            throw new IllegalStateException(
+                    "Splitting the "
+                            + plan.tag().getValue()
+                            + " block requires relocating its marked-content boundaries, but its"
+                            + " operator structure is too irregular");
+        }
+        if (shape.paintsOutsideText()) {
+            throw new IllegalStateException(
+                    "Splitting the "
+                            + plan.tag().getValue()
+                            + " block would leave painted content outside any marked-content"
+                            + " block");
+        }
+        return relocatedEdits(plan, spliceOffsets, mcidOf);
+    }
+
+    /**
+     * Rebuilds the block's marked-content boundaries to hug its text objects: the original BDC/EMC
+     * pair (opened outside any text object) is dropped, each text object opens the current item's
+     * marked content just inside its BT and closes it at its ET, and each splice switches to its
+     * new MCID. A marked-content block is only opened where it would cover a show operator, so
+     * unsplit slivers produce no empty duplicate-MCID blocks.
+     */
+    private List<Edit> relocatedEdits(
+            SplitPlan plan, List<Integer> splices, IntUnaryOperator mcidOf) {
+        BlockShape shape = plan.shape();
+        List<Edit> edits = new ArrayList<>();
+        edits.add(new Edit(shape.bdcStart(), shape.bdcEnd() - shape.bdcStart(), NO_BYTES));
+        edits.add(new Edit(shape.emcStart(), shape.emcEnd() - shape.emcStart(), NO_BYTES));
+
+        boolean open = false;
+        boolean[] opened = new boolean[splices.size() + 1];
+        int segment = 0; // 0 = the original MCID's segment; i+1 = splice i's segment
+        int splice = 0;
+        int show = 0;
+        List<Integer> shows = shape.showOffsets();
+        for (TextSpan span : shape.textSpans()) {
+            int pendingOpen = span.afterBt();
+            while (splice < splices.size() && splices.get(splice) <= span.afterBt()) {
+                segment = ++splice;
+            }
+            while (show < shows.size() && shows.get(show) < span.etStart()) {
+                int showOffset = shows.get(show);
+                while (splice < splices.size() && splices.get(splice) <= showOffset) {
+                    if (open) {
+                        edits.add(new Edit(splices.get(splice), 0, ascii("\nEMC\n")));
+                        open = false;
+                    }
+                    pendingOpen = splices.get(splice);
+                    segment = ++splice;
+                }
+                if (!open) {
+                    if (opened[segment]) {
+                        throw new IllegalStateException(
+                                "Splitting the "
+                                        + plan.tag().getValue()
+                                        + " block is not possible: an item's lines sit in separate"
+                                        + " text objects");
+                    }
+                    opened[segment] = true;
+                    byte[] marker =
+                            segment == 0
+                                    ? wrapInNewlines(shape.bdcBytes())
+                                    : ascii(
+                                            "\n"
+                                                    + bdcMarker(
+                                                            plan.tag(),
+                                                            mcidOf.applyAsInt(segment - 1))
+                                                    + "\n");
+                    edits.add(new Edit(pendingOpen, 0, marker));
+                    open = true;
+                }
+                show++;
+            }
+            while (splice < splices.size() && splices.get(splice) < span.etStart()) {
+                if (open) {
+                    edits.add(new Edit(splices.get(splice), 0, ascii("\nEMC\n")));
+                    open = false;
+                }
+                segment = ++splice;
+            }
+            if (open) {
+                edits.add(new Edit(span.etStart(), 0, ascii("\nEMC\n")));
+                open = false;
+            }
+        }
+        return edits;
+    }
+
+    /** Renders a BDC operation opening the tag's block with the given MCID. */
+    private static String bdcMarker(PdfName tag, int mcid) {
+        return "/" + tag.getValue() + " <</MCID " + mcid + ">> BDC";
+    }
+
+    private static byte[] ascii(String text) {
+        return text.getBytes(StandardCharsets.US_ASCII);
+    }
+
+    /** Returns the bytes with a newline on each side, keeping moved operators token-safe. */
+    private static byte[] wrapInNewlines(byte[] bytes) {
+        byte[] wrapped = new byte[bytes.length + 2];
+        wrapped[0] = '\n';
+        System.arraycopy(bytes, 0, wrapped, 1, bytes.length);
+        wrapped[wrapped.length - 1] = '\n';
+        return wrapped;
+    }
+
+    /** Applies the byte edits to the stream, lowest offset first. */
+    private static void applyEdits(PdfStream stream, List<Edit> edits) {
+        List<Edit> ordered = new ArrayList<>(edits);
+        ordered.sort(Comparator.comparingInt(Edit::offset)); // stable: same-offset edits keep order
 
         byte[] contentBytes = stream.getBytes();
         ByteArrayOutputStream rewritten = new ByteArrayOutputStream(contentBytes.length + 256);
         int lastCopied = 0;
-        for (Insertion insertion : ordered) {
-            rewritten.write(contentBytes, lastCopied, insertion.offset() - lastCopied);
-            String marker =
-                    "\nEMC /"
-                            + insertion.tag().getValue()
-                            + " <</MCID "
-                            + insertion.mcid()
-                            + ">> BDC\n";
-            rewritten.write(marker.getBytes(StandardCharsets.US_ASCII));
-            lastCopied = insertion.offset();
+        for (Edit edit : ordered) {
+            rewritten.write(contentBytes, lastCopied, edit.offset() - lastCopied);
+            rewritten.writeBytes(edit.text());
+            lastCopied = edit.offset() + edit.deleteLen();
         }
         rewritten.write(contentBytes, lastCopied, contentBytes.length - lastCopied);
         stream.setData(rewritten.toByteArray());
