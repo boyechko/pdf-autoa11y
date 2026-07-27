@@ -32,6 +32,9 @@ Versioning](https://semver.org/).
   paragraphs). Sidecar configs referencing the old check names must be updated.
 
 ### Fixed
+- `--annotate-tree` no longer clears (and miscounts as "cleared") empty `/T`
+  keys that render as nothing in the dump. Feeding an unchanged dump back is
+  now a true no-op instead of silently stripping invisible keys.
 - Fixed `MistaggedListCheck`'s bullet-alignment fix corrupting the page
   ParentTree: when it wrapped bare text runs into a list, the moved marked
   content was not re-registered, so the reverse index kept pointing at the old

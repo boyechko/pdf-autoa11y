@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
@@ -117,6 +118,42 @@ class TreeDiagramTest {
             PdfStructElem p59 = findByObjNum(doc, 59);
             assertNotNull(p59, "P #59 should exist");
             assertNull(p59.getPdfObject().getAsString(PdfName.T), "/T should be cleared");
+        }
+    }
+
+    @Test
+    void annotateFromStringLeavesEmptyScribbleKeyUnchanged() throws Exception {
+        Path withEmptyKey = tempDir.resolve("empty-key.pdf");
+        Path roundTripped = tempDir.resolve("round-tripped.pdf");
+
+        // Give P #59 an empty /T: present as a key, but invisible in the dump.
+        try (PdfDocument doc = openForModification(withEmptyKey)) {
+            findByObjNum(doc, 59).getPdfObject().put(PdfName.T, new PdfString(""));
+        }
+
+        String dump;
+        try (PdfDocument doc = new PdfDocument(new PdfReader(withEmptyKey.toString()))) {
+            dump = TreeDiagram.dumpToString(doc, true);
+        }
+        assertTrue(dump.contains("P #59\n"), "Empty /T should render no scribble in the dump");
+
+        // Feeding the unchanged dump back must be a true no-op, not a silent clear.
+        try (PdfDocument doc =
+                new PdfDocument(
+                        new PdfReader(withEmptyKey.toString()),
+                        new PdfWriter(roundTripped.toString()))) {
+            TreeDiagram.AnnotateResult result =
+                    TreeDiagram.annotateFromString(doc, dump, msg -> {});
+
+            assertEquals(
+                    0, result.cleared(), "Invisible empty /T should not be counted as cleared");
+        }
+
+        try (PdfDocument doc = new PdfDocument(new PdfReader(roundTripped.toString()))) {
+            PdfStructElem p59 = findByObjNum(doc, 59);
+            assertTrue(
+                    p59.getPdfObject().containsKey(PdfName.T),
+                    "Round-trip must not silently remove the empty /T key");
         }
     }
 

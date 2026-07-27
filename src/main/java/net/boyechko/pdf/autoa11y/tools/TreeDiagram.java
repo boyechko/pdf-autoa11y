@@ -379,12 +379,11 @@ public final class TreeDiagram {
                     elem.put(PdfName.T, new PdfString(newScribble.get()));
                     updated++;
                 }
-            } else if (elem.getPdfObject().containsKey(PdfName.T)) {
-                if (existing == null) {
-                    logger.debug("clear empty /T from {}", key.label());
-                } else {
-                    logger.debug("clear {}: {}", key.label(), existing.value());
-                }
+            } else if (existing != null) {
+                // Only a scribble the dump actually renders is clearable. An empty or
+                // control-char-only /T shows as nothing (DocValue.Scribble.of returns null),
+                // so treating it as clearable would make a no-op round-trip silently mutate.
+                logger.debug("clear {}: {}", key.label(), existing.value());
                 elem.getPdfObject().remove(PdfName.T);
                 cleared++;
             } else {
