@@ -109,6 +109,14 @@ public final class ContentStream {
     /** One text object (BT...ET) inside the block: positions just after the BT and at the ET. */
     public record TextSpan(int afterBt, int etStart) {}
 
+    /** A line's effective font: its /Font resource name and its size scaled by the text matrix. */
+    private record EffFont(PdfName font, double size) {
+        boolean differsFrom(EffFont other) {
+            boolean sameName = font == null ? other.font == null : font.equals(other.font);
+            return !sameName || size != other.size;
+        }
+    }
+
     /**
      * The block's operator geometry: the opening BDC's bytes and byte range, the closing EMC's byte
      * range, the text objects and show operators inside the block, and hazards that rule out
@@ -126,13 +134,16 @@ public final class ContentStream {
             boolean paintsOutsideText) {}
 
     /**
-     * One marked-content block's split plan: its stream, tag, line-split offsets, whether its BDC
-     * opened inside a text object (and where that text object ends), and the block's geometry.
+     * One marked-content block's split plan: its stream, tag, line-split offsets, the subset of
+     * those offsets where the effective font (resource or size) changes from the previous line,
+     * whether its BDC opened inside a text object (and where that text object ends), and the
+     * block's geometry.
      */
     public record SplitPlan(
             PdfStream stream,
             PdfName tag,
             List<Integer> splitOffsets,
+            List<Integer> fontChangeOffsets,
             boolean bdcInsideText,
             int bdcTextEnd,
             BlockShape shape) {}
@@ -172,6 +183,12 @@ public final class ContentStream {
             List<PdfObject> operands = new ArrayList<>();
             boolean insideText = false;
 
+            // Text state carried up to the BDC: the font resource and size persist across BT/ET, so
+            // a block that shows text without its own Tf inherits them from here.
+            PdfName seedFont = null;
+            double seedFontSize = 0;
+            double seedMatrixScale = 1;
+
             while (true) {
                 int opStart = (int) tokenizer.getPosition();
                 parser.parse(operands);
@@ -190,10 +207,20 @@ public final class ContentStream {
                             parser,
                             insideText,
                             opStart,
-                            bdcEnd);
+                            bdcEnd,
+                            seedFont,
+                            seedFontSize,
+                            seedMatrixScale);
                 }
                 String op = operatorOf(operands);
-                if ("BT".equals(op)) {
+                if ("Tf".equals(op) && operands.size() >= 3) {
+                    if (operands.get(0) instanceof PdfName font) {
+                        seedFont = font;
+                    }
+                    seedFontSize = numberAt(operands, 1);
+                } else if ("Tm".equals(op) && operands.size() >= 7) {
+                    seedMatrixScale = Math.hypot(numberAt(operands, 2), numberAt(operands, 3));
+                } else if ("BT".equals(op)) {
                     insideText = true;
                 } else if ("ET".equals(op)) {
                     insideText = false;
@@ -216,7 +243,10 @@ public final class ContentStream {
             PdfCanvasParser parser,
             boolean bdcInsideText,
             int bdcStart,
-            int bdcEnd)
+            int bdcEnd,
+            PdfName seedFont,
+            double seedFontSize,
+            double seedMatrixScale)
             throws IOException {
         List<PdfObject> operands = new ArrayList<>();
         int depth = 1;
@@ -232,6 +262,15 @@ public final class ContentStream {
         boolean irregular = false;
         boolean paintsOutsideText = false;
 
+        // Effective-font tracking: BT resets the text matrix (so its scale), but the font resource
+        // and size set by Tf persist. One EffFont is captured per line at its first show; adjacent
+        // lines are later diffed to find the font-change offsets.
+        PdfName currentFont = seedFont;
+        double currentFontSize = seedFontSize;
+        double currentMatrixScale = seedMatrixScale;
+        List<EffFont> lineFonts = new ArrayList<>();
+        boolean lineFontCaptured = false;
+
         while (true) {
             int opStart = (int) tokenizer.getPosition();
             parser.parse(operands);
@@ -240,6 +279,15 @@ public final class ContentStream {
             }
 
             String op = operatorOf(operands);
+            if ("Tf".equals(op) && operands.size() >= 3) {
+                if (operands.get(0) instanceof PdfName font) {
+                    currentFont = font;
+                }
+                currentFontSize = numberAt(operands, 1);
+            } else if ("Tm".equals(op) && operands.size() >= 7) {
+                currentMatrixScale = Math.hypot(numberAt(operands, 2), numberAt(operands, 3));
+            }
+
             if ("BDC".equals(op) || "BMC".equals(op)) {
                 depth++;
                 irregular = true; // nested blocks defeat boundary relocation
@@ -259,13 +307,21 @@ public final class ContentStream {
                                     List.copyOf(showOffsets),
                                     irregular,
                                     paintsOutsideText);
-                    return new SplitPlan(stream, tag, splits, bdcInsideText, bdcTextEnd, shape);
+                    return new SplitPlan(
+                            stream,
+                            tag,
+                            splits,
+                            fontChangeOffsets(splits, lineFonts),
+                            bdcInsideText,
+                            bdcTextEnd,
+                            shape);
                 }
             } else if ("BT".equals(op)) {
                 if (insideText) {
                     irregular = true;
                 }
                 insideText = true;
+                currentMatrixScale = 1; // BT resets the text matrix to the identity
                 openSpanStart = (int) tokenizer.getPosition();
             } else if ("ET".equals(op)) {
                 insideText = false;
@@ -286,6 +342,11 @@ public final class ContentStream {
                 if (pendingSplit >= 0) {
                     splits.add(pendingSplit);
                     pendingSplit = -1;
+                    lineFontCaptured = false;
+                }
+                if (!lineFontCaptured) {
+                    lineFonts.add(new EffFont(currentFont, currentFontSize * currentMatrixScale));
+                    lineFontCaptured = true;
                 }
                 lineHasShownText = true;
             } else if (NEXT_LINE_SHOW_OPS.contains(op)) {
@@ -297,8 +358,14 @@ public final class ContentStream {
                 if (pendingSplit >= 0) {
                     splits.add(pendingSplit);
                     pendingSplit = -1;
+                    lineFontCaptured = false;
                 } else if (depth == 1 && lineHasShownText) {
                     splits.add(opStart);
+                    lineFontCaptured = false;
+                }
+                if (!lineFontCaptured) {
+                    lineFonts.add(new EffFont(currentFont, currentFontSize * currentMatrixScale));
+                    lineFontCaptured = true;
                 }
                 lineHasShownText = true;
             } else if (depth == 1 && LINE_OPS.contains(op) && lineHasShownText) {
@@ -312,6 +379,29 @@ public final class ContentStream {
                 paintsOutsideText = true;
             }
         }
+    }
+
+    /**
+     * Returns the subset of line-split offsets whose line's effective font differs from the
+     * previous line's, i.e. the boundaries where a run of same-font lines ends. Empty when the
+     * per-line fonts do not align with the splits (one more line than splits) or nothing changes.
+     */
+    private static List<Integer> fontChangeOffsets(List<Integer> splits, List<EffFont> lineFonts) {
+        List<Integer> changes = new ArrayList<>();
+        if (lineFonts.size() != splits.size() + 1) {
+            return changes;
+        }
+        for (int i = 1; i < lineFonts.size(); i++) {
+            if (lineFonts.get(i).differsFrom(lineFonts.get(i - 1))) {
+                changes.add(splits.get(i - 1));
+            }
+        }
+        return changes;
+    }
+
+    /** Returns the numeric operand at the index, or 0 when it is not a number. */
+    private static double numberAt(List<PdfObject> operands, int index) {
+        return operands.get(index) instanceof PdfNumber number ? number.doubleValue() : 0.0;
     }
 
     /** Returns the operator literal of a parsed operation. */
