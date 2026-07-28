@@ -40,6 +40,7 @@ public final class ProcessingDefaults {
                 EmptyLinkTagCheck::new,
                 InvalidLinkUriCheck::new,
                 MistaggedListCheck::new,
+                BadlyMarkedContentCheck::new,
                 MistaggedHeadingCheck::new,
                 EmptyElementCheck::new,
                 ScribbledInstructionCheck::new,
