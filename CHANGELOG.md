@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `BadlyMarkedContentCheck`: flags an element whose single marked-content
+  block lumps together lines of different fonts (a different font resource or
+  size), such as a heading run into its subtitle, and splits it into one
+  same-role element per font run. Lines wrapped at one size stay together.
 - New `!UNWRAP_LIST` scribble instruction: undoes a false-positive list
   conversion by hoisting the elements wrapped in each `LI > LBody` back to
   the list's original position and removing the wrappers. Refuses lists
