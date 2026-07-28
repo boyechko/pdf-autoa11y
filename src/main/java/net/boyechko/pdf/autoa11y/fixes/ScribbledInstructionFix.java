@@ -355,7 +355,9 @@ public class ScribbledInstructionFix implements IssueFix {
 
     /** Delegates to SplitIntoListItemsFix to split the element's lumped blocks into list items. */
     private String applySplitLines(DocContext ctx, String spec) throws Exception {
-        new SplitIntoListItemsFix(element, spec).apply(ctx);
+        SplitIntoListItemsFix fix = new SplitIntoListItemsFix(element, spec);
+        fix.apply(ctx);
+        StructTree.addScribble(fix.resultingList(), OK_SCRIBBLE + " (on child)");
         return OK_SCRIBBLE;
     }
 
