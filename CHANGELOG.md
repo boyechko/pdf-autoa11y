@@ -14,7 +14,9 @@ Versioning](https://semver.org/).
   size run. Splits happen only where the text baseline drops to a new line, so
   a wrapped line stays together and a same-size inline change (e.g. a bolded
   word or lead-in label) is never split off. Only paragraphs and headings are
-  eligible; table cells and list items are left alone.
+  eligible; table cells and list items are left alone. Every element the
+  split produces is stamped with a `CONTENT SPLIT` scribble so the split is
+  visible when reviewing the tree.
 - New `!UNWRAP_LIST` scribble instruction: undoes a false-positive list
   conversion by hoisting the elements wrapped in each `LI > LBody` back to
   the list's original position and removing the wrappers. Refuses lists

@@ -85,6 +85,25 @@ class SplitMarkedContentFixTest extends PdfTestBase {
     }
 
     @Test
+    void stampsEveryResultingElementWithASplitScribble() throws Exception {
+        try (PdfDocument doc = openForStamping(CATALOG_067)) {
+            PdfStructElem heading = elementOwningMcid(doc, 1, 15);
+            PdfStructElem parent = (PdfStructElem) heading.getParent();
+
+            new SplitMarkedContentFix(heading).apply(new DocContext(doc));
+
+            for (PdfStructElem run : sameRoleSiblingsAfter(parent, heading, 2)) {
+                var scribble = StructTree.getScribble(run);
+                assertTrue(scribble != null && scribble.toolAuthored(), "tool-authored scribble");
+                assertTrue(
+                        scribble.segments().stream()
+                                .anyMatch(s -> s.trim().equals("CONTENT SPLIT")),
+                        "carries the split segment");
+            }
+        }
+    }
+
+    @Test
     void reapplyingIsANoOp() throws Exception {
         try (PdfDocument doc = openForStamping(CATALOG_067)) {
             PdfStructElem heading = elementOwningMcid(doc, 1, 15);

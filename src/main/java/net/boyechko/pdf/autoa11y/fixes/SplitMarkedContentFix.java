@@ -14,6 +14,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
@@ -31,6 +32,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class SplitMarkedContentFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(SplitMarkedContentFix.class);
+
+    /** Tool scribble stamped on every element the split produced, so the split is reviewable. */
+    private static final String SPLIT_SCRIBBLE = "CONTENT SPLIT";
 
     private final PdfStructElem element;
 
@@ -65,7 +69,9 @@ public final class SplitMarkedContentFix implements IssueFix {
             PdfMcr newMcr = new PdfMcrNumber(page, sibling);
             sibling.addKid(newMcr);
             newMcids.add(newMcr.getMcid());
+            markAsSplit(sibling);
         }
+        markAsSplit(element);
 
         List<Edit> edits = ContentStream.blockEditsFor(plan, splices, newMcids::get);
         ContentStream.applyEdits(plan.stream(), edits);
@@ -95,6 +101,20 @@ public final class SplitMarkedContentFix implements IssueFix {
             throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
         }
         return ctx.doc().getPage(pageNum);
+    }
+
+    /**
+     * Tool-stamps an element as part of a split, preserving any existing scribble and its
+     * authorship, and skipping elements already carrying the segment so re-runs stay idempotent.
+     */
+    private static void markAsSplit(PdfStructElem elem) {
+        DocValue.Scribble existing = StructTree.getScribble(elem);
+        if (existing == null) {
+            StructTree.setToolScribble(elem, SPLIT_SCRIBBLE);
+        } else if (existing.segments().stream()
+                .noneMatch(seg -> seg.trim().equals(SPLIT_SCRIBBLE))) {
+            StructTree.addScribble(elem, SPLIT_SCRIBBLE);
+        }
     }
 
     @Override
