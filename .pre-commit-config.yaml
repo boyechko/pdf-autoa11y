@@ -20,6 +20,13 @@ repos:
         pass_filenames: false
         files: \.(java|xml|yaml)$
 
+      - id: maven-integration-test
+        name: Run Maven integration tests
+        entry: mvn test -q -Dgroups=GoalDriven -Dmaven-surefire-plugin.excludedGroups=
+        language: system
+        pass_filenames: false
+        files: \.(java|xml|yaml)$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
