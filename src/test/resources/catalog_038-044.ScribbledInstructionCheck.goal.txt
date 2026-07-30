@@ -3,7 +3,7 @@ Document #48
   Art #64 "__www-washington-edu-students-gencat-program-B-BusinessAdministration-881"
     H5 #65
       [text &10] `Required Business Core (30 Credits)'
-    L #719 "__:6 items"
+    L #719 "__:6 items // INST OK (on child)"
       LI #720
         LBody #721
           P #66 "__:INST OK"
@@ -30,7 +30,7 @@ Document #48
             [text &23] `BBUS350-BusinessFinance'
     H5 #67
       [text &12] `Capstone (10 Credits)'
-    L #737 "__:2 items"
+    L #737 "__:2 items // INST OK (on child)"
       LI #738
         LBody #739
           P #68 "__:INST OK"
@@ -41,7 +41,7 @@ Document #48
             [text &24] `B BUS 480 - Global…'
     H5 #69
       [text &2] `Supply Chain Management Core Courses (30 credits)'
-    L #743 "__:6 items"
+    L #743 "__:6 items // INST OK (on child)"
       LI #744
         LBody #745
           P #70 "__:INST OK"
@@ -91,7 +91,7 @@ Document #48
         LBody #270
           P #271
             [text &17] `Core courses- 45 credits'
-          L #272 "__:9 items"
+          L #272 "__:9 items // INST OK (on child)"
             LI #273
               LBody #274
                 P #275 "__:INST OK"
@@ -154,7 +154,7 @@ Document #48
         LBody #249
           P #250
             [text &14] `Supply Chain Management…'
-          L #251 "__:5 items"
+          L #251 "__:5 items // INST OK (on child)"
             LI #252
               LBody #253
                 P #254 "__:INST OK"
@@ -180,7 +180,7 @@ Document #48
         LBody #242
           P #243
             [text &8] `Plus, one from the following…'
-          L #244 "__:2 items"
+          L #244 "__:2 items // INST OK (on child)"
             LI #245
               LBody #246
                 P #247 "__:INST OK"
@@ -193,7 +193,7 @@ Document #48
         LBody #236
           P #237
             [text &12] `Plus, two from the following…'
-          L #238 "__:9 items"
+          L #238 "__:9 items // INST OK (on child)"
             LI #239
               LBody #240
                 P #241 "__:INST OK"
@@ -262,7 +262,7 @@ Document #48
       [text &5] `Admission Requirements'
     P #91
       [text &6] `Students must earn a 2.7…'
-    L #824 "__:6 items"
+    L #824 "__:5 items // INST OK (on child)"
       LI #825
         LBody #826
           P #92 "__:INST OK"
@@ -282,11 +282,7 @@ Document #48
       LI #836
         LBody #837
           P #838
-            [text &21] `One quarter 200'
-      LI #839
-        LBody #840
-          P #841
-            [text &22] `‐levelAccounting'
+            [text &21] `One quarter 200 ‐ level…'
     H4 #93
       [text &9] `Completion Requirements'
     L #94
@@ -404,30 +400,30 @@ Document #48
       [text &9] `Students must earn a 2.7…'
     H4 #112
       [text &2] `Completion Requirements'
-    L #842 "__:6 items"
-      LI #843
-        LBody #844
+    L #839 "__:6 items // INST OK (on child)"
+      LI #840
+        LBody #841
           P #113 "__:INST OK"
             [text &3] `B BUS 300 - Organizational…'
+      LI #842
+        LBody #843
+          P #844
+            [text &13] `BBUS320-MarketingManagement'
       LI #845
         LBody #846
           P #847
-            [text &13] `BBUS320-MarketingManagement'
+            [text &14] `BBUS445-MerchandisingAcquisit…'
       LI #848
         LBody #849
           P #850
-            [text &14] `BBUS445-MerchandisingAcquisit…'
+            [text &15] `B BUS 446 - Strategic Retail…'
       LI #851
         LBody #852
           P #853
-            [text &15] `B BUS 446 - Strategic Retail…'
+            [text &16] `BBUS447-RetailOperations&Supp…'
       LI #854
         LBody #855
           P #856
-            [text &16] `BBUS447-RetailOperations&Supp…'
-      LI #857
-        LBody #858
-          P #859
             [text &17] `B BUS 448 - Retail…'
     P #114
       [text &4] `Students may take MGMT 300:…'
