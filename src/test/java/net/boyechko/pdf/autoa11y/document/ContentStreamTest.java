@@ -5,8 +5,13 @@ package net.boyechko.pdf.autoa11y.document;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfStream;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import org.junit.jupiter.api.Test;
@@ -31,6 +36,40 @@ class ContentStreamTest {
                     plan.splitOffsets(),
                     plan.fontChangeOffsets(),
                     "the two lines differ in size, so the sole boundary is a font change");
+        }
+    }
+
+    @Test
+    void treatsAnInlineFontChangeAsPartOfTheSameLine() throws Exception {
+        // One visual line written out of order: a bolded word reached by a horizontal-only Td, and
+        // a fragment repositioned via an absolute Tm plus a matrix-scaled Td that nets back to the
+        // line's baseline (y ~= 167). None of these moves lowers the baseline, so it is one line.
+        String content =
+                """
+                BT
+                /H5 <</MCID 20 >>BDC
+                12.75 0 0 12.75 47.497 167.2275 Tm
+                (Mathematics Choose )Tj
+                /TT0 1 Tf
+                10.949 0 Td
+                (one)Tj
+                /TT1 1 Tf
+                12.75 0 0 12.75 58.003 637.4985 Tm
+                11.903 -36.884 Td
+                ( course: )Tj
+                EMC
+                ET
+                """;
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+            PdfPage page = doc.addNewPage();
+            PdfStream stream = new PdfStream(content.getBytes(StandardCharsets.ISO_8859_1));
+            stream.makeIndirect(doc);
+            page.getPdfObject().put(PdfName.Contents, stream);
+
+            SplitPlan plan = ContentStream.planLineSplit(page, 20);
+
+            assertEquals(0, plan.splitOffsets().size(), "the fragments share one baseline");
+            assertEquals(0, plan.fontChangeOffsets().size(), "so the inline bold is not a split");
         }
     }
 

@@ -185,9 +185,7 @@ public final class ContentStream {
 
             // Text state carried up to the BDC: the font resource and size persist across BT/ET, so
             // a block that shows text without its own Tf inherits them from here.
-            PdfName seedFont = null;
-            double seedFontSize = 0;
-            double seedMatrixScale = 1;
+            TextPos seed = new TextPos();
 
             while (true) {
                 int opStart = (int) tokenizer.getPosition();
@@ -208,19 +206,11 @@ public final class ContentStream {
                             insideText,
                             opStart,
                             bdcEnd,
-                            seedFont,
-                            seedFontSize,
-                            seedMatrixScale);
+                            seed.copy());
                 }
                 String op = operatorOf(operands);
-                if ("Tf".equals(op) && operands.size() >= 3) {
-                    if (operands.get(0) instanceof PdfName font) {
-                        seedFont = font;
-                    }
-                    seedFontSize = numberAt(operands, 1);
-                } else if ("Tm".equals(op) && operands.size() >= 7) {
-                    seedMatrixScale = Math.hypot(numberAt(operands, 2), numberAt(operands, 3));
-                } else if ("BT".equals(op)) {
+                seed.apply(op, operands);
+                if ("BT".equals(op)) {
                     insideText = true;
                 } else if ("ET".equals(op)) {
                     insideText = false;
@@ -244,9 +234,7 @@ public final class ContentStream {
             boolean bdcInsideText,
             int bdcStart,
             int bdcEnd,
-            PdfName seedFont,
-            double seedFontSize,
-            double seedMatrixScale)
+            TextPos pos)
             throws IOException {
         List<PdfObject> operands = new ArrayList<>();
         int depth = 1;
@@ -262,14 +250,13 @@ public final class ContentStream {
         boolean irregular = false;
         boolean paintsOutsideText = false;
 
-        // Effective-font tracking: BT resets the text matrix (so its scale), but the font resource
-        // and size set by Tf persist. One EffFont is captured per line at its first show; adjacent
-        // lines are later diffed to find the font-change offsets.
-        PdfName currentFont = seedFont;
-        double currentFontSize = seedFontSize;
-        double currentMatrixScale = seedMatrixScale;
+        // Per-line font tracking: one EffFont is captured at each line's first show, and adjacent
+        // lines are later diffed to find the font-change offsets. A "line" is only started when the
+        // text baseline drops (prevLineY), so a horizontal or in-place reposition around an inline
+        // font change (e.g. a bolded word) does not count as a new line.
         List<EffFont> lineFonts = new ArrayList<>();
         boolean lineFontCaptured = false;
+        double prevLineY = Double.NaN;
 
         while (true) {
             int opStart = (int) tokenizer.getPosition();
@@ -279,14 +266,7 @@ public final class ContentStream {
             }
 
             String op = operatorOf(operands);
-            if ("Tf".equals(op) && operands.size() >= 3) {
-                if (operands.get(0) instanceof PdfName font) {
-                    currentFont = font;
-                }
-                currentFontSize = numberAt(operands, 1);
-            } else if ("Tm".equals(op) && operands.size() >= 7) {
-                currentMatrixScale = Math.hypot(numberAt(operands, 2), numberAt(operands, 3));
-            }
+            pos.apply(op, operands);
 
             if ("BDC".equals(op) || "BMC".equals(op)) {
                 depth++;
@@ -321,7 +301,6 @@ public final class ContentStream {
                     irregular = true;
                 }
                 insideText = true;
-                currentMatrixScale = 1; // BT resets the text matrix to the identity
                 openSpanStart = (int) tokenizer.getPosition();
             } else if ("ET".equals(op)) {
                 insideText = false;
@@ -340,12 +319,19 @@ public final class ContentStream {
                     paintsOutsideText = true;
                 }
                 if (pendingSplit >= 0) {
-                    splits.add(pendingSplit);
+                    // A pending reposition is only a line break if it dropped the baseline;
+                    // otherwise it stayed on the line (a horizontal or in-place move).
+                    if (droppedBelow(pos.baselineY(), prevLineY)) {
+                        splits.add(pendingSplit);
+                        prevLineY = pos.baselineY();
+                        lineFontCaptured = false;
+                    }
                     pendingSplit = -1;
-                    lineFontCaptured = false;
+                } else if (Double.isNaN(prevLineY)) {
+                    prevLineY = pos.baselineY();
                 }
                 if (!lineFontCaptured) {
-                    lineFonts.add(new EffFont(currentFont, currentFontSize * currentMatrixScale));
+                    lineFonts.add(new EffFont(pos.font(), pos.effSize()));
                     lineFontCaptured = true;
                 }
                 lineHasShownText = true;
@@ -358,13 +344,17 @@ public final class ContentStream {
                 if (pendingSplit >= 0) {
                     splits.add(pendingSplit);
                     pendingSplit = -1;
+                    prevLineY = pos.baselineY();
                     lineFontCaptured = false;
                 } else if (depth == 1 && lineHasShownText) {
                     splits.add(opStart);
+                    prevLineY = pos.baselineY();
                     lineFontCaptured = false;
+                } else if (Double.isNaN(prevLineY)) {
+                    prevLineY = pos.baselineY();
                 }
                 if (!lineFontCaptured) {
-                    lineFonts.add(new EffFont(currentFont, currentFontSize * currentMatrixScale));
+                    lineFonts.add(new EffFont(pos.font(), pos.effSize()));
                     lineFontCaptured = true;
                 }
                 lineHasShownText = true;
@@ -402,6 +392,93 @@ public final class ContentStream {
     /** Returns the numeric operand at the index, or 0 when it is not a number. */
     private static double numberAt(List<PdfObject> operands, int index) {
         return operands.get(index) instanceof PdfNumber number ? number.doubleValue() : 0.0;
+    }
+
+    /** A baseline this much lower (in user-space points) starts a new line. */
+    private static final double LINE_DROP_MIN = 1.0;
+
+    /** True when {@code y} sits at least {@link #LINE_DROP_MIN} below a known {@code prevY}. */
+    private static boolean droppedBelow(double y, double prevY) {
+        return !Double.isNaN(prevY) && y < prevY - LINE_DROP_MIN;
+    }
+
+    /**
+     * Text-positioning state tracked while scanning: the current font resource and size (for the
+     * effective glyph size) and the text baseline's y in user space (to tell a real new line from a
+     * horizontal or in-place move). {@code Td}/{@code TD} translate in text space, so their
+     * vertical step is scaled by the text matrix; {@code Tm} sets the baseline absolutely; {@code
+     * BT} resets the matrix (but font and leading persist).
+     */
+    private static final class TextPos {
+        private PdfName font;
+        private double fontSize = 0;
+        private double matrixScale = 1; // hypot of the matrix column, for effective glyph size
+        private double verticalScale = 1; // signed matrix d, for baseline math
+        private double leading = 0;
+        private double baselineY = 0;
+
+        void apply(String op, List<PdfObject> operands) {
+            switch (op) {
+                case "Tf" -> {
+                    if (operands.size() >= 3) {
+                        if (operands.get(0) instanceof PdfName f) {
+                            font = f;
+                        }
+                        fontSize = numberAt(operands, 1);
+                    }
+                }
+                case "Tm" -> {
+                    if (operands.size() >= 7) {
+                        matrixScale = Math.hypot(numberAt(operands, 2), numberAt(operands, 3));
+                        verticalScale = numberAt(operands, 3);
+                        baselineY = numberAt(operands, 5);
+                    }
+                }
+                case "Td", "TD" -> {
+                    if (operands.size() >= 3) {
+                        baselineY += numberAt(operands, 1) * verticalScale;
+                        if ("TD".equals(op)) {
+                            leading = -numberAt(operands, 1);
+                        }
+                    }
+                }
+                case "TL" -> {
+                    if (operands.size() >= 2) {
+                        leading = numberAt(operands, 0);
+                    }
+                }
+                case "T*", "'", "\"" -> baselineY -= leading * verticalScale;
+                case "BT" -> {
+                    matrixScale = 1;
+                    verticalScale = 1;
+                    baselineY = 0;
+                }
+                default -> {}
+            }
+        }
+
+        TextPos copy() {
+            TextPos c = new TextPos();
+            c.font = font;
+            c.fontSize = fontSize;
+            c.matrixScale = matrixScale;
+            c.verticalScale = verticalScale;
+            c.leading = leading;
+            c.baselineY = baselineY;
+            return c;
+        }
+
+        PdfName font() {
+            return font;
+        }
+
+        double effSize() {
+            return fontSize * matrixScale;
+        }
+
+        double baselineY() {
+            return baselineY;
+        }
     }
 
     /** Returns the operator literal of a parsed operation. */
