@@ -74,10 +74,17 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
         return true;
     }
 
-    /** Returns the element's sole kid when it is a single marked-content reference, else null. */
+    /**
+     * Returns the element's sole kid when it is a single marked-content reference with real
+     * content, else null. An OBJR (object reference to an annotation) is a {@link PdfMcr} too but
+     * marks no content and reports its MCID as -1, so it is excluded.
+     */
     private static PdfMcr onlyMcrKid(PdfStructElem elem) {
         List<IStructureNode> kids = elem.getKids();
-        if (kids != null && kids.size() == 1 && kids.get(0) instanceof PdfMcr mcr) {
+        if (kids != null
+                && kids.size() == 1
+                && kids.get(0) instanceof PdfMcr mcr
+                && mcr.getMcid() >= 0) {
             return mcr;
         }
         return null;
