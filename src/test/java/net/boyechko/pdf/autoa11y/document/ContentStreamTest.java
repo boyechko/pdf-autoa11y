@@ -34,8 +34,42 @@ class ContentStreamTest {
             assertEquals(1, plan.splitOffsets().size(), "two lines yield one line boundary");
             assertEquals(
                     plan.splitOffsets(),
-                    plan.fontChangeOffsets(),
-                    "the two lines differ in size, so the sole boundary is a font change");
+                    plan.sizeChangeOffsets(),
+                    "the two lines differ in size, so the sole boundary is a size change");
+        }
+    }
+
+    @Test
+    void ignoresResourceOnlySizeMatchAcrossLines() throws Exception {
+        // Two genuine lines (the baseline drops between them) at the same size but different fonts:
+        // a bold heading followed by regular body. A resource-only change is not a size change.
+        String content =
+                """
+                BT
+                /P <</MCID 30 >>BDC
+                12 0 0 12 50 700 Tm
+                /TT0 1 Tf
+                (Bold heading line)Tj
+                0 -1.5 Td
+                /TT1 1 Tf
+                (regular next line)Tj
+                EMC
+                ET
+                """;
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(new ByteArrayOutputStream()))) {
+            PdfPage page = doc.addNewPage();
+            PdfStream stream = new PdfStream(content.getBytes(StandardCharsets.ISO_8859_1));
+            stream.makeIndirect(doc);
+            page.getPdfObject().put(PdfName.Contents, stream);
+
+            SplitPlan plan = ContentStream.planLineSplit(page, 30);
+
+            assertEquals(
+                    1, plan.splitOffsets().size(), "the baseline drops, so there are two lines");
+            assertEquals(
+                    0,
+                    plan.sizeChangeOffsets().size(),
+                    "but both lines are size 12, so a resource-only change is not split");
         }
     }
 
@@ -69,7 +103,7 @@ class ContentStreamTest {
             SplitPlan plan = ContentStream.planLineSplit(page, 20);
 
             assertEquals(0, plan.splitOffsets().size(), "the fragments share one baseline");
-            assertEquals(0, plan.fontChangeOffsets().size(), "so the inline bold is not a split");
+            assertEquals(0, plan.sizeChangeOffsets().size(), "so the inline bold is not a split");
         }
     }
 
@@ -82,12 +116,12 @@ class ContentStreamTest {
             assertEquals(2, plan.splitOffsets().size(), "three lines yield two line boundaries");
             assertEquals(
                     1,
-                    plan.fontChangeOffsets().size(),
-                    "only the last line changes size; the same-size wrap is not a font change");
+                    plan.sizeChangeOffsets().size(),
+                    "only the last line changes size; the same-size wrap is not a size change");
             assertEquals(
                     plan.splitOffsets().get(1),
-                    plan.fontChangeOffsets().get(0),
-                    "the font change is the second boundary, not the wrap");
+                    plan.sizeChangeOffsets().get(0),
+                    "the size change is the second boundary, not the wrap");
         }
     }
 }

@@ -7,10 +7,12 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.SplitMarkedContentFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -23,15 +25,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Detects an element whose single marked-content block lumps together lines of different fonts —
- * differing in /Font resource or in effective (matrix-scaled) size — where each font run reads as a
- * distinct piece (e.g. a heading followed by its subtitle at another size). Such a block is flagged
- * for splitting into one same-role element per run. Because the comparison is made only at line
- * boundaries, a paragraph wrapped across lines at one size is never flagged, and an inline font
- * change within a line cannot trigger a split.
+ * Detects an element whose single marked-content block lumps together lines of different font sizes
+ * — where each size run reads as a distinct piece (e.g. a heading followed by its subtitle at
+ * another size). Such a block is flagged for splitting into one same-role element per run. Only
+ * roles that legally repeat in sequence are considered ({@link #SPLITTABLE_ROLES}), so splitting a
+ * table cell or list body — where a same-role sibling would corrupt the grid or list — is never
+ * proposed. Because sizes are compared only at line boundaries, a paragraph wrapped at one size is
+ * never flagged, and a same-size inline font change (e.g. a bolded word) cannot trigger a split.
  */
 public class BadlyMarkedContentCheck extends StructTreeCheck {
     private static final Logger logger = LoggerFactory.getLogger(BadlyMarkedContentCheck.class);
+
+    /**
+     * Roles whose block may be split into same-role siblings. Limited to paragraphs and headings,
+     * where a sequence of siblings is structurally valid; table cells (TD/TH) and list-structure
+     * roles (LBody/LI/Lbl) are excluded because a sibling there breaks the parent's contract.
+     */
+    private static final Set<String> SPLITTABLE_ROLES =
+            Set.of("P", "H1", "H2", "H3", "H4", "H5", "H6");
 
     private final IssueList issues = new IssueList();
 
@@ -42,12 +53,15 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
 
     @Override
     public String description() {
-        return "Marked-content blocks lumping differently-fonted lines";
+        return "Marked-content blocks lumping differently-sized lines";
     }
 
     @Override
     public boolean enterElement(StructTreeContext ctx) {
         PdfStructElem node = ctx.node();
+        if (!SPLITTABLE_ROLES.contains(StructTree.mappedRole(node))) {
+            return true;
+        }
         PdfMcr mcr = onlyMcrKid(node);
         if (mcr == null) {
             return true;
@@ -58,7 +72,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
         }
 
         SplitPlan plan = planSplit(ctx.doc().getPage(pageNum), mcr.getMcid());
-        if (plan == null || plan.fontChangeOffsets().isEmpty() || !splittable(plan)) {
+        if (plan == null || plan.sizeChangeOffsets().isEmpty() || !splittable(plan)) {
             return true;
         }
 
@@ -69,7 +83,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
                         IssueType.MIXED_FONT_MARKED_CONTENT,
                         IssueSev.WARNING,
                         locAtElem(ctx),
-                        "Marked content mixing fonts: \"" + text + "\"",
+                        "Marked content mixing font sizes: \"" + text + "\"",
                         fix));
         return true;
     }
@@ -100,10 +114,10 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
         }
     }
 
-    /** True when the block's font-change splices can be realized without an illegal splice. */
+    /** True when the block's size-change splices can be realized without an illegal splice. */
     private static boolean splittable(SplitPlan plan) {
         try {
-            ContentStream.blockEditsFor(plan, plan.fontChangeOffsets(), i -> 0);
+            ContentStream.blockEditsFor(plan, plan.sizeChangeOffsets(), i -> 0);
             return true;
         } catch (RuntimeException e) {
             logger.debug(

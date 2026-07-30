@@ -22,12 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Splits an element whose single marked-content block lumps together lines of different fonts into
- * one same-role sibling per font run. The block is spliced at every font-change boundary (a line
- * boundary where the effective font resource or size differs from the previous line) so each run
- * becomes its own BDC...EMC block with a fresh MCID; the original element keeps the first run, and
- * each later run moves into a new sibling element of the same role inserted right after it. Lines
- * within a run — including a same-size wrap — stay in a single unsplit block.
+ * Splits an element whose single marked-content block lumps together lines of different font sizes
+ * into one same-role sibling per size run. The block is spliced at every size-change boundary (a
+ * line boundary where the effective font size differs from the previous line) so each run becomes
+ * its own BDC...EMC block with a fresh MCID; the original element keeps the first run, and each
+ * later run moves into a new sibling element of the same role inserted right after it. Lines within
+ * a run — including a same-size wrap or a same-size inline font change — stay in one unsplit block.
  */
 public final class SplitMarkedContentFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(SplitMarkedContentFix.class);
@@ -43,10 +43,10 @@ public final class SplitMarkedContentFix implements IssueFix {
         PdfMcr mcr = onlyMcrKidOf(element);
         PdfPage page = pageOf(ctx, mcr);
         SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
-        List<Integer> splices = plan.fontChangeOffsets();
+        List<Integer> splices = plan.sizeChangeOffsets();
         if (splices.isEmpty()) {
-            // Already a single-font block (e.g. a re-run after a prior split): nothing to do.
-            logger.debug("No font changes to split on MCID {}", mcr.getMcid());
+            // Already a single-size block (e.g. a re-run after a prior split): nothing to do.
+            logger.debug("No size changes to split on MCID {}", mcr.getMcid());
             return;
         }
 
@@ -85,7 +85,7 @@ public final class SplitMarkedContentFix implements IssueFix {
             return mcr;
         }
         throw new IllegalStateException(
-                "Splitting by font requires an element with a single marked-content reference");
+                "Splitting by size requires an element with a single marked-content reference");
     }
 
     /** Resolves the MCR's page, refusing when it cannot be determined. */
@@ -99,7 +99,7 @@ public final class SplitMarkedContentFix implements IssueFix {
 
     @Override
     public String describe() {
-        return "Split block mixing fonts into one element per font run";
+        return "Split block mixing font sizes into one element per size run";
     }
 
     @Override
@@ -109,6 +109,6 @@ public final class SplitMarkedContentFix implements IssueFix {
 
     @Override
     public String groupLabel() {
-        return "font-mixing blocks split into separate elements";
+        return "size-mixing blocks split into separate elements";
     }
 }

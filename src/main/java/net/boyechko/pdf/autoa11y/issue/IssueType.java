@@ -51,7 +51,7 @@ public enum IssueType {
     WEB_CAPTURES_BADLY_ORDERED("Web Capture pages not in configured URL order"),
     MISTAGGED_HEADING("headings tagged as paragraphs"),
     IMPROPERLY_NESTED_HEADING("headings with skipped or out-of-order levels"),
-    MIXED_FONT_MARKED_CONTENT("marked content lumping differently-fonted lines");
+    MIXED_FONT_MARKED_CONTENT("marked content lumping differently-sized lines");
 
     private final String groupLabel;
 

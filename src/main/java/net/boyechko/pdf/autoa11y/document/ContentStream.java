@@ -106,16 +106,11 @@ public final class ContentStream {
 
     private static final byte[] NO_BYTES = new byte[0];
 
+    /** Effective sizes closer than this (in user-space points) count as the same size. */
+    private static final double SIZE_EPS = 0.1;
+
     /** One text object (BT...ET) inside the block: positions just after the BT and at the ET. */
     public record TextSpan(int afterBt, int etStart) {}
-
-    /** A line's effective font: its /Font resource name and its size scaled by the text matrix. */
-    private record EffFont(PdfName font, double size) {
-        boolean differsFrom(EffFont other) {
-            boolean sameName = font == null ? other.font == null : font.equals(other.font);
-            return !sameName || size != other.size;
-        }
-    }
 
     /**
      * The block's operator geometry: the opening BDC's bytes and byte range, the closing EMC's byte
@@ -135,7 +130,7 @@ public final class ContentStream {
 
     /**
      * One marked-content block's split plan: its stream, tag, line-split offsets, the subset of
-     * those offsets where the effective font (resource or size) changes from the previous line,
+     * those offsets where the effective (matrix-scaled) font size changes from the previous line,
      * whether its BDC opened inside a text object (and where that text object ends), and the
      * block's geometry.
      */
@@ -143,7 +138,7 @@ public final class ContentStream {
             PdfStream stream,
             PdfName tag,
             List<Integer> splitOffsets,
-            List<Integer> fontChangeOffsets,
+            List<Integer> sizeChangeOffsets,
             boolean bdcInsideText,
             int bdcTextEnd,
             BlockShape shape) {}
@@ -183,8 +178,8 @@ public final class ContentStream {
             List<PdfObject> operands = new ArrayList<>();
             boolean insideText = false;
 
-            // Text state carried up to the BDC: the font resource and size persist across BT/ET, so
-            // a block that shows text without its own Tf inherits them from here.
+            // Text state carried up to the BDC: the font size persists across BT/ET, so a block
+            // that shows text without its own Tf inherits it from here.
             TextPos seed = new TextPos();
 
             while (true) {
@@ -250,12 +245,14 @@ public final class ContentStream {
         boolean irregular = false;
         boolean paintsOutsideText = false;
 
-        // Per-line font tracking: one EffFont is captured at each line's first show, and adjacent
-        // lines are later diffed to find the font-change offsets. A "line" is only started when the
-        // text baseline drops (prevLineY), so a horizontal or in-place reposition around an inline
-        // font change (e.g. a bolded word) does not count as a new line.
-        List<EffFont> lineFonts = new ArrayList<>();
-        boolean lineFontCaptured = false;
+        // Per-line size tracking: each line's effective (matrix-scaled) font size is captured at
+        // its
+        // first show, and adjacent lines are later diffed to find the size-change offsets. A "line"
+        // is only started when the text baseline drops (prevLineY), so a horizontal or in-place
+        // reposition around an inline font change (e.g. a bolded word) does not count as a new
+        // line.
+        List<Double> lineSizes = new ArrayList<>();
+        boolean lineSizeCaptured = false;
         double prevLineY = Double.NaN;
 
         while (true) {
@@ -291,7 +288,7 @@ public final class ContentStream {
                             stream,
                             tag,
                             splits,
-                            fontChangeOffsets(splits, lineFonts),
+                            sizeChangeOffsets(splits, lineSizes),
                             bdcInsideText,
                             bdcTextEnd,
                             shape);
@@ -324,15 +321,15 @@ public final class ContentStream {
                     if (droppedBelow(pos.baselineY(), prevLineY)) {
                         splits.add(pendingSplit);
                         prevLineY = pos.baselineY();
-                        lineFontCaptured = false;
+                        lineSizeCaptured = false;
                     }
                     pendingSplit = -1;
                 } else if (Double.isNaN(prevLineY)) {
                     prevLineY = pos.baselineY();
                 }
-                if (!lineFontCaptured) {
-                    lineFonts.add(new EffFont(pos.font(), pos.effSize()));
-                    lineFontCaptured = true;
+                if (!lineSizeCaptured) {
+                    lineSizes.add(pos.effSize());
+                    lineSizeCaptured = true;
                 }
                 lineHasShownText = true;
             } else if (NEXT_LINE_SHOW_OPS.contains(op)) {
@@ -345,17 +342,17 @@ public final class ContentStream {
                     splits.add(pendingSplit);
                     pendingSplit = -1;
                     prevLineY = pos.baselineY();
-                    lineFontCaptured = false;
+                    lineSizeCaptured = false;
                 } else if (depth == 1 && lineHasShownText) {
                     splits.add(opStart);
                     prevLineY = pos.baselineY();
-                    lineFontCaptured = false;
+                    lineSizeCaptured = false;
                 } else if (Double.isNaN(prevLineY)) {
                     prevLineY = pos.baselineY();
                 }
-                if (!lineFontCaptured) {
-                    lineFonts.add(new EffFont(pos.font(), pos.effSize()));
-                    lineFontCaptured = true;
+                if (!lineSizeCaptured) {
+                    lineSizes.add(pos.effSize());
+                    lineSizeCaptured = true;
                 }
                 lineHasShownText = true;
             } else if (depth == 1 && LINE_OPS.contains(op) && lineHasShownText) {
@@ -372,17 +369,18 @@ public final class ContentStream {
     }
 
     /**
-     * Returns the subset of line-split offsets whose line's effective font differs from the
-     * previous line's, i.e. the boundaries where a run of same-font lines ends. Empty when the
-     * per-line fonts do not align with the splits (one more line than splits) or nothing changes.
+     * Returns the subset of line-split offsets whose line's effective font size differs from the
+     * previous line's, i.e. the boundaries where a run of same-size lines ends. Empty when the
+     * per-line sizes do not align with the splits (one more line than splits) or nothing changes. A
+     * resource-only change (a bolded run at the same size) is deliberately not a boundary.
      */
-    private static List<Integer> fontChangeOffsets(List<Integer> splits, List<EffFont> lineFonts) {
+    private static List<Integer> sizeChangeOffsets(List<Integer> splits, List<Double> lineSizes) {
         List<Integer> changes = new ArrayList<>();
-        if (lineFonts.size() != splits.size() + 1) {
+        if (lineSizes.size() != splits.size() + 1) {
             return changes;
         }
-        for (int i = 1; i < lineFonts.size(); i++) {
-            if (lineFonts.get(i).differsFrom(lineFonts.get(i - 1))) {
+        for (int i = 1; i < lineSizes.size(); i++) {
+            if (Math.abs(lineSizes.get(i) - lineSizes.get(i - 1)) > SIZE_EPS) {
                 changes.add(splits.get(i - 1));
             }
         }
@@ -403,14 +401,13 @@ public final class ContentStream {
     }
 
     /**
-     * Text-positioning state tracked while scanning: the current font resource and size (for the
-     * effective glyph size) and the text baseline's y in user space (to tell a real new line from a
-     * horizontal or in-place move). {@code Td}/{@code TD} translate in text space, so their
-     * vertical step is scaled by the text matrix; {@code Tm} sets the baseline absolutely; {@code
-     * BT} resets the matrix (but font and leading persist).
+     * Text-positioning state tracked while scanning: the current font size (for the effective glyph
+     * size) and the text baseline's y in user space (to tell a real new line from a horizontal or
+     * in-place move). {@code Td}/{@code TD} translate in text space, so their vertical step is
+     * scaled by the text matrix; {@code Tm} sets the baseline absolutely; {@code BT} resets the
+     * matrix (but the font size and leading persist).
      */
     private static final class TextPos {
-        private PdfName font;
         private double fontSize = 0;
         private double matrixScale = 1; // hypot of the matrix column, for effective glyph size
         private double verticalScale = 1; // signed matrix d, for baseline math
@@ -421,9 +418,6 @@ public final class ContentStream {
             switch (op) {
                 case "Tf" -> {
                     if (operands.size() >= 3) {
-                        if (operands.get(0) instanceof PdfName f) {
-                            font = f;
-                        }
                         fontSize = numberAt(operands, 1);
                     }
                 }
@@ -459,17 +453,12 @@ public final class ContentStream {
 
         TextPos copy() {
             TextPos c = new TextPos();
-            c.font = font;
             c.fontSize = fontSize;
             c.matrixScale = matrixScale;
             c.verticalScale = verticalScale;
             c.leading = leading;
             c.baselineY = baselineY;
             return c;
-        }
-
-        PdfName font() {
-            return font;
         }
 
         double effSize() {
