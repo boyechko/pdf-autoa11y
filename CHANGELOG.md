@@ -7,6 +7,8 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.5.0] - 2026-07-30
+
 ### Added
 - New `BadlyMarkedContentCheck`: flags a paragraph or heading whose single
   marked-content block lumps together lines of different font sizes, such as a
