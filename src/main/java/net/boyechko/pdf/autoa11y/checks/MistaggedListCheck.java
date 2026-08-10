@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.ParagraphOfLinksFix;
@@ -42,7 +44,8 @@ import org.slf4j.LoggerFactory;
  *       raw kids.
  *   <li><b>Indentation</b>: runs of 3+ consecutive P siblings sharing a left edge indented past
  *       their non-run siblings.
- *   <li><b>Link-only paragraphs</b>: elements whose children are all Links.
+ *   <li><b>Link-only paragraphs</b>: elements whose children are all Links, excluding those whose
+ *       Links all target one destination, which are single links split across lines.
  * </ol>
  *
  * <p>Each element is claimed by the strongest evidence that matches it, so the strategies never
@@ -611,10 +614,21 @@ public class MistaggedListCheck extends StructTreeCheck {
             return;
         }
 
-        if (ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
-            linkParagraphs.add(
-                    new LinkParagraphCandidate(ctx.node(), ctx.children(), locAtElem(ctx)));
+        if (!ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
+            return;
         }
+
+        // Links that all point at one destination are one logical link the authoring
+        // tool split across lines, not list items. Splitting them into LIs would turn a
+        // single entry into a phantom two-item list.
+        if (Link.allShareOneDestination(ctx.children())) {
+            logger.debug(
+                    "Skipping link paragraph {}: all links share one destination",
+                    DocValue.ObjNum.of(ctx.node()));
+            return;
+        }
+
+        linkParagraphs.add(new LinkParagraphCandidate(ctx.node(), ctx.children(), locAtElem(ctx)));
     }
 
     /** Emits link-paragraph issues for candidates no stronger evidence pass claimed. */

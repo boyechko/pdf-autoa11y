@@ -7,6 +7,12 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixed
+- `MistaggedListCheck` no longer turns a link-only paragraph into a list when
+  every link in it targets the same destination. Such paragraphs are a single
+  link that the authoring tool split across two tags, not list items, and
+  converting them produced phantom two-item lists in tables of contents.
+
 ## [0.5.0] - 2026-07-30
 
 ### Added

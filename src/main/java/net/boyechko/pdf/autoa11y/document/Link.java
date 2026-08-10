@@ -4,12 +4,56 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.net.URI;
+import java.util.List;
 
 /** Helpers for reading and validating Link annotation data. */
 public final class Link {
 
     private Link() {}
+
+    /**
+     * Returns the destination that most precisely identifies a Link annotation's target: the Web
+     * Capture /PA URI when present, since it retains the fragment that a resolved /GoTo collapses
+     * into a bare page number. Falls back to the /A or /Dest destination, and is null when neither
+     * resolves.
+     */
+    public static DocValue.Destination effectiveDestinationOf(PdfObjRef objRef) {
+        DocValue.Destination originalUri = DocValue.originalUriOf(objRef);
+        return originalUri != null ? originalUri : DocValue.destinationOf(objRef);
+    }
+
+    /**
+     * Returns true if every element is a Link whose OBJRs all resolve to one and the same
+     * destination — the signature of a single logical link that an authoring tool split across
+     * lines, rather than a list whose items point at different targets. Returns false whenever a
+     * destination cannot be resolved, so callers fall back to their default behavior instead of
+     * acting on missing evidence.
+     */
+    public static boolean allShareOneDestination(List<PdfStructElem> elems) {
+        if (elems.size() < 2) return false;
+
+        DocValue.Destination shared = null;
+        for (PdfStructElem elem : elems) {
+            if (!PdfName.Link.equals(elem.getRole())) return false;
+
+            List<PdfObjRef> objRefs = StructTree.childrenOf(elem, PdfObjRef.class);
+            if (objRefs.isEmpty()) return false;
+
+            for (PdfObjRef objRef : objRefs) {
+                DocValue.Destination dest = effectiveDestinationOf(objRef);
+                if (dest == null) return false;
+                if (shared == null) {
+                    shared = dest;
+                } else if (!shared.equals(dest)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     /** Returns the URI of a Link annotation's URI action, or null if none. */
     public static String getUri(PdfDictionary annotDict) {
