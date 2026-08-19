@@ -18,7 +18,7 @@ Document #22
     Link #25
       <link #96> null [/URI (https://www.uwb.edu/catalog/degree-programs)]
       [text &7] `academic programs and certificates'
-    [text &8] `The University of W…'
+    [text &8] `at the undergraduate,…'
   H3 #47
     [text &9] `Archived catalogs'
   L #652

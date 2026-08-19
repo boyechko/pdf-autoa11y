@@ -16,6 +16,10 @@ Versioning](https://semver.org/).
   surviving tag is stamped `__:LINKS MERGED`.
 
 ### Fixed
+- `--dump-tree` now shows each marked-content reference's own text. Previously
+  every MCR line under an element repeated that element's entire text, so a
+  paragraph or link split across several MCRs looked like it held the same
+  text two or three times over.
 - `MistaggedListCheck` no longer turns a link-only paragraph into a list when
   every link in it targets the same destination. Such paragraphs are a single
   link that the authoring tool split across two tags, not list items, and

@@ -66,7 +66,7 @@ Document #48
         LBody #759
           P #760
             [text &28] `B BUS 497 or ELCBUS 497 -…'
-            [text &17] `B BUS 497 or ELCBUS 497 -…'
+            [text &17] `Undergraduate Research or B…'
     H5 #71
       [text &14] `Supply Chain Management Electives (10 credits)'
     P #72
@@ -76,7 +76,7 @@ Document #48
     P #74
       [text &15] `Any 300 ‐ 400 level classes…'
 ------------------------- Page 2 ---
-      [text &11] `Any 300 ‐ 400 level classes…'
+      [text &11] `comparable upper-division…'
     P #62
       StyleSpan #59
         Link #57
@@ -131,18 +131,18 @@ Document #48
       LI #257
         LBody #265
           P #266
-            [text &19] `Concentration: 20 credits,…'
-            [text &23] `Concentration: 20 credits,…'
+            [text &19] `Concentration:'
+            [text &23] `20 credits, see'
             StyleSpan #267
               Link #56
                 <link #288> /URI (https://www.uwb.edu/babusiness/elcbabusiness)
                 [text &6] `https://www.uwb.edu/babusiness/elcbabusiness'
-            [text &22] `Concentration: 20 credits,…'
+            [text &22] `for list of approved courses…'
       LI #258
         LBody #263
           P #264
-            [text &21] `Capstone:5credits ELCBUS 470…'
-            [text &26] `Capstone:5credits ELCBUS 470…'
+            [text &21] `Capstone:5credits'
+            [text &26] `ELCBUS 470 - Business Policy…'
       LI #259
         LBody #260
           P #261 "__split"
@@ -257,7 +257,7 @@ Document #48
       [text &2] `The Business minor is…'
     P #89
       [text &3] `This program of study leads…'
-      [text &17] `This program of study leads…'
+      [text &17] `Minor in Business…'
     H4 #90
       [text &5] `Admission Requirements'
     P #91
@@ -309,7 +309,7 @@ Document #48
             [text &0] `Elective ‐ Business Elective…'
     P #95
       [text &1] `Three of the five courses in…'
-      [text &17] `Three of the five courses in…'
+      [text &17] `Acceptance of transfer…'
     P #96
       StyleSpan #190
         Link #53
@@ -323,7 +323,7 @@ Document #48
       [text &5] `Economics explores how…'
     P #100
       [text &6] `This program of study leads…'
-      [text &23] `This program of study leads…'
+      [text &23] `Minor in Economics'
     H4 #101
       [text &8] `Admission Requirements'
     L #102
@@ -331,8 +331,8 @@ Document #48
         LBody #181
           P #182
             [text &9] `A minimum grade of 2.5 in…'
-            [text &22] `A minimum grade of 2.5 in…'
-            [text &21] `A minimum grade of 2.5 in…'
+            [text &22] `STMATH 124 Calculus I and B…'
+            [text &21] `Interference'
       LI #173
         LBody #178
           P #179
@@ -368,10 +368,10 @@ Document #48
             [text &3] `Electives ‐ two (2)…'
           P #149
             [text &4] `Students may not enroll in…'
-            [text &17] `Students may not enroll in…'
+            [text &17] `Calculus prerequisite…'
           P #150
             [text &6] `Three of the five courses in…'
-            [text &18] `Three of the five courses in…'
+            [text &18] `Acceptance of transfer…'
       LI #143
         LBody #144
           P #145
@@ -389,7 +389,7 @@ Document #48
       [text &11] `The Retail Management minor…'
     P #109
       [text &12] `This program of study leads…'
-      [text &21] `This program of study leads…'
+      [text &21] `Minor in Retail Management'
     H4 #110
       [text &14] `Admission Requirements'
     P #111
@@ -397,7 +397,7 @@ Document #48
       HyphenSpan #130
         [text &16] `-'
 ------------------------- Page 7 ---
-      [text &9] `Students must earn a 2.7…'
+      [text &9] `Introduction to Business'
     H4 #112
       [text &2] `Completion Requirements'
     L #839 "__:6 items // INST OK (on child)"

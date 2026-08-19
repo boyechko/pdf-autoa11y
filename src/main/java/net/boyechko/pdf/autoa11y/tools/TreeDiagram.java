@@ -33,7 +33,7 @@ public final class TreeDiagram {
     private static final Pattern ANNOTATED_LINE =
             Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
 
-    /** Roles whose text is worth showing in full, since it identifies the element. */
+    /** Roles whose text is shown untruncated, since it identifies the element. */
     private static final Set<PdfName> SHOWN_IN_FULL =
             Set.of(
                     PdfName.Link,
@@ -109,20 +109,6 @@ public final class TreeDiagram {
                     .forEach((mcid, mc) -> mcidInfo.put(new Content.PageMcid(pageNum, mcid), mc));
         }
         return mcidInfo;
-    }
-
-    /** Gathers text content for all text MCRs in the given {@link PdfStructElem} element. */
-    private static String gatherElemText(
-            PdfStructElem elem, Map<Content.PageMcid, Content.McidContent> mcidInfo) {
-        StringBuilder sb = new StringBuilder();
-        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
-            Content.McidContent mc = mcidInfo.get(new Content.PageMcid(pageOf(mcr), mcr.getMcid()));
-            if (mc != null && !mc.text().isBlank()) {
-                if (!sb.isEmpty()) sb.append(' ');
-                sb.append(mc.text());
-            }
-        }
-        return sb.toString();
     }
 
     // === Indented tree diagram =============================================
@@ -254,7 +240,7 @@ public final class TreeDiagram {
                     emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
                     sb.append(childrenPrefix).append(leafPrefix);
                     sb.append("[").append(mcrLabel).append("]");
-                    String text = gatherElemText(elem, mcidInfo);
+                    String text = mc != null ? mc.text() : "";
                     if (!SHOWN_IN_FULL.contains(elem.getRole())) {
                         text = Format.truncate(text);
                     }
