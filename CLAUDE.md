@@ -41,7 +41,14 @@ mvn exec:java -Dexec.args="--dump-tree inputss/input.pdf"  # print structure tre
 
 # After build, it's also possible to use wrapper scripts
 ./pdf-autoa11y inputs/input.pdf outputs/
+
+# Choosing which checks run (comma-separated class names; also accept a space
+# instead of `=`). Prefer --only-checks when working on a single check: it
+# selects from *all* checks, optional ones included, and never goes stale as
+# checks are added to ProcessingDefaults.
+./pdf-autoa11y --only-checks=BadlySplitLinkCheck inputs/input.pdf
 ./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck inputs/input.pdf
+./pdf-autoa11y --include-checks=WrapWebCapturesCheck inputs/input.pdf  # defaults + optional
 
 # Edit the PDF outline (bookmarks): dump to text, edit, then apply back
 ./pdf-autoa11y --dump-outline input.pdf > outline.txt
