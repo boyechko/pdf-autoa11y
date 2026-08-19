@@ -7,6 +7,12 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixed
+- `--dump-tree` now shows each marked-content reference's own text. Previously
+  every MCR line under an element repeated that element's entire text, so a
+  paragraph or link split across several MCRs looked like it held the same
+  text two or three times over.
+
 ## [0.5.0] - 2026-07-30
 
 ### Added

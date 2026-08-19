@@ -12,7 +12,7 @@ Document #17
               Link #23
                 <link #69> /GoTo p1 [/URI (https://www.uwb.edu/catalog/academic-standards#academic-standing)]
                 [text &10] `Academic st'
-              [text &11] `Academic st anding'
+              [text &11] `anding'
           L #489
             LI #490
               LBody #497

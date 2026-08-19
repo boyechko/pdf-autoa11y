@@ -6,11 +6,11 @@ Document #22
       <link #88> null [/URI (https://www.uwb.edu/)]
       <link #87> null [/URI (https://www.uwb.edu/)]
       P #79
-        [image+path &1] `Bothell General Catalog'
+        [image+path &1]
         Link #34
           <link #85> null [/URI (https://www.uwb.edu/)]
           [text &2] `Bothell'
-        [image+path &3] `Bothell General Catalog'
+        [image+path &3]
         Link #35
           <link #83> null [/URI (https://www.uwb.edu/catalog)]
           [text &4] `General Catalog'
@@ -34,7 +34,7 @@ Document #22
       Link #25
         <link #105> null [/URI (https://www.washington.edu/students/crscatb/)]
         [text &11] `click here'
-      [text &12] `The following are the ofcial…'
+      [text &12] `.'
     L #533
       LI #534
         LBody #535
@@ -77,11 +77,11 @@ Document #22
             Link #31
               <link #93> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-49b8611c-43e9-4ea6-ab48-d05866b1679c)]
               [text &21] `Business Administration'
-            [text &22] `Business Administration…'
+            [text &22] `(BA), Bothell'
       LI #543
         LBody #544
           P #56
             Link #32
               <link #91> null [/URI (https://www.washington.edu/students/gencat/program/B/BusinessAdministration-881.html#credential-6654cd6c-b46c-428d-bd23-494db288401a)]
               [text &23] `Business Administration: Accounting'
-            [text &24] `Business Administration:…'
+            [text &24] `(BA), Bothell'
