@@ -7,6 +7,14 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- New `BadlySplitLinkCheck`: merges consecutive `Link` tags that are one
+  hyperlink the authoring tool split across lines into a single `Link`, so a
+  screen reader announces one link instead of repeating the same destination.
+  Both link annotations are kept, the merged tag's OBJRs are grouped ahead of
+  its content as the Tagged PDF Best Practice Guide recommends, and the
+  surviving tag is stamped `__:LINKS MERGED`.
+
 ### Fixed
 - `MistaggedListCheck` no longer turns a link-only paragraph into a list when
   every link in it targets the same destination. Such paragraphs are a single

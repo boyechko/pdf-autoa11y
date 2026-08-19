@@ -39,6 +39,7 @@ public final class ProcessingDefaults {
                 MissingAltTextCheck::new,
                 EmptyLinkTagCheck::new,
                 InvalidLinkUriCheck::new,
+                BadlySplitLinkCheck::new,
                 MistaggedListCheck::new,
                 BadlyMarkedContentCheck::new,
                 MistaggedHeadingCheck::new,
