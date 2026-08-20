@@ -8,10 +8,12 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
-- New `tools/extract-fixture.sh` cuts a goal-driven test fixture out of a
-  working PDF: it extracts and compresses a page range, verifies the named
-  check still fires on the extract, then remediates and writes the matching
-  goal file.
+- New `tools/` directory for development scripts that support the repo
+  without being part of the build. `extract-fixture.sh` cuts a goal-driven
+  test fixture out of a working PDF, verifying the named check still fires
+  before writing the fixture and its goal file; `patch-goal-files.py`
+  re-syncs existing goal files after a change that alters only how the tree
+  is rendered.
 - New `IrregularTocCheck`: rebuilds a `TOC` whose entries were never nested
   into a TOCI hierarchy — whether emitted as flat paragraphs or wrapped as a
   list by an earlier pass. Entries are recovered by grouping content into

@@ -13,6 +13,10 @@ release.properties
 # Compiled class files
 *.class
 
+# Python bytecode (tools/)
+__pycache__/
+*.pyc
+
 # Log files
 *.log
 logs/

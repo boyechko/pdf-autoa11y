@@ -114,11 +114,16 @@ unless the named check actually fires on the extract, then remediates and
 writes the matching `.goal.txt`. Cut from the *pre-run* archive of a document,
 not from an already remediated copy.
 
+When a change alters only how the tree is rendered, re-sync the existing goal
+files instead of regenerating them: run the GoalDriven suite, then
+`tools/patch-goal-files.py` (dry run) and `--apply` to write. It refuses any
+hunk that adds or removes lines, since that means the remediation itself
+changed.
+
 ## Key Resources
 
 - Tag schema: `src/main/resources/tagschema-PDF-UA1.yaml`
-- Frequent PDF inputs: `inputs/` directory
-- Frequent PDF outputs: `outputs/` directory
+- Development scripts that are not part of the build: `tools/` directory
 - iText 9.5.0 kernel sources: `.itext-sources/` (gitignored, read with
   the `Read` tool — no Bash needed)
 
