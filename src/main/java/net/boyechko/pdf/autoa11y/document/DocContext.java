@@ -17,6 +17,7 @@ public class DocContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
     private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
+    private final Map<Integer, Map<Integer, List<Rectangle>>> mcidLineBoundsCache;
     private final Map<Integer, Map<Integer, Content.McidContent>> mcidContentCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
@@ -39,6 +40,7 @@ public class DocContext {
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
+        this.mcidLineBoundsCache = new HashMap<>();
         this.mcidContentCache = new HashMap<>();
         this.mcidTextCache = new HashMap<>();
         this.bulletPositionCache = new HashMap<>();
@@ -57,6 +59,12 @@ public class DocContext {
     public Map<Integer, Rectangle> getOrComputeMcidBounds(
             int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
         return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
+    }
+
+    /** Returns each MCID's text lines on a page, top to bottom, extracting on first access. */
+    public Map<Integer, List<Rectangle>> getMcidLineBounds(int pageNum) {
+        return mcidLineBoundsCache.computeIfAbsent(
+                pageNum, k -> Content.extractLineBoundsForPage(doc.getPage(pageNum)));
     }
 
     /** Returns bullet positions for a page, extracting on first access. */

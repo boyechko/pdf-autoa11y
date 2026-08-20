@@ -25,6 +25,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -485,6 +486,20 @@ public final class Content {
         return mcidBounds.get(mcid);
     }
 
+    /** Gets an element's text lines on one page, in reading order, one rectangle per line. */
+    public static List<Rectangle> getLineBoundsForElement(
+            PdfStructElem node, DocContext ctx, int pageNum) {
+        Map<Integer, List<Rectangle>> lineBounds = ctx.getMcidLineBounds(pageNum);
+
+        List<Rectangle> lines = new ArrayList<>();
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            if (StructTree.pageOf(mcr) == pageNum) {
+                lines.addAll(lineBounds.getOrDefault(mcr.getMcid(), List.of()));
+            }
+        }
+        return lines;
+    }
+
     /** Gets the union bounding box for all MCRs within a structure element. */
     public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
         Map<Integer, Rectangle> mcidBounds =
@@ -521,6 +536,94 @@ public final class Content {
         }
 
         return bounds;
+    }
+
+    /**
+     * Extracts each MCID's text lines on a page as separate bounding boxes, ordered top to bottom.
+     * Unlike {@link #extractBoundsForPage}, which unions an MCID's content into one rectangle, this
+     * keeps the lines apart so content lumped into a single marked-content block can be matched
+     * against per-line evidence such as bullet glyphs.
+     */
+    public static Map<Integer, List<Rectangle>> extractLineBoundsForPage(PdfPage page) {
+        if (page == null) {
+            return Map.of();
+        }
+
+        try {
+            McidLineBoundsListener listener = new McidLineBoundsListener();
+            PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
+            processor.processPageContent(page);
+            return listener.buildResults();
+        } catch (Exception e) {
+            int pageNum = page.getDocument().getPageNumber(page);
+            logger.debug("Failed to extract MCID lines for page {}: {}", pageNum, e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
+     * Groups an MCID's text into lines by baseline, since one line may be drawn by several show
+     * operators and one marked-content block may hold many lines.
+     */
+    private static class McidLineBoundsListener implements IEventListener {
+        /** Baselines closer than this (pt) belong to the same line. */
+        private static final float BASELINE_TOLERANCE = 2.0f;
+
+        private final Map<Integer, List<Line>> linesByMcid = new HashMap<>();
+
+        private static final class Line {
+            private final float baselineY;
+            private Rectangle bounds;
+
+            private Line(float baselineY, Rectangle bounds) {
+                this.baselineY = baselineY;
+                this.bounds = bounds;
+            }
+        }
+
+        @Override
+        public void eventOccurred(IEventData data, EventType type) {
+            if (type != EventType.RENDER_TEXT) {
+                return;
+            }
+            TextRenderInfo textInfo = (TextRenderInfo) data;
+            int mcid = textInfo.getMcid();
+            Rectangle rect = rectFromText(textInfo);
+            if (mcid < 0 || rect == null) {
+                return;
+            }
+            float baselineY = (float) textInfo.getBaseline().getStartPoint().get(Vector.I2);
+            addToLine(mcid, baselineY, rect);
+        }
+
+        private void addToLine(int mcid, float baselineY, Rectangle rect) {
+            List<Line> lines = linesByMcid.computeIfAbsent(mcid, k -> new ArrayList<>());
+            for (Line line : lines) {
+                if (Math.abs(line.baselineY - baselineY) <= BASELINE_TOLERANCE) {
+                    line.bounds = Geometry.union(line.bounds, rect);
+                    return;
+                }
+            }
+            lines.add(new Line(baselineY, rect));
+        }
+
+        private Map<Integer, List<Rectangle>> buildResults() {
+            Map<Integer, List<Rectangle>> results = new HashMap<>();
+            for (Map.Entry<Integer, List<Line>> entry : linesByMcid.entrySet()) {
+                List<Rectangle> ordered =
+                        entry.getValue().stream()
+                                .sorted(Comparator.comparingDouble((Line l) -> -l.baselineY))
+                                .map(l -> l.bounds)
+                                .toList();
+                results.put(entry.getKey(), ordered);
+            }
+            return results;
+        }
+
+        @Override
+        public Set<EventType> getSupportedEvents() {
+            return Set.of(EventType.RENDER_TEXT);
+        }
     }
 
     private static class McidBoundsListener implements IEventListener {
