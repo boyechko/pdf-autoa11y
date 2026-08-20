@@ -73,21 +73,55 @@ public sealed interface DocValue {
         }
     }
 
+    /**
+     * Reads an element's /T, stripped of the control characters Acrobat appends, or null when the
+     * key is absent or holds nothing but those characters.
+     */
+    private static String titleValue(PdfStructElem elem) {
+        PdfString t = elem.getPdfObject().getAsString(PdfName.T);
+        if (t == null) {
+            return null;
+        }
+        String value = t.toUnicodeString().replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "");
+        return value.isEmpty() ? null : value;
+    }
+
+    /**
+     * A plain /T title — one written by the authoring tool or by hand, carrying no scribble prefix
+     * — rendered as {@code title "Chapter 1"}. The leading word keeps it distinct from a scribble
+     * both to the eye and to the annotated-diagram parser, which reads a quoted value only when it
+     * directly follows the object number.
+     */
+    record Title(String value) implements DocValue {
+        /** Reads the element's plain title, or null when its /T is absent or holds a scribble. */
+        public static Title of(PdfStructElem elem) {
+            String value = titleValue(elem);
+            if (value == null || value.startsWith(StructTree.SCRIBBLE_PREFIX)) {
+                return null;
+            }
+            return new Title(value);
+        }
+
+        @Override
+        public String toString() {
+            return "title \"" + value + "\"";
+        }
+    }
+
     /** A structure element annotation (/T key), rendered as {@code "some title"}. */
     record Scribble(String value) implements DocValue {
-        /** Extracts the string value of /T key from the element. */
+        /**
+         * Reads the element's scribble, or null when its /T is absent, empty, or a plain title
+         * rather than a scribble. Only a /T carrying the scribble prefix is a scribble; a
+         * hand-authored title such as {@code Chapter 1} is a {@link Title}.
+         */
         public static Scribble of(PdfStructElem elem) {
-            PdfString t = elem.getPdfObject().getAsString(PdfName.T);
-            if (t == null) {
+            String value = titleValue(elem);
+            if (value == null || !value.startsWith(StructTree.SCRIBBLE_PREFIX)) {
                 return null;
             }
-
-            // Strip null terminator that Acrobat seems to add to PDF strings
-            String value = t.toUnicodeString().replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "");
-            if (value.isEmpty()) {
-                return null;
-            }
-            return new Scribble(value.replaceFirst(StructTree.SCRIBBLE_PREFIX, ""));
+            String body = value.substring(StructTree.SCRIBBLE_PREFIX.length());
+            return body.isEmpty() ? null : new Scribble(body);
         }
 
         /** Returns the raw {@code /T} storage value (prefix included, no surrounding quotes). */

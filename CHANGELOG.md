@@ -15,7 +15,17 @@ Versioning](https://semver.org/).
   its content as the Tagged PDF Best Practice Guide recommends, and the
   surviving tag is stamped `__:LINKS MERGED`.
 
+### Changed
+- `--dump-tree` now shows a plain `/T` title as `title "Chapter 1"`, distinct
+  from a scribble's `"__..."`. Annotating such a line still requires the quoted
+  scribble to follow the object number, so a title survives a dump-and-apply
+  round trip untouched.
+
 ### Fixed
+- A plain `/T` title such as `Chapter 1` is no longer mistaken for a scribble.
+  Previously any `/T` counted, so hand-authored titles were reported as stale
+  scribbles and cleared, and `--dump-tree` displayed them with a scribble
+  prefix they never had.
 - `--dump-tree` now shows each marked-content reference's own text. Previously
   every MCR line under an element repeated that element's entire text, so a
   paragraph or link split across several MCRs looked like it held the same

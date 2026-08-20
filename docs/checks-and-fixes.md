@@ -58,6 +58,13 @@ Only a user-authored mark counts: a tool-authored scribble (leading `:`)
 never verifies an element, and the `INST OK` receipt left by executed
 instructions does not either.
 
+## Scribbles and plain titles
+
+A `/T` value counts as a scribble only when it carries the `__` prefix.
+A plain title left by the authoring tool is not a scribble: no check
+touches it, and `--dump-tree` shows it as `title "..."` to keep the two
+apart.
+
 ## ScribbledInstructionCheck
 
 `ScribbledInstructionCheck` detects structure elements whose `/T`

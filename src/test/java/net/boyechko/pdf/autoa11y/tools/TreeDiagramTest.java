@@ -158,6 +158,44 @@ class TreeDiagramTest {
     }
 
     @Test
+    void plainTitleIsShownAndSurvivesRoundTrip() throws Exception {
+        Path withTitle = tempDir.resolve("with-title.pdf");
+        Path roundTripped = tempDir.resolve("title-round-tripped.pdf");
+
+        // A plain /T, as an authoring tool leaves it: no scribble prefix.
+        try (PdfDocument doc = openForModification(withTitle)) {
+            findByObjNum(doc, 59).getPdfObject().put(PdfName.T, new PdfString("(See Actual Text)"));
+        }
+
+        String dump;
+        try (PdfDocument doc = new PdfDocument(new PdfReader(withTitle.toString()))) {
+            dump = TreeDiagram.dumpToString(doc, true);
+        }
+        assertTrue(
+                dump.contains("P #59 title \"(See Actual Text)\""),
+                "Plain title should be shown, marked as a title rather than a scribble");
+
+        // The rendered title must not read as a scribble to the annotate parser.
+        try (PdfDocument doc =
+                new PdfDocument(
+                        new PdfReader(withTitle.toString()),
+                        new PdfWriter(roundTripped.toString()))) {
+            TreeDiagram.AnnotateResult result =
+                    TreeDiagram.annotateFromString(doc, dump, msg -> {});
+
+            assertEquals(0, result.cleared(), "A plain title should not be cleared");
+            assertEquals(0, result.updated(), "A plain title should not be rewritten");
+        }
+
+        try (PdfDocument doc = new PdfDocument(new PdfReader(roundTripped.toString()))) {
+            assertEquals(
+                    "(See Actual Text)",
+                    findByObjNum(doc, 59).getPdfObject().getAsString(PdfName.T).toUnicodeString(),
+                    "Round-trip must leave the title exactly as it was");
+        }
+    }
+
+    @Test
     void annotateFromStringWarnsOnRoleMismatch() throws Exception {
         Path outPdf = tempDir.resolve("mismatch.pdf");
         String dump = TreeDiagram.dumpToString(openForReading(), true);

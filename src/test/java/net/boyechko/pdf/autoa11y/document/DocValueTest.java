@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.Test;
@@ -146,5 +147,60 @@ class DocValueTest extends PdfTestBase {
 
         assertTrue(scribble.toolAuthored());
         assertEquals(List.of("?H3 (expected H2)", "23.75pt"), scribble.segments());
+    }
+
+    @Test
+    void plainTitleIsNotAScribble() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
+            elem.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
+
+            assertNull(DocValue.Scribble.of(elem));
+            assertEquals("Chapter 1", DocValue.Title.of(elem).value());
+        }
+    }
+
+    @Test
+    void scribbleIsNotAPlainTitle() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
+            elem.getPdfObject()
+                    .put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX + "ShouldBeList"));
+
+            assertNull(DocValue.Title.of(elem));
+        }
+    }
+
+    @Test
+    void titleRendersWithLeadingKeyword() {
+        assertEquals("title \"Chapter 1\"", new DocValue.Title("Chapter 1").toString());
+    }
+
+    @Test
+    void prefixIsStrippedOnlyFromTheStart() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
+            elem.getPdfObject()
+                    .put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX + "see Chapter__1"));
+
+            DocValue.Scribble scribble = DocValue.Scribble.of(elem);
+
+            assertEquals("see Chapter__1", scribble.value());
+            assertEquals(StructTree.SCRIBBLE_PREFIX + "see Chapter__1", scribble.rawValue());
+        }
+    }
+
+    @Test
+    void prefixWithNothingAfterItIsNotAScribble() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
+            elem.getPdfObject().put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX));
+
+            assertNull(DocValue.Scribble.of(elem));
+        }
     }
 }

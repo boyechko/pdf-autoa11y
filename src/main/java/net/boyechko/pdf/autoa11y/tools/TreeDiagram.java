@@ -293,6 +293,7 @@ public final class TreeDiagram {
         return Label.of(new DocValue.Role(StructTree.mappedRole(elem)))
                 .add(DocValue.ObjNum.of(elem))
                 .add(DocValue.Scribble.of(elem))
+                .add(DocValue.Title.of(elem))
                 .toString();
     }
 
@@ -366,9 +367,10 @@ public final class TreeDiagram {
                     updated++;
                 }
             } else if (existing != null) {
-                // Only a scribble the dump actually renders is clearable. An empty or
-                // control-char-only /T shows as nothing (DocValue.Scribble.of returns null),
-                // so treating it as clearable would make a no-op round-trip silently mutate.
+                // Only a scribble the dump actually renders is clearable. A /T that is empty,
+                // control-char-only, or a plain title shows as nothing (DocValue.Scribble.of
+                // returns null), so treating it as clearable would make a no-op round-trip
+                // silently mutate.
                 logger.debug("clear {}: {}", key.label(), existing.value());
                 elem.getPdfObject().remove(PdfName.T);
                 cleared++;
