@@ -28,6 +28,8 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.StructTree.Node;
+import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
+import net.boyechko.pdf.autoa11y.fixes.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -97,23 +99,39 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     @Test
-    void reportsWithoutFixWhenLeadingLinesContinuePreviousItem() throws Exception {
+    void foldsLeadingLinesIntoPreviousItemAndNestsTheRest() throws Exception {
         // P #76 opens with a line finishing the item P #75 began, then runs ten hollow
-        // sub-bullets. Splitting on the bullets would hand that line to the wrong item.
+        // sub-bullets. Splitting on the bullets alone would hand that line to the wrong item.
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(CATALOG_PDF.toString()))) {
+            walkWith(pdfDoc, check);
+
+            Issue issue =
+                    check.getIssues().stream()
+                            .filter(i -> i.type() == IssueType.LIST_ITEMS_LUMPED)
+                            .filter(i -> Integer.valueOf(76).equals(i.where().objNum()))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("P #76 not reported"));
+
+            assertTrue(issue.message().contains("10 bullet glyphs"), issue.message());
+            assertInstanceOf(SplitIntoSublistFix.class, issue.fix());
+        }
+    }
+
+    @Test
+    void leavesTheContinuedItemsOpenerOutOfAOneItemList() throws Exception {
+        // P #75 carries a single bullet, so the bullet-run pass would wrap it alone. Its item
+        // runs on into P #76, so the census claims it and the run pass must stand down.
         MistaggedListCheck check = new MistaggedListCheck();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(CATALOG_PDF.toString()))) {
             walkWith(pdfDoc, check);
         }
 
-        Issue issue =
+        assertTrue(
                 check.getIssues().stream()
-                        .filter(i -> i.type() == IssueType.LIST_ITEMS_LUMPED)
-                        .filter(i -> Integer.valueOf(76).equals(i.where().objNum()))
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("P #76 not reported"));
-
-        assertTrue(issue.message().contains("10 bullet glyphs"), issue.message());
-        assertNull(issue.fix(), "a mid-item start is reported for review, not split");
+                        .filter(i -> i.type() == IssueType.LIST_TAGGED_AS_PARAGRAPHS)
+                        .noneMatch(i -> i.fix() instanceof WrapParagraphRunInList),
+                "no paragraph run should survive: " + check.getIssues());
     }
 
     @Test

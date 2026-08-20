@@ -23,6 +23,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.ParagraphOfLinksFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoListItemsFix;
+import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletAlignedKidsInLBody;
 import net.boyechko.pdf.autoa11y.fixes.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -209,32 +210,12 @@ public class MistaggedListCheck extends StructTreeCheck {
         }
         claim(ctx.node());
 
-        int leadingLines = itemStarts.get(0);
-        if (leadingLines > 0) {
-            // The opening lines carry no bullet, so they continue the item the previous
-            // element began. Splitting here would hand them to the wrong item.
-            issues.add(
-                    new Issue(
-                            IssueType.LIST_ITEMS_LUMPED,
-                            IssueSev.WARNING,
-                            locAtElem(ctx),
-                            itemStarts.size()
-                                    + " bullet glyphs in one element, behind "
-                                    + leadingLines
-                                    + " line(s) continuing the previous item",
-                            null));
-            logger.debug(
-                    "Element #{} lumps {} bulleted items behind {} continuation line(s)",
-                    StructTree.objNum(ctx.node()),
-                    itemStarts.size(),
-                    leadingLines);
+        if (itemStarts.get(0) > 0) {
+            emitContinuedItem(ctx, itemStarts, lineBullets.size(), ownLevelX);
             return;
         }
 
-        String spec =
-                itemLineCounts(itemStarts, lineBullets.size()).stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(","));
+        String spec = specOf(itemStarts, lineBullets.size());
         issues.add(
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
@@ -249,6 +230,80 @@ public class MistaggedListCheck extends StructTreeCheck {
                 itemStarts.size(),
                 String.format("%.1f", ownLevelX),
                 spec);
+    }
+
+    /**
+     * Handles an element whose opening lines carry no bullet and so finish the item its predecessor
+     * began. When that predecessor is itself a bulleted item one level out, the lines can be folded
+     * back into it and the rest nested as its sublist; otherwise there is nothing to fold into and
+     * the element is left for review.
+     */
+    private void emitContinuedItem(
+            StructTreeContext ctx, List<Integer> itemStarts, int lineCount, float ownLevelX) {
+        int leadingLines = itemStarts.get(0);
+        PdfStructElem predecessor = outerItemPredecessor(ctx, ownLevelX);
+        String spec = specOf(itemStarts, lineCount);
+
+        // Claim the predecessor either way: its bullet makes it the start of an item that
+        // runs on into this element, so wrapping it alone as a one-item list is wrong.
+        if (predecessor != null) {
+            claim(predecessor);
+        }
+
+        issues.add(
+                new Issue(
+                        IssueType.LIST_ITEMS_LUMPED,
+                        IssueSev.WARNING,
+                        locAtElem(ctx),
+                        itemStarts.size()
+                                + " bullet glyphs in one element, behind "
+                                + leadingLines
+                                + " line(s) continuing the previous item"
+                                + (predecessor == null ? "" : " (" + spec + ")"),
+                        predecessor == null
+                                ? null
+                                : new SplitIntoSublistFix(
+                                        ctx.node(), predecessor, leadingLines, spec)));
+
+        logger.debug(
+                "Element #{} lumps {} bulleted items behind {} continuation line(s) of #{}",
+                StructTree.objNum(ctx.node()),
+                itemStarts.size(),
+                leadingLines,
+                predecessor == null ? null : StructTree.objNum(predecessor));
+    }
+
+    /**
+     * Returns the preceding sibling whose item this element continues: a leaf element carrying a
+     * single bullet far enough out that this element's bullets read as its sublist. Null when no
+     * such sibling exists, which means the continuation has no item to rejoin.
+     */
+    private PdfStructElem outerItemPredecessor(StructTreeContext ctx, float ownLevelX) {
+        if (!(StructTree.parentOf(ctx.node()) instanceof PdfStructElem container)) {
+            return null;
+        }
+        List<PdfStructElem> siblings = StructTree.childrenOf(container, PdfStructElem.class);
+        int index = -1;
+        for (int i = 0; i < siblings.size(); i++) {
+            if (StructTree.isSameElement(siblings.get(i), ctx.node())) {
+                index = i;
+                break;
+            }
+        }
+        if (index <= 0) {
+            return null;
+        }
+
+        PdfStructElem predecessor = siblings.get(index - 1);
+        if (!StructTree.childrenOf(predecessor, PdfStructElem.class).isEmpty()) {
+            return null;
+        }
+        List<Float> predecessorBullets = bulletXPerLine(ctx, predecessor);
+        List<Float> bulleted = predecessorBullets.stream().filter(Objects::nonNull).toList();
+        if (bulleted.size() != 1 || ownLevelX - bulleted.get(0) < SUBLIST_INDENT_MIN) {
+            return null;
+        }
+        return predecessor;
     }
 
     /**
@@ -287,6 +342,13 @@ public class MistaggedListCheck extends StructTreeCheck {
                 .toList();
     }
 
+    /** Renders the per-item line counts as the comma-separated spec the split fixes take. */
+    private static String specOf(List<Integer> itemStarts, int lineCount) {
+        return itemLineCounts(itemStarts, lineCount).stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+    }
+
     /** Returns each item's line count: from its own bullet's line up to the next item's. */
     private static List<Integer> itemLineCounts(List<Integer> itemStarts, int lineCount) {
         List<Integer> sizes = new ArrayList<>();
@@ -309,8 +371,9 @@ public class MistaggedListCheck extends StructTreeCheck {
             PdfStructElem child = ctx.children().get(i);
             String childRole = ctx.childRoles().get(i);
 
-            // Skip containers, lists, tables — only match leaf-like content elements
-            if (SKIP_ROLES.contains(childRole)) {
+            // Skip containers, lists, tables — only match leaf-like content elements.
+            // A claimed child is spoken for by the census, which saw inside it.
+            if (SKIP_ROLES.contains(childRole) || isClaimed(child)) {
                 PdfStructElem host =
                         emitRun(ctx, currentRun, runPredecessor, runBulletX, runUniform);
                 if (host != null && "L".equals(childRole)) {
