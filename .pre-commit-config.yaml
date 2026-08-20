@@ -10,7 +10,7 @@ repos:
         entry: mvn spotless:apply
         language: system
         pass_filenames: false
-        files: \.java$
+        files: ^(src/.*|tools/.*)\.java$
         fail_fast: true
 
       - id: maven-test
@@ -18,14 +18,14 @@ repos:
         entry: mvn test -q
         language: system
         pass_filenames: false
-        files: \.(java|xml|yaml)$
+        files: ^(src/.*\.(java|xml|yaml)|pom\.xml)$
 
       - id: maven-integration-test
         name: Run Maven integration tests
         entry: mvn test -q -Dgroups=GoalDriven -Dmaven-surefire-plugin.excludedGroups=
         language: system
         pass_filenames: false
-        files: \.(java|xml|yaml)$
+        files: ^(src/.*\.(java|xml|yaml)|pom\.xml)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -34,3 +34,8 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
