@@ -21,6 +21,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -35,10 +36,74 @@ class MistaggedListCheckTest extends PdfTestBase {
 
     private static final String SHARED_URI = "https://uw.edu/catalog/Education-875.html";
 
+    /**
+     * Catalog pages whose lists lump many bulleted items into a single LI: L #40 covers seven
+     * bullets with one item, L #66 spans pages 2-3 with nine bullets over two items, and page 3
+     * carries a ten-bullet hollow sublist at a deeper indent.
+     */
+    private static final Path CATALOG_PDF = Path.of("src/test/resources/catalog_098-102.pdf");
+
     private static void walkWith(PdfDocument pdfDoc, MistaggedListCheck check) throws Exception {
         StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
         walker.addVisitor(check);
         walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+    }
+
+    // == Bullet census evidence ==========================================
+
+    /** Maps object number to the census issue's message for every lumped list found. */
+    private static Map<Integer, String> lumpedListsIn(MistaggedListCheck check) {
+        return check.getIssues().stream()
+                .filter(issue -> issue.type() == IssueType.LIST_ITEMS_LUMPED)
+                .collect(
+                        java.util.stream.Collectors.toMap(
+                                issue -> issue.where().objNum(),
+                                Issue::message,
+                                (a, b) -> a,
+                                java.util.LinkedHashMap::new));
+    }
+
+    @Test
+    void detectsListWhoseSoleItemCoversManyBullets() throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(CATALOG_PDF.toString()))) {
+            walkWith(pdfDoc, check);
+        }
+
+        Map<Integer, String> lumped = lumpedListsIn(check);
+        assertTrue(lumped.containsKey(40), "L #40 should be reported: " + lumped);
+        assertTrue(lumped.get(40).contains("7"), lumped.get(40));
+        assertTrue(lumped.get(40).contains("1"), lumped.get(40));
+    }
+
+    @Test
+    void countsBulletsAcrossPagesForPageSpanningList() throws Exception {
+        // L #66's two items straddle the page 2-3 break: six bullets sit on page 2 and
+        // three on page 3, so the census must sum across both pages.
+        MistaggedListCheck check = new MistaggedListCheck();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(CATALOG_PDF.toString()))) {
+            walkWith(pdfDoc, check);
+        }
+
+        Map<Integer, String> lumped = lumpedListsIn(check);
+        assertTrue(lumped.containsKey(66), "L #66 should be reported: " + lumped);
+        assertTrue(lumped.get(66).contains("9"), lumped.get(66));
+    }
+
+    @Test
+    void ignoresListWhoseItemCountMatchesBulletCount() throws Exception {
+        // L #49's one item covers exactly one bullet, and L #102's two items cover two.
+        MistaggedListCheck check = new MistaggedListCheck();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(CATALOG_PDF.toString()))) {
+            walkWith(pdfDoc, check);
+        }
+
+        Map<Integer, String> lumped = lumpedListsIn(check);
+        assertFalse(lumped.containsKey(49), "L #49 is correctly split: " + lumped);
+        assertFalse(lumped.containsKey(102), "L #102 is correctly split: " + lumped);
     }
 
     // == Indent evidence =================================================

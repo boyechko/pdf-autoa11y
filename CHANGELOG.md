@@ -8,6 +8,13 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `MistaggedListCheck` now takes a bullet census of every existing list: the
+  bullet glyphs its content covers, counted at the list's own indent level,
+  are compared against its item count. A list holding fewer items than
+  bullets has lumped several items into a single `LI`, which is invisible to
+  structure-level analysis. The census reports for manual review; splitting
+  the lumped content remains a separate step. Lists whose first item carries
+  no bullet — numbered and lettered lists — opt out.
 - New `-V` and `--version` CLI flags that display the release version, Git
   commit hash, and AGPLv3+ license banner derived automatically at build time
   from Git tags.

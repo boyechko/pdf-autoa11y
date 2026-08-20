@@ -10,12 +10,16 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
@@ -50,6 +54,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Each element is claimed by the strongest evidence that matches it, so the strategies never
  * emit competing fixes for the same content.
+ *
+ * <p>Separately, every existing {@code L} gets a <b>bullet census</b>: the bullets its content
+ * covers, counted at its own indent level, are compared against its {@code LI} count. A list with
+ * more bullets than items has lumped several items into one, which no amount of retagging at the
+ * structure level can see. The census only reports; splitting the lumped content is a
+ * content-stream edit driven separately.
  *
  * @see WrapParagraphRunInList
  * @see WrapBulletAlignedKidsInLBody
@@ -94,6 +104,10 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Maximum bullet x-difference (pt) for bullets to count as the same list level. */
     private static final float SAME_LEVEL_TOLERANCE = 3.0f;
 
+    // -- Bullet census --
+    /** Tolerance (pt) for deciding a bullet sits on the same text line as another. */
+    private static final float SAME_LINE_TOLERANCE = 3.0f;
+
     // -- Indent evidence --
     private static final int INDENT_MIN_RUN_LENGTH = 3;
     private static final float LEFT_EDGE_TOLERANCE = 2.0f;
@@ -131,6 +145,10 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     @Override
     public void leaveElement(StructTreeContext ctx) {
+        if ("L".equals(ctx.role())) {
+            censusListBullets(ctx);
+            return;
+        }
         if (!CONTAINER_ROLES.contains(ctx.role())) {
             return;
         }
@@ -158,6 +176,96 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     private boolean isClaimed(PdfStructElem elem) {
         return claimed.contains(StructTree.objNum(elem));
+    }
+
+    // == Bullet census evidence ==========================================
+
+    /** Reports a list whose content covers more bullets at its own level than it has items. */
+    private void censusListBullets(StructTreeContext ctx) {
+        List<PdfStructElem> items =
+                ctx.children().stream()
+                        .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+                        .toList();
+        if (items.isEmpty()) {
+            return;
+        }
+
+        List<Content.BulletPosition> covered = bulletsCoveredBy(ctx, ctx.node());
+        float ownLevelX = firstItemBulletX(ctx, items.get(0));
+        if (Float.isNaN(ownLevelX)) {
+            return;
+        }
+
+        long expected =
+                covered.stream()
+                        .filter(b -> Math.abs(b.x() - ownLevelX) <= SAME_LEVEL_TOLERANCE)
+                        .count();
+        if (expected <= items.size()) {
+            return;
+        }
+
+        issues.add(
+                new Issue(
+                        IssueType.LIST_ITEMS_LUMPED,
+                        IssueSev.WARNING,
+                        locAtElem(ctx),
+                        expected
+                                + " bullet glyphs but only "
+                                + items.size()
+                                + (items.size() == 1 ? " item" : " items"),
+                        null));
+
+        logger.debug(
+                "List #{} covers {} bullets at x={} but holds {} items",
+                StructTree.objNum(ctx.node()),
+                expected,
+                String.format("%.1f", ownLevelX),
+                items.size());
+    }
+
+    /**
+     * Returns the x of the bullet on the first item's opening line, which fixes the list's own
+     * indent level and so tells its bullets apart from a nested sublist's. NaN when the first item
+     * has no bullet, which is how numbered and glyph-lettered lists opt out of the census.
+     */
+    private float firstItemBulletX(StructTreeContext ctx, PdfStructElem firstItem) {
+        return bulletsCoveredBy(ctx, firstItem).stream()
+                .max(Comparator.comparingDouble(Content.BulletPosition::y))
+                .map(Content.BulletPosition::x)
+                .orElse(Float.NaN);
+    }
+
+    /** Returns the bullets falling within an element's vertical extent on each page it touches. */
+    private List<Content.BulletPosition> bulletsCoveredBy(
+            StructTreeContext ctx, PdfStructElem element) {
+        List<Content.BulletPosition> covered = new ArrayList<>();
+        for (Map.Entry<Integer, Rectangle> extent : extentPerPage(element, ctx).entrySet()) {
+            float bottom = extent.getValue().getBottom() - SAME_LINE_TOLERANCE;
+            float top = extent.getValue().getTop() + SAME_LINE_TOLERANCE;
+            bulletsFor(ctx, extent.getKey()).stream()
+                    .filter(b -> b.y() >= bottom && b.y() <= top)
+                    .forEach(covered::add);
+        }
+        return covered;
+    }
+
+    /**
+     * Returns the union of an element's marked-content bounds on each page it touches. Built from
+     * the MCRs rather than from a single page number, since a list and its items span page breaks.
+     */
+    private Map<Integer, Rectangle> extentPerPage(PdfStructElem element, StructTreeContext ctx) {
+        Map<Integer, Rectangle> extents = new LinkedHashMap<>();
+        for (PdfMcr mcr : StructTree.descendantsOf(element, PdfMcr.class)) {
+            int pageNum = StructTree.pageOf(mcr);
+            if (pageNum <= 0) {
+                continue;
+            }
+            Rectangle bounds = Content.getBoundsForMcid(ctx.docCtx(), pageNum, mcr.getMcid());
+            if (bounds != null) {
+                extents.merge(pageNum, bounds, Geometry::union);
+            }
+        }
+        return extents;
     }
 
     // == Bullet evidence =================================================
