@@ -23,11 +23,22 @@ final class ListItemScribble {
 
     /** Writes or refreshes the item-count segment on a list element. */
     static void update(PdfStructElem list) {
+        update(list, "");
+    }
+
+    /**
+     * Updates a list element's scribble by appending or replacing the item-count segment, using the
+     * provided prefix and the direct item count within the list element.
+     *
+     * @param list the structural element representing the list whose item count is being updated
+     * @param prefix the string to prepend to the item count in the scribble
+     */
+    static void update(PdfStructElem list, String prefix) {
         long count =
                 StructTree.childrenOf(list, PdfStructElem.class).stream()
                         .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
                         .count();
-        String countSegment = count + (count == 1 ? " item" : " items");
+        String countSegment = prefix + count + (count == 1 ? " item" : " items");
 
         DocValue.Scribble existing = StructTree.getScribble(list);
         if (existing == null) {

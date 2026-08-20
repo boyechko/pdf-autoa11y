@@ -69,7 +69,7 @@ public final class ParagraphOfLinksFix implements IssueFix {
             lBody.addKid(kid);
             parent.removeKid(kid);
         }
-        ListItemScribble.update(parent);
+        ListItemScribble.update(parent, "P of links, ");
     }
 
     @Override

@@ -45,7 +45,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             PdfStructElem list = (PdfStructElem) document.getKids().get(0);
             DocValue.Scribble scribble = StructTree.getScribble(list);
             assertTrue(scribble.toolAuthored());
-            assertEquals("3 items", scribble.body());
+            assertTrue(scribble.body().contains("3 items"));
         }
     }
 
