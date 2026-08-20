@@ -1,0 +1,270 @@
+------------------------- Page 1 ---
+Document #35
+  Art #36 "__www-washington-edu-students-gencat-program-B-EngineeringandMathematics-1092"
+    P #37
+      [text &0] `responsibilities.'
+    P #38
+      [text &1] `4.'
+      [text &2] `will become effective…+106'
+    H4 #39
+      [text &3] `The EE program has the following student outcomes:'
+    L #40 "__:split, 7 items"
+      LI #41
+        LBody #42
+          P #43
+            [text &4] `Outcome 1: An ability to…+125'
+      LI #133
+        LBody #134
+          P #135
+            [text &9] `Outcome 2: An ability to…+204'
+      LI #136
+        LBody #137
+          P #138
+            [text &10] `Outcome 3: An ability to…+51'
+      LI #139
+        LBody #140
+          P #141
+            [text &11] `Outcome 4: An ability to…+222'
+      LI #142
+        LBody #143
+          P #144
+            [text &12] `Outcome 5: An ability to…+174'
+      LI #145
+        LBody #146
+          P #147
+            [text &13] `Outcome 6: An ability to…+127'
+      LI #148
+        LBody #149
+          P #150
+            [text &14] `Outcome 7: An ability to…+82'
+    H3 #44
+      [text &6] `Program of Study: Major: Mathematics'
+    H4 #45
+      [text &8] `Program Overview'
+    P #46
+      [text &7] `The Bachelor of Science in…+586'
+------------------------- Page 2 ---
+    P #47
+      [text &0] `for Undergraduates (REU)…+58'
+    P #48
+      [text &1] `This program of study leads…+29'
+    L #49
+      LI #50
+        LBody #51
+          P #52
+            [text &2] `Bachelor of Science degree…+28'
+    H4 #53
+      [text &3] `Bachelor of Science degree with a major in Mathematics'
+    H4 #54
+      [text &4] `Credential Overview'
+    P #55
+      [text &5] `Mathematics is an…+361'
+    H4 #56
+      [text &6] `Completion Requirements'
+    H4 #57
+      [text &7] `Calculus Requirements (15 Credits)'
+    P #58
+      [text &8] `Complete the following…+63'
+    P #59
+      [text &9] `2.0'
+      [text &10] `in each course.'
+    L #60 "__:split, 3 items"
+      LI #61
+        LBody #62
+          P #63
+            [text &11] `STMATH124–CalculusI'
+      LI #151
+        LBody #152
+          P #153
+            [text &15] `STMATH 125 – Calculus II'
+      LI #154
+        LBody #155
+          P #156
+            [text &16] `STMATH 126 – Calculus III'
+    H4 #64
+      [text &12] `Core Requirements (45 credits)'
+    P #65
+      [text &13] `Complete the following…+52'
+    L #66 "__:split, 7 items // split, 9 items"
+      LI #67
+        LBody #68
+          P #69
+            [text &14] `STMATH 207 Differential…+10'
+      LI #157
+        LBody #158
+          P #159
+            [text &17] `STMATH 208 Matrix Algebra'
+      LI #160
+        LBody #161
+          P #162
+            [text &18] `STMATH 224 Multivariable…+9'
+      LI #163
+        LBody #164
+          P #165
+            [text &19] `STMATH 300 Foundations of…+19'
+      LI #166
+        LBody #167
+          P #168
+            [text &20] `STMATH 301 Introduction to…+25'
+      LI #169
+        LBody #170
+          P #171
+            [text &21] `STMATH 402 Abstract Algebra I'
+------------------------- Page 3 ---
+      LI #70
+        LBody #71
+          P #72
+            [text &0] `STMATH 424 Introduction to…+11'
+      LI #172
+        LBody #173
+          P #174
+            [text &9] `STMATH 341 Introduction to…+103'
+      LI #175
+        LBody #176
+          P #177
+            [text &10] `STMATH 381 Discrete…+57'
+    H4 #73
+      [text &1] `Mathematics Electives (25 credits)'
+    P #74
+      [text &2] `Complete five additional…+108'
+    L #77 "__:continued item, 2 items // split, 3 items"
+      LI #178
+        LBody #179
+          P #75
+            [text &3] `(15 credits) At least three…+63'
+          P #76
+            [text &4] `one of these courses having…+30'
+          L #180 "__:split, 10 items"
+            LI #181
+              LBody #182
+                P #183
+                  [text &11] `*STMATH 403 Abstract Algebra…+3'
+            LI #184
+              LBody #185
+                P #186
+                  [text &12] `*STMATH 406 Numerical…+12'
+            LI #187
+              LBody #188
+                P #189
+                  [text &13] `*STMATH 408 Nonlinear…+13'
+            LI #190
+              LBody #191
+                P #192
+                  [text &14] `*STMATH 409 Advanced Linear…+8'
+            LI #193
+              LBody #194
+                P #195
+                  [text &15] `*STMATH 425 Real Analysis II'
+            LI #196
+              LBody #197
+                P #198
+                  [text &16] `*STMATH 441 Topology'
+            LI #199
+              LBody #200
+                P #201
+                  [text &17] `STMATH 407 Linear Programming'
+            LI #202
+              LBody #203
+                P #204
+                  [text &18] `STMATH 420 History of…+12'
+            LI #205
+              LBody #206
+                P #207
+                  [text &19] `STMATH 427 Complex Analysis'
+            LI #208
+              LBody #209
+                P #210
+                  [text &20] `STMATH 444 Foundations of…+9'
+      LI #78
+        LBody #79
+          P #80
+            [text &5] `(10 credits) Two additional…+67'
+      LI #211
+        LBody #212
+          P #213
+            [text &21] `No more than five credits of…+60'
+    H4 #81
+      [text &6] `Computer Programming Requirement (5–6 credits)'
+    P #82
+      [text &7] `A minimum grade of 2.0 in…+48'
+    L #83 "__:split, 3 items"
+      LI #84
+        LBody #85
+          P #86
+            [text &8] `CSS 123 and CSSSKL 123'
+      LI #214
+        LBody #215
+          P #216
+            [text &22] `CSS 132 and CSSSKL 132'
+------------------------- Page 4 ---
+      LI #87
+        LBody #88
+          P #89
+            [text &0] `CSS 142 and CSSSKL 142'
+    H4 #90
+      [text &1] `Additional Courses'
+    P #91
+      [text &2] `As needed to fulfill…+68'
+    H4 #92
+      [text &4] `Additional Information'
+    P #93
+      [text &5] `Current research interests…+920'
+    H4 #94
+      [text &6] `Preparation for a career in teaching mathematics'
+    P #95
+      [text &7] `The curriculum represents a…+343'
+      Link #96
+        <link #27> /URI (http://www.maa.org/cupm/curr_guide.html)
+        [text &8] `http://www.maa.org/cupm/curr_guide.html'
+      [text &9] `) for majors preparing to be…+128'
+------------------------- Page 5 ---
+    L #97 "__:split, 4 items"
+      LI #98
+        LBody #99
+          P #100
+            [text &0] `Learn to make appropriate…+280'
+      LI #217
+        LBody #218
+          P #219
+            [text &14] `Fulfill the requirements for…+226'
+      LI #220
+        LBody #221
+          P #222
+            [text &15] `Learn about the history of…+57'
+      LI #223
+        LBody #224
+          P #225
+            [text &16] `Experience many forms of…+114'
+    P #101
+      [text &1] `Links:'
+    L #102
+      LI #103
+        LBody #104
+          P #105
+            [text &2] `Mathematical Association of…+14'
+            Link #106
+              <link #33> /URI (http://www.maa.org)
+              [text &3] `http://www.maa.org'
+      LI #107
+        LBody #108
+          P #109
+            [text &4] `/ National Council of…+24'
+            Link #110
+              <link #31> /URI (http://www.nctm.org)
+              [text &5] `http://www.nctm.org'
+            [text &6] `/'
+    H3 #111
+      [text &8] `Program of Study: Major: Mechanical Engineering'
+    H4 #113
+      [text &13] `Program Overview'
+    P #114
+      [text &9] `As an ABET accredited…+770'
+    P #115
+      [text &10] `This program of study leads…+29'
+    L #116
+      LI #117
+        LBody #118
+          P #119
+            [text &11] `Bachelor of Science in…+30'
+    H4 #120
+      [text &12] `Admission Requirements'
