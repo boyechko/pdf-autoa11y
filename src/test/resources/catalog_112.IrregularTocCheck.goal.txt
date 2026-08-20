@@ -1,0 +1,49 @@
+------------------------- Page 1 ---
+Document #17
+  Art #30 "__www-washington-edu-students-gencat-program-B-InteractiveMediaDesign-1089"
+    P #31
+      [text &5] `Bothell School of Science…'
+    H1 #32
+      [text &6] `Interactive Media Design'
+    P #33
+      [text &7] `352 Bothell Discovery Hall…'
+    P #28
+      Link #26
+        <link #61> /URI (https://uwb.edu/media-design)
+        [text &8] `Website'
+      Link #25
+        <link #63> /URI (https://www.uwb.edu/media-design/faculty)
+        [text &9] `Faculty Website'
+      Link #24
+        <link #65> /URI (mailto:stemadv@uw.edu)
+        [text &10] `stemadv@uw.edu'
+    P #34
+      [text &11] `Interactive Media Design…'
+    TOC #35
+      TOCI #45
+        P #55
+          Link #23
+            <link #67> /GoTo p1 [/URI (https://www.washington.edu/students/gencat/program/B/InteractiveMediaDesign-1089.html#undergradPrograms)]
+            [text &12] `Undergraduate Programs'
+      TOC #46
+        TOCI #49
+          P #54
+            Link #22
+              <link #69> null [/URI (https://www.washington.edu/students/gencat/program/B/InteractiveMediaDesign-1089.html#program-UG-B IMD-MAJOR)]
+              <link #71> null [/URI (https://www.washington.edu/students/gencat/program/B/InteractiveMediaDesign-1089.html#program-UG-B IMD-MAJOR)]
+              [text &13] `Program of Study: Major:'
+              [text &20] `Interactive Media Design'
+        TOC #50
+          TOCI #51
+            P #52
+              Link #20
+                <link #73> null [/URI (https://www.washington.edu/students/gencat/program/B/InteractiveMediaDesign-1089.html#credential-5727fa00-6b67-4752-ba4d-3d2f99e52fa6)]
+                [text &15] `Bachelor of Arts degree with a major in Interactive Media Design'
+    H2 #36
+      [text &16] `Undergraduate Program'
+    H2 #37
+      [text &19] `Interactive Media Design'
+    P #38
+      [text &17] `352 Bothell Discovery Hall…'
+    P #39
+      [text &18] `425-352-3746'

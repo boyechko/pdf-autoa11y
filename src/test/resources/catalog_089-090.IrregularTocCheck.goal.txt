@@ -1,0 +1,138 @@
+------------------------- Page 1 ---
+Document #30
+  Art #31 "__www-washington-edu-students-gencat-program-B-EngineeringandMathematics-1092"
+    P #32
+      [text &5] `Bothell School of Science…'
+    H1 #33
+      [text &6] `Engineering and Mathematics'
+    P #34
+      [text &7] `352 Bothell Discovery Hall…'
+    P #35
+      Link #36
+        <link #21> /URI (https://www.uwb.edu/engineering-math)
+        [text &8] `Website'
+      Link #37
+        <link #22> /URI (https://www.uwb.edu/engineering-math/faculty)
+        [text &9] `Faculty Website'
+      Link #38
+        <link #23> /URI (mailto:stemadv@uw.edu)
+        [text &10] `stemadv@uw.edu'
+    P #39
+      [text &11] `Engineering & Mathematics at…'
+    TOC #40 "__TODO"
+      TOCI #86
+        P #87
+          Link #43
+            <link #27> /GoTo p2 [/URI (https://www.washington.edu/students/gencat/program/B/EngineeringandMathematics-1092.html#undergradPrograms)]
+            [text &12] `Undergraduate Programs'
+      TOC #88
+        TOCI #89
+          P #90
+            Link #44
+              <link #28> /GoTo p2 [/URI (https://www.washington.edu/students/gencat/program/B/EngineeringandMathematics-1092.html#program-UG-COMP E-MAJOR)]
+              <link #29> /GoTo p2 [/URI (https://www.washington.edu/students/gencat/program/B/EngineeringandMathematics-1092.html#program-UG-COMP E-MAJOR)]
+              [text &13] `Program of Study: Major:'
+              [text &14] `Computer Engineering'
+        TOC #91
+          TOCI #92
+            P #93
+              Link #45
+                [text &15] `Bachelor of Science in Computer Engineering degree'
+        TOCI #94
+          P #95
+            Link #46
+              [text &16] `Program of Study: Major:'
+              [text &17] `Electrical Engineering'
+        TOC #96
+          TOCI #97
+            P #98
+              Link #47
+                [text &18] `Bachelor of Science in Electrical Engineering degree'
+        TOCI #99
+          P #100
+            Link #48
+              [text &19] `Program of Study: Major:'
+              [text &20] `Mathematics'
+        TOC #101
+          TOCI #102
+            P #103
+              Link #49
+                [text &21] `Bachelor of Science degree with a major in Mathematics'
+        TOCI #104
+          P #105
+            Link #50
+              [text &22] `Program of Study: Major:'
+              [text &23] `Mechanical Engineering'
+        TOC #106
+          TOCI #107
+            P #108
+              Link #51
+                [text &24] `Bachelor of Science in Mechanical Engineering degree'
+------------------------- Page 2 ---
+        TOCI #109
+          P #110
+            Link #54
+              [text &0] `Program of Study: Minor: Actuarial Science'
+        TOC #111
+          TOCI #112
+            P #113
+              Link #55
+                [text &1] `Minor in Actuarial Science'
+        TOCI #114
+          P #115
+            Link #56
+              [text &2] `Program of Study: Minor:'
+              [text &3] `Mathematics'
+        TOC #116
+          TOCI #117
+            P #118
+              Link #57
+                [text &4] `Minor in Mathematics'
+      TOCI #119
+        P #120
+          Link #60
+            [text &5] `Graduate Programs'
+      TOC #121
+        TOCI #122
+          P #123
+            Link #61
+              [text &6] `Program of Study:'
+              [text &7] `Graduate Certificate in Electrical and Computer Engineering'
+              [text &8] `Foundations'
+        TOC #124
+          TOCI #125
+            P #126
+              Link #64
+                [text &9] `Graduate Certificate in Electrical and Computer Engineering Foundations (fee'
+                HyphenSpan #65
+                  [text &10] `-'
+                [text &11] `based)'
+        TOCI #127
+          P #128
+            Link #66
+              [text &12] `Program of Study:'
+              [text &13] `Master of Science in Electrical and Computer Engineering'
+        TOC #129
+          TOCI #130
+            P #131
+              Link #67
+                [text &14] `Master of Science in Electrical and Computer Engineering (fee-based)'
+    H2 #68
+      [text &15] `Undergraduate Programs'
+    H2 #69
+      [text &21] `Engineering and Mathematics'
+    P #70
+      [text &16] `352 Bothell Discovery Hall…'
+    P #71
+      StyleSpan #72
+        Link #74
+          <link #26> /URI (mailto:stemadv@uw.edu)
+          [text &17] `stemadv@uw.edu'
+    H3 #75
+      [text &18] `Program of Study: Major: Computer Engineering'
+    H4 #76
+      [text &22] `Program Overview'
+    P #77
+      [text &19] `The Bachelor of Science in…'
+    P #78
+      [text &20] `This program of study leads…'
