@@ -65,6 +65,5 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-inputs/
-outputs/
 .itext-sources/
+src/test/resources/*.goal.pdf
