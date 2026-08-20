@@ -34,6 +34,13 @@ import org.slf4j.LoggerFactory;
  * Content outside any Art falls back to a document-wide histogram. Scoping per Art prevents the
  * largest display text anywhere in a long document from crowding out the heading sizes that a given
  * Article actually uses.
+ *
+ * <p>Because the ranking is by size alone, it can seat an element deeper than the outline has room
+ * for (an H4-sized heading directly under an H2). When a heading already stands above it in the
+ * scope, that gap is treated as a ranking artifact: the element is retagged at the level the
+ * outline expects, and every smaller size in the scope shifts down by the same amount so its
+ * subordinate headings follow it. Only when nothing stands above it -- the scope would have to open
+ * at a subordinate level -- is the element left alone and marked with a tool finding for review.
  */
 public class MistaggedHeadingCheck extends StructTreeCheck {
     private static final Logger logger = LoggerFactory.getLogger(MistaggedHeadingCheck.class);
@@ -97,55 +104,40 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             return true;
         }
 
-        PdfName headingLevel = scope.levelFor(dominantSize);
-        if (headingLevel == null) {
+        PdfName sizeLevel = scope.levelFor(dominantSize);
+        if (sizeLevel == null) {
             return true;
         }
 
-        // Heading levels must not skip a level (H3 -> H5 with no H4 between). Flag for review
-        // rather than retagging.
-        int level = HEADING_LEVELS.indexOf(headingLevel) + 1;
+        int level = HEADING_LEVELS.indexOf(sizeLevel) + 1;
 
         // At most one H1 per scope: the first top-size heading is the Article title; later headings
         // at that same size are subordinate, so cap them at H2 rather than introducing a second H1.
         if (level == 1) {
             if (scope.hasH1()) {
                 level = 2;
-                headingLevel = PdfName.H2;
             } else {
                 scope.markH1();
             }
         }
 
+        // Heading levels must not skip a level (H2 -> H4 with no H3 between).
         int expectedLevel = scope.prevLevel() + 1;
         if (level > expectedLevel) {
-            // A tool-authored finding (":?"): the level the size suggests, why it was rejected,
-            // and the measured size. It is informational only -- never an executable instruction,
-            // since retagging to this level would itself be improperly nested.
-            StructTree.setToolScribble(
-                    node,
-                    FINDING_MARK
-                            + headingLevel.getValue()
-                            + " (expected H"
-                            + expectedLevel
-                            + ")"
-                            + StructTree.SCRIBBLE_SEPARATOR
-                            + dominantSize
-                            + "pt");
-            issues.add(
-                    new Issue(
-                            IssueType.IMPROPERLY_NESTED_HEADING,
-                            IssueSev.WARNING,
-                            locAtElem(ctx),
-                            "Improperly nested "
-                                    + headingLevel.getValue()
-                                    + ": \""
-                                    + getTruncatedText(ctx)
-                                    + "\"",
-                            null));
-            return true;
+            if (scope.prevLevel() == 0) {
+                flagTooDeepToOpen(ctx, sizeLevel, expectedLevel, dominantSize);
+                return true;
+            }
+            // A heading already stands above this one, so the gap is a ranking artifact rather
+            // than a genuine ambiguity: seat the element where the outline expects it, and shift
+            // every smaller size in the scope by the same amount so the headings below it follow
+            // instead of each being flagged in turn.
+            scope.demoteFrom(dominantSize, level - expectedLevel);
+            level = expectedLevel;
         }
         scope.setPrevLevel(level);
+
+        PdfName headingLevel = HEADING_LEVELS.get(level - 1);
 
         // Already at the correct level: nothing to fix.
         if (headingLevel.getValue().equals(role)) {
@@ -168,6 +160,38 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         return true;
     }
 
+    /**
+     * Records a tool finding for a heading whose size ranks it deeper than the scope can open at,
+     * with no heading above it to demote it against.
+     */
+    private void flagTooDeepToOpen(
+            StructTreeContext ctx, PdfName sizeLevel, int expectedLevel, float dominantSize) {
+        // A tool-authored finding (":?"): the level the size suggests, why it was rejected, and
+        // the measured size. It is informational only -- never an executable instruction, since
+        // retagging to this level would itself be improperly nested.
+        StructTree.setToolScribble(
+                ctx.node(),
+                FINDING_MARK
+                        + sizeLevel.getValue()
+                        + " (expected H"
+                        + expectedLevel
+                        + ")"
+                        + StructTree.SCRIBBLE_SEPARATOR
+                        + dominantSize
+                        + "pt");
+        issues.add(
+                new Issue(
+                        IssueType.IMPROPERLY_NESTED_HEADING,
+                        IssueSev.WARNING,
+                        locAtElem(ctx),
+                        "Improperly nested "
+                                + sizeLevel.getValue()
+                                + ": \""
+                                + getTruncatedText(ctx)
+                                + "\"",
+                        null));
+    }
+
     @Override
     public void leaveElement(StructTreeContext ctx) {
         if (ART_ROLE.equals(StructTree.mappedRole(ctx.node())) && !scopeStack.isEmpty()) {
@@ -187,7 +211,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
      * deepest valid heading level seen so far in this scope (for nesting checks).
      */
     private static final class HeadingScope {
-        static final HeadingScope EMPTY = new HeadingScope(Map.of(), 0f);
+        static final HeadingScope EMPTY = new HeadingScope(new HashMap<>(), 0f);
 
         private final Map<Float, PdfName> headingMap;
         private final float bodySize;
@@ -231,6 +255,20 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
 
         PdfName levelFor(float size) {
             return headingMap.get(size);
+        }
+
+        /**
+         * Shifts {@code size} and every smaller heading size in this scope {@code delta} levels
+         * shallower, so a demotion made for one heading carries to the ones subordinate to it.
+         */
+        void demoteFrom(float size, int delta) {
+            for (Map.Entry<Float, PdfName> entry : headingMap.entrySet()) {
+                if (entry.getKey() > size) {
+                    continue;
+                }
+                int demoted = HEADING_LEVELS.indexOf(entry.getValue()) + 1 - delta;
+                entry.setValue(HEADING_LEVELS.get(Math.max(demoted, 1) - 1));
+            }
         }
     }
 

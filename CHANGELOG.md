@@ -25,6 +25,15 @@ Versioning](https://semver.org/).
   link that the authoring tool split across two tags, not list items, and
   converting them produced phantom two-item lists in tables of contents.
 
+### Changed
+- `MistaggedHeadingCheck` no longer gives up when a heading's font size ranks
+  it deeper than the outline has room for. If a heading already stands above
+  it, the element is retagged at the level the outline expects and the smaller
+  sizes in the same article shift with it, so its subordinate headings are
+  retagged too instead of being flagged one by one. Only a heading with
+  nothing above it — where the article would have to open at a subordinate
+  level — is still left alone for manual review.
+
 ## [0.5.0] - 2026-07-30
 
 ### Added

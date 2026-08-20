@@ -171,8 +171,8 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
     }
 
     @Test
-    void skippedHeadingLevelIsFlaggedNotRetagged() throws Exception {
-        Path pdfFile = testOutputPath("skippedHeadingLevelIsFlaggedNotRetagged.pdf");
+    void skippedHeadingLevelIsDemotedToTheExpectedLevel() throws Exception {
+        Path pdfFile = testOutputPath("skippedHeadingLevelIsDemotedToTheExpectedLevel.pdf");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfFile.toString()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -180,12 +180,14 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
             PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
             PdfCanvas canvas = new PdfCanvas(page);
 
-            // Sizes 24/20/16/14 rank as H1/H2/H3/H4. In reading order H1, H2, then the 14pt (H4)
-            // element appears before any H3 -- a skipped level.
+            // Sizes 24/20/16/14/12 rank as H1/H2/H3/H4/H5. In reading order the 16pt (H3) size
+            // arrives last, so the 14pt element follows an H2 while ranking H4 -- a skipped level
+            // to be seated at H3, taking the 12pt element down to H4 with it.
             addTaggedText(pdfDoc, page, docElem, canvas, font, 24, "Heading One", 740);
             addTaggedText(pdfDoc, page, docElem, canvas, font, 20, "Heading Two", 710);
             addTaggedText(pdfDoc, page, docElem, canvas, font, 14, "Skipped Level", 680);
-            addTaggedText(pdfDoc, page, docElem, canvas, font, 16, "Heading Three", 650);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 12, "Below Skipped Level", 655);
+            addTaggedText(pdfDoc, page, docElem, canvas, font, 16, "Heading Three", 630);
 
             for (int i = 0; i < 8; i++) {
                 addTaggedText(
@@ -196,7 +198,7 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
                         font,
                         10,
                         "Body text paragraph " + (i + 1) + " with enough content to dominate.",
-                        620 - i * 18);
+                        600 - i * 18);
             }
         }
 
@@ -205,15 +207,19 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
 
             List<Issue> retags =
                     issues.stream().filter(i -> i.type() == IssueType.MISTAGGED_HEADING).toList();
-            List<Issue> nestingIssues =
+            assertEquals(
+                    0,
                     issues.stream()
                             .filter(i -> i.type() == IssueType.IMPROPERLY_NESTED_HEADING)
-                            .toList();
-            assertEquals(3, retags.size(), "retag H1, H2, and H3");
-            assertEquals(1, nestingIssues.size(), "skipped H4 is flagged, not retagged");
+                            .count(),
+                    "a skip below an established heading is demoted, not flagged");
+            assertEquals(5, retags.size(), "every heading-sized paragraph is retagged");
             assertTrue(
-                    nestingIssues.getFirst().message().contains("Improperly nested H4"),
-                    "flagged at the skipped level H4");
+                    retagLevelOf(retags, "Skipped Level").equals("H3"),
+                    "the H4-sized heading is seated at the expected H3");
+            assertTrue(
+                    retagLevelOf(retags, "Below Skipped Level").equals("H4"),
+                    "the heading below it shifts by the same amount instead of being flagged");
         }
     }
 
@@ -347,6 +353,16 @@ class MistaggedHeadingCheckTest extends PdfTestBase {
     }
 
     // == Helpers =========================================================
+
+    /** Returns the heading level a retag issue assigns to the element holding the given text. */
+    private static String retagLevelOf(List<Issue> retags, String text) {
+        return retags.stream()
+                .map(Issue::message)
+                .filter(message -> message.contains("\"" + text + "\""))
+                .map(message -> message.substring("Mistagged ".length(), message.indexOf(':')))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no retag issue for \"" + text + "\""));
+    }
 
     private static PdfStructElem newDocument(PdfDocument pdfDoc) {
         PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
