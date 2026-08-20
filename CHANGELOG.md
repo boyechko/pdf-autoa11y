@@ -8,6 +8,14 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `MistaggedListCheck` now takes a bullet census of every content element,
+  reading the page a line at a time: each bullet glyph promises a list item,
+  so an element whose lines cover several bullets has lumped that many items
+  into one tag — whether or not it already sits in a list, and invisibly to
+  any check comparing whole elements. The spacing between bullets gives each
+  item's line count, so wrapped items survive the split intact. An element
+  whose opening lines finish the previous item is reported for review rather
+  than split.
 - `MistaggedListCheck` now takes a bullet census of every existing list: the
   bullet glyphs its content covers, counted at the list's own indent level,
   are compared against its item count. A list holding fewer items than
