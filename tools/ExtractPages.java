@@ -1,7 +1,7 @@
 // Extract a page range into a new tagged PDF, preserving the structure tree.
 //
-// Normally driven by tools/extract-fixture.sh, which resolves the classpath.
-// Standalone (Java 11+ single-file source launcher):
+// Normally driven by tools/extract-pages.sh, which resolves the classpath and
+// picks the output name. Standalone (Java 11+ single-file source launcher):
 //
 //   java -cp "$(cat target/tools-classpath.txt)" \
 //       tools/ExtractPages.java <in.pdf> <out.pdf> <firstPage> <lastPage>

@@ -15,11 +15,12 @@ Versioning](https://semver.org/).
   sibling element with the same mapped role. Marking a run of elements collapses
   them all leftward, and content moving across a page break keeps its own page.
 - New `tools/` directory for development scripts that support the repo
-  without being part of the build. `extract-fixture.sh` cuts a goal-driven
-  test fixture out of a working PDF, verifying the named check still fires
-  before writing the fixture and its goal file; `patch-goal-files.py`
-  re-syncs existing goal files after a change that alters only how the tree
-  is rendered.
+  without being part of the build. `extract-pages.sh` cuts a page range out
+  of a PDF into a new tagged PDF; `extract-fixture.sh` builds on it to cut a
+  goal-driven test fixture, verifying the named check still fires before
+  writing the fixture and its goal file; `patch-goal-files.py` re-syncs
+  existing goal files after a change that alters only how the tree is
+  rendered.
 - New `IrregularTocCheck`: rebuilds a `TOC` whose entries were never nested
   into a TOCI hierarchy — whether emitted as flat paragraphs or wrapped as a
   list by an earlier pass. Entries are recovered by grouping content into

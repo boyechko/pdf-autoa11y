@@ -111,11 +111,14 @@ references IssueFix.
 3. Names of test methods should be descriptive of what they test
    (e.g. `blankDocumentIsNotImageOnly` in ImageOnlyDocumentCheckTest.java)
 
+To pull a page range out of a PDF into a new tagged PDF, use
+`tools/extract-pages.sh SOURCE_PDF PAGE_RANGE [OUTPUT_PDF]`.
+
 To cut a goal-driven fixture out of a working PDF, use
-`tools/extract-fixture.sh SOURCE_PDF PAGE_RANGE CHECK [BASE]`. It extracts and
-compresses the page range into `src/test/resources/`, refuses to continue
-unless the named check actually fires on the extract, then remediates and
-writes the matching `.goal.txt`. Cut from the *pre-run* archive of a document,
+`tools/extract-fixture.sh SOURCE_PDF PAGE_RANGE CHECK [BASE]`. It extracts the
+page range into `src/test/resources/`, refuses to continue unless the named
+check actually fires on the extract, then remediates and writes the matching
+`.goal.txt`. Cut from the *pre-run* archive of a document,
 not from an already remediated copy.
 
 When a change alters only how the tree is rendered, re-sync the existing goal

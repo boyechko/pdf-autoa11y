@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # Cut a goal-driven test fixture out of a working PDF.
 #
-# Extracts a page range into src/test/resources/<base>_<range>.pdf, compresses
-# it, checks that the named check actually fires on it, then remediates and
-# writes the matching .goal.txt. The GoalDrivenIntegrationTest discovers the
-# case from the goal file's name, so no test code needs editing.
+# Extracts a page range into src/test/resources/<base>_<range>.pdf, checks that
+# the named check actually fires on it, then remediates and writes the matching
+# .goal.txt. The GoalDrivenIntegrationTest discovers the case from the goal
+# file's name, so no test code needs editing.
 #
 # The firing check is the point of the script: a fixture cut from an already
 # remediated copy has no defect left to detect, and silently becomes a test
 # that asserts nothing. Extract from the *pre-run* archive of the working
 # document, not from the working document itself.
+#
+# Page extraction itself lives in tools/extract-pages.sh, which this script
+# drives; use that directly when all you want is a page range.
 #
 # Usage: tools/extract-fixture.sh SOURCE_PDF PAGE_RANGE CHECK [BASE]
 #
@@ -42,9 +45,8 @@ BASE="${4:-$(basename "$SOURCE" .pdf | cut -d_ -f1)}"
 FIRST="${RANGE%%-*}"
 LAST="${RANGE##*-}"
 case "$FIRST$LAST" in
-    *[!0-9]*) echo "page range must be N or N-M, got: $RANGE" >&2; exit 1 ;;
+    ''|*[!0-9]*) echo "page range must be N or N-M, got: $RANGE" >&2; exit 1 ;;
 esac
-[ "$FIRST" -le "$LAST" ] || { echo "range runs backwards: $RANGE" >&2; exit 1; }
 
 # Fixture names pad to three digits so they sort alongside the existing ones.
 if [ "$FIRST" = "$LAST" ]; then
@@ -65,31 +67,8 @@ fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# ExtractPages runs straight from source (Java 11+ single-file launcher) and
-# needs only iText on the classpath, not the project's own classes — so this
-# works without a prior `mvn package`. The classpath is cached under target/
-# and refreshed only when pom.xml is newer.
-CLASSPATH_CACHE=target/tools-classpath.txt
-if [ ! -f "$CLASSPATH_CACHE" ] || [ pom.xml -nt "$CLASSPATH_CACHE" ]; then
-    echo "==> refreshing classpath cache"
-    mvn -q dependency:build-classpath -Dmdep.outputFile="$CLASSPATH_CACHE"
-fi
-
-echo "==> extracting pages $FIRST-$LAST from $SOURCE"
-java -cp "$(cat "$CLASSPATH_CACHE")" tools/ExtractPages.java \
-    "$SOURCE" "$WORK/raw.pdf" "$FIRST" "$LAST"
-
-# Object numbers get renumbered here, which the goal comparison normalises away.
-echo "==> compressing"
-if command -v mutool >/dev/null 2>&1; then
-    mutool clean -gggz "$WORK/raw.pdf" "$WORK/clean.pdf" >/dev/null 2>&1
-    printf '    %s B -> %s B\n' \
-        "$(wc -c <"$WORK/raw.pdf" | tr -d ' ')" \
-        "$(wc -c <"$WORK/clean.pdf" | tr -d ' ')"
-else
-    echo "    mutool not found; keeping the uncompressed extract" >&2
-    cp "$WORK/raw.pdf" "$WORK/clean.pdf"
-fi
+# extract-pages.sh resolves the classpath and reports progress on stderr.
+tools/extract-pages.sh "$SOURCE" "$RANGE" "$WORK/clean.pdf" >/dev/null
 
 echo "==> checking that $CHECK fires"
 if ./pdf-autoa11y -a --only-checks="$CHECK" "$WORK/clean.pdf" 2>&1 | grep -q ': no issues'; then
