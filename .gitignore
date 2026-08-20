@@ -71,3 +71,4 @@ Thumbs.db
 # Project specific
 .itext-sources/
 src/test/resources/*.goal.pdf
+src/test/resources/*.tree.txt
