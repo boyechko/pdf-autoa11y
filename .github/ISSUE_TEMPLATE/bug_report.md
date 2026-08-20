@@ -11,7 +11,7 @@ A clear and concise description of what went wrong.
 ## Command used
 
 ```
-pdf-autoa11y [flags] input.pdf outputs/
+pdf-autoa11y [flags] input.pdf output.pdf
 ```
 
 ## Expected behavior
@@ -25,7 +25,7 @@ What actually happened. Paste relevant error messages or log output below.
 
 ```
 # run with -vv for verbose output
-pdf-autoa11y -vv input.pdf outputs/
+pdf-autoa11y -vv input.pdf output.pdf
 ```
 
 ## Input PDF

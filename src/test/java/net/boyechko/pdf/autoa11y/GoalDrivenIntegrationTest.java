@@ -40,7 +40,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * <p>Workflow for adding a new test case:
  *
  * <ol>
- *   <li>Run {@code ./pdf-autoa11y --dump-tree inputs/foo.pdf} to see the "before" tree
+ *   <li>Run {@code ./pdf-autoa11y --dump-tree foo.pdf} to see the "before" tree
  *   <li>Manually remediate the PDF (e.g., in Acrobat)
  *   <li>Run {@code ./pdf-autoa11y --dump-tree=plain foo_fixed.pdf >
  *       src/test/resources/foo.goal.txt}

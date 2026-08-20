@@ -35,36 +35,36 @@ mvn test -Dgroups=GoalDriven \
 mvn spotless:apply
 
 # Run CLI via Maven
-mvn exec:java -Dexec.args="inputs/input.pdf outputs/"
-mvn exec:java -Dexec.args="-vv inputs/input.pdf outputs/"  # log-like output
-mvn exec:java -Dexec.args="--dump-tree inputss/input.pdf"  # print structure tree with MCRs and exit
+mvn exec:java -Dexec.args="input.pdf output.pdf"
+mvn exec:java -Dexec.args="-vv input.pdf output.pdf"  # log-like output
+mvn exec:java -Dexec.args="--dump-tree input.pdf"  # print structure tree with MCRs and exit
 
 # After build, it's also possible to use wrapper scripts
-./pdf-autoa11y inputs/input.pdf outputs/
+./pdf-autoa11y input.pdf output.pdf
 
 # Choosing which checks run (comma-separated class names; also accept a space
 # instead of `=`). Prefer --only-checks when working on a single check: it
 # selects from *all* checks, optional ones included, and never goes stale as
 # checks are added to ProcessingDefaults.
-./pdf-autoa11y --only-checks=BadlySplitLinkCheck inputs/input.pdf
-./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck inputs/input.pdf
-./pdf-autoa11y --include-checks=WrapWebCapturesCheck inputs/input.pdf  # defaults + optional
+./pdf-autoa11y --only-checks=BadlySplitLinkCheck input.pdf
+./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck input.pdf
+./pdf-autoa11y --include-checks=WrapWebCapturesCheck input.pdf  # defaults + optional
 
 # Edit the PDF outline (bookmarks): dump to text, edit, then apply back
 ./pdf-autoa11y --dump-outline input.pdf > outline.txt
-./pdf-autoa11y --apply-outline=outline.txt input.pdf outputs/
+./pdf-autoa11y --apply-outline=outline.txt input.pdf output.pdf
 
 # Edit /T scribbles via the tree diagram: dump to text, annotate, then apply back.
 # Append a quoted scribble after an element's `Role #objNum` to set it; matching
 # is keyed on the object number, so box-drawing/indentation need not be preserved.
 ./pdf-autoa11y --dump-tree input.pdf > tree.txt
-./pdf-autoa11y --annotate-tree=tree.txt input.pdf outputs/
+./pdf-autoa11y --annotate-tree=tree.txt input.pdf output.pdf
 
 # For bulk scribbling, drive the annotation with sed keyed on object number.
 # Anchor the number with `$` so it matches the struct-elem line (not <link #...>
 # refs or longer-number substrings) and stays idempotent on re-runs:
 sed -i '' '/#8018$/s/$/ "__!ARTIFACT"/; /#8019$/s/$/ "__!ARTIFACT"/' tree.txt
-./pdf-autoa11y --annotate-tree=tree.txt input.pdf outputs/
+./pdf-autoa11y --annotate-tree=tree.txt input.pdf output.pdf
 ```
 
 ## Architecture
