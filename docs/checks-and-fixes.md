@@ -65,6 +65,13 @@ A plain title left by the authoring tool is not a scribble: no check
 touches it, and `--dump-tree` shows it as `title "..."` to keep the two
 apart.
 
+## StaleScribbleCheck
+
+`StaleScribbleCheck` flags elements that still carry a scribble and
+clears the `/T` key. By default it treats every scribble as stale. Set
+`scope: TOOL_AUTHORED` in the sidecar (see `docs/sidecar.md`) to limit
+it to the tool's own scribbles, so hand-written notes survive the run.
+
 ## ScribbledInstructionCheck
 
 `ScribbledInstructionCheck` detects structure elements whose `/T`

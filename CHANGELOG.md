@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `StaleScribbleCheck` now takes a `scope` setting in the sidecar config.
+  The default, `ALL`, clears every scribble as before; `TOOL_AUTHORED`
+  clears only the tool's own scribbles, so hand-written notes and pending
+  instructions survive mid-workflow runs.
 - New `BadlySplitLinkCheck`: merges consecutive `Link` tags that are one
   hyperlink the authoring tool split across lines into a single `Link`, so a
   screen reader announces one link instead of repeating the same destination.

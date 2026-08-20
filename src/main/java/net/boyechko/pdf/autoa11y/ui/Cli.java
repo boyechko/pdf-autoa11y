@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
 import net.boyechko.pdf.autoa11y.checks.ReorderWebCapturesCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
+import net.boyechko.pdf.autoa11y.checks.StaleScribbleCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -98,7 +99,7 @@ public class Cli {
         }
     }
 
-    private static void processFile(CLIConfig config) {
+    private static void processFile(CLIConfig config) throws CLIException {
         if (config.createSidecar()) {
             createSidecar(config);
             return;
@@ -174,6 +175,8 @@ public class Cli {
                 ProcessingResult result = service.remediate();
                 saveRemediationResult(result, config, listener);
             }
+        } catch (CLIException e) {
+            throw e;
         } catch (Exception e) {
             System.err.println("✗ Processing failed due to an exception:");
             System.err.println();
@@ -183,16 +186,23 @@ public class Cli {
 
     /**
      * Translates each sidecar check-config entry into a {@code replaceCheck()} call so the
-     * configured check supplier is used in place of the default no-arg one.
+     * configured check supplier is used in place of the default no-arg one. An invalid
+     * configuration value aborts the run rather than falling back to the check's default.
      */
     private static void applyCheckConfigs(
             Map<String, Map<String, String>> checkConfigs,
             ProcessingService.ProcessingServiceBuilder serviceBuilder,
-            ProcessingListener listener) {
+            ProcessingListener listener)
+            throws CLIException {
         for (Map.Entry<String, Map<String, String>> entry : checkConfigs.entrySet()) {
             String checkName = entry.getKey();
             Map<String, String> config = entry.getValue();
-            Supplier<Check> configured = configuredSupplier(checkName, config);
+            Supplier<Check> configured;
+            try {
+                configured = configuredSupplier(checkName, config);
+            } catch (IllegalArgumentException e) {
+                throw new CLIException("Sidecar check '" + checkName + "': " + e.getMessage());
+            }
             if (configured == null) {
                 listener.onInfo(
                         "Sidecar check '"
@@ -206,7 +216,7 @@ public class Cli {
 
     /**
      * Returns a configured supplier for the named check, or {@code null} if the check does not
-     * accept configuration.
+     * accept configuration. Throws {@link IllegalArgumentException} if a supplied value is invalid.
      */
     private static Supplier<Check> configuredSupplier(
             String checkName, Map<String, String> config) {
@@ -219,6 +229,12 @@ public class Cli {
                 yield () -> new ReorderWebCapturesCheck(orderedUrls);
             }
             case "ReplaceRoleMapCheck" -> () -> new ReplaceRoleMapCheck(config);
+            case "StaleScribbleCheck" -> {
+                // Parsed eagerly so a bad scope value is reported before processing starts.
+                StaleScribbleCheck.Scope scope =
+                        StaleScribbleCheck.Scope.parse(config.get("scope"));
+                yield () -> new StaleScribbleCheck(scope);
+            }
             default -> null;
         };
     }

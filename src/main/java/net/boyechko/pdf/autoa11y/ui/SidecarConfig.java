@@ -102,7 +102,10 @@ public final class SidecarConfig {
         sb.append("#  pattern-name: 'regex'\n\n");
 
         sb.append("#ReplaceRoleMapCheck:\n");
-        sb.append("#  CustomRole: StandardRole\n");
+        sb.append("#  CustomRole: StandardRole\n\n");
+
+        sb.append("#StaleScribbleCheck:\n");
+        sb.append("#  scope: TOOL_AUTHORED   # or ALL (default): clear every scribble\n");
 
         Files.writeString(sidecarPath, sb.toString());
         return sidecarPath;

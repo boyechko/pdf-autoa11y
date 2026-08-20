@@ -69,6 +69,9 @@ MistaggedArtifactCheck:
 ReplaceRoleMapCheck:
   CustomHeading: H1
   CustomFigure: Figure
+
+StaleScribbleCheck:
+  scope: TOOL_AUTHORED
 ```
 
 The check still has to appear in `checks:` (or in the default pipeline
@@ -82,6 +85,15 @@ ignored.
 |---|---|---|
 | `MistaggedArtifactCheck` | `name: regex` map | Replaces built-in artifact patterns |
 | `ReplaceRoleMapCheck` | `customRole: standardRole` map | Replaces the PDF's `/RoleMap` |
+| `StaleScribbleCheck` | `scope: ALL` or `scope: TOOL_AUTHORED` | Narrows which scribbles count as stale |
+
+`StaleScribbleCheck` clears every scribble by default (`scope: ALL`),
+which suits a final-output pass. Set `scope: TOOL_AUTHORED` for
+mid-workflow runs to clear only the tool's own scribbles (those
+carrying the leading `:` mark) and leave hand-written notes and
+`!` instructions in place. The value is case-insensitive; an
+unrecognized value aborts the run rather than silently falling back to
+`ALL`.
 
 To clear the role map without specifying replacements, list
 `ClearRoleMapCheck` in `checks:` (it accepts no configuration).
