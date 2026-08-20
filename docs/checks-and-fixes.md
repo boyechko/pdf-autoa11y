@@ -41,6 +41,7 @@ previous step in the execution order listed below.
 | EmptyLinkTagCheck | Detects Link elements without link description | Moves adjacent text into Link |
 | InvalidLinkUriCheck | Detects Link elements whose `/A /URI` is not a plausible http(s) web address | Writes `LINK_URI` scribble for manual review |
 | MistaggedListCheck | Detects bulleted, indented, or link-only content that should be lists | Wraps in (sub)list structure, merging split lists |
+| IrregularTocCheck | Detects TOC contents not nested into a TOCI hierarchy | Rebuilds entries as `TOCI`, nesting by indentation |
 | EmptyElementCheck | Detects empty structure elements | Removes empty elements |
 | SchemaValidationCheck | Validates elements against the PDF/UA-1 tag schema | Restructures children to match schema |
 

@@ -8,6 +8,12 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `IrregularTocCheck`: rebuilds a `TOC` whose entries were never nested
+  into a TOCI hierarchy — whether emitted as flat paragraphs or wrapped as a
+  list by an earlier pass. Entries are recovered by grouping content into
+  visual lines, and nesting depth comes from left-edge indentation, so TOCs
+  whose entries carry no links are handled the same way. A line that wraps is
+  folded back into the entry it continues.
 - `StaleScribbleCheck` now takes a `scope` setting in the sidecar config.
   The default, `ALL`, clears every scribble as before; `TOOL_AUTHORED`
   clears only the tool's own scribbles, so hand-written notes and pending
