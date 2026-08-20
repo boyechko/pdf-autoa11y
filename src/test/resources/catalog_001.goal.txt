@@ -14,11 +14,11 @@ Document #22
   H2 #43
     [text &5] `The UW Bothell general catalog 2024-2025'
   P #44
-    [text &6] `The University of W…'
+    [text &6] `The University of W…+30'
     Link #25
       <link #96> null [/URI (https://www.uwb.edu/catalog/degree-programs)]
       [text &7] `academic programs and certificates'
-    [text &8] `at the undergraduate,…'
+    [text &8] `at the undergraduate,…+530'
   H3 #47
     [text &9] `Archived catalogs'
   L #652

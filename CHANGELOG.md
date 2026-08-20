@@ -32,6 +32,8 @@ Versioning](https://semver.org/).
   surviving tag is stamped `__:LINKS MERGED`.
 
 ### Changed
+- Truncated text excerpts in issue descriptions, reports, and tree diagrams now
+  append the count of omitted characters after the ellipsis (e.g. `…+50`).
 - `--dump-tree` now shows a plain `/T` title as `title "Chapter 1"`, distinct
   from a scribble's `"__..."`. Annotating such a line still requires the quoted
   scribble to follow the object number, so a title survives a dump-and-apply

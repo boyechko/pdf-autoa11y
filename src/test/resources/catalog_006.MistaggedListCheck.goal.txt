@@ -30,7 +30,7 @@ Document #22
     H1 #46
       [text &9] `Degree programs'
     P #47
-      [text &10] `The following are the ofcial…'
+      [text &10] `The following are the ofcial…+508'
       Link #25
         <link #105> null [/URI (https://www.washington.edu/students/crscatb/)]
         [text &11] `click here'
@@ -63,7 +63,7 @@ Document #22
     H1 #52
       [text &17] `Undergraduate degrees'
     P #53
-      [text &18] `(BA) = Bachelor of Arts,…'
+      [text &18] `(BA) = Bachelor of Arts,…+27'
     H1 #54
       [text &19] `School of Business'
     P #55

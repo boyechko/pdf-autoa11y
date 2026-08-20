@@ -2,11 +2,11 @@
 Document #17
   Art #30 "__www-washington-edu-students-gencat-program-B-InteractiveMediaDesign-1089"
     P #31
-      [text &5] `Bothell School of Science…'
+      [text &5] `Bothell School of Science…+39'
     H1 #32
       [text &6] `Interactive Media Design'
     P #33
-      [text &7] `352 Bothell Discovery Hall…'
+      [text &7] `352 Bothell Discovery Hall…+28'
     P #28
       Link #26
         <link #61> /URI (https://uwb.edu/media-design)
@@ -18,7 +18,7 @@ Document #17
         <link #65> /URI (mailto:stemadv@uw.edu)
         [text &10] `stemadv@uw.edu'
     P #34
-      [text &11] `Interactive Media Design…'
+      [text &11] `Interactive Media Design…+737'
     TOC #35
       TOCI #45
         P #55
@@ -44,6 +44,6 @@ Document #17
     H2 #37
       [text &19] `Interactive Media Design'
     P #38
-      [text &17] `352 Bothell Discovery Hall…'
+      [text &17] `352 Bothell Discovery Hall…+23'
     P #39
       [text &18] `425-352-3746'

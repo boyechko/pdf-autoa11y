@@ -7,7 +7,7 @@ Document #48
       LI #720
         LBody #721
           P #66 "__:INST OK"
-            [text &9] `B BUS 300 - Organizational…'
+            [text &9] `B BUS 300 - Organizational…+34'
       LI #722
         LBody #723
           P #724
@@ -23,7 +23,7 @@ Document #48
       LI #731
         LBody #732
           P #733
-            [text &22] `B BUS 340 - Operations and…'
+            [text &22] `B BUS 340 - Operations and…+19'
       LI #734
         LBody #735
           P #736
@@ -34,49 +34,49 @@ Document #48
       LI #738
         LBody #739
           P #68 "__:INST OK"
-            [text &11] `B BUS 470 - Business Policy…'
+            [text &11] `B BUS 470 - Business Policy…+25'
       LI #740
         LBody #741
           P #742
-            [text &24] `B BUS 480 - Global…'
+            [text &24] `B BUS 480 - Global…+24'
     H5 #69
       [text &2] `Supply Chain Management Core Courses (30 credits)'
     L #743 "__:6 items // INST OK (on child)"
       LI #744
         LBody #745
           P #70 "__:INST OK"
-            [text &3] `B BUS 441 or ELCBUS 400 -…'
+            [text &3] `B BUS 441 or ELCBUS 400 -…+19'
       LI #746
         LBody #747
           P #748
-            [text &25] `B BUS 482 or ELCBUS 482 -…'
+            [text &25] `B BUS 482 or ELCBUS 482 -…+40'
       LI #749
         LBody #750
           P #751
-            [text &26] `B BUS 483 or ELCBUS 483 -…'
+            [text &26] `B BUS 483 or ELCBUS 483 -…+26'
       LI #752
         LBody #753
           P #754
-            [text &18] `B BUS 486 or ELCBUS 486 -…'
+            [text &18] `B BUS 486 or ELCBUS 486 -…+42'
       LI #755
         LBody #756
           P #757
-            [text &27] `B BUS 487 or ELCBUS 487 -…'
+            [text &27] `B BUS 487 or ELCBUS 487 -…+32'
       LI #758
         LBody #759
           P #760
-            [text &28] `B BUS 497 or ELCBUS 497 -…'
-            [text &17] `Undergraduate Research or B…'
+            [text &28] `B BUS 497 or ELCBUS 497 -…+45'
+            [text &17] `Undergraduate Research or B…+55'
     H5 #71
       [text &14] `Supply Chain Management Electives (10 credits)'
     P #72
-      [text &13] `See department website for a…'
+      [text &13] `See department website for a…+25'
     H5 #73
       [text &16] `General Electives (10 Credits)'
     P #74
-      [text &15] `Any 300 ‐ 400 level classes…'
+      [text &15] `Any 300 ‐ 400 level classes…+140'
 ------------------------- Page 2 ---
-      [text &11] `comparable upper-division…'
+      [text &11] `comparable upper-division…+90'
     P #62
       StyleSpan #59
         Link #57
@@ -95,27 +95,27 @@ Document #48
             LI #273
               LBody #274
                 P #275 "__:INST OK"
-                  [text &16] `ELCBUS 300 - Organizational…'
+                  [text &16] `ELCBUS 300 - Organizational…+34'
             LI #761
               LBody #762
                 P #763
-                  [text &27] `ELCBUS 301 - Business…'
+                  [text &27] `ELCBUS 301 - Business…+11'
             LI #764
               LBody #765
                 P #766
-                  [text &28] `ELCBUS 310 - Managerial…'
+                  [text &28] `ELCBUS 310 - Managerial…+10'
             LI #767
               LBody #768
                 P #769
-                  [text &29] `ELCBUS 320 - Marketing…'
+                  [text &29] `ELCBUS 320 - Marketing…+11'
             LI #770
               LBody #771
                 P #772
-                  [text &30] `ELCBUS 330 (5 credits) -…'
+                  [text &30] `ELCBUS 330 (5 credits) -…+36'
             LI #773
               LBody #774
                 P #775
-                  [text &31] `ELCBUS 340 - Operations and…'
+                  [text &31] `ELCBUS 340 - Operations and…+19'
             LI #776
               LBody #777
                 P #778
@@ -123,11 +123,11 @@ Document #48
             LI #779
               LBody #780
                 P #781
-                  [text &33] `ELCBUS 380 - Introduction to…'
+                  [text &33] `ELCBUS 380 - Introduction to…+24'
             LI #782
               LBody #783
                 P #784
-                  [text &34] `ELCBUS 382 - Business,…'
+                  [text &34] `ELCBUS 382 - Business,…+24'
       LI #257
         LBody #265
           P #266
@@ -137,28 +137,28 @@ Document #48
               Link #56
                 <link #288> /URI (https://www.uwb.edu/babusiness/elcbabusiness)
                 [text &6] `https://www.uwb.edu/babusiness/elcbabusiness'
-            [text &22] `for list of approved courses…'
+            [text &22] `for list of approved courses…+19'
       LI #258
         LBody #263
           P #264
             [text &21] `Capstone:5credits'
-            [text &26] `ELCBUS 470 - Business Policy…'
+            [text &26] `ELCBUS 470 - Business Policy…+25'
       LI #259
         LBody #260
           P #261 "__split"
-            [text &24] `Other UWB and/or transfer…'
+            [text &24] `Other UWB and/or transfer…+20'
     H4 #78
       [text &9] `Additional Completion Requirements'
     L #79
       LI #233
         LBody #249
           P #250
-            [text &14] `Supply Chain Management…'
+            [text &14] `Supply Chain Management…+20'
           L #251 "__:5 items // INST OK (on child)"
             LI #252
               LBody #253
                 P #254 "__:INST OK"
-                  [text &15] `B BUS/ELCBUS 482 -…'
+                  [text &15] `B BUS/ELCBUS 482 -…+40'
             LI #785
               LBody #786
                 P #787
@@ -167,32 +167,32 @@ Document #48
             LI #788
               LBody #789
                 P #790
-                  [text &9] `B BUS 441/ELCBUS 400 -…'
+                  [text &9] `B BUS 441/ELCBUS 400 -…+19'
             LI #791
               LBody #792
                 P #793
-                  [text &14] `B BUS/ELCBUS 487 - Supply…'
+                  [text &14] `B BUS/ELCBUS 487 - Supply…+36'
             LI #794
               LBody #795
                 P #796
-                  [text &15] `BBUS/ELCBUS497-GuidedInternsh…'
+                  [text &15] `BBUS/ELCBUS497-GuidedInternsh…+41'
       LI #234
         LBody #242
           P #243
-            [text &8] `Plus, one from the following…'
+            [text &8] `Plus, one from the following…+13'
           L #244 "__:2 items // INST OK (on child)"
             LI #245
               LBody #246
                 P #247 "__:INST OK"
-                  [text &10] `B BUS/ELCBUS 485 -…'
+                  [text &10] `B BUS/ELCBUS 485 -…+38'
             LI #797
               LBody #798
                 P #799
-                  [text &16] `B BUS/ELCBUS 486 - Supply…'
+                  [text &16] `B BUS/ELCBUS 486 - Supply…+35'
       LI #235
         LBody #236
           P #237
-            [text &12] `Plus, two from the following…'
+            [text &12] `Plus, two from the following…+14'
           L #238 "__:9 items // INST OK (on child)"
             LI #239
               LBody #240
@@ -205,7 +205,7 @@ Document #48
             LI #803
               LBody #804
                 P #805
-                  [text &18] `B BUS 447 - Retail…'
+                  [text &18] `B BUS 447 - Retail…+39'
             LI #806
               LBody #807
                 P #808
@@ -213,19 +213,19 @@ Document #48
             LI #809
               LBody #810
                 P #811
-                  [text &20] `B BUS 462/ELCBUS 403 -…'
+                  [text &20] `B BUS 462/ELCBUS 403 -…+37'
             LI #812
               LBody #813
                 P #814
-                  [text &21] `B BUS 463 - Advanced…'
+                  [text &21] `B BUS 463 - Advanced…+21'
             LI #815
               LBody #816
                 P #817
-                  [text &22] `B BUS 464 - New Product…'
+                  [text &22] `B BUS 464 - New Product…+10'
             LI #818
               LBody #819
                 P #820
-                  [text &23] `B BUS 473/ELCBUS 402 -…'
+                  [text &23] `B BUS 473/ELCBUS 402 -…+31'
             LI #821
               LBody #822
                 P #823
@@ -238,11 +238,11 @@ Document #48
     H4 #81
       [text &2] `Additional Information'
     P #82
-      [text &3] `The School of Business…'
+      [text &3] `The School of Business…+514'
     P #83
-      [text &4] `As part of a public research…'
+      [text &4] `As part of a public research…+180'
     P #84
-      [text &5] `The Bachelor of Arts in…'
+      [text &5] `The Bachelor of Arts in…+121'
 ------------------------- Page 4 ---
     P #85
       StyleSpan #222
@@ -254,14 +254,14 @@ Document #48
     H4 #87
       [text &15] `Program Overview'
     P #88
-      [text &2] `The Business minor is…'
+      [text &2] `The Business minor is…+510'
     P #89
-      [text &3] `This program of study leads…'
-      [text &17] `Minor in Business…'
+      [text &3] `This program of study leads…+29'
+      [text &17] `Minor in Business…+15'
     H4 #90
       [text &5] `Admission Requirements'
     P #91
-      [text &6] `Students must earn a 2.7…'
+      [text &6] `Students must earn a 2.7…+117'
     L #824 "__:5 items // INST OK (on child)"
       LI #825
         LBody #826
@@ -282,14 +282,14 @@ Document #48
       LI #836
         LBody #837
           P #838
-            [text &21] `One quarter 200 ‐ level…'
+            [text &21] `One quarter 200 ‐ level…+11'
     H4 #93
       [text &9] `Completion Requirements'
     L #94
       LI #194
         LBody #211
           P #212
-            [text &10] `BBUS 300 Organizational…'
+            [text &10] `BBUS 300 Organizational…+34'
       LI #195
         LBody #208
           P #209
@@ -301,15 +301,15 @@ Document #48
       LI #197
         LBody #202
           P #203
-            [text &13] `BBUS 340 Operations &…'
+            [text &13] `BBUS 340 Operations &…+19'
 ------------------------- Page 5 ---
       LI #198
         LBody #199
           P #200
-            [text &0] `Elective ‐ Business Elective…'
+            [text &0] `Elective ‐ Business Elective…+23'
     P #95
-      [text &1] `Three of the five courses in…'
-      [text &17] `Acceptance of transfer…'
+      [text &1] `Three of the five courses in…+52'
+      [text &17] `Acceptance of transfer…+65'
     P #96
       StyleSpan #190
         Link #53
@@ -320,9 +320,9 @@ Document #48
     H4 #98
       [text &19] `Program Overview'
     P #99
-      [text &5] `Economics explores how…'
+      [text &5] `Economics explores how…+441'
     P #100
-      [text &6] `This program of study leads…'
+      [text &6] `This program of study leads…+29'
       [text &23] `Minor in Economics'
     H4 #101
       [text &8] `Admission Requirements'
@@ -330,17 +330,17 @@ Document #48
       LI #172
         LBody #181
           P #182
-            [text &9] `A minimum grade of 2.5 in…'
-            [text &22] `STMATH 124 Calculus I and B…'
+            [text &9] `A minimum grade of 2.5 in…+58'
+            [text &22] `STMATH 124 Calculus I and B…+45'
             [text &21] `Interference'
       LI #173
         LBody #178
           P #179
-            [text &12] `A minimum cumulative GPA of…'
+            [text &12] `A minimum cumulative GPA of…+27'
       LI #174
         LBody #175
           P #176
-            [text &13] `A minimum cumulative GPA of…'
+            [text &13] `A minimum cumulative GPA of…+38'
     H4 #103
       [text &15] `Completion Requirements'
     L #104
@@ -353,29 +353,29 @@ Document #48
             LI #157
               LBody #166
                 P #167
-                  [text &0] `B BUS 220/BIS 200 Principles…'
+                  [text &0] `B BUS 220/BIS 200 Principles…+18'
             LI #158
               LBody #163
                 P #164
-                  [text &1] `B BUS 221/BIS 201 Principles…'
+                  [text &1] `B BUS 221/BIS 201 Principles…+18'
             LI #159
               LBody #160
                 P #161
-                  [text &2] `B BECN 302 Intermediate…'
+                  [text &2] `B BECN 302 Intermediate…+15'
       LI #142
         LBody #147
           P #148
-            [text &3] `Electives ‐ two (2)…'
+            [text &3] `Electives ‐ two (2)…+43'
           P #149
-            [text &4] `Students may not enroll in…'
-            [text &17] `Calculus prerequisite…'
+            [text &4] `Students may not enroll in…+58'
+            [text &17] `Calculus prerequisite…+28'
           P #150
-            [text &6] `Three of the five courses in…'
-            [text &18] `Acceptance of transfer…'
+            [text &6] `Three of the five courses in…+53'
+            [text &18] `Acceptance of transfer…+65'
       LI #143
         LBody #144
           P #145
-            [text &8] `Minimum 2.00 cumulative GPA…'
+            [text &8] `Minimum 2.00 cumulative GPA…+33'
     P #105
       StyleSpan #138
         Link #52
@@ -386,14 +386,14 @@ Document #48
     H4 #107
       [text &19] `Program Overview'
     P #108
-      [text &11] `The Retail Management minor…'
+      [text &11] `The Retail Management minor…+580'
     P #109
-      [text &12] `This program of study leads…'
+      [text &12] `This program of study leads…+29'
       [text &21] `Minor in Retail Management'
     H4 #110
       [text &14] `Admission Requirements'
     P #111
-      [text &15] `Students must earn a 2.7…'
+      [text &15] `Students must earn a 2.7…+53'
       HyphenSpan #130
         [text &16] `-'
 ------------------------- Page 7 ---
@@ -404,7 +404,7 @@ Document #48
       LI #840
         LBody #841
           P #113 "__:INST OK"
-            [text &3] `B BUS 300 - Organizational…'
+            [text &3] `B BUS 300 - Organizational…+34'
       LI #842
         LBody #843
           P #844
@@ -412,21 +412,21 @@ Document #48
       LI #845
         LBody #846
           P #847
-            [text &14] `BBUS445-MerchandisingAcquisit…'
+            [text &14] `BBUS445-MerchandisingAcquisit…+3'
       LI #848
         LBody #849
           P #850
-            [text &15] `B BUS 446 - Strategic Retail…'
+            [text &15] `B BUS 446 - Strategic Retail…+10'
       LI #851
         LBody #852
           P #853
-            [text &16] `BBUS447-RetailOperations&Supp…'
+            [text &16] `BBUS447-RetailOperations&Supp…+7'
       LI #854
         LBody #855
           P #856
-            [text &17] `B BUS 448 - Retail…'
+            [text &17] `B BUS 448 - Retail…+26'
     P #114
-      [text &4] `Students may take MGMT 300:…'
+      [text &4] `Students may take MGMT 300:…+428'
     P #115
       StyleSpan #124
         Link #51
@@ -439,4 +439,4 @@ Document #48
     H4 #118
       [text &10] `Program Overview'
     P #119
-      [text &8] `The University of Washington…'
+      [text &8] `The University of Washington…+394'

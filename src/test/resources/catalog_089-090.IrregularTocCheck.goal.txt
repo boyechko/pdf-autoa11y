@@ -2,11 +2,11 @@
 Document #30
   Art #31 "__www-washington-edu-students-gencat-program-B-EngineeringandMathematics-1092"
     P #32
-      [text &5] `Bothell School of Science…'
+      [text &5] `Bothell School of Science…+39'
     H1 #33
       [text &6] `Engineering and Mathematics'
     P #34
-      [text &7] `352 Bothell Discovery Hall…'
+      [text &7] `352 Bothell Discovery Hall…+13'
     P #35
       Link #36
         <link #21> /URI (https://www.uwb.edu/engineering-math)
@@ -18,7 +18,7 @@ Document #30
         <link #23> /URI (mailto:stemadv@uw.edu)
         [text &10] `stemadv@uw.edu'
     P #39
-      [text &11] `Engineering & Mathematics at…'
+      [text &11] `Engineering & Mathematics at…+635'
     TOC #40 "__TODO"
       TOCI #86
         P #87
@@ -122,7 +122,7 @@ Document #30
     H2 #69
       [text &21] `Engineering and Mathematics'
     P #70
-      [text &16] `352 Bothell Discovery Hall…'
+      [text &16] `352 Bothell Discovery Hall…+13'
     P #71
       StyleSpan #72
         Link #74
@@ -133,6 +133,6 @@ Document #30
     H4 #76
       [text &22] `Program Overview'
     P #77
-      [text &19] `The Bachelor of Science in…'
+      [text &19] `The Bachelor of Science in…+812'
     P #78
-      [text &20] `This program of study leads…'
+      [text &20] `This program of study leads…+29'

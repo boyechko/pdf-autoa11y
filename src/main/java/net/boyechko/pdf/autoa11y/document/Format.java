@@ -59,13 +59,17 @@ public final class Format {
         return new DocValue.Mcid(mcid).toString();
     }
 
-    /** Returns {@code text} clipped to {@link #TRUNCATE_MAX_WIDTH} characters. */
+    /** Returns {@code text} clipped to {@link #TRUNCATE_MAX_WIDTH} characters of text. */
     public static String truncate(String text) {
         return truncate(text, TRUNCATE_MAX_WIDTH);
     }
 
     /**
-     * Returns {@code text} clipped to at most {@code maxWidth} characters, ending with an ellipsis.
+     * Returns at most {@code maxWidth} characters of {@code text}, followed by an ellipsis and the
+     * count of omitted characters (e.g. {@code "…+50"}).
+     *
+     * <p>The bound applies to the retained text only, so the returned string itself may exceed
+     * {@code maxWidth}: callers using it for column layout should place it last.
      *
      * <p>Clipping prefers the last word boundary that fits, falling back to a mid-word cut when
      * that would discard more than half the available width.
@@ -75,7 +79,8 @@ public final class Format {
         String clipped = text.substring(0, maxWidth - 1);
         int lastSpace = clipped.lastIndexOf(' ');
         if (lastSpace >= maxWidth / 2) clipped = clipped.substring(0, lastSpace);
-        return clipped.stripTrailing() + "…";
+        clipped = clipped.stripTrailing();
+        return clipped + "…+" + (text.length() - clipped.length());
     }
 
     /**
