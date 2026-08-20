@@ -107,6 +107,13 @@ references IssueFix.
 3. Names of test methods should be descriptive of what they test
    (e.g. `blankDocumentIsNotImageOnly` in ImageOnlyDocumentCheckTest.java)
 
+To cut a goal-driven fixture out of a working PDF, use
+`tools/extract-fixture.sh SOURCE_PDF PAGE_RANGE CHECK [BASE]`. It extracts and
+compresses the page range into `src/test/resources/`, refuses to continue
+unless the named check actually fires on the extract, then remediates and
+writes the matching `.goal.txt`. Cut from the *pre-run* archive of a document,
+not from an already remediated copy.
+
 ## Key Resources
 
 - Tag schema: `src/main/resources/tagschema-PDF-UA1.yaml`

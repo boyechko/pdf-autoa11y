@@ -111,6 +111,15 @@
         <version>${spotless-maven-plugin.version}</version>
         <configuration>
           <java>
+            <!-- Spotless defaults to the compile source roots only, which
+                 would leave the single-file utilities under tools/
+                 unformatted. Listing the roots explicitly brings them in
+                 without also sweeping up the throwaway probes in landfill/. -->
+            <includes>
+              <include>src/main/java/**/*.java</include>
+              <include>src/test/java/**/*.java</include>
+              <include>tools/*.java</include>
+            </includes>
             <removeUnusedImports />
             <trimTrailingWhitespace />
             <endWithNewline />
