@@ -10,9 +10,11 @@ Versioning](https://semver.org/).
 ### Added
 - `MistaggedListCheck` now reconciles an element that begins in the middle of
   a list item with the element that began it: the opening lines fold back into
-  that item and the deeper-bulleted lines that follow become its sublist. The
-  element that opened the item is no longer wrapped alone as a one-item list,
-  which the bullet-run pass did whenever an item ran on past its own tag.
+  that item and the deeper-bulleted lines that follow become its sublist. When
+  a list is already tagged after the element, the rebuilt item opens that list
+  instead of starting a second one beside it. The element that opened the item
+  is no longer wrapped alone as a one-item list, which the bullet-run pass did
+  whenever an item ran on past its own tag.
 - `MistaggedListCheck` now takes a bullet census of every content element,
   reading the page a line at a time: each bullet glyph promises a list item,
   so an element whose lines cover several bullets has lumped that many items

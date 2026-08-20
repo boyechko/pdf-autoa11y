@@ -241,13 +241,13 @@ public class MistaggedListCheck extends StructTreeCheck {
     private void emitContinuedItem(
             StructTreeContext ctx, List<Integer> itemStarts, int lineCount, float ownLevelX) {
         int leadingLines = itemStarts.get(0);
-        PdfStructElem predecessor = outerItemPredecessor(ctx, ownLevelX);
+        ContinuedItem continued = continuedItem(ctx, ownLevelX);
         String spec = specOf(itemStarts, lineCount);
 
-        // Claim the predecessor either way: its bullet makes it the start of an item that
-        // runs on into this element, so wrapping it alone as a one-item list is wrong.
-        if (predecessor != null) {
-            claim(predecessor);
+        // Claim the opener either way: its bullet makes it the start of an item that runs
+        // on into this element, so wrapping it alone as a one-item list is wrong.
+        if (continued != null) {
+            claim(continued.opener());
         }
 
         issues.add(
@@ -259,26 +259,41 @@ public class MistaggedListCheck extends StructTreeCheck {
                                 + " bullet glyphs in one element, behind "
                                 + leadingLines
                                 + " line(s) continuing the previous item"
-                                + (predecessor == null ? "" : " (" + spec + ")"),
-                        predecessor == null
+                                + (continued == null ? "" : " (" + spec + ")"),
+                        continued == null
                                 ? null
                                 : new SplitIntoSublistFix(
-                                        ctx.node(), predecessor, leadingLines, spec)));
+                                        ctx.node(),
+                                        continued.opener(),
+                                        leadingLines,
+                                        spec,
+                                        continued.joinInto())));
 
         logger.debug(
-                "Element #{} lumps {} bulleted items behind {} continuation line(s) of #{}",
+                "Element #{} lumps {} bulleted items behind {} continuation line(s) of #{}{}",
                 StructTree.objNum(ctx.node()),
                 itemStarts.size(),
                 leadingLines,
-                predecessor == null ? null : StructTree.objNum(predecessor));
+                continued == null ? null : StructTree.objNum(continued.opener()),
+                continued == null || continued.joinInto() == null
+                        ? ""
+                        : ", joining list #" + StructTree.objNum(continued.joinInto()));
     }
 
     /**
-     * Returns the preceding sibling whose item this element continues: a leaf element carrying a
-     * single bullet far enough out that this element's bullets read as its sublist. Null when no
-     * such sibling exists, which means the continuation has no item to rejoin.
+     * The item an element continues: the sibling that opened it, and the list that item belongs to.
+     * A list already tagged on the far side of the element is that list, so the rebuilt item joins
+     * it rather than starting a second list beside it; a null {@code joinInto} means there is none
+     * and the opener needs a list of its own.
      */
-    private PdfStructElem outerItemPredecessor(StructTreeContext ctx, float ownLevelX) {
+    private record ContinuedItem(PdfStructElem opener, PdfStructElem joinInto) {}
+
+    /**
+     * Resolves the item this element continues. The opener is the preceding sibling, which must be
+     * a leaf carrying a single bullet far enough out that this element's bullets read as its
+     * sublist. Null when no such sibling exists, leaving the continuation no item to rejoin.
+     */
+    private ContinuedItem continuedItem(StructTreeContext ctx, float ownLevelX) {
         if (!(StructTree.parentOf(ctx.node()) instanceof PdfStructElem container)) {
             return null;
         }
@@ -294,16 +309,38 @@ public class MistaggedListCheck extends StructTreeCheck {
             return null;
         }
 
-        PdfStructElem predecessor = siblings.get(index - 1);
-        if (!StructTree.childrenOf(predecessor, PdfStructElem.class).isEmpty()) {
+        PdfStructElem opener = siblings.get(index - 1);
+        if (!StructTree.childrenOf(opener, PdfStructElem.class).isEmpty()) {
             return null;
         }
-        List<Float> predecessorBullets = bulletXPerLine(ctx, predecessor);
-        List<Float> bulleted = predecessorBullets.stream().filter(Objects::nonNull).toList();
+        List<Float> bulleted =
+                bulletXPerLine(ctx, opener).stream().filter(Objects::nonNull).toList();
         if (bulleted.size() != 1 || ownLevelX - bulleted.get(0) < SUBLIST_INDENT_MIN) {
             return null;
         }
-        return predecessor;
+        return new ContinuedItem(
+                opener, followingListAtLevel(ctx, siblings, index, bulleted.get(0)));
+    }
+
+    /**
+     * Returns the list immediately after the element when its first item sits at the opener's own
+     * bullet level, which makes the continued item that list's opening item rather than a list of
+     * its own. Rebuilding the item inside it is what keeps one list from becoming two.
+     */
+    private PdfStructElem followingListAtLevel(
+            StructTreeContext ctx, List<PdfStructElem> siblings, int index, float openerX) {
+        if (index + 1 >= siblings.size()) {
+            return null;
+        }
+        PdfStructElem following = siblings.get(index + 1);
+        if (!"L".equals(StructTree.mappedRole(following))) {
+            return null;
+        }
+        float listX = listItemBulletX(ctx, following, false);
+        if (Float.isNaN(listX) || Math.abs(listX - openerX) > SAME_LEVEL_TOLERANCE) {
+            return null;
+        }
+        return following;
     }
 
     /**

@@ -41,19 +41,32 @@ public final class SplitIntoSublistFix implements IssueFix {
     private final PdfStructElem predecessor;
     private final int leadingLines;
     private final String itemSpec;
+    private final PdfStructElem joinInto;
+
+    /** Folds into a bare predecessor, wrapping it in a list of its own. */
+    public SplitIntoSublistFix(
+            PdfStructElem element, PdfStructElem predecessor, int leadingLines, String itemSpec) {
+        this(element, predecessor, leadingLines, itemSpec, null);
+    }
 
     /**
      * @param element the element whose first {@code leadingLines} lines continue the previous item
      * @param predecessor the element that began that item
      * @param leadingLines how many of the element's opening lines belong to the predecessor's item
      * @param itemSpec per-item line counts for the sublist, as {@link SplitIntoListItemsFix} takes
+     * @param joinInto the list the rebuilt item opens, or null to wrap the predecessor in a new one
      */
     public SplitIntoSublistFix(
-            PdfStructElem element, PdfStructElem predecessor, int leadingLines, String itemSpec) {
+            PdfStructElem element,
+            PdfStructElem predecessor,
+            int leadingLines,
+            String itemSpec,
+            PdfStructElem joinInto) {
         this.element = element;
         this.predecessor = predecessor;
         this.leadingLines = leadingLines;
         this.itemSpec = itemSpec;
+        this.joinInto = joinInto;
     }
 
     @Override
@@ -113,8 +126,9 @@ public final class SplitIntoSublistFix implements IssueFix {
     // == Structure tree ==================================================
 
     /**
-     * Returns the LBody of the predecessor's list item, wrapping a bare predecessor in a new L &gt;
-     * LI &gt; LBody chain at its own position first.
+     * Returns the LBody of the predecessor's list item. A predecessor already inside an LBody keeps
+     * it; otherwise the item is built as the opening item of {@code joinInto}, or, with no list to
+     * join, as a new L &gt; LI &gt; LBody chain at the predecessor's own position.
      */
     private PdfStructElem ensureItemBody(DocContext ctx, PdfPage page) {
         if (predecessor.getParent() instanceof PdfStructElem parentElem
@@ -125,12 +139,19 @@ public final class SplitIntoSublistFix implements IssueFix {
         if (!(predecessor.getParent() instanceof PdfStructElem container)) {
             throw new IllegalStateException("Predecessor has no structure-element parent");
         }
-        int index = StructTree.findKidIndex(container, predecessor);
 
-        PdfStructElem list = new PdfStructElem(ctx.doc(), PdfName.L);
-        container.addKid(index, list);
+        PdfStructElem list;
         PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        list.addKid(li);
+        if (joinInto != null) {
+            // The item this element continues opens a list already tagged after it, so it
+            // belongs at that list's head rather than in a second list beside it.
+            list = joinInto;
+            list.addKid(0, li);
+        } else {
+            list = new PdfStructElem(ctx.doc(), PdfName.L);
+            container.addKid(StructTree.findKidIndex(container, predecessor), list);
+            list.addKid(li);
+        }
         PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
         li.addKid(lBody);
 

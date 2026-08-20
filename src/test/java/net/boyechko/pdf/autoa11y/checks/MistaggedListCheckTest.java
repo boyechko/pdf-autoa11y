@@ -14,12 +14,14 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.Style;
 import com.itextpdf.layout.element.Link;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Text;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,22 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     // == Bullet census evidence ==========================================
+
+    /** Finds a structure element by object number anywhere under the Document. */
+    private static PdfStructElem elementByObjNum(PdfDocument doc, int objNum) {
+        return allElements(StructTree.findDocument(doc.getStructTreeRoot())).stream()
+                .filter(elem -> StructTree.objNum(elem) == objNum)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no element #" + objNum));
+    }
+
+    private static List<PdfStructElem> allElements(PdfStructElem root) {
+        List<PdfStructElem> all = new ArrayList<>();
+        all.add(root);
+        StructTree.childrenOf(root, PdfStructElem.class)
+                .forEach(kid -> all.addAll(allElements(kid)));
+        return all;
+    }
 
     /** Maps object number to the census issue's message for every lumped element found. */
     private static Map<Integer, String> lumpedElementsIn(MistaggedListCheck check) {
@@ -115,6 +133,28 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             assertTrue(issue.message().contains("10 bullet glyphs"), issue.message());
             assertInstanceOf(SplitIntoSublistFix.class, issue.fix());
+        }
+    }
+
+    @Test
+    void rebuiltItemJoinsTheListAlreadyTaggedAfterIt() throws Exception {
+        // P #75's item and L #77's items share a bullet indent, so remediation must end with
+        // one three-item list — the rebuilt item, then L #77's two — not two lists in a row.
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(CATALOG_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            walkWith(pdfDoc, check);
+            check.getIssues().applyFixes(new DocContext(pdfDoc));
+
+            PdfStructElem list = elementByObjNum(pdfDoc, 77);
+            assertEquals(
+                    "L[LI[LBody[P[],P[],L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],"
+                            + "LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],"
+                            + "LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]]]]],"
+                            + "LI[LBody[P[]]],LI[LBody[P[]]]]",
+                    StructTree.toRoleTreeString(list),
+                    "one list of three items, the first carrying the ten-item sublist");
         }
     }
 
