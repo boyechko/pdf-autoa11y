@@ -100,6 +100,11 @@ public final class SplitIntoListItemsFix implements IssueFix {
     }
 
     @Override
+    public int priority() {
+        return 5; // census phase: before list creation (10), LBody wraps (20), merges (30)
+    }
+
+    @Override
     public void apply(DocContext ctx) throws Exception {
         if (expectedLines != null && expectedLines < 2) {
             throw new IllegalArgumentException(
