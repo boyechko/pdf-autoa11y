@@ -272,9 +272,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
         // The element's bare-int MCRs resolve their page via ancestor /Pg; pin the page on the
         // element itself so the move cannot orphan them.
-        if (element.getPdfObject().get(PdfName.Pg) == null) {
-            element.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-        }
+        ListAssembler.pinPage(element, page);
         container.removeKid(element);
         lBody.addKid(element);
         return li;

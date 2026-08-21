@@ -155,7 +155,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
         li.addKid(lBody);
 
-        pinPage(predecessor, page);
+        ListAssembler.pinPage(predecessor, page);
         container.removeKid(predecessor);
         lBody.addKid(predecessor);
         ListItemScribble.update(list, "continued item, ");
@@ -167,7 +167,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         if (!(element.getParent() instanceof PdfStructElem container)) {
             throw new IllegalStateException("Element has no structure-element parent");
         }
-        pinPage(element, page);
+        ListAssembler.pinPage(element, page);
         container.removeKid(element);
         itemBody.addKid(StructTree.findKidIndex(itemBody, predecessor) + 1, element);
     }
@@ -181,16 +181,9 @@ public final class SplitIntoSublistFix implements IssueFix {
         PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
         li.addKid(lBody);
         PdfStructElem tail = new PdfStructElem(ctx.doc(), element.getRole());
-        pinPage(tail, page);
+        ListAssembler.pinPage(tail, page);
         lBody.addKid(tail);
         return tail;
-    }
-
-    /** Pins /Pg so an element's bare-number MCRs keep resolving their page after a move. */
-    private static void pinPage(PdfStructElem elem, PdfPage page) {
-        if (elem.getPdfObject().get(PdfName.Pg) == null) {
-            elem.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-        }
     }
 
     // == Marked content ==================================================
