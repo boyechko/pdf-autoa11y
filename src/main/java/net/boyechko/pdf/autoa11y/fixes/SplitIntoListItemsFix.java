@@ -263,19 +263,11 @@ public final class SplitIntoListItemsFix implements IssueFix {
         }
         int index = StructTree.findKidIndex(container, element);
 
-        PdfStructElem list = new PdfStructElem(ctx.doc(), PdfName.L);
-        container.addKid(index, list);
-        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        list.addKid(li);
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        li.addKid(lBody);
-
-        // The element's bare-int MCRs resolve their page via ancestor /Pg; pin the page on the
-        // element itself so the move cannot orphan them.
-        ListAssembler.pinPage(element, page);
-        container.removeKid(element);
-        lBody.addKid(element);
-        return li;
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem list = assembler.newListAt(container, index);
+        PdfStructElem lBody = assembler.newItemBody(list);
+        assembler.adoptIntoBody(lBody, element, page);
+        return (PdfStructElem) lBody.getParent();
     }
 
     /**
@@ -345,15 +337,9 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     /** Creates an LI &gt; LBody &gt; P item at the given list position, returning the P. */
     private PdfStructElem newItemBody(DocContext ctx, PdfStructElem list, int index, PdfPage page) {
-        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        list.addKid(index, li);
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        li.addKid(lBody);
-        PdfStructElem p = new PdfStructElem(ctx.doc(), element.getRole());
-        // Set /Pg on the immediate parent of MCRs so Acrobat preflight accepts them.
-        p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-        lBody.addKid(p);
-        return p;
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem lBody = assembler.newItemBody(list, index);
+        return assembler.newContentIn(lBody, element.getRole(), page);
     }
 
     /**

@@ -53,6 +53,26 @@ final class ListAssembler {
         return lBody;
     }
 
+    /**
+     * Creates a content element of the given role inside the LBody and returns it. /Pg is set on
+     * the new element — the immediate parent of future MCRs — so Acrobat preflight accepts them.
+     */
+    PdfStructElem newContentIn(PdfStructElem lBody, PdfName role, PdfPage page) {
+        PdfStructElem content = new PdfStructElem(doc, role);
+        content.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+        lBody.addKid(content);
+        return content;
+    }
+
+    /** Moves an element into an LBody, pinning /Pg first so the move cannot orphan its MCRs. */
+    void adoptIntoBody(PdfStructElem lBody, PdfStructElem elem, PdfPage page) {
+        pinPage(elem, page);
+        if (elem.getParent() instanceof PdfStructElem container) {
+            container.removeKid(elem);
+        }
+        lBody.addKid(elem);
+    }
+
     /** Pins /Pg so an element's bare-number MCRs keep resolving their page after a move. */
     static void pinPage(PdfStructElem elem, PdfPage page) {
         if (elem.getPdfObject().get(PdfName.Pg) == null) {
