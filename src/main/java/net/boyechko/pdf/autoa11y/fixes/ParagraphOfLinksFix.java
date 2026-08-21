@@ -8,13 +8,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Converts a P element containing only links to an L element. */
 public final class ParagraphOfLinksFix implements IssueFix {
-    private static final Logger logger = LoggerFactory.getLogger(ParagraphOfLinksFix.class);
-    private static int MINIMUM_KIDS_COUNT = 2;
 
     protected final PdfStructElem parent;
     protected final List<PdfStructElem> kids;
@@ -25,37 +21,6 @@ public final class ParagraphOfLinksFix implements IssueFix {
                 kids != null
                         ? kids.stream().map(kid -> (PdfStructElem) kid).collect(Collectors.toList())
                         : List.of();
-    }
-
-    public static IssueFix tryCreate(PdfStructElem parent, List<PdfStructElem> kids) {
-        logger.debug(
-                "Trying to create ParagraphOfLinksFix for P element with {} kids", kids.size());
-        PdfName parentRole = parent.getRole();
-        if (!PdfName.P.equals(parentRole) || kids.size() < MINIMUM_KIDS_COUNT) {
-            logger.debug(
-                    "ParagraphOfLinksFix not applicable: parent role is {} and kids count is {}",
-                    parentRole,
-                    kids.size());
-            return null;
-        }
-
-        if (!kids.stream().allMatch(kid -> PdfName.Link.equals(kid.getRole()))) {
-            logger.debug("ParagraphOfLinksFix not applicable: kids are not all links");
-            return null;
-        }
-
-        // Reject if parent has non-struct-elem kids (MCRs/OBJRs) that would be
-        // orphaned under L — only convert when ALL kids are struct elements.
-        var allKids = parent.getKids();
-        if (allKids != null && allKids.size() != kids.size()) {
-            logger.debug(
-                    "ParagraphOfLinksFix not applicable: parent has {} total kids but {} struct kids",
-                    allKids.size(),
-                    kids.size());
-            return null;
-        }
-
-        return new ParagraphOfLinksFix(parent, kids);
     }
 
     @Override
