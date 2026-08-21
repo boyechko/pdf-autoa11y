@@ -90,16 +90,9 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     // -- Bullet evidence --
     private static final int BULLET_MIN_RUN_LENGTH = 1;
-    private static final float Y_OVERLAP_TOLERANCE = 3.0f;
 
     /** Maximum element height to match — roughly two lines of text. */
     private static final float MAX_ELEMENT_HEIGHT = 30.0f;
-
-    /** Minimum bullet indent (pt) for a run to count as a sublist of the preceding list. */
-    private static final float SUBLIST_INDENT_MIN = 10.0f;
-
-    /** Maximum bullet x-difference (pt) for bullets to count as the same list level. */
-    private static final float SAME_LEVEL_TOLERANCE = 3.0f;
 
     // -- Bullet census --
     /** Tolerance (pt) for deciding a bullet sits on a given text line. */
@@ -182,7 +175,8 @@ public class MistaggedListCheck extends StructTreeCheck {
         List<Integer> itemStarts = new ArrayList<>();
         for (int i = 0; i < lineBullets.size(); i++) {
             Float bulletX = lineBullets.get(i);
-            if (bulletX != null && Math.abs(bulletX - ownLevelX) <= SAME_LEVEL_TOLERANCE) {
+            if (bulletX != null
+                    && Math.abs(bulletX - ownLevelX) <= BulletMatcher.SAME_LEVEL_TOLERANCE) {
                 itemStarts.add(i);
             }
         }
@@ -296,7 +290,8 @@ public class MistaggedListCheck extends StructTreeCheck {
         }
         List<Float> bulleted =
                 bulletXPerLine(ctx, opener).stream().filter(Objects::nonNull).toList();
-        if (bulleted.size() != 1 || ownLevelX - bulleted.get(0) < SUBLIST_INDENT_MIN) {
+        if (bulleted.size() != 1
+                || ownLevelX - bulleted.get(0) < BulletMatcher.SUBLIST_INDENT_MIN) {
             return null;
         }
         return new ContinuedItem(
@@ -317,8 +312,8 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (!"L".equals(StructTree.mappedRole(following))) {
             return null;
         }
-        float listX = listItemBulletX(ctx, following, false);
-        if (Float.isNaN(listX) || Math.abs(listX - openerX) > SAME_LEVEL_TOLERANCE) {
+        float listX = BulletMatcher.listItemBulletX(ctx, following, false);
+        if (Float.isNaN(listX) || Math.abs(listX - openerX) > BulletMatcher.SAME_LEVEL_TOLERANCE) {
             return null;
         }
         return following;
@@ -331,7 +326,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     private List<Float> bulletXPerLine(StructTreeContext ctx, PdfStructElem element) {
         List<Float> perLine = new ArrayList<>();
         for (int pageNum : pagesTouchedBy(element)) {
-            List<Content.BulletPosition> bullets = bulletsFor(ctx, pageNum);
+            List<Content.BulletPosition> bullets = BulletMatcher.bulletsFor(ctx, pageNum);
             for (Rectangle line : Content.getLineBoundsForElement(element, ctx.docCtx(), pageNum)) {
                 perLine.add(bulletOnLine(bullets, line));
             }
@@ -412,13 +407,14 @@ public class MistaggedListCheck extends StructTreeCheck {
                     pageNum > 0 ? Content.getBoundsForElement(child, ctx.docCtx(), pageNum) : null;
             Content.BulletPosition bullet =
                     bounds != null && bounds.getHeight() <= MAX_ELEMENT_HEIGHT
-                            ? findMatchingBullet(bulletsFor(ctx, pageNum), bounds)
+                            ? BulletMatcher.findMatchingBullet(
+                                    BulletMatcher.bulletsFor(ctx, pageNum), bounds)
                             : null;
             if (bullet != null) {
                 if (currentRun.isEmpty()) {
                     runPredecessor = i > 0 ? ctx.children().get(i - 1) : null;
                     runBulletX = bullet.x();
-                } else if (Math.abs(bullet.x() - runBulletX) > SAME_LEVEL_TOLERANCE) {
+                } else if (Math.abs(bullet.x() - runBulletX) > BulletMatcher.SAME_LEVEL_TOLERANCE) {
                     runUniform = false;
                 }
                 currentRun.add(child);
@@ -437,14 +433,6 @@ public class MistaggedListCheck extends StructTreeCheck {
             }
         }
         emitRun(ctx, currentRun, runPredecessor, runBulletX, runUniform);
-    }
-
-    /** Returns the (cached) bullet glyph positions for a page. */
-    private List<Content.BulletPosition> bulletsFor(StructTreeContext ctx, int pageNum) {
-        return ctx.docCtx()
-                .getOrComputeBulletPositions(
-                        pageNum,
-                        () -> Content.extractBulletPositionsForPage(ctx.doc().getPage(pageNum)));
     }
 
     /**
@@ -495,8 +483,8 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (!"L".equals(StructTree.mappedRole(predecessor))) {
             return null;
         }
-        float listX = listItemBulletX(ctx, predecessor, true);
-        if (Float.isNaN(listX) || bulletX - listX < SUBLIST_INDENT_MIN) {
+        float listX = BulletMatcher.listItemBulletX(ctx, predecessor, true);
+        if (Float.isNaN(listX) || bulletX - listX < BulletMatcher.SUBLIST_INDENT_MIN) {
             return null;
         }
         return predecessor;
@@ -505,11 +493,11 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Emits a merge fix when two lists flanking a nested sublist share the same indent. */
     private void emitMergeIfSameLevel(
             StructTreeContext ctx, PdfStructElem first, PdfStructElem second) {
-        float firstX = listItemBulletX(ctx, first, true);
-        float secondX = listItemBulletX(ctx, second, false);
+        float firstX = BulletMatcher.listItemBulletX(ctx, first, true);
+        float secondX = BulletMatcher.listItemBulletX(ctx, second, false);
         if (Float.isNaN(firstX)
                 || Float.isNaN(secondX)
-                || Math.abs(firstX - secondX) > SAME_LEVEL_TOLERANCE) {
+                || Math.abs(firstX - secondX) > BulletMatcher.SAME_LEVEL_TOLERANCE) {
             return;
         }
 
@@ -526,28 +514,6 @@ public class MistaggedListCheck extends StructTreeCheck {
                 "Detected split list: #{} and #{} flank a sublist at the same indent",
                 StructTree.objNum(first),
                 StructTree.objNum(second));
-    }
-
-    /** Returns the bullet x-position matched to a list's first or last item, or NaN. */
-    private float listItemBulletX(StructTreeContext ctx, PdfStructElem list, boolean lastItem) {
-        List<PdfStructElem> items =
-                StructTree.childrenOf(list, PdfStructElem.class).stream()
-                        .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
-                        .toList();
-        if (items.isEmpty()) {
-            return Float.NaN;
-        }
-        PdfStructElem li = items.get(lastItem ? items.size() - 1 : 0);
-        int pageNum = StructTree.pageOf(li, ctx.docCtx());
-        if (pageNum <= 0) {
-            return Float.NaN;
-        }
-        Rectangle bounds = Content.getBoundsForElement(li, ctx.docCtx(), pageNum);
-        if (bounds == null) {
-            return Float.NaN;
-        }
-        Content.BulletPosition bullet = findMatchingBullet(bulletsFor(ctx, pageNum), bounds);
-        return bullet != null ? bullet.x() : Float.NaN;
     }
 
     /** A group of consecutive raw kids that align with the same bullet y-position. */
@@ -579,12 +545,13 @@ public class MistaggedListCheck extends StructTreeCheck {
             }
 
             Content.BulletPosition matchedBullet =
-                    findMatchingBullet(bulletsFor(ctx, kidPage), kidBounds);
+                    BulletMatcher.findMatchingBullet(
+                            BulletMatcher.bulletsFor(ctx, kidPage), kidBounds);
             if (matchedBullet != null) {
                 boolean sameBullet =
                         kidPage == currentPage
                                 && Math.abs(currentBulletY - matchedBullet.y())
-                                        < Y_OVERLAP_TOLERANCE;
+                                        < BulletMatcher.Y_OVERLAP_TOLERANCE;
                 if (!currentGroup.isEmpty() && !sameBullet) {
                     // Different bullet — flush current group and start new one
                     groups.add(
@@ -679,16 +646,5 @@ public class MistaggedListCheck extends StructTreeCheck {
             return Content.getBoundsForElement(structKid, ctx.docCtx(), pageNum);
         }
         return null;
-    }
-
-    /** Finds the bullet that matches a given bounding box, or null if none matches. */
-    private Content.BulletPosition findMatchingBullet(
-            List<Content.BulletPosition> bullets, Rectangle bounds) {
-        float bottom = bounds.getBottom() - Y_OVERLAP_TOLERANCE;
-        float top = bounds.getTop() + Y_OVERLAP_TOLERANCE;
-        return bullets.stream()
-                .filter(b -> b.y() >= bottom && b.y() <= top)
-                .findFirst()
-                .orElse(null);
     }
 }
