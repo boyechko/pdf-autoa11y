@@ -14,6 +14,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ final class LinkParagraphDetector {
             return;
         }
 
-        IssueLoc loc = IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), ctx.role(), ctx.path());
+        IssueLoc loc = StructTreeCheck.locAtElem(ctx);
         candidates.add(new Candidate(ctx.node(), ctx.children(), loc));
     }
 

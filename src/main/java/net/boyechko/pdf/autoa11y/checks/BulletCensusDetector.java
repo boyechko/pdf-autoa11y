@@ -15,9 +15,9 @@ import net.boyechko.pdf.autoa11y.fixes.SplitIntoListItemsFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +81,7 @@ final class BulletCensusDetector {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        locAtNode(ctx),
+                        StructTreeCheck.locAtElem(ctx),
                         itemStarts.size() + " bullet glyphs lumped into one element (" + spec + ")",
                         new SplitIntoListItemsFix(ctx.node(), spec)));
 
@@ -115,7 +115,7 @@ final class BulletCensusDetector {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        locAtNode(ctx),
+                        StructTreeCheck.locAtElem(ctx),
                         itemStarts.size()
                                 + " bullet glyphs in one element, behind "
                                 + leadingLines
@@ -256,9 +256,5 @@ final class BulletCensusDetector {
             sizes.add(end - itemStarts.get(i));
         }
         return sizes;
-    }
-
-    private static IssueLoc locAtNode(StructTreeContext ctx) {
-        return IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), ctx.role(), ctx.path());
     }
 }
