@@ -65,12 +65,12 @@ public abstract class StructTreeCheck implements Check {
     public abstract IssueList getIssues();
 
     /// Returns an [IssueLoc] for [StructTreeContext#node()] in `ctx`.
-    protected static IssueLoc locAtElem(StructTreeContext ctx) {
+    public static IssueLoc locAtElem(StructTreeContext ctx) {
         return IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), ctx.role(), ctx.path());
     }
 
     /// Returns an [IssueLoc] for `element` using page/role/path from `ctx`.
-    protected static IssueLoc locAtElem(StructTreeContext ctx, PdfStructElem element) {
+    public static IssueLoc locAtElem(StructTreeContext ctx, PdfStructElem element) {
         return IssueLoc.atElem(
                 element, ctx.getPageNumber(), StructTree.mappedRole(element), ctx.path());
     }
