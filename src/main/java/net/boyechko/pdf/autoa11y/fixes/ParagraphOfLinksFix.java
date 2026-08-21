@@ -61,12 +61,9 @@ public final class ParagraphOfLinksFix implements IssueFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         parent.setRole(PdfName.L);
+        ListAssembler assembler = new ListAssembler(ctx.doc());
         for (PdfStructElem kid : kids) {
-            PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-            PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-            parent.addKid(li);
-            li.addKid(lBody);
-            lBody.addKid(kid);
+            assembler.newItemBody(parent).addKid(kid);
             parent.removeKid(kid);
         }
         ListItemScribble.update(parent, "P of links, ");

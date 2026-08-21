@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
@@ -77,22 +76,16 @@ public final class WrapParagraphRunInList implements IssueFix {
 
         // Create an L element: nested inside the preceding list item for a sublist,
         // otherwise a sibling at the saved position
-        PdfStructElem listElem = new PdfStructElem(ctx.doc(), PdfName.L);
+        ListAssembler assembler = new ListAssembler(ctx.doc());
         PdfStructElem sublistHost = findSublistHost();
-        if (sublistHost != null) {
-            sublistHost.addKid(listElem);
-        } else {
-            actualParent.addKid(insertIndex, listElem);
-        }
+        PdfStructElem listElem =
+                sublistHost != null
+                        ? assembler.newListIn(sublistHost)
+                        : assembler.newListAt(actualParent, insertIndex);
 
         // Build LI > LBody > P structure under L
         for (PdfStructElem p : kids) {
-            PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-            PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-
-            listElem.addKid(li);
-            li.addKid(lBody);
-            lBody.addKid(p);
+            assembler.newItemBody(listElem).addKid(p);
         }
         ListItemScribble.update(listElem, "paragraph run, ");
 
