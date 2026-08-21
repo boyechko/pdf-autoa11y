@@ -3,22 +3,18 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.ParagraphOfLinksFix;
@@ -29,7 +25,6 @@ import net.boyechko.pdf.autoa11y.fixes.WrapParagraphRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -118,19 +113,9 @@ public class MistaggedListCheck extends StructTreeCheck {
     private static final float LEFT_EDGE_TOLERANCE = 2.0f;
     private static final float INDENT_THRESHOLD = 10.0f;
 
-    // -- Link evidence --
-    private static final int MIN_LINKS_COUNT = 2;
-
     private final IssueList issues = new IssueList();
-
-    /** Object numbers of elements already claimed by a stronger evidence pass. */
-    private final Set<Integer> claimed = new HashSet<>();
-
-    /** Link-only paragraphs collected during traversal, reconciled in afterTraversal. */
-    private final List<LinkParagraphCandidate> linkParagraphs = new ArrayList<>();
-
-    private record LinkParagraphCandidate(
-            PdfStructElem node, List<PdfStructElem> children, IssueLoc loc) {}
+    private final ClaimRegistry claims = new ClaimRegistry();
+    private final LinkParagraphDetector linkParagraphs = new LinkParagraphDetector(claims, issues);
 
     @Override
     public String name() {
@@ -144,7 +129,7 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     @Override
     public boolean enterElement(StructTreeContext ctx) {
-        collectLinkParagraphCandidate(ctx);
+        linkParagraphs.collect(ctx);
         return true;
     }
 
@@ -166,7 +151,7 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     @Override
     public void afterTraversal(DocContext docCtx) {
-        emitUnclaimedLinkParagraphs();
+        linkParagraphs.emitUnclaimed();
     }
 
     @Override
@@ -175,11 +160,11 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     private void claim(PdfStructElem elem) {
-        claimed.add(StructTree.objNum(elem));
+        claims.claim(elem);
     }
 
     private boolean isClaimed(PdfStructElem elem) {
-        return claimed.contains(StructTree.objNum(elem));
+        return claims.isClaimed(elem);
     }
 
     // == Bullet census evidence ==========================================
@@ -836,57 +821,6 @@ public class MistaggedListCheck extends StructTreeCheck {
             return (sorted.get(n / 2 - 1) + sorted.get(n / 2)) / 2.0f;
         }
         return sorted.get(n / 2);
-    }
-
-    // == Link evidence ===================================================
-
-    /** Collects elements whose children are all Links; emitted later unless claimed. */
-    private void collectLinkParagraphCandidate(StructTreeContext ctx) {
-        if (ctx.children().size() < MIN_LINKS_COUNT) {
-            return;
-        }
-
-        // Skip if the element has non-struct-elem kids (MCRs/OBJRs) that would
-        // be orphaned when we convert Link children to LI > LBody > Link.
-        var allKids = ctx.node().getKids();
-        if (allKids != null && allKids.size() != ctx.children().size()) {
-            return;
-        }
-
-        if (!ctx.children().stream().allMatch(c -> c.getRole().equals(PdfName.Link))) {
-            return;
-        }
-
-        // Links that all point at one destination are one logical link the authoring
-        // tool split across lines, not list items. Splitting them into LIs would turn a
-        // single entry into a phantom two-item list.
-        if (Link.allShareOneDestination(ctx.children())) {
-            logger.debug(
-                    "Skipping link paragraph {}: all links share one destination",
-                    DocValue.ObjNum.of(ctx.node()));
-            return;
-        }
-
-        linkParagraphs.add(new LinkParagraphCandidate(ctx.node(), ctx.children(), locAtElem(ctx)));
-    }
-
-    /** Emits link-paragraph issues for candidates no stronger evidence pass claimed. */
-    private void emitUnclaimedLinkParagraphs() {
-        for (LinkParagraphCandidate candidate : linkParagraphs) {
-            if (isClaimed(candidate.node())) {
-                continue;
-            }
-
-            IssueFix fix = new ParagraphOfLinksFix(candidate.node(), candidate.children());
-            Issue issue =
-                    new Issue(
-                            IssueType.PARAGRAPH_OF_LINKS,
-                            IssueSev.ERROR,
-                            candidate.loc(),
-                            "Paragraph contains only links",
-                            fix);
-            issues.add(issue);
-        }
     }
 
     // == Shared helpers ==================================================
