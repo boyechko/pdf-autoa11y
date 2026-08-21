@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
@@ -140,24 +139,17 @@ public final class SplitIntoSublistFix implements IssueFix {
             throw new IllegalStateException("Predecessor has no structure-element parent");
         }
 
-        PdfStructElem list;
-        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        if (joinInto != null) {
-            // The item this element continues opens a list already tagged after it, so it
-            // belongs at that list's head rather than in a second list beside it.
-            list = joinInto;
-            list.addKid(0, li);
-        } else {
-            list = new PdfStructElem(ctx.doc(), PdfName.L);
-            container.addKid(StructTree.findKidIndex(container, predecessor), list);
-            list.addKid(li);
-        }
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        li.addKid(lBody);
-
-        ListAssembler.pinPage(predecessor, page);
-        container.removeKid(predecessor);
-        lBody.addKid(predecessor);
+        // With a joinInto list, the item this element continues opens a list already tagged
+        // after it, so it belongs at that list's head rather than in a second list beside it.
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem list =
+                joinInto != null
+                        ? joinInto
+                        : assembler.newListAt(
+                                container, StructTree.findKidIndex(container, predecessor));
+        PdfStructElem lBody =
+                joinInto != null ? assembler.newItemBody(list, 0) : assembler.newItemBody(list);
+        assembler.adoptIntoBody(lBody, predecessor, page);
         ListItemScribble.update(list, "continued item, ");
         return lBody;
     }
@@ -174,16 +166,10 @@ public final class SplitIntoSublistFix implements IssueFix {
 
     /** Builds an empty L &gt; LI &gt; LBody &gt; P sublist in the item body and returns the P. */
     private PdfStructElem buildSublistTail(DocContext ctx, PdfStructElem itemBody, PdfPage page) {
-        PdfStructElem sublist = new PdfStructElem(ctx.doc(), PdfName.L);
-        itemBody.addKid(sublist);
-        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        sublist.addKid(li);
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        li.addKid(lBody);
-        PdfStructElem tail = new PdfStructElem(ctx.doc(), element.getRole());
-        ListAssembler.pinPage(tail, page);
-        lBody.addKid(tail);
-        return tail;
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem sublist = assembler.newListIn(itemBody);
+        PdfStructElem lBody = assembler.newItemBody(sublist);
+        return assembler.newContentIn(lBody, element.getRole(), page);
     }
 
     // == Marked content ==================================================
