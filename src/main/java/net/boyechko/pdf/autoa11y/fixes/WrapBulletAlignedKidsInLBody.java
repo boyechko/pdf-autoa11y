@@ -99,12 +99,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         ListAssembler assembler = new ListAssembler(ctx.doc());
         PdfStructElem listElem = findOrCreateListElement(ctx, assembler);
         PdfStructElem lBody = assembler.newItemBody(listElem, findInsertPosition(listElem, ctx));
-
-        PdfStructElem newP = new PdfStructElem(ctx.doc(), PdfName.P);
-        if (parent.getPdfObject().containsKey(PdfName.Pg)) {
-            newP.getPdfObject().put(PdfName.Pg, parent.getPdfObject().get(PdfName.Pg));
-        }
-        lBody.addKid(newP);
+        PdfStructElem newP = assembler.newContentIn(lBody, PdfName.P, ctx.doc().getPage(pageNum));
 
         // 4. Move the collected kids into newP.
         //
