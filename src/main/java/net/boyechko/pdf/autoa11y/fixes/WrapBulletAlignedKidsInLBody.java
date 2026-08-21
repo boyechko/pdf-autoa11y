@@ -96,13 +96,9 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
 
         // 3. Build L > LI > LBody > P structure as a sibling of the parent
-        PdfStructElem listElem = findOrCreateListElement(ctx);
-        PdfStructElem li = new PdfStructElem(ctx.doc(), PdfName.LI);
-        int insertPos = findInsertPosition(listElem, ctx);
-        listElem.addKid(insertPos, li);
-
-        PdfStructElem lBody = new PdfStructElem(ctx.doc(), PdfName.LBody);
-        li.addKid(lBody);
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem listElem = findOrCreateListElement(ctx, assembler);
+        PdfStructElem lBody = assembler.newItemBody(listElem, findInsertPosition(listElem, ctx));
 
         PdfStructElem newP = new PdfStructElem(ctx.doc(), PdfName.P);
         if (parent.getPdfObject().containsKey(PdfName.Pg)) {
@@ -163,20 +159,16 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
     }
 
     /** Finds an existing L element adjacent to the parent, or creates one. */
-    private PdfStructElem findOrCreateListElement(DocContext ctx) {
+    private PdfStructElem findOrCreateListElement(DocContext ctx, ListAssembler assembler) {
         IStructureNode container = parent.getParent();
         if (!(container instanceof PdfStructElem containerElem)) {
             // Fallback: create L as child of parent (will be caught by schema check)
-            PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
-            parent.addKid(l);
-            return l;
+            return assembler.newListIn(parent);
         }
 
         int parentIndex = StructTree.findKidIndex(containerElem, parent);
         if (parentIndex < 0) {
-            PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
-            parent.addKid(l);
-            return l;
+            return assembler.newListIn(parent);
         }
 
         // Look for an existing L element immediately before or after the parent —
@@ -195,9 +187,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
         }
 
         // No adjacent L — create one after the parent
-        PdfStructElem l = new PdfStructElem(ctx.doc(), PdfName.L);
-        StructTree.addKidToParent(containerElem, listIndex, l);
-        return l;
+        return assembler.newListAt(containerElem, listIndex);
     }
 
     /** Determines where to insert the new LI, ordered by page then bullet y-position. */
