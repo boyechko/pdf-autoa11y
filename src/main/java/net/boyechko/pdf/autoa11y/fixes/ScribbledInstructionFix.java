@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -45,6 +46,7 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
+    private static final Pattern MERGE_PATTERN = Pattern.compile("!MERGE");
     private static final Pattern REORDER_KIDS_PATTERN = Pattern.compile("!REORDER_KIDS");
     private static final Pattern SET_ROLE_PATTERN = Pattern.compile("!SET_ROLE\\s+(\\S+)");
     private static final Pattern SPLIT_LINES_PATTERN =
@@ -68,6 +70,7 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
         Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
+        Matcher merge = MERGE_PATTERN.matcher(instruction);
         Matcher reorderKids = REORDER_KIDS_PATTERN.matcher(instruction);
         Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
         Matcher splitLines = SPLIT_LINES_PATTERN.matcher(instruction);
@@ -84,6 +87,8 @@ public class ScribbledInstructionFix implements IssueFix {
             okScribble = applyAddParent(ctx, addParent.group(1));
         } else if (artifact.matches()) {
             okScribble = applyArtifact(ctx);
+        } else if (merge.matches()) {
+            okScribble = applyMerge();
         } else if (reorderKids.matches()) {
             okScribble = applyReorderKids(ctx);
         } else if (setRole.matches()) {
@@ -356,6 +361,73 @@ public class ScribbledInstructionFix implements IssueFix {
     /** Returns true if the instruction operates on the entire subtree, not just the element. */
     public static boolean isSubtreeInstruction(String instruction) {
         return ARTIFACT_PATTERN.matcher(instruction).matches();
+    }
+
+    // === Instruction: MERGE ==================================================
+
+    /** Pattern for reading back the running count from an earlier merge's breadcrumb. */
+    private static final Pattern MERGED_COUNT_PATTERN =
+            Pattern.compile(Pattern.quote(OK_SCRIBBLE) + " \\(absorbed (\\d+)\\)");
+
+    /**
+     * Folds the element's kids into its preceding sibling and removes the emptied element, so a run
+     * of siblings a tagger split apart reads as one. Marked as {@code !MERGE} on each element to be
+     * absorbed, a whole run collapses leftward: every fix resolves its preceding sibling against
+     * the current tree, so by the time the third element merges, the second is already gone. The
+     * element is destroyed, so the breadcrumb goes on the survivor instead.
+     */
+    private String applyMerge() {
+        if (!(element.getParent() instanceof PdfStructElem parent)) {
+            throw new IllegalArgumentException("!MERGE requires an element with a parent element");
+        }
+        int index = StructTree.findKidIndex(parent, element);
+        if (index < 0) {
+            // /P points at the parent but the parent's /K does not list the element back:
+            // a malformed tree, or a wrapper left stale by an earlier fix that detached it.
+            throw new IllegalArgumentException(
+                    "!MERGE refuses: element is not among its parent's kids (dangling /P)");
+        }
+        if (index == 0) {
+            throw new IllegalArgumentException(
+                    "!MERGE refuses: there is no preceding sibling element to merge into");
+        }
+        if (!(parent.getKids().get(index - 1) instanceof PdfStructElem target)) {
+            throw new IllegalArgumentException(
+                    "!MERGE refuses: preceding sibling is marked content, not an element");
+        }
+        if (!StructTree.mappedRole(element).equals(StructTree.mappedRole(target))) {
+            throw new IllegalArgumentException(
+                    "!MERGE refuses: preceding sibling has a different mapped role");
+        }
+
+        // Pin the page the absorbed element resolved through, so bare-int MCRs moving into a
+        // page-less survivor still find one. Cross-page kids are handled by moveKid.
+        PdfObject effectivePg = StructTree.effectivePageDict(element);
+        if (effectivePg != null && StructTree.effectivePageDict(target) == null) {
+            target.getPdfObject().put(PdfName.Pg, effectivePg);
+            target.setModified();
+        }
+
+        for (IStructureNode kid : kidsOf(element)) {
+            StructTree.moveKid(kid, element, target);
+        }
+        parent.removeKid(element);
+        breadcrumbMerge(target);
+        return null;
+    }
+
+    /** Stamps "INST OK (absorbed N)" on the survivor, folding in an earlier merge's count. */
+    private static void breadcrumbMerge(PdfStructElem target) {
+        DocValue.Scribble existing = StructTree.getScribble(target);
+        int absorbed = 1;
+        if (existing != null) {
+            Matcher m = MERGED_COUNT_PATTERN.matcher(existing.value());
+            if (m.find()) {
+                absorbed += Integer.parseInt(m.group(1));
+            }
+        }
+        StructTree.clearScribbleSegments(target, INSTRUCTION_TAG);
+        StructTree.addScribble(target, OK_SCRIBBLE + " (absorbed " + absorbed + ")");
     }
 
     // === Instruction: REORDER ================================================

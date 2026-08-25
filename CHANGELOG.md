@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `!MERGE` scribbled instruction: folds an element's kids into the preceding
+  sibling element with the same mapped role. Marking a run of elements collapses
+  them all leftward, and content moving across a page break keeps its own page.
 - New `tools/` directory for development scripts that support the repo
   without being part of the build. `extract-fixture.sh` cuts a goal-driven
   test fixture out of a working PDF, verifying the named check still fires
