@@ -5,11 +5,10 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import com.itextpdf.kernel.pdf.tagutils.TagStructureContext;
+import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -126,44 +125,80 @@ public final class StructTree {
         return null;
     }
 
-    /**
-     * Moves a kid (struct elem, MCR, or OBJR) from one parent to another. For MCRs and OBJRs, a
-     * fresh wrapper is constructed so iText's ParentTreeHandler sees the correct parent when
-     * emitting the ParentTree.
-     */
-    public static void moveKid(
-            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
-        if (kid instanceof PdfStructElem childElem) {
-            fromParent.removeKid(childElem);
-            toParent.addKid(childElem);
-        } else if (kid instanceof PdfObjRef objRef) {
-            PdfDictionary objRefDict = (PdfDictionary) objRef.getPdfObject();
-            fromParent.removeKid(objRef);
-            toParent.addKid(new PdfObjRef(objRefDict, toParent));
-        } else if (kid instanceof PdfMcr mcr) {
-            PdfObject underlying = mcr.getPdfObject();
-            fromParent.removeKid(mcr);
-            PdfMcr rebound =
-                    underlying instanceof PdfNumber num
-                            ? new PdfMcrNumber(num, toParent)
-                            : new PdfMcrDictionary((PdfDictionary) underlying, toParent);
-            toParent.addKid(rebound);
-        } else {
-            logger.warn("Unexpected kid type {} in moveKid", kid.getClass());
+    /** Moves every kid of {@code from} into {@code to}, preserving their order. */
+    public static void moveKids(PdfStructElem from, PdfStructElem to) {
+        for (IStructureNode kid : kidsOf(from)) {
+            moveKid(kid, from, to);
         }
     }
 
-    /** Finds the index of a kid element within a parent's kids list (via getKids). */
-    public static int findKidIndex(IStructureNode parent, PdfStructElem target) {
-        List<IStructureNode> kids = parent.getKids();
-        if (kids == null) return -1;
+    /**
+     * Moves a kid (struct elem, MCR, or OBJR) from one parent to another, keeping it on the page it
+     * renders on. Delegates to iText's {@link TagTreePointer#relocateKid}, which rebinds the kid to
+     * its new parent and, for an MCR or OBJR, upgrades a bare MCID number to a dictionary carrying
+     * its own /Pg whenever the destination sits on a different page.
+     *
+     * @throws IllegalArgumentException if {@code kid} is not currently a kid of {@code fromParent}
+     */
+    public static void moveKid(
+            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
+        int index = findKidIndex(fromParent, kid);
+        if (index < 0) {
+            throw new IllegalArgumentException(
+                    "Cannot move " + Format.node(kid) + " out of " + Format.elem(fromParent));
+        }
+        // iText resolves an MCR's page from its immediate parent only and
+        // dereferences the result unguarded, while a tagger may leave /Pg on a
+        // more distant ancestor. Writing the inherited value down is a no-op
+        // for readers.
+        materializeInheritedPage(fromParent);
+        materializeInheritedPage(toParent);
+        TagStructureContext context = pdfDocumentFor(fromParent).getTagStructureContext();
+        context.createPointerForStructElem(fromParent)
+                .relocateKid(index, context.createPointerForStructElem(toParent));
+    }
+
+    /**
+     * Finds the index of a kid within a parent's kids list (via getKids). Matching is by underlying
+     * PDF object, so {@code target} must be a node obtained from the tree rather than a freshly
+     * constructed wrapper: a bare MCID number is a direct object, for which identity is the only
+     * available test.
+     */
+    public static int findKidIndex(IStructureNode parent, IStructureNode target) {
+        PdfObject targetObject = pdfObjectOf(target);
+        if (targetObject == null) {
+            logger.warn("Unexpected kid type {} in findKidIndex", target.getClass());
+            return -1;
+        }
+        List<IStructureNode> kids = kidsOf(parent);
         for (int i = 0; i < kids.size(); i++) {
-            IStructureNode kid = kids.get(i);
-            if (kid instanceof PdfStructElem elem && isSameElement(elem, target)) {
+            if (isSame(pdfObjectOf(kids.get(i)), targetObject)) {
                 return i;
             }
         }
         return -1;
+    }
+
+    /** Returns the underlying PDF object of a structure node, or null if it is neither kind. */
+    private static PdfObject pdfObjectOf(IStructureNode node) {
+        if (node instanceof PdfStructElem elem) return elem.getPdfObject();
+        if (node instanceof PdfMcr mcr) return mcr.getPdfObject();
+        return null;
+    }
+
+    /** Copies an ancestor's /Pg onto the element itself, so iText can resolve its kids' pages. */
+    private static void materializeInheritedPage(PdfStructElem elem) {
+        if (elem.getPdfObject().get(PdfName.Pg) != null) return;
+        PdfObject pg = effectivePageDict(elem);
+        if (pg == null) return;
+        PdfIndirectReference ref = pg.getIndirectReference();
+        elem.put(PdfName.Pg, ref != null ? ref : pg);
+    }
+
+    /** Returns a parent's kids, or an empty list where getKids reports none. */
+    public static List<IStructureNode> kidsOf(IStructureNode parent) {
+        List<IStructureNode> kids = parent.getKids();
+        return kids == null ? List.of() : kids;
     }
 
     /** Adds a kid at a specific index (works with both PdfStructElem and PdfStructTreeRoot). */

@@ -6,13 +6,21 @@ import static net.boyechko.pdf.autoa11y.document.StructTree.Node.branch;
 import static net.boyechko.pdf.autoa11y.document.StructTree.Node.leaf;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfArray;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
@@ -210,6 +218,250 @@ class StructTreeTest extends PdfTestBase {
             List<IStructureNode> partKids = part.getKids();
             assertEquals(1, partKids.size());
             assertSame(p.getPdfObject(), ((PdfStructElem) partKids.get(0)).getPdfObject());
+        }
+    }
+
+    @Test
+    void moveKidsGivesCrossPageMcrItsOwnPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            root.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            IStructureNode moved = survivor.getKids().get(0);
+            assertInstanceOf(PdfMcr.class, moved);
+            // A bare number would now resolve through the survivor's page 1, so the MCR must
+            // have been upgraded to a dictionary pinned to page 2.
+            assertEquals(2, StructTree.pageOf((PdfMcr) moved));
+            assertEquals(0, ((PdfMcr) moved).getMcid());
+            assertNull(absorbed.getPdfObject().get(PdfName.K));
+        }
+    }
+
+    @Test
+    void moveKidsLeavesSamePageMcrAsBareNumber() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            survivor.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            root.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(7), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            IStructureNode moved = survivor.getKids().get(0);
+            assertInstanceOf(PdfMcr.class, moved);
+            assertTrue(((PdfMcr) moved).getPdfObject().isNumber(), "should stay a bare MCID");
+            assertEquals(1, StructTree.pageOf((PdfMcr) moved));
+        }
+    }
+
+    @Test
+    void moveKidsKeepsPageOfMcrDictionary() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(absorbed);
+            PdfDictionary mcrDict = new PdfDictionary();
+            mcrDict.put(PdfName.Type, PdfName.MCR);
+            mcrDict.put(PdfName.Pg, page2.getPdfObject().getIndirectReference());
+            mcrDict.put(PdfName.MCID, new PdfNumber(3));
+            absorbed.addKid(new PdfMcrDictionary(mcrDict, absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            IStructureNode moved = survivor.getKids().get(0);
+            assertInstanceOf(PdfMcr.class, moved);
+            assertEquals(2, StructTree.pageOf((PdfMcr) moved));
+        }
+    }
+
+    @Test
+    void moveKidsHandlesInheritedParentPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(survivor);
+            // The absorbed element has no /Pg of its own; it inherits page 2 from its parent.
+            PdfStructElem section = new PdfStructElem(doc, PdfName.Sect);
+            section.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            root.addKid(section);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            section.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            IStructureNode moved = survivor.getKids().get(0);
+            assertInstanceOf(PdfMcr.class, moved);
+            assertEquals(2, StructTree.pageOf((PdfMcr) moved));
+        }
+    }
+
+    @Test
+    void moveKidsAdoptsPageOntoPagelessDestination() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            // The survivor has no /Pg anywhere in its ancestry.
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            root.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            // The destination adopts the page rather than every kid carrying its own /Pg.
+            assertTrue(
+                    StructTree.isSame(
+                            survivor.getPdfObject().get(PdfName.Pg), page2.getPdfObject()));
+            IStructureNode moved = survivor.getKids().get(0);
+            assertTrue(((PdfMcr) moved).getPdfObject().isNumber(), "should stay a bare MCID");
+            assertEquals(2, StructTree.pageOf((PdfMcr) moved));
+        }
+    }
+
+    @Test
+    void moveKidsKeepsDestinationsOwnKidsOnInheritedPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            // The survivor inherits page 1 from its section rather than carrying its own /Pg.
+            PdfStructElem section = new PdfStructElem(doc, PdfName.Sect);
+            section.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(section);
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            section.addKid(survivor);
+            survivor.addKid(new PdfMcrNumber(new PdfNumber(5), survivor));
+
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            root.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            // Without pinning the survivor to its inherited page first, iText would stamp the
+            // incoming kid's page 2 onto it and drag the resident MCID 5 along.
+            List<IStructureNode> kids = survivor.getKids();
+            assertEquals(1, StructTree.pageOf(assertInstanceOf(PdfMcr.class, kids.get(0))));
+            assertEquals(2, StructTree.pageOf(assertInstanceOf(PdfMcr.class, kids.get(1))));
+        }
+    }
+
+    @Test
+    void moveKidsPreservesOrderOfMixedKids() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            survivor.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            absorbed.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            root.addKid(absorbed);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(1), absorbed));
+            PdfStructElem span = new PdfStructElem(doc, new PdfName("Span"));
+            absorbed.addKid(span);
+            absorbed.addKid(new PdfMcrNumber(new PdfNumber(2), absorbed));
+
+            StructTree.moveKids(absorbed, survivor);
+
+            List<IStructureNode> kids = survivor.getKids();
+            assertEquals(3, kids.size());
+            assertEquals(1, assertInstanceOf(PdfMcr.class, kids.get(0)).getMcid());
+            assertTrue(
+                    StructTree.isSameElement(
+                            assertInstanceOf(PdfStructElem.class, kids.get(1)), span));
+            assertEquals(2, assertInstanceOf(PdfMcr.class, kids.get(2)).getMcid());
+        }
+    }
+
+    @Test
+    void moveKidRelocatesObjRefKeepingItsPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfLinkAnnotation annot = new PdfLinkAnnotation(new Rectangle(0, 0, 10, 10));
+            page2.addAnnotation(annot);
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("Link"));
+            survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            root.addKid(survivor);
+            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("Link"));
+            absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            root.addKid(absorbed);
+            PdfObjRef objRef = new PdfObjRef(annot, absorbed, doc.getNextStructParentIndex());
+            absorbed.addKid(objRef);
+
+            StructTree.moveKid(absorbed.getKids().get(0), absorbed, survivor);
+
+            PdfObjRef moved = assertInstanceOf(PdfObjRef.class, survivor.getKids().get(0));
+            assertEquals(2, StructTree.pageOf(moved));
+            assertTrue(StructTree.isSame(moved.getReferencedObject(), annot.getPdfObject()));
+        }
+    }
+
+    @Test
+    void moveKidRejectsNodeThatIsNotAKidOfTheGivenParent() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
+            document.addKid(part);
+            // The paragraph belongs to the part, not to the document.
+            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            part.addKid(p);
+
+            assertThrows(
+                    IllegalArgumentException.class, () -> StructTree.moveKid(p, document, part));
         }
     }
 

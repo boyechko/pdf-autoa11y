@@ -220,6 +220,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     @Test
     void addChildrenWithRangeUpdatesStructElemParentPointer() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
