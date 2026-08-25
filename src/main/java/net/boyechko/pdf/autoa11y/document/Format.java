@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.document;
 
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
@@ -52,6 +55,15 @@ public final class Format {
     /** Returns a short label for a page number. */
     public static String page(int pageNum) {
         return new DocValue.PageNum(pageNum).toString();
+    }
+
+    /** Returns a short label for any structure node: a struct element, an OBJR, or an MCR. */
+    public static String node(IStructureNode node) {
+        if (node instanceof PdfStructElem elem) return elem(elem);
+        // OBJRs extend PdfMcr but have no MCID of their own.
+        if (node instanceof PdfObjRef) return "OBJR";
+        if (node instanceof PdfMcr mcr) return mcid(mcr.getMcid());
+        return node.getClass().getSimpleName();
     }
 
     /** Returns a short label for a marked content identifier. */
