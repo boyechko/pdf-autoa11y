@@ -153,7 +153,7 @@ public class UnexpectedWidgetFix implements IssueFix {
      * same annotation dict is being removed from the page and AcroForm in the same pass.
      */
     private void removeObjRefFromElement(PdfStructElem elem, PdfObjRef objRef) {
-        PdfArray kArray = StructTree.normalizeKArray(elem);
+        PdfArray kArray = StructTree.kArrayAsArray(elem);
         if (kArray == null) {
             return;
         }

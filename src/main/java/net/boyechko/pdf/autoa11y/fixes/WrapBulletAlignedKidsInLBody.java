@@ -63,7 +63,7 @@ public final class WrapBulletAlignedKidsInLBody implements IssueFix {
          * and MCRs -- so the ParentTreeHandler re-registers relocated marked content. See step 4
          * for why raw K-array moves are unsafe for MCR kids.
          */
-        PdfArray parentK = StructTree.normalizeKArray(parent);
+        PdfArray parentK = StructTree.kArrayAsArray(parent);
         if (parentK == null) {
             return;
         }

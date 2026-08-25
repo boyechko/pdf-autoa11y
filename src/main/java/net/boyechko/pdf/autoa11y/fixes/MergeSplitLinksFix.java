@@ -112,7 +112,7 @@ public final class MergeSplitLinksFix implements IssueFix {
      * keys on MCID and /StructParent, so this is a pure reading-order edit.
      */
     private static void groupObjRefsFirst(PdfStructElem elem) {
-        PdfArray kArray = StructTree.normalizeKArray(elem);
+        PdfArray kArray = StructTree.kArrayAsArray(elem);
         if (kArray == null) {
             return;
         }

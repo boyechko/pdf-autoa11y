@@ -250,62 +250,7 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
-    void getKArrayWorksWithStructElem() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
-            root.addKid(document);
-            PdfStructElem p1 = new PdfStructElem(doc, new PdfName("P"));
-            PdfStructElem p2 = new PdfStructElem(doc, new PdfName("P"));
-            document.addKid(p1);
-            document.addKid(p2);
-
-            PdfArray kArray = StructTree.getKArray(document);
-            assertNotNull(kArray);
-            assertEquals(2, kArray.size());
-        }
-    }
-
-    @Test
-    void getKArrayWorksWithTreeRoot() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
-            root.addKid(document);
-
-            PdfArray kArray = StructTree.getKArray(root);
-            assertNotNull(kArray);
-            assertTrue(kArray.size() > 0);
-        }
-    }
-
-    @Test
-    void getKArrayReturnsNullForSingleChildKEntry() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
-            root.addKid(document);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
-            document.addKid(p);
-
-            assertNull(document.getPdfObject().getAsArray(PdfName.K));
-            assertNull(
-                    StructTree.getKArray(document),
-                    "Read-only getter should not normalize single-object /K");
-        }
-    }
-
-    @Test
-    void normalizeKArrayConvertsSingleChildKEntry() throws Exception {
+    void kArrayAsArrayConvertsSingleChildEntry() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             doc.addNewPage();
@@ -318,7 +263,7 @@ class StructTreeTest extends PdfTestBase {
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K));
 
-            PdfArray normalized = StructTree.normalizeKArray(document);
+            PdfArray normalized = StructTree.kArrayAsArray(document);
             assertNotNull(normalized);
             assertEquals(1, normalized.size());
             assertEquals(0, StructTree.findIndexInKArray(normalized, p));
@@ -334,12 +279,12 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p1 = new PdfStructElem(doc, new PdfName("P"));
-            PdfStructElem p2 = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p1 = new PdfStructElem(doc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(doc, PdfName.P);
             document.addKid(p1);
             document.addKid(p2);
 
-            PdfArray kArray = StructTree.getKArray(document);
+            PdfArray kArray = StructTree.kArrayAsArray(document);
             assertEquals(0, StructTree.findIndexInKArray(kArray, p1));
             assertEquals(1, StructTree.findIndexInKArray(kArray, p2));
         }
@@ -354,14 +299,14 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p1 = new PdfStructElem(doc, new PdfName("P"));
-            PdfStructElem p2 = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p1 = new PdfStructElem(doc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(doc, PdfName.P);
             document.addKid(p1);
             document.addKid(p2);
 
-            PdfStructElem orphan = new PdfStructElem(doc, new PdfName("H1"));
+            PdfStructElem orphan = new PdfStructElem(doc, PdfName.H1);
 
-            PdfArray kArray = StructTree.getKArray(document);
+            PdfArray kArray = StructTree.kArrayAsArray(document);
             assertNotNull(kArray);
             assertEquals(-1, StructTree.findIndexInKArray(kArray, orphan));
         }
@@ -637,7 +582,7 @@ class StructTreeTest extends PdfTestBase {
             document.addKid(p);
 
             // K array entries may be indirect refs or dicts — isSame must handle both
-            PdfArray kArray = StructTree.normalizeKArray(document);
+            PdfArray kArray = StructTree.kArrayAsArray(document);
             PdfObject kEntry = kArray.get(0);
             PdfObject childDict = p.getPdfObject();
 

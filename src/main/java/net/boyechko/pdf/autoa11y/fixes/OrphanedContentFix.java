@@ -37,7 +37,7 @@ public class OrphanedContentFix implements IssueFix {
         // removeKid(index, prepareForReAdding=true) skips the unregister step,
         // which is safe for orphans since they were never registered in the
         // ParentTree to begin with.
-        PdfArray kArray = StructTree.normalizeKArray(parent);
+        PdfArray kArray = StructTree.kArrayAsArray(parent);
         if (kArray == null) return;
 
         PdfObject orphanObj = orphan.getPdfObject();

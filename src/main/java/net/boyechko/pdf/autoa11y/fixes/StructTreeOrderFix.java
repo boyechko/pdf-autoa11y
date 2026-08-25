@@ -45,7 +45,7 @@ public class StructTreeOrderFix implements IssueFix {
      * entries (MCRs, OBJRs) are left in place; only struct element references are repositioned.
      */
     private void reorderChildren(PdfStructElem parent, List<PdfStructElem> children) {
-        PdfArray kArray = StructTree.normalizeKArray(parent);
+        PdfArray kArray = StructTree.kArrayAsArray(parent);
         if (kArray == null) return;
 
         // Sort children by reading position

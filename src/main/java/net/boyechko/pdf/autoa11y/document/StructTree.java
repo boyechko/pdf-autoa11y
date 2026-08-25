@@ -222,23 +222,12 @@ public final class StructTree {
      * PdfArray. This means getAsArray(PdfName.K) returns null for single-child
      * elements. */
 
-    /** Gets the /K entry as an array from any structure node's dictionary. */
-    public static PdfArray getKArray(IStructureNode node) {
-        PdfDictionary dict = getPdfObject(node);
-        return dict != null ? dict.getAsArray(PdfName.K) : null;
-    }
-
     /**
      * Returns the /K entry as an array, converting a single-child /K object into a one-element
      * array in-place when needed.
      */
-    public static PdfArray normalizeKArray(IStructureNode node) {
-        PdfDictionary dict = getPdfObject(node);
-        if (dict == null) {
-            return null;
-        }
-
-        PdfObject kObj = dict.get(PdfName.K);
+    public static PdfArray kArrayAsArray(PdfStructElem node) {
+        PdfObject kObj = node.getPdfObject().get(PdfName.K);
         if (kObj == null) {
             return null;
         }
@@ -248,7 +237,7 @@ public final class StructTree {
 
         PdfArray normalized = new PdfArray();
         normalized.add(kObj);
-        dict.put(PdfName.K, normalized);
+        node.getPdfObject().put(PdfName.K, normalized);
         return normalized;
     }
 
@@ -266,7 +255,7 @@ public final class StructTree {
 
     /** Removes an MCR entry with the given MCID from an element's K array. */
     public static boolean removeMcr(PdfStructElem elem, int mcid) {
-        PdfArray kArray = normalizeKArray(elem);
+        PdfArray kArray = kArrayAsArray(elem);
         if (kArray == null) {
             return false;
         }
@@ -285,16 +274,6 @@ public final class StructTree {
             }
         }
         return false;
-    }
-
-    /** Gets the underlying PdfDictionary for any structure node. */
-    public static PdfDictionary getPdfObject(IStructureNode node) {
-        if (node instanceof PdfStructElem elem) {
-            return elem.getPdfObject();
-        } else if (node instanceof PdfStructTreeRoot root) {
-            return root.getPdfObject();
-        }
-        return null;
     }
 
     /**
