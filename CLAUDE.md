@@ -99,6 +99,10 @@ references IssueFix.
 - Prefer coding approach championed by Agile, Clean Code, Martin Fowler, Robert Martin, Kent Beck
 - Organize source code following "newspaper metaphor"
 - Suggest design patterns from GoF 1995 if applicable
+- Before adding a new helper method, grep the target class for existing
+  methods with an overlapping name or purpose (`get*`, `*Of`, `find*`, etc.)
+  and either extend one or state why a new one is warranted (e.g. a
+  genuinely different type contract)
 
 ## Tests
 
