@@ -41,7 +41,7 @@ class MisartifactedTextFixTest extends PdfTestBase {
             PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
             PdfCanvas canvas = new PdfCanvas(firstPage);
 
-            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginMarkedContent(PdfName.Artifact);
             canvas.beginText().setFontAndSize(font, 10).moveText(100, 750).showText("42").endText();
             canvas.endMarkedContent();
 
@@ -111,7 +111,7 @@ class MisartifactedTextFixTest extends PdfTestBase {
             canvas.endMarkedContent();
 
             // Artifact digit between H1 and P
-            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginMarkedContent(PdfName.Artifact);
             canvas.beginText().setFontAndSize(font, 10).moveText(100, 730).showText("3").endText();
             canvas.endMarkedContent();
 

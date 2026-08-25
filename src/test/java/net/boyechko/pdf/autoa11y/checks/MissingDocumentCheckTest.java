@@ -50,7 +50,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);
 
             DocContext ctx = new DocContext(pdfDoc);
@@ -69,7 +69,7 @@ class MissingDocumentCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem part = new PdfStructElem(pdfDoc, PdfName.Part);
             root.addKid(part);
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             root.addKid(p);
 
             DocContext ctx = new DocContext(pdfDoc);

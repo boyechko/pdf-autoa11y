@@ -16,6 +16,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.RoleMap;
 import org.junit.jupiter.api.Test;
 
 class ReorderWebCapturesFixTest extends PdfTestBase {
@@ -30,7 +31,7 @@ class ReorderWebCapturesFixTest extends PdfTestBase {
             PdfPage pageA = pdfDoc.addNewPage();
             PdfPage pageB = pdfDoc.addNewPage();
             PdfPage pageC = pdfDoc.addNewPage();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             pdfDoc.getStructTreeRoot().addKid(document);
             for (PdfPage p : List.of(pageA, pageB, pageC)) {
                 PdfStructElem para = new PdfStructElem(pdfDoc, PdfName.P, p);
@@ -63,7 +64,7 @@ class ReorderWebCapturesFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage pageHome = pdfDoc.addNewPage();
             PdfPage pageSub = pdfDoc.addNewPage();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             pdfDoc.getStructTreeRoot().addKid(document);
             for (PdfPage p : List.of(pageHome, pageSub)) {
                 PdfStructElem para = new PdfStructElem(pdfDoc, PdfName.P, p);
@@ -89,7 +90,7 @@ class ReorderWebCapturesFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage pageA = pdfDoc.addNewPage();
             PdfPage pageB = pdfDoc.addNewPage();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             pdfDoc.getStructTreeRoot().addKid(document);
             for (PdfPage p : List.of(pageA, pageB)) {
                 PdfStructElem para = new PdfStructElem(pdfDoc, PdfName.P, p);
@@ -124,7 +125,7 @@ class ReorderWebCapturesFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage pageA = pdfDoc.addNewPage();
             PdfPage pageB = pdfDoc.addNewPage();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             pdfDoc.getStructTreeRoot().addKid(document);
             for (PdfPage p : List.of(pageA, pageB)) {
                 PdfStructElem para = new PdfStructElem(pdfDoc, PdfName.P, p);
@@ -150,10 +151,10 @@ class ReorderWebCapturesFixTest extends PdfTestBase {
      */
     private static void registerUrl(PdfDocument doc, String url, PdfPage page) {
         PdfDictionary contentSet = new PdfDictionary();
-        contentSet.put(PdfName.S, new PdfName("SPS"));
+        contentSet.put(PdfName.S, RoleMap.toPdfName("SPS"));
         PdfArray o = new PdfArray();
         o.add(page.getPdfObject());
-        contentSet.put(new PdfName("O"), o);
+        contentSet.put(PdfName.O, o);
         // makeIndirect so the name tree can hold it as an indirect reference, matching real PDFs.
         contentSet.makeIndirect(doc);
         doc.getCatalog().getNameTree(PdfName.URLS).addEntry(new PdfString(url), contentSet);

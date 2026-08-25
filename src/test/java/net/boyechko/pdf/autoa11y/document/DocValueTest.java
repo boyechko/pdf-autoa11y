@@ -26,7 +26,7 @@ class DocValueTest extends PdfTestBase {
 
     @Test
     void resolveDestinationConvertsPdfNameToGoToNamed() {
-        DocValue.Destination result = DocValue.resolveDestination(new PdfName("MyChapter"));
+        DocValue.Destination result = DocValue.resolveDestination(RoleMap.toPdfName("MyChapter"));
         assertEquals(new DocValue.Destination.GoToNamed("MyChapter"), result);
     }
 

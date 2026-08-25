@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class WrapWebCapturesFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(WrapWebCapturesFix.class);
 
-    private static final PdfName N_SPS = new PdfName("SPS");
+    private static final PdfName N_SPS = RoleMap.toPdfName("SPS");
 
     private int wrapped = 0;
     private int skippedEmpty = 0;

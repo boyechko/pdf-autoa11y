@@ -38,7 +38,7 @@ public final class RoleMap {
 
         PdfDictionary roleMap = new PdfDictionary();
         for (Map.Entry<String, String> entry : mappings.entrySet()) {
-            roleMap.put(asPdfName(entry.getKey()), asPdfName(entry.getValue()));
+            roleMap.put(toPdfName(entry.getKey()), toPdfName(entry.getValue()));
         }
         rootDict.put(PdfName.RoleMap, roleMap);
         return true;
@@ -58,7 +58,8 @@ public final class RoleMap {
         return root;
     }
 
-    private static PdfName asPdfName(String token) {
+    /** Converts a role-name token to a PDF name. */
+    public static PdfName toPdfName(String token) {
         return new PdfName(normalizeNameToken(token));
     }
 

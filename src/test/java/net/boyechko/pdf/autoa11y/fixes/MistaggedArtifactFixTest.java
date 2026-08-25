@@ -70,7 +70,7 @@ class MistaggedArtifactFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             root.addKid(p);
 
             DocContext ctx = new DocContext(pdfDoc);
@@ -92,7 +92,7 @@ class MistaggedArtifactFixTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             DocContext ctx = new DocContext(pdfDoc);
 
             MistaggedArtifactFix fix = new MistaggedArtifactFix(p);
@@ -109,8 +109,8 @@ class MistaggedArtifactFixTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem parent = new PdfStructElem(pdfDoc, new PdfName("Sect"));
-            PdfStructElem child = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem parent = new PdfStructElem(pdfDoc, PdfName.Sect);
+            PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(parent);
             parent.addKid(child);
 

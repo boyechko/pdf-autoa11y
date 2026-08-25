@@ -72,7 +72,7 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"), page);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
 
             // Link annotation with no /A action at all.
@@ -100,7 +100,7 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"), page);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
 
             // Link annotation with an explicit /Dest [page /XYZ x y zoom] — typical TOC link.
@@ -132,7 +132,7 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
         PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
         PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
         root.addKid(document);
-        PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"), page);
+        PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
         document.addKid(p);
 
         PdfLinkAnnotation annot =

@@ -86,7 +86,7 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem first = listWithItems(pdfDoc, document, 1);
-            PdfStructElem between = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem between = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(between);
             PdfStructElem second = listWithItems(pdfDoc, document, 1);
 

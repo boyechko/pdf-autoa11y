@@ -43,8 +43,8 @@ class RoleMapTest extends PdfTestBase {
             PdfDictionary roleMap =
                     pdfDoc.getStructTreeRoot().getPdfObject().getAsDictionary(PdfName.RoleMap);
             assertNotNull(roleMap);
-            assertEquals(PdfName.H2, roleMap.getAsName(new PdfName("CustomHeading")));
-            assertEquals(PdfName.Figure, roleMap.getAsName(new PdfName("CustomFigure")));
+            assertEquals(PdfName.H2, roleMap.getAsName(RoleMap.toPdfName("CustomHeading")));
+            assertEquals(PdfName.Figure, roleMap.getAsName(RoleMap.toPdfName("CustomFigure")));
         }
     }
 
@@ -89,7 +89,7 @@ class RoleMapTest extends PdfTestBase {
 
     private PdfDictionary mapping(String fromRole, String toRole) {
         PdfDictionary roleMap = new PdfDictionary();
-        roleMap.put(new PdfName(fromRole), new PdfName(toRole));
+        roleMap.put(RoleMap.toPdfName(fromRole), RoleMap.toPdfName(toRole));
         return roleMap;
     }
 }

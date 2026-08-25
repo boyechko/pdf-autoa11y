@@ -105,7 +105,7 @@ class MisartifactedTextCheckTest extends PdfTestBase {
             PdfCanvas canvas = new PdfCanvas(firstPage);
 
             // First artifact digit
-            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginMarkedContent(PdfName.Artifact);
             canvas.beginText().setFontAndSize(font, 10).moveText(100, 750).showText("1").endText();
             canvas.endMarkedContent();
 
@@ -119,7 +119,7 @@ class MisartifactedTextCheckTest extends PdfTestBase {
             canvas.endMarkedContent();
 
             // Second artifact digit
-            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginMarkedContent(PdfName.Artifact);
             canvas.beginText().setFontAndSize(font, 10).moveText(100, 650).showText("2").endText();
             canvas.endMarkedContent();
         }
@@ -154,7 +154,7 @@ class MisartifactedTextCheckTest extends PdfTestBase {
             PdfCanvas canvas = new PdfCanvas(firstPage);
 
             // Artifact block with the specified text
-            canvas.beginMarkedContent(new PdfName("Artifact"));
+            canvas.beginMarkedContent(PdfName.Artifact);
             canvas.beginText()
                     .setFontAndSize(font, 10)
                     .moveText(100, 750)

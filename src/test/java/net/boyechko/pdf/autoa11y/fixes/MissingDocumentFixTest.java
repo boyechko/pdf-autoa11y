@@ -25,7 +25,7 @@ class MissingDocumentFixTest extends PdfTestBase {
 
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             root.addKid(new PdfStructElem(pdfDoc, PdfName.Part));
-            root.addKid(new PdfStructElem(pdfDoc, new PdfName("P")));
+            root.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
             MissingDocumentFix fix = new MissingDocumentFix();
             fix.apply(new DocContext(pdfDoc));

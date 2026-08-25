@@ -21,7 +21,7 @@ class StaleScribbleFixTest extends PdfTestBase {
     void removesTitleWithScribblePrefix() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);
@@ -39,7 +39,7 @@ class StaleScribbleFixTest extends PdfTestBase {
     void idempotentWhenTitleAlreadyAbsent() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
@@ -55,7 +55,7 @@ class StaleScribbleFixTest extends PdfTestBase {
     void preservesOtherDictionaryEntries() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);

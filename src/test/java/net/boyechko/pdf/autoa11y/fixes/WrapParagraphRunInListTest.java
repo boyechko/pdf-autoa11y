@@ -27,9 +27,9 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem p3 = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p1);
             document.addKid(p2);
             document.addKid(p3);
@@ -64,11 +64,11 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             list.addKid(li);
             PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
             li.addKid(lBody);
-            PdfStructElem itemP = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem itemP = new PdfStructElem(pdfDoc, PdfName.P);
             lBody.addKid(itemP);
 
-            PdfStructElem sub1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            PdfStructElem sub2 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem sub1 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem sub2 = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(sub1);
             document.addKid(sub2);
 
@@ -95,7 +95,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
             document.addKid(list);
 
-            PdfStructElem sub1 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem sub1 = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(sub1);
 
             DocContext ctx = new DocContext(pdfDoc);
@@ -116,9 +116,9 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem p1 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            PdfStructElem p2 = new PdfStructElem(pdfDoc, new PdfName("P"));
-            PdfStructElem p3 = new PdfStructElem(pdfDoc, new PdfName("P"));
+            PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P);
+            PdfStructElem p3 = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p1);
             document.addKid(p2);
             document.addKid(p3);

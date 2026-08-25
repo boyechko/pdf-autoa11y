@@ -37,7 +37,7 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(pdfDoc, new PdfName("P"), page);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
 
             PdfMcr mcr = new PdfMcrDictionary(page, p);

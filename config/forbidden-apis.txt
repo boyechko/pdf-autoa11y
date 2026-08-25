@@ -1,2 +1,2 @@
 # Construct PdfName instances only through the project's named conversion boundary.
-com.itextpdf.kernel.pdf.PdfName#<init>(java.lang.String) @ Do not construct PdfName directly; use an existing PdfName constant or RoleMap.asPdfName().
+com.itextpdf.kernel.pdf.PdfName#<init>(java.lang.String) @ Do not construct PdfName directly; use an existing PdfName constant or RoleMap.toPdfName().

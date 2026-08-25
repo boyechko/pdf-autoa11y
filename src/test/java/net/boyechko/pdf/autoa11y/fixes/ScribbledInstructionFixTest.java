@@ -28,7 +28,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void addParentCreatesWrapper() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
@@ -47,7 +47,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void addParentPreservesPosition() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);
@@ -72,10 +72,10 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void addParentsBuildsNestedWrapperChain() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem span = new PdfStructElem(pdfDoc, new PdfName("Span"));
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span);
             document.addKid(span);
 
             DocContext ctx = new DocContext(pdfDoc);
@@ -95,10 +95,10 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void addParentRejectsBranchingChain() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem span = new PdfStructElem(pdfDoc, new PdfName("Span"));
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span);
             document.addKid(span);
 
             DocContext ctx = new DocContext(pdfDoc);
@@ -170,7 +170,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
@@ -198,7 +198,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
@@ -221,13 +221,13 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void addChildrenWithRangeUpdatesStructElemParentPointer() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
             document.addKid(li);
-            PdfStructElem span1 = new PdfStructElem(pdfDoc, new PdfName("Span"));
-            PdfStructElem span2 = new PdfStructElem(pdfDoc, new PdfName("Span"));
+            PdfStructElem span1 = new PdfStructElem(pdfDoc, PdfName.Span);
+            PdfStructElem span2 = new PdfStructElem(pdfDoc, PdfName.Span);
             li.addKid(span1);
             li.addKid(span2);
 
@@ -247,7 +247,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
@@ -272,7 +272,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
@@ -357,10 +357,10 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             var page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem l = new PdfStructElem(pdfDoc, new PdfName("L"), page);
+            PdfStructElem l = new PdfStructElem(pdfDoc, PdfName.L, page);
             document.addKid(l);
             for (int i = 0; i < 3; i++) {
                 l.addKid(new PdfMcrNumber(page, l));
@@ -416,14 +416,14 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
 
             PdfStructElem link = new PdfStructElem(pdfDoc, PdfName.Link, page);
             p.addKid(link);
-            PdfStructElem span = new PdfStructElem(pdfDoc, new PdfName("Span"), page);
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, page);
             link.addKid(span);
 
             PdfLinkAnnotation annot =
@@ -452,19 +452,19 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
 
-            PdfStructElem before = new PdfStructElem(pdfDoc, new PdfName("Span"), page);
+            PdfStructElem before = new PdfStructElem(pdfDoc, PdfName.Span, page);
             p.addKid(before);
             PdfStructElem link = new PdfStructElem(pdfDoc, PdfName.Link, page);
             p.addKid(link);
-            PdfStructElem after = new PdfStructElem(pdfDoc, new PdfName("Span"), page);
+            PdfStructElem after = new PdfStructElem(pdfDoc, PdfName.Span, page);
             p.addKid(after);
 
-            PdfStructElem linkInner = new PdfStructElem(pdfDoc, new PdfName("Span"), page);
+            PdfStructElem linkInner = new PdfStructElem(pdfDoc, PdfName.Span, page);
             link.addKid(linkInner);
 
             PdfLinkAnnotation annot =
@@ -491,7 +491,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             // P has no /Pg — only Link carries it.
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
@@ -530,7 +530,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
             document.addKid(p);
@@ -561,7 +561,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void reorderKidsRespectsScribbledIndices() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             StructTree.setScribble(document, "!REORDER_KIDS");
 
@@ -594,7 +594,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void reorderKidsClearsInstructionsAndPreservesIdentities() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             StructTree.setScribble(document, "!REORDER_KIDS");
 
@@ -619,7 +619,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void reorderKidsAppendsUnannotatedKidsAtEnd() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             StructTree.setScribble(document, "!REORDER_KIDS");
 
@@ -651,7 +651,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void unlinkRejectsNonLinkElement() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);
@@ -667,7 +667,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void unwrapListHoistsWrappedElementsPreservingPosition() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem before = new PdfStructElem(pdfDoc, PdfName.H4);
@@ -682,7 +682,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             for (PdfStructElem wrapped : new PdfStructElem[] {p1, p2}) {
                 PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
                 list.addKid(li);
-                PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"));
+                PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
                 li.addKid(lBody);
                 lBody.addKid(wrapped);
             }
@@ -707,7 +707,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void unwrapListRejectsNonListElement() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);
@@ -723,15 +723,15 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void unwrapListRejectsListWithLabelsLeavingTreeUntouched() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
             document.addKid(list);
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
             list.addKid(li);
-            li.addKid(new PdfStructElem(pdfDoc, new PdfName("Lbl")));
-            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"));
+            li.addKid(new PdfStructElem(pdfDoc, PdfName.Lbl));
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
             li.addKid(lBody);
             lBody.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
@@ -751,14 +751,14 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, page);
             document.addKid(list);
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
             list.addKid(li);
-            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"), page);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody, page);
             li.addKid(lBody);
             lBody.addKid(new PdfMcrNumber(page, lBody));
 
@@ -775,7 +775,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
             PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
@@ -783,7 +783,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
             list.addKid(li);
             // Only LBody carries /Pg; the wrapped P's bare-int MCR resolves through it.
-            PdfStructElem lBody = new PdfStructElem(pdfDoc, new PdfName("LBody"), page);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody, page);
             li.addKid(lBody);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             lBody.addKid(p);
@@ -803,7 +803,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void setRoleChangesElementRole() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);
@@ -819,7 +819,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void setRoleAcceptsNonStandardRole() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);

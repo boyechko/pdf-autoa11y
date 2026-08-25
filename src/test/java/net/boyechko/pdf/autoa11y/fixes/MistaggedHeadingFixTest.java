@@ -21,7 +21,7 @@ class MistaggedHeadingFixTest extends PdfTestBase {
     void marksElementWithToolAuthoredSetRoleInstruction() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(p);

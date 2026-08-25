@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class ReorderWebCapturesFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ReorderWebCapturesFix.class);
 
-    private static final PdfName N_SPS = new PdfName("SPS");
+    private static final PdfName N_SPS = RoleMap.toPdfName("SPS");
 
     private final List<String> orderedUrls;
     private int movedPages = 0;

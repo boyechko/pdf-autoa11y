@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -122,7 +123,7 @@ public class ScribbledInstructionFix implements IssueFix {
 
         PdfObject effectivePg = StructTree.effectivePageDict(element);
         for (ChildSpec spec : specs) {
-            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), resolvePdfName(spec.tag()));
+            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), RoleMap.toPdfName(spec.tag()));
             element.addKid(wrapper);
             populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount, effectivePg);
         }
@@ -138,7 +139,7 @@ public class ScribbledInstructionFix implements IssueFix {
             PdfObject effectivePg) {
         if (spec instanceof NewStructure ns) {
             for (ChildSpec child : ns.children()) {
-                PdfStructElem nested = new PdfStructElem(doc, resolvePdfName(child.tag()));
+                PdfStructElem nested = new PdfStructElem(doc, RoleMap.toPdfName(child.tag()));
                 wrapper.addKid(nested);
                 populateWrapper(doc, nested, child, origKids, kidCount, effectivePg);
             }
@@ -327,17 +328,8 @@ public class ScribbledInstructionFix implements IssueFix {
 
     private String applySetRole(String roleName) {
         String prevRole = element.getRole().getValue();
-        element.setRole(resolvePdfName(roleName));
+        element.setRole(RoleMap.toPdfName(roleName));
         return OK_SCRIBBLE + " (was: " + prevRole + ")";
-    }
-
-    /** Resolves a PDF name string to a standard {@link PdfName} constant when one exists. */
-    private static PdfName resolvePdfName(String name) {
-        try {
-            return (PdfName) PdfName.class.getField(name).get(null);
-        } catch (ReflectiveOperationException e) {
-            return new PdfName(name);
-        }
     }
 
     // === Instruction: ARTIFACT ===============================================
@@ -621,7 +613,7 @@ public class ScribbledInstructionFix implements IssueFix {
         PdfStructElem innermost = parent;
         PdfStructElem outermost = null;
         for (String wrapperName : chain) {
-            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), resolvePdfName(wrapperName));
+            PdfStructElem wrapper = new PdfStructElem(ctx.doc(), RoleMap.toPdfName(wrapperName));
             if (outermost == null) {
                 parent.addKid(index, wrapper);
                 outermost = wrapper;

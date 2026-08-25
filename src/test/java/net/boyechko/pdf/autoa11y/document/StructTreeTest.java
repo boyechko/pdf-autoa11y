@@ -123,7 +123,7 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(p);
 
@@ -142,7 +142,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
             root.addKid(div);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             div.addKid(p);
 
@@ -178,7 +178,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(document);
             PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
             document.addKid(part);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             document.addKid(p);
 
             StructTree.moveKid(p, document, part);
@@ -198,7 +198,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             document.addKid(p);
             PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
             root.addKid(part);
@@ -222,7 +222,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             document.addKid(p);
 
             StructTree.removeFromParent(p, document);
@@ -258,7 +258,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             document.addKid(p);
 
             assertNull(document.getPdfObject().getAsArray(PdfName.K));
