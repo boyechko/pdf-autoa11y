@@ -85,6 +85,11 @@ carry an `issue/IssueFix` reference:
 See `docs/releasing.md` for the release checklist (changelog roll, annotated
 tag, version conventions).
 
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) for commit
+subjects, with an optional scope naming the affected Java package.
+
 ## Testing
 
 ### Running Tests
