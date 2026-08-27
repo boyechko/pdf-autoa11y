@@ -22,6 +22,7 @@ import net.boyechko.pdf.autoa11y.checks.StaleScribbleCheck;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.core.VersionInfo;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.SafeOutput;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
@@ -86,6 +87,10 @@ public class Cli {
 
     public static void main(String[] args) {
         try {
+            if (isVersionRequested(args)) {
+                System.out.println(VersionInfo.current().formatVersionMessage());
+                return;
+            }
             if (isHelpRequested(args)) {
                 System.out.println(usageMessage());
                 return;
@@ -626,6 +631,15 @@ public class Cli {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    private static boolean isVersionRequested(String[] args) {
+        for (String arg : args) {
+            if ("-V".equals(arg) || "--version".equals(arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean isHelpRequested(String[] args) {
         for (String arg : args) {
             if ("-h".equals(arg) || "--help".equals(arg)) {
@@ -638,6 +652,7 @@ public class Cli {
     private static String usageMessage() {
         return "Usage: java Cli [-a] [-q|-v|-vv] [-t] [-f] [-p password] [-r[=report]] <inputpath> [<outputpath>]\n"
                 + "  -h, --help        Show this help message\n"
+                + "  -V, --version     Show version and license information\n"
                 + "  -a, --analyze     Analyze only (no remediation or output PDF)\n"
                 + "  -q, --quiet       Only show errors and final status\n"
                 + "  -v, --verbose     Show detailed processing information\n"

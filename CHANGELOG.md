@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `-V` and `--version` CLI flags that display the release version, Git
+  commit hash, and AGPLv3+ license banner derived automatically at build time
+  from Git tags.
 - New `!MERGE` scribbled instruction: folds an element's kids into the preceding
   sibling element with the same mapped role. Marking a run of elements collapses
   them all leftward, and content moving across a page break keeps its own page.
