@@ -23,13 +23,6 @@ Versioning](https://semver.org/).
   item's line count, so wrapped items survive the split intact. An element
   whose opening lines finish the previous item is reported for review rather
   than split.
-- `MistaggedListCheck` now takes a bullet census of every existing list: the
-  bullet glyphs its content covers, counted at the list's own indent level,
-  are compared against its item count. A list holding fewer items than
-  bullets has lumped several items into a single `LI`, which is invisible to
-  structure-level analysis. The census reports for manual review; splitting
-  the lumped content remains a separate step. Lists whose first item carries
-  no bullet — numbered and lettered lists — opt out.
 - New `-V` and `--version` CLI flags that display the release version, Git
   commit hash, and AGPLv3+ license banner derived automatically at build time
   from Git tags.
@@ -71,6 +64,13 @@ Versioning](https://semver.org/).
   from a scribble's `"__..."`. Annotating such a line still requires the quoted
   scribble to follow the object number, so a title survives a dump-and-apply
   round trip untouched.
+- `MistaggedHeadingCheck` no longer gives up when a heading's font size ranks
+  it deeper than the outline has room for. If a heading already stands above
+  it, the element is retagged at the level the outline expects and the smaller
+  sizes in the same article shift with it, so its subordinate headings are
+  retagged too instead of being flagged one by one. Only a heading with
+  nothing above it — where the article would have to open at a subordinate
+  level — is still left alone for manual review.
 
 ### Fixed
 - A plain `/T` title such as `Chapter 1` is no longer mistaken for a scribble.
@@ -86,14 +86,6 @@ Versioning](https://semver.org/).
   link that the authoring tool split across two tags, not list items, and
   converting them produced phantom two-item lists in tables of contents.
 
-### Changed
-- `MistaggedHeadingCheck` no longer gives up when a heading's font size ranks
-  it deeper than the outline has room for. If a heading already stands above
-  it, the element is retagged at the level the outline expects and the smaller
-  sizes in the same article shift with it, so its subordinate headings are
-  retagged too instead of being flagged one by one. Only a heading with
-  nothing above it — where the article would have to open at a subordinate
-  level — is still left alone for manual review.
 
 ## [0.5.0] - 2026-07-30
 
