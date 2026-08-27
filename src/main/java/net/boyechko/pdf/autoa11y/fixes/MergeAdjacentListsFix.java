@@ -12,9 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Merges two lists that read as one — typically the halves of a list a tagger split around a
- * sublist. The second list's items move to the end of the first and the emptied second list is
- * removed.
+ * Merges two lists that read as one. The second list's items move to the end of the first and the
+ * emptied second list is removed.
  *
  * <p>Applies only if the lists are immediate siblings at apply time (earlier fixes, such as nesting
  * the intervening sublist, must have vacated the space between them); otherwise it is skipped. Runs
@@ -84,7 +83,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
 
     @Override
     public String describe() {
-        return "Merged split list halves into one list";
+        return "Merged adjacent sibling lists into one list";
     }
 
     @Override

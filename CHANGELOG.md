@@ -7,6 +7,12 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- New `AdjacentListsCheck`: merges every run of adjacent sibling lists into
+  its first list, including lists produced by earlier automatic fixes or
+  scribbled instructions. Lists no longer have to be discovered as part of a
+  bullet run to qualify for merging.
+
 ## [0.5.0] - 2026-08-20
 
 ### Added

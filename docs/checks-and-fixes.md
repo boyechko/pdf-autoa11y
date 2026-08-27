@@ -43,6 +43,7 @@ previous step in the execution order listed below.
 | MistaggedListCheck | Detects bulleted, indented, or link-only content that should be lists | Wraps in (sub)list structure, merging split lists |
 | IrregularTocCheck | Detects TOC contents not nested into a TOCI hierarchy | Rebuilds entries as `TOCI`, nesting by indentation |
 | EmptyElementCheck | Detects empty structure elements | Removes empty elements |
+| AdjacentListsCheck | Detects adjacent sibling lists | Merges each run into its first list |
 | SchemaValidationCheck | Validates elements against the PDF/UA-1 tag schema | Restructures children to match schema |
 
 ## Verified elements: the `OK` scribble

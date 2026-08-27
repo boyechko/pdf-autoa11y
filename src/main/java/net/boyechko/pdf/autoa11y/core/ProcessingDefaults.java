@@ -46,6 +46,7 @@ public final class ProcessingDefaults {
                 MistaggedHeadingCheck::new,
                 EmptyElementCheck::new,
                 ScribbledInstructionCheck::new,
+                AdjacentListsCheck::new,
                 SchemaValidationCheck::new,
                 StaleScribbleCheck::new);
     }
