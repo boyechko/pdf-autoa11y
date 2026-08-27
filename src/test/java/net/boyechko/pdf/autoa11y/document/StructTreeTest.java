@@ -229,10 +229,10 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page2 = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
@@ -256,10 +256,10 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             survivor.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(7), absorbed));
@@ -281,10 +281,10 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page2 = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(absorbed);
             PdfDictionary mcrDict = new PdfDictionary();
@@ -309,14 +309,14 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page2 = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(survivor);
             // The absorbed element has no /Pg of its own; it inherits page 2 from its parent.
             PdfStructElem section = new PdfStructElem(doc, PdfName.Sect);
             section.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
             root.addKid(section);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             section.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
 
@@ -337,9 +337,9 @@ class StructTreeTest extends PdfTestBase {
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
             // The survivor has no /Pg anywhere in its ancestry.
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
@@ -368,11 +368,11 @@ class StructTreeTest extends PdfTestBase {
             PdfStructElem section = new PdfStructElem(doc, PdfName.Sect);
             section.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(section);
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             section.addKid(survivor);
             survivor.addKid(new PdfMcrNumber(new PdfNumber(5), survivor));
 
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
@@ -394,14 +394,14 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page = doc.addNewPage();
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.P);
             survivor.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.P);
             absorbed.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(1), absorbed));
-            PdfStructElem span = new PdfStructElem(doc, new PdfName("Span"));
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
             absorbed.addKid(span);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(2), absorbed));
 
@@ -428,10 +428,10 @@ class StructTreeTest extends PdfTestBase {
             page2.addAnnotation(annot);
 
             PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem survivor = new PdfStructElem(doc, new PdfName("Link"));
+            PdfStructElem survivor = new PdfStructElem(doc, PdfName.Link);
             survivor.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
             root.addKid(survivor);
-            PdfStructElem absorbed = new PdfStructElem(doc, new PdfName("Link"));
+            PdfStructElem absorbed = new PdfStructElem(doc, PdfName.Link);
             absorbed.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
             root.addKid(absorbed);
             PdfObjRef objRef = new PdfObjRef(annot, absorbed, doc.getNextStructParentIndex());
@@ -457,7 +457,7 @@ class StructTreeTest extends PdfTestBase {
             PdfStructElem part = new PdfStructElem(doc, PdfName.Part);
             document.addKid(part);
             // The paragraph belongs to the part, not to the document.
-            PdfStructElem p = new PdfStructElem(doc, new PdfName("P"));
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
             part.addKid(p);
 
             assertThrows(

@@ -915,9 +915,9 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             RoleMap.replace(pdfDoc, Map.of("FirstParagraph", "P", "SecondParagraph", "P"));
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            PdfStructElem first = new PdfStructElem(pdfDoc, new PdfName("FirstParagraph"));
+            PdfStructElem first = new PdfStructElem(pdfDoc, RoleMap.toPdfName("FirstParagraph"));
             document.addKid(first);
-            PdfStructElem second = new PdfStructElem(pdfDoc, new PdfName("SecondParagraph"));
+            PdfStructElem second = new PdfStructElem(pdfDoc, RoleMap.toPdfName("SecondParagraph"));
             document.addKid(second);
 
             new ScribbledInstructionFix(second, "!MERGE").apply(new DocContext(pdfDoc));
@@ -969,7 +969,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     void mergeRefusesElementDetachedFromItsParent() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, new PdfName("Document"));
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(first);
