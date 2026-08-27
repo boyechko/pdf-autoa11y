@@ -35,6 +35,10 @@ Versioning](https://semver.org/).
   surviving tag is stamped `__:LINKS MERGED`.
 
 ### Changed
+- `--dump-tree` now shows a table cell's `/Scope` attribute after its role and
+  object number (e.g. `TH #18675 /Scope /Column`), read from the `/Table`-owned
+  dictionary in the element's `/A`. Header cells missing a scope stand out by
+  having no such marker.
 - Truncated text excerpts in issue descriptions, reports, and tree diagrams now
   append the count of omitted characters after the ellipsis (e.g. `…+50`).
 - `--dump-tree` now shows a plain `/T` title as `/T "Chapter 1"`, distinct

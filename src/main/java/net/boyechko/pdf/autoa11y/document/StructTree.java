@@ -431,6 +431,34 @@ public final class StructTree {
         return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
     }
 
+    // === Structure attributes ==============================================
+
+    /**
+     * Reads one attribute value from an element's {@code /A}, taking the first attribute dictionary
+     * whose owner ({@code /O}) matches. {@code /A} may hold a single dictionary or an array;
+     * revision numbers interleaved in the array are skipped. Class-map attributes ({@code /C}) are
+     * not consulted.
+     */
+    public static PdfObject attributeValue(PdfStructElem elem, PdfName owner, PdfName key) {
+        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
+        if (attrs instanceof PdfDictionary dict) {
+            return ownedValue(dict, owner, key);
+        }
+        if (attrs instanceof PdfArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                if (array.get(i) instanceof PdfDictionary dict) {
+                    PdfObject value = ownedValue(dict, owner, key);
+                    if (value != null) return value;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static PdfObject ownedValue(PdfDictionary attrs, PdfName owner, PdfName key) {
+        return owner.equals(attrs.getAsName(PdfName.O)) ? attrs.get(key) : null;
+    }
+
     // === Miscellaneous utilities ===========================================
 
     public static final String SCRIBBLE_PREFIX = "__";

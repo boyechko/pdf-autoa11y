@@ -151,6 +151,24 @@ public sealed interface DocValue {
         }
     }
 
+    /**
+     * A table cell's {@code /Scope} attribute, rendered as {@code /Scope /Column}. Read from the
+     * {@code /Table}-owned attribute dictionary, the only owner for which {@code /Scope} is
+     * defined.
+     */
+    record Scope(String value) implements DocValue {
+        /** Reads the element's Table-owned /Scope, or null when it carries none. */
+        public static Scope of(PdfStructElem elem) {
+            PdfObject value = StructTree.attributeValue(elem, PdfName.Table, PdfName.Scope);
+            return value instanceof PdfName name ? new Scope(name.getValue()) : null;
+        }
+
+        @Override
+        public String toString() {
+            return "/Scope /" + value;
+        }
+    }
+
     /** A link annotation, rendered as {@code link #57}. */
     record Link(int objNum) implements DocValue {
         @Override

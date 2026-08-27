@@ -294,6 +294,7 @@ public final class TreeDiagram {
                 .add(DocValue.ObjNum.of(elem))
                 .add(DocValue.Scribble.of(elem))
                 .add(DocValue.Title.of(elem))
+                .add(DocValue.Scope.of(elem))
                 .toString();
     }
 

@@ -203,4 +203,77 @@ class DocValueTest extends PdfTestBase {
             assertNull(DocValue.Scribble.of(elem));
         }
     }
+
+    /** Builds an attribute dictionary with the given owner and optional Scope value. */
+    private static PdfDictionary tableAttrs(PdfName owner, PdfName scope) {
+        PdfDictionary attrs = new PdfDictionary();
+        attrs.put(PdfName.O, owner);
+        if (scope != null) attrs.put(PdfName.Scope, scope);
+        return attrs;
+    }
+
+    @Test
+    void scopeIsReadFromTableOwnedAttributeInArray() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.TH);
+            PdfArray attrs = new PdfArray();
+            attrs.add(tableAttrs(PdfName.Layout, null));
+            attrs.add(tableAttrs(PdfName.Table, PdfName.Column));
+            elem.getPdfObject().put(PdfName.A, attrs);
+
+            assertEquals("Column", DocValue.Scope.of(elem).value());
+        }
+    }
+
+    @Test
+    void scopeIsReadFromLoneAttributeDictionary() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.TH);
+            elem.getPdfObject().put(PdfName.A, tableAttrs(PdfName.Table, PdfName.Row));
+
+            assertEquals("Row", DocValue.Scope.of(elem).value());
+        }
+    }
+
+    @Test
+    void revisionNumbersInAttributeArrayAreSkipped() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.TH);
+            PdfArray attrs = new PdfArray();
+            attrs.add(tableAttrs(PdfName.Table, PdfName.Both));
+            attrs.add(new PdfNumber(0));
+            elem.getPdfObject().put(PdfName.A, attrs);
+
+            assertEquals("Both", DocValue.Scope.of(elem).value());
+        }
+    }
+
+    @Test
+    void scopeOwnedByAnotherAttributeOwnerIsIgnored() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.TH);
+            elem.getPdfObject().put(PdfName.A, tableAttrs(PdfName.Layout, PdfName.Column));
+
+            assertNull(DocValue.Scope.of(elem));
+        }
+    }
+
+    @Test
+    void cellWithoutAttributesHasNoScope() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.TH);
+
+            assertNull(DocValue.Scope.of(elem));
+        }
+    }
+
+    @Test
+    void scopeRendersAsPdfKeyAndName() {
+        assertEquals("/Scope /Column", new DocValue.Scope("Column").toString());
+    }
 }

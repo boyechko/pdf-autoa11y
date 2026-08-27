@@ -4,6 +4,7 @@ package net.boyechko.pdf.autoa11y.tools;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
@@ -192,6 +193,43 @@ class TreeDiagramTest {
                     "(See Actual Text)",
                     findByObjNum(doc, 59).getPdfObject().getAsString(PdfName.T).toUnicodeString(),
                     "Round-trip must leave the title exactly as it was");
+        }
+    }
+
+    @Test
+    void scopeAttributeIsShownAndLeavesTheScribbleSlotUsable() throws Exception {
+        Path withScope = tempDir.resolve("with-scope.pdf");
+        Path annotated = tempDir.resolve("scope-annotated.pdf");
+
+        PdfDictionary tableAttrs = new PdfDictionary();
+        tableAttrs.put(PdfName.O, PdfName.Table);
+        tableAttrs.put(PdfName.Scope, PdfName.Column);
+        try (PdfDocument doc = openForModification(withScope)) {
+            findByObjNum(doc, 59).getPdfObject().put(PdfName.A, tableAttrs);
+        }
+
+        String dump;
+        try (PdfDocument doc = new PdfDocument(new PdfReader(withScope.toString()))) {
+            dump = TreeDiagram.dumpToString(doc, true);
+        }
+        assertTrue(dump.contains("P #59 /Scope /Column"), "Scope should be shown after the label");
+
+        // Scope trails the scribble slot, so a scribble can still be added in place.
+        String scribbled = dump.replace("P #59 /Scope /Column", "P #59 \"__TODO\" /Scope /Column");
+        try (PdfDocument doc =
+                new PdfDocument(
+                        new PdfReader(withScope.toString()), new PdfWriter(annotated.toString()))) {
+            TreeDiagram.AnnotateResult result =
+                    TreeDiagram.annotateFromString(doc, scribbled, msg -> {});
+
+            assertEquals(1, result.updated());
+            assertEquals(0, result.cleared());
+        }
+
+        try (PdfDocument doc = new PdfDocument(new PdfReader(annotated.toString()))) {
+            assertEquals(
+                    StructTree.SCRIBBLE_PREFIX + "TODO",
+                    findByObjNum(doc, 59).getPdfObject().getAsString(PdfName.T).toUnicodeString());
         }
     }
 
