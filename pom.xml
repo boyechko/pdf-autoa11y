@@ -24,6 +24,7 @@
     <logback.version>1.5.16</logback.version>
     <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
     <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+    <git-commit-id-maven-plugin.version>9.0.1</git-commit-id-maven-plugin.version>
     <forbiddenapis-maven-plugin.version>3.10</forbiddenapis-maven-plugin.version>
   </properties>
 
@@ -86,6 +87,42 @@
           <arguments>
             <argument>${exec.args}</argument>
           </arguments>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>${git-commit-id-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>get-the-git-infos</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+          <format>properties</format>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <offline>true</offline>
+          <includeOnlyProperties>
+            <includeOnlyProperty>git.build.time</includeOnlyProperty>
+            <includeOnlyProperty>git.build.version</includeOnlyProperty>
+            <includeOnlyProperty>git.closest.tag.commit.count</includeOnlyProperty>
+            <includeOnlyProperty>git.closest.tag.name</includeOnlyProperty>
+            <includeOnlyProperty>git.commit.id</includeOnlyProperty>
+            <includeOnlyProperty>git.commit.id.abbrev</includeOnlyProperty>
+            <includeOnlyProperty>git.commit.id.describe</includeOnlyProperty>
+            <includeOnlyProperty>git.dirty</includeOnlyProperty>
+          </includeOnlyProperties>
+          <gitDescribe>
+            <tags>true</tags>
+            <dirty>-dirty</dirty>
+            <match>v*</match>
+          </gitDescribe>
         </configuration>
       </plugin>
       <plugin>

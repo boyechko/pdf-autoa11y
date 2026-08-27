@@ -2,9 +2,10 @@
 
 This project's version lives in two places only: the `CHANGELOG.md` section
 header and an annotated git tag. `pom.xml` stays at `1.0-SNAPSHOT` and is not
-bumped per release (nothing reads it yet; see the `--version` task in
-`TODO.org`). There is no separate jar artifact to publish — the wrapper script
-runs from `target/classes`.
+bumped per release; the version is extracted directly from the Git tag at
+build time via `git-commit-id-maven-plugin` and reported by `-V` / `--version`.
+There is no separate jar artifact to publish — the wrapper script runs from
+`target/classes`.
 
 ## Cutting a release
 
