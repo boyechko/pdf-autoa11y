@@ -88,8 +88,8 @@ public sealed interface DocValue {
 
     /**
      * A plain /T title — one written by the authoring tool or by hand, carrying no scribble prefix
-     * — rendered as {@code title "Chapter 1"}. The leading word keeps it distinct from a scribble
-     * both to the eye and to the annotated-diagram parser, which reads a quoted value only when it
+     * — rendered as {@code /T "Chapter 1"}. The leading word keeps it distinct from a scribble both
+     * to the eye and to the annotated-diagram parser, which reads a quoted value only when it
      * directly follows the object number.
      */
     record Title(String value) implements DocValue {
@@ -104,7 +104,7 @@ public sealed interface DocValue {
 
         @Override
         public String toString() {
-            return "title \"" + value + "\"";
+            return "/T \"" + value + "\"";
         }
     }
 

@@ -174,8 +174,8 @@ class DocValueTest extends PdfTestBase {
     }
 
     @Test
-    void titleRendersWithLeadingKeyword() {
-        assertEquals("title \"Chapter 1\"", new DocValue.Title("Chapter 1").toString());
+    void titleRendersAsPdfKey() {
+        assertEquals("/T \"Chapter 1\"", new DocValue.Title("Chapter 1").toString());
     }
 
     @Test

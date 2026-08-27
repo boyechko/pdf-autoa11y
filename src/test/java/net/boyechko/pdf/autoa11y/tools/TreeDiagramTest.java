@@ -172,7 +172,7 @@ class TreeDiagramTest {
             dump = TreeDiagram.dumpToString(doc, true);
         }
         assertTrue(
-                dump.contains("P #59 title \"(See Actual Text)\""),
+                dump.contains("P #59 /T \"(See Actual Text)\""),
                 "Plain title should be shown, marked as a title rather than a scribble");
 
         // The rendered title must not read as a scribble to the annotate parser.
