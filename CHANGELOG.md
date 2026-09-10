@@ -7,6 +7,8 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.5.0] - 2026-08-20
+
 ### Added
 - `MistaggedListCheck` now reconciles an element that begins in the middle of
   a list item with the element that began it: the opening lines fold back into
