@@ -17,7 +17,8 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
  */
 final class ListItemScribble {
 
-    private static final Pattern COUNT_SEGMENT = Pattern.compile("\\d+ items?");
+    /** A count segment, with or without the leading verb prefix a fix may have stamped on it. */
+    private static final Pattern COUNT_SEGMENT = Pattern.compile("(.*, )?\\d+ items?");
 
     private ListItemScribble() {}
 

@@ -13,6 +13,11 @@ Versioning](https://semver.org/).
   scribbled instructions. Lists no longer have to be discovered as part of a
   bullet run to qualify for merging.
 
+### Fixed
+- A list touched by more than one automatic fix no longer keeps a stale item
+  count in its `/T` scribble. The count segment is now recognized and replaced
+  whichever fix stamped it, instead of accumulating one segment per fix.
+
 ## [0.5.0] - 2026-08-20
 
 ### Added

@@ -73,4 +73,37 @@ class ListItemScribbleTest extends PdfTestBase {
             assertEquals("reviewed by hand", scribble.segments().get(0));
         }
     }
+
+    @Test
+    void prefixedUpdateReplacesEarlierPrefixedCountSegment() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem list = listWithItems(pdfDoc, 2);
+
+            ListItemScribble.update(list, "paragraph run, ");
+            list.addKid(new PdfStructElem(pdfDoc, PdfName.LI));
+            ListItemScribble.update(list, "merged, ");
+
+            DocValue.Scribble scribble = StructTree.getScribble(list);
+            assertEquals(1, scribble.segments().size());
+            assertEquals("merged, 3 items", scribble.segments().get(0));
+        }
+    }
+
+    @Test
+    void prefixedUpdateReplacesEarlierUnprefixedCountSegment() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem list = listWithItems(pdfDoc, 2);
+
+            ListItemScribble.update(list);
+            ListItemScribble.update(list, "merged, ");
+
+            DocValue.Scribble scribble = StructTree.getScribble(list);
+            assertEquals(1, scribble.segments().size());
+            assertEquals("merged, 2 items", scribble.segments().get(0));
+        }
+    }
 }
