@@ -65,16 +65,16 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
 
             PdfStructElem first = listWithItems(pdfDoc, document, 1);
             StructTree.setScribble(
-                    first, "reviewed by hand" + StructTree.SCRIBBLE_SEPARATOR + "1 item");
+                    first, "reviewed by hand" + StructTree.SCRIBBLE_SEPARATOR + "LIST 1 item");
             PdfStructElem second = listWithItems(pdfDoc, document, 1);
 
             new MergeAdjacentListsFix(first, second).apply(new DocContext(pdfDoc));
 
             DocValue.Scribble scribble = StructTree.getScribble(first);
             assertFalse(scribble.toolAuthored());
-            List<String> segments = scribble.segments();
-            assertEquals("reviewed by hand", segments.get(0));
-            assertTrue(segments.get(1).contains("2 items"));
+            assertEquals(
+                    List.of("reviewed by hand", "MERGE lists", "LIST 2 items"),
+                    scribble.segments());
         }
     }
 

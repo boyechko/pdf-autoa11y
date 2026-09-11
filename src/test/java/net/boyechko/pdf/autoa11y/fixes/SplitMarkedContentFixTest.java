@@ -97,7 +97,7 @@ class SplitMarkedContentFixTest extends PdfTestBase {
                 assertTrue(scribble != null && scribble.toolAuthored(), "tool-authored scribble");
                 assertTrue(
                         scribble.segments().stream()
-                                .anyMatch(s -> s.trim().equals("CONTENT SPLIT")),
+                                .anyMatch(s -> s.trim().equals("SPLIT content")),
                         "carries the split segment");
             }
         }

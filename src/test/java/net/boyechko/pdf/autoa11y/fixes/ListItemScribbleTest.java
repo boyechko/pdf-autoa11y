@@ -8,6 +8,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -27,32 +28,67 @@ class ListItemScribbleTest extends PdfTestBase {
     }
 
     @Test
-    void stampsToolAuthoredScribbleOnUnscribbledList() throws Exception {
+    void stampsToolAuthoredEventAndCountOnUnscribbledList() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
             PdfStructElem list = listWithItems(pdfDoc, 2);
 
-            ListItemScribble.update(list);
+            ListItemScribble.update(list, "MERGE lists");
 
             DocValue.Scribble scribble = StructTree.getScribble(list);
             assertTrue(scribble.toolAuthored());
-            assertEquals(1, scribble.segments().size());
+            assertEquals(
+                    List.of("MERGE lists", "LIST 2 items"),
+                    scribble.segments(),
+                    "the count is stamped last, as the outcome of the events before it");
         }
     }
 
     @Test
-    void repeatedUpdateReplacesCountSegmentInsteadOfAppending() throws Exception {
+    void repeatedUpdateBySameFixLeavesOneEventAndOneCount() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
             PdfStructElem list = listWithItems(pdfDoc, 2);
 
-            ListItemScribble.update(list);
+            ListItemScribble.update(list, "MERGE lists");
             String afterFirst = StructTree.getScribble(list).value();
-            ListItemScribble.update(list);
+            ListItemScribble.update(list, "MERGE lists");
 
             assertEquals(afterFirst, StructTree.getScribble(list).value());
+        }
+    }
+
+    @Test
+    void secondFixAddsItsOwnEventAndRefreshesTheCount() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem list = listWithItems(pdfDoc, 2);
+
+            ListItemScribble.update(list, "WRAP paragraph run");
+            list.addKid(new PdfStructElem(pdfDoc, PdfName.LI));
+            ListItemScribble.update(list, "MERGE lists");
+
+            DocValue.Scribble scribble = StructTree.getScribble(list);
+            assertEquals(
+                    List.of("WRAP paragraph run", "MERGE lists", "LIST 3 items"),
+                    scribble.segments(),
+                    "events accumulate; only the stale count is replaced");
+        }
+    }
+
+    @Test
+    void singleItemCountIsSingular() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem list = listWithItems(pdfDoc, 1);
+
+            ListItemScribble.update(list, "SPLIT items");
+
+            assertEquals("LIST 1 item", StructTree.getScribble(list).segments().get(1));
         }
     }
 
@@ -64,46 +100,14 @@ class ListItemScribbleTest extends PdfTestBase {
             PdfStructElem list = listWithItems(pdfDoc, 3);
             StructTree.setScribble(list, "reviewed by hand");
 
-            ListItemScribble.update(list);
-            ListItemScribble.update(list);
+            ListItemScribble.update(list, "MERGE lists");
+            ListItemScribble.update(list, "MERGE lists");
 
             DocValue.Scribble scribble = StructTree.getScribble(list);
             assertFalse(scribble.toolAuthored());
-            assertEquals(2, scribble.segments().size());
-            assertEquals("reviewed by hand", scribble.segments().get(0));
-        }
-    }
-
-    @Test
-    void prefixedUpdateReplacesEarlierPrefixedCountSegment() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
-            PdfStructElem list = listWithItems(pdfDoc, 2);
-
-            ListItemScribble.update(list, "paragraph run, ");
-            list.addKid(new PdfStructElem(pdfDoc, PdfName.LI));
-            ListItemScribble.update(list, "merged, ");
-
-            DocValue.Scribble scribble = StructTree.getScribble(list);
-            assertEquals(1, scribble.segments().size());
-            assertEquals("merged, 3 items", scribble.segments().get(0));
-        }
-    }
-
-    @Test
-    void prefixedUpdateReplacesEarlierUnprefixedCountSegment() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            pdfDoc.addNewPage();
-            PdfStructElem list = listWithItems(pdfDoc, 2);
-
-            ListItemScribble.update(list);
-            ListItemScribble.update(list, "merged, ");
-
-            DocValue.Scribble scribble = StructTree.getScribble(list);
-            assertEquals(1, scribble.segments().size());
-            assertEquals("merged, 2 items", scribble.segments().get(0));
+            assertEquals(
+                    List.of("reviewed by hand", "MERGE lists", "LIST 3 items"),
+                    scribble.segments());
         }
     }
 }

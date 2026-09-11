@@ -519,6 +519,29 @@ public final class StructTree {
     }
 
     /**
+     * Appends a tool-authored segment, creating the scribble when the element has none. An existing
+     * scribble keeps its own authorship, so a tool note appended to a hand-written scribble does
+     * not claim the whole thing for the tool. Appending a segment that is already present is a
+     * no-op, so a fix that runs twice does not stamp itself twice.
+     */
+    public static void addToolScribble(PdfStructElem elem, String segment) {
+        DocValue.Scribble existing = getScribble(elem);
+        if (existing == null) {
+            setToolScribble(elem, segment);
+            return;
+        }
+        for (String seg : existing.segments()) {
+            if (seg.equals(segment)) return;
+        }
+        String body = existing.body() + SCRIBBLE_SEPARATOR + segment;
+        if (existing.toolAuthored()) {
+            setToolScribble(elem, body);
+        } else {
+            setScribble(elem, body);
+        }
+    }
+
+    /**
      * Removes scribble segments whose first whitespace-separated token equals {@code tag}. If the
      * element has no scribble, this is a no-op. If all segments are removed, /T is cleared.
      *

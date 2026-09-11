@@ -822,6 +822,57 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void addToolScribbleMarksNewScribbleAsToolAuthored() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.addToolScribble(art, "MERGE lists");
+
+            DocValue.Scribble scribble = StructTree.getScribble(art);
+            assertTrue(scribble.toolAuthored());
+            assertEquals("MERGE lists", scribble.segments().get(0));
+        }
+    }
+
+    @Test
+    void addToolScribbleKeepsUserAuthorshipOfExistingScribble() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+            StructTree.setScribble(art, "reviewed by hand");
+
+            StructTree.addToolScribble(art, "MERGE lists");
+
+            DocValue.Scribble scribble = StructTree.getScribble(art);
+            assertFalse(scribble.toolAuthored(), "the user's authorship survives a tool append");
+            assertEquals(2, scribble.segments().size());
+        }
+    }
+
+    @Test
+    void addToolScribbleDoesNotRepeatAnIdenticalSegment() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem art = new PdfStructElem(doc, PdfName.Art);
+            doc.getStructTreeRoot().addKid(art);
+
+            StructTree.addToolScribble(art, "MERGE lists");
+            StructTree.addToolScribble(art, "MERGE lists");
+
+            assertEquals(1, StructTree.getScribble(art).segments().size());
+        }
+    }
+
+    @Test
     void isSameMatchesKArrayEntryAgainstChildDict() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

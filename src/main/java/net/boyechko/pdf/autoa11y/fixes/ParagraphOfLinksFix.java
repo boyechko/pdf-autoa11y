@@ -31,7 +31,7 @@ public final class ParagraphOfLinksFix implements IssueFix {
             assembler.newItemBody(parent).addKid(kid);
             parent.removeKid(kid);
         }
-        ListItemScribble.update(parent, "P of links, ");
+        ListItemScribble.update(parent, "WRAP P of links");
     }
 
     @Override

@@ -12,7 +12,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -32,13 +31,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Applies only while the Link tags are still immediate siblings sharing one destination, so a
  * merge invalidated by an earlier fix is skipped rather than forced. The surviving Link is
- * tool-stamped {@code LINKS MERGED} so the sites are findable in {@code --dump-tree}.
+ * tool-stamped {@code MERGE links} so the sites are findable in {@code --dump-tree}.
  */
 public final class MergeSplitLinksFix implements IssueFix {
 
     private static final Logger logger = LoggerFactory.getLogger(MergeSplitLinksFix.class);
 
-    private static final String MERGED_SCRIBBLE = "LINKS MERGED";
+    private static final String MERGED_SCRIBBLE = "MERGE links";
 
     private final List<PdfStructElem> links;
     private int mergedCount;
@@ -68,23 +67,9 @@ public final class MergeSplitLinksFix implements IssueFix {
             mergedCount++;
         }
         groupObjRefsFirst(target);
-        markAsMerged(target);
+        StructTree.addToolScribble(target, MERGED_SCRIBBLE);
 
         logger.debug("Merged {} Link tags into #{}", links.size(), StructTree.objNum(target));
-    }
-
-    /**
-     * Tool-stamps the surviving Link, preserving any existing scribble and its authorship, and
-     * skipping elements already carrying the segment so re-runs stay idempotent.
-     */
-    private static void markAsMerged(PdfStructElem elem) {
-        DocValue.Scribble existing = StructTree.getScribble(elem);
-        if (existing == null) {
-            StructTree.setToolScribble(elem, MERGED_SCRIBBLE);
-        } else if (existing.segments().stream()
-                .noneMatch(seg -> seg.trim().equals(MERGED_SCRIBBLE))) {
-            StructTree.addScribble(elem, MERGED_SCRIBBLE);
-        }
     }
 
     /** True if the links are still consecutive kids of the parent, in the recorded order. */

@@ -3,62 +3,40 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
-import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
- * Stamps a list element with a scribble noting its direct item count, e.g. {@code "__:5 items"}.
- * Each list-producing fix calls {@link #update} as its last step, so whichever fix touches a list
- * last leaves the accurate count. An existing count segment is replaced; other segments and the
- * scribble's authorship are preserved.
+ * Maintains the scribble on a list element, e.g. {@code "__:MERGE lists // LIST 5 items"}. Each
+ * list-producing fix calls {@link #update} as its last step, naming what it did.
+ *
+ * <p>The two kinds of segment behave differently on purpose. The event segment is history: every
+ * fix that touches the list leaves one, and they accumulate. The count segment is state: it is
+ * replaced each time, so it always reflects the list as it stands and is stamped last so it reads
+ * as the outcome of the events before it.
  */
 final class ListItemScribble {
 
-    /** A count segment, with or without the leading verb prefix a fix may have stamped on it. */
-    private static final Pattern COUNT_SEGMENT = Pattern.compile("(.*, )?\\d+ items?");
+    /** Segment tag naming the item count, so it can be replaced without matching its text. */
+    private static final String COUNT_TAG = "LIST";
 
     private ListItemScribble() {}
 
-    /** Writes or refreshes the item-count segment on a list element. */
-    static void update(PdfStructElem list) {
-        update(list, "");
-    }
-
     /**
-     * Updates a list element's scribble by appending or replacing the item-count segment, using the
-     * provided prefix and the direct item count within the list element.
+     * Records {@code event} on the list and refreshes its item count.
      *
-     * @param list the structural element representing the list whose item count is being updated
-     * @param prefix the string to prepend to the item count in the scribble
+     * @param list the list element whose scribble is being stamped
+     * @param event a tagged event segment naming what the calling fix did, e.g. {@code "MERGE
+     *     lists"}
      */
-    static void update(PdfStructElem list, String prefix) {
+    static void update(PdfStructElem list, String event) {
+        StructTree.addToolScribble(list, event);
+
         long count =
                 StructTree.childrenOf(list, PdfStructElem.class).stream()
                         .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
                         .count();
-        String countSegment = prefix + count + (count == 1 ? " item" : " items");
-
-        DocValue.Scribble existing = StructTree.getScribble(list);
-        if (existing == null) {
-            StructTree.setToolScribble(list, countSegment);
-            return;
-        }
-
-        List<String> kept = new ArrayList<>();
-        for (String segment : existing.segments()) {
-            if (!COUNT_SEGMENT.matcher(segment.trim()).matches()) {
-                kept.add(segment);
-            }
-        }
-        kept.add(countSegment);
-        String body = String.join(StructTree.SCRIBBLE_SEPARATOR, kept);
-        if (existing.toolAuthored()) {
-            StructTree.setToolScribble(list, body);
-        } else {
-            StructTree.setScribble(list, body);
-        }
+        StructTree.clearScribbleSegments(list, COUNT_TAG);
+        StructTree.addToolScribble(
+                list, COUNT_TAG + " " + count + (count == 1 ? " item" : " items"));
     }
 }

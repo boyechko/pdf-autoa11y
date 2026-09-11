@@ -72,7 +72,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
             firstList.addKid(li);
         }
         container.removeKid(secondList);
-        ListItemScribble.update(firstList, "merged, ");
+        ListItemScribble.update(firstList, "MERGE lists");
 
         logger.debug(
                 "Merged {} items of list #{} into list #{}",

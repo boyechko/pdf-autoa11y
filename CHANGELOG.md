@@ -13,6 +13,15 @@ Versioning](https://semver.org/).
   scribbled instructions. Lists no longer have to be discovered as part of a
   bullet run to qualify for merging.
 
+### Changed
+- Tool-authored scribble segments now all open with an upper-case tag naming
+  what wrote them. A list records what each fix did in its own segment and
+  keeps the item count in a `LIST` segment of its own, so a list touched by
+  several fixes reads as a short history rather than remembering only the last
+  one. Segments naming an action now lead with the verb throughout: the former
+  `LINKS MERGED` and `CONTENT SPLIT` scribbles are now `MERGE links` and
+  `SPLIT content`. See `docs/checks-and-fixes.md`.
+
 ### Fixed
 - A list touched by more than one automatic fix no longer keeps a stale item
   count in its `/T` scribble. The count segment is now recognized and replaced

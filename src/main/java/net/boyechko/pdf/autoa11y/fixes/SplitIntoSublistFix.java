@@ -155,7 +155,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         PdfStructElem lBody =
                 joinInto != null ? assembler.newItemBody(list, 0) : assembler.newItemBody(list);
         assembler.adoptIntoBody(lBody, predecessor, page);
-        ListItemScribble.update(list, "continued item, ");
+        ListItemScribble.update(list, "SPLIT sublist");
         return lBody;
     }
 

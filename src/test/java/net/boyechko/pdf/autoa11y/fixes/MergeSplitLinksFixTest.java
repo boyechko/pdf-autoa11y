@@ -131,7 +131,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             DocValue.Scribble scribble = StructTree.getScribble(merged);
             assertNotNull(scribble, "Merged Link should carry a scribble");
             assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
-            assertEquals(List.of("LINKS MERGED"), scribble.segments());
+            assertEquals(List.of("MERGE links"), scribble.segments());
         }
     }
 
@@ -150,7 +150,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
 
             PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
             assertEquals(
-                    List.of("check me", "LINKS MERGED"),
+                    List.of("check me", "MERGE links"),
                     StructTree.getScribble(merged).segments(),
                     "Should append to the user's scribble rather than replace it");
         }
@@ -174,7 +174,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             assertEquals(
                     2, StructTree.childrenOf(merged, PdfObjRef.class).size(), "Kept both OBJRs");
             assertEquals(
-                    List.of("LINKS MERGED"),
+                    List.of("MERGE links"),
                     StructTree.getScribble(merged).segments(),
                     "Should not stamp the scribble twice");
         }

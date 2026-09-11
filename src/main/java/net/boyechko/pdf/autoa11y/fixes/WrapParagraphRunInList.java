@@ -87,7 +87,7 @@ public final class WrapParagraphRunInList implements IssueFix {
         for (PdfStructElem p : kids) {
             assembler.newItemBody(listElem).addKid(p);
         }
-        ListItemScribble.update(listElem, "paragraph run, ");
+        ListItemScribble.update(listElem, "WRAP paragraph run");
 
         logger.debug(
                 "Wrapped {} P elements in L > LI > LBody under obj. #{}",
