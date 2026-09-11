@@ -52,6 +52,7 @@ public class Cli {
             Path annotateTreePath,
             Path applyOutlinePath,
             Path reportPath,
+            Path remediationLogPath,
             VerbosityLevel verbosity,
             boolean printStructureTree,
             boolean createSidecar,
@@ -269,6 +270,25 @@ public class Cli {
         if (config.reportPath() != null) {
             writeAccessibilityReport(result, config, listener);
         }
+
+        if (config.remediationLogPath() != null) {
+            appendRemediationLog(result, config, listener);
+        }
+    }
+
+    /** Appends this run's entries; a log failure must not fail the remediation. */
+    private static void appendRemediationLog(
+            ProcessingResult result, CLIConfig config, ProcessingListener listener) {
+        try {
+            RemediationLog.append(
+                    config.remediationLogPath(),
+                    result.remediationLog(),
+                    config.inputPath(),
+                    config.outputPath());
+            listener.onInfo("Remediation log appended to " + config.remediationLogPath());
+        } catch (IOException e) {
+            listener.onError("Failed to write remediation log: " + e.getMessage());
+        }
     }
 
     private static void writeAccessibilityReport(
@@ -483,6 +503,7 @@ public class Cli {
                     case "-f", "--force" -> b.forceSave = true;
                     case "-a", "--analyze" -> b.analyzeOnly = true;
                     case "-r", "--report" -> b.generateReport = true;
+                    case "--no-log" -> b.noRemediationLog = true;
                     default -> {
                         if (b.inputPath == null) {
                             b.inputPath = Paths.get(args[i]);
@@ -537,6 +558,8 @@ public class Cli {
         Path applyOutlinePath;
         boolean generateReport;
         Path reportPath;
+        boolean noRemediationLog;
+        Path remediationLogPath;
         VerbosityLevel verbosity = VerbosityLevel.NORMAL;
         boolean printStructureTree;
         boolean createSidecar;
@@ -560,6 +583,7 @@ public class Cli {
                     inputPath.getFileName().toString().replaceFirst("(_a11y)*[.][^.]+$", "");
             resolveOutputPath(baseName);
             resolveReportPath(baseName);
+            resolveRemediationLogPath();
 
             return new CLIConfig(
                     inputPath,
@@ -575,6 +599,7 @@ public class Cli {
                     annotateTreePath,
                     applyOutlinePath,
                     reportPath,
+                    remediationLogPath,
                     verbosity,
                     printStructureTree,
                     createSidecar,
@@ -601,6 +626,18 @@ public class Cli {
             } else if (Files.isDirectory(outputPath)) {
                 outputPath = outputPath.resolve(baseName + DEFAULT_OUTPUT_SUFFIX + ".pdf");
             }
+        }
+
+        /**
+         * Resolves the remediation log beside the output PDF. Keying on the output (not the input)
+         * keeps a chain of runs on one log: re-running the tool on its own output resolves to the
+         * same lineage base.
+         */
+        private void resolveRemediationLogPath() {
+            if (noRemediationLog || outputPath == null) {
+                return;
+            }
+            remediationLogPath = RemediationLog.resolvePath(outputPath);
         }
 
         private void resolveReportPath(String baseName) {
@@ -662,6 +699,7 @@ public class Cli {
                 + "  -p, --password    Password for encrypted PDFs\n"
                 + "  -r, --report      Save accessibility report (auto-named from input)\n"
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
+                + "  --no-log          Do not append to <basename>.autoa11y.log\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
                 + "                    Use --dump-tree=<box|plain> to choose the line style:\n"
                 + "                    box-drawing connectors (default) or plain 2-space\n"

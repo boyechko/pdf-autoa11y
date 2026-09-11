@@ -14,6 +14,7 @@ public final class Issue {
 
     private boolean resolved;
     private boolean failed;
+    private boolean skipped;
     private IssueMsg resolution;
 
     public Issue(IssueType type, IssueSev sev, String message) {
@@ -67,6 +68,11 @@ public final class Issue {
         return resolved;
     }
 
+    /** True if another fix made this one unnecessary, so this issue's fix never ran. */
+    public boolean isSkipped() {
+        return skipped;
+    }
+
     /** Outcome message recorded by markResolved/markFailed; null while the issue is open. */
     public IssueMsg resolution() {
         return resolution;
@@ -76,6 +82,14 @@ public final class Issue {
     public void markResolved(IssueMsg resolution) {
         this.resolved = true;
         this.resolution = Objects.requireNonNull(resolution, "resolution");
+    }
+
+    /**
+     * Records an issue resolved by another fix; this issue's own fix never touched the document.
+     */
+    public void markSkipped(IssueMsg resolution) {
+        markResolved(resolution);
+        this.skipped = true;
     }
 
     /** Records a failed fix attempt; the issue stays unresolved for manual-review reporting. */

@@ -159,11 +159,7 @@ public final class SidecarConfig {
     // == Loading ==========================================================
 
     private static Path resolveSidecarPath(Path pdfPath) {
-        String filename = pdfPath.getFileName().toString();
-        String baseName = filename.replaceFirst("(_autoa11y)*\\.[^.]+$", "");
-        Path parent = pdfPath.getParent();
-        String sidecarName = baseName + SIDECAR_EXTENSION;
-        return parent != null ? parent.resolve(sidecarName) : Path.of(sidecarName);
+        return SidecarPaths.forPdf(pdfPath, SIDECAR_EXTENSION);
     }
 
     private static SidecarConfig load(Path path) throws IOException {

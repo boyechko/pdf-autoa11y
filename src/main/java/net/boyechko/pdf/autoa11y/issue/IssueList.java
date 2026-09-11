@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 
@@ -47,6 +48,15 @@ public class IssueList extends ArrayList<Issue> {
 
     /** Applies fixes to issues, respecting priority ordering and invalidation. */
     public IssueList applyFixes(DocContext ctx) {
+        return applyFixes(ctx, issue -> {});
+    }
+
+    /**
+     * Applies fixes to issues, respecting priority ordering and invalidation, calling onApplied
+     * synchronously after each successful resolution, before the next fix runs. Failed and
+     * invalidated fixes are excluded; callback exceptions propagate to the caller.
+     */
+    public IssueList applyFixes(DocContext ctx, Consumer<Issue> onApplied) {
         List<Map.Entry<Issue, IssueFix>> ordered =
                 stream()
                         .filter(i -> i.fix() != null)
@@ -64,7 +74,7 @@ public class IssueList extends ArrayList<Issue> {
                     appliedFixes.stream().anyMatch(applied -> applied.invalidates(fx));
 
             if (isInvalidated) {
-                i.markResolved(new IssueMsg("Skipped: resolved by higher priority fix", i.where()));
+                i.markSkipped(new IssueMsg("Skipped: resolved by higher priority fix", i.where()));
                 continue;
             }
 
@@ -78,7 +88,10 @@ public class IssueList extends ArrayList<Issue> {
                         new IssueMsg(
                                 resolution.message() + " failed: " + ex.getMessage(),
                                 resolution.where()));
+                continue;
             }
+
+            onApplied.accept(i);
         }
 
         return getResolvedIssues();

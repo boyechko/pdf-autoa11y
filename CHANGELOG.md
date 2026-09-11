@@ -8,6 +8,11 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Remediation runs now append to a per-document remediation log,
+  `<basename>.autoa11y.log`, recording which fix changed which element and
+  when. Entries are anchored on PDF object numbers, so they line up with
+  `--dump-tree` output. The log accumulates across runs; `--no-log` skips it.
+  See `docs/remediation-log.md`.
 - New `AdjacentListsCheck`: merges every run of adjacent sibling lists into
   its first list, including lists produced by earlier automatic fixes or
   scribbled instructions. Lists no longer have to be discovered as part of a

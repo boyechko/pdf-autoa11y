@@ -22,10 +22,18 @@ import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
+import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.junit.jupiter.api.Test;
 
 /** Test suite for ProcessingService. */
@@ -204,7 +212,83 @@ public class ProcessingServiceTest extends PdfTestBase {
                 firstRun.size(), secondRun.size(), "Issue count should stay stable across runs");
     }
 
+    @Test
+    void remediationLogPreservesExecutionOrderAndRolesBeforeLaterFixesRun() throws Exception {
+        Path inputPath = createFigureWithTextPdf();
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(inputPath, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withChecks(List.of())
+                        .injectCheck(RetaggingCheck::new)
+                        .build();
+
+        ProcessingResult result = service.remediate();
+
+        assertEquals(
+                List.of("P", "H1"),
+                result.remediationLog().stream().map(RemediationEntry::role).toList());
+        assertNotNull(result.remediationLog().getFirst().objNum());
+        assertEquals(
+                result.remediationLog().getFirst().objNum(),
+                result.remediationLog().getLast().objNum());
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
+
+    private static class RetaggingCheck extends StructTreeCheck {
+        private final IssueList issues = new IssueList();
+
+        @Override
+        public String name() {
+            return "Retagging";
+        }
+
+        @Override
+        public String description() {
+            return "Retags a figure twice";
+        }
+
+        @Override
+        public boolean enterElement(StructTreeContext ctx) {
+            if (PdfName.Figure.equals(ctx.node().getRole())) {
+                IssueLoc where = IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), null, null);
+                issues.add(
+                        new Issue(
+                                IssueType.FIGURE_WITH_TEXT,
+                                IssueSev.WARNING,
+                                where,
+                                "later",
+                                new RetaggingFix(ctx.node(), PdfName.H1, 20)));
+                issues.add(
+                        new Issue(
+                                IssueType.FIGURE_WITH_TEXT,
+                                IssueSev.WARNING,
+                                where,
+                                "earlier",
+                                new RetaggingFix(ctx.node(), PdfName.P, 10)));
+            }
+            return true;
+        }
+
+        @Override
+        public IssueList getIssues() {
+            return issues;
+        }
+    }
+
+    private record RetaggingFix(PdfStructElem element, PdfName role, int priority)
+            implements IssueFix {
+        @Override
+        public void apply(DocContext ctx) {
+            element.setRole(role);
+        }
+
+        @Override
+        public String describe() {
+            return role.getValue();
+        }
+    }
 
     private Path createUntaggedPdf() throws Exception {
         Path output = testOutputPath("untagged.pdf");

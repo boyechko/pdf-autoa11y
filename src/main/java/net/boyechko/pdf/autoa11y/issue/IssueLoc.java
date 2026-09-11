@@ -14,15 +14,15 @@ public sealed interface IssueLoc {
     /** A whole page, 1-based. */
     record AtPage(int pageNum) implements IssueLoc {}
 
-    /** An indirect object such as an annotation or font; pageNum is optional context. */
+    /** An indirect object such as an annotation or font; pageNum is an optional context. */
     record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements IssueLoc {}
 
     /** A structure element; pageNum, role, and structPath are optional reporting context. */
-    record AtElem(PdfStructElem element, Integer pageNum, String role, String structPath)
+    record AtElem(PdfStructElem element, Integer pageNum, String roleName, String structPath)
             implements IssueLoc {}
 
     /** A marked-content sequence on a page; ownerObjNum is the owning structure element. */
-    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String role, String structPath)
+    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName, String structPath)
             implements IssueLoc {}
 
     /** What kind of indirect object an {@link AtObj} points at. */
@@ -33,6 +33,8 @@ public sealed interface IssueLoc {
         XOBJECT,
         GENERIC
     }
+
+    // --- Factory Methods ---
 
     static IssueLoc none() {
         return new None();
@@ -70,6 +72,8 @@ public sealed interface IssueLoc {
         return new AtMcid(pageNum, mcid, ownerObjNum, role, structPath);
     }
 
+    // --- Default Methods ---
+
     /** Returns page number if available, null otherwise. */
     default Integer page() {
         return switch (this) {
@@ -79,6 +83,23 @@ public sealed interface IssueLoc {
                     pageNum != null ? pageNum : null;
             case AtMcid(var pageNum, var mcid, var ownerObjNum, var role, var structPath) ->
                     pageNum;
+            default -> null;
+        };
+    }
+
+    /** Returns the structure role if available, null otherwise. */
+    default String role() {
+        return switch (this) {
+            case AtElem(var element, var pageNum, var roleName, var structPath) -> {
+                if (roleName != null) {
+                    yield roleName;
+                }
+                yield element != null && element.getRole() != null
+                        ? element.getRole().getValue()
+                        : null;
+            }
+            case AtMcid(var pageNum, var mcid, var ownerObjNum, var roleName, var structPath) ->
+                    roleName;
             default -> null;
         };
     }

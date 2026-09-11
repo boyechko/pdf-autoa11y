@@ -246,6 +246,7 @@ public class ProcessingService {
 
         IssueList allIssues = new IssueList();
         IssueList allFixes = new IssueList();
+        List<RemediationEntry> remediationLog = new ArrayList<>();
         boolean isDirty = false;
 
         try {
@@ -278,7 +279,8 @@ public class ProcessingService {
                     if (!issues.isEmpty()) {
                         listener.onDetectedSectionStart();
                         reportIssuesGrouped(issues);
-                        allFixes.addAll(applyAndReportFixes(ctx, issues));
+                        IssueList applied = applyAndReportFixes(ctx, issues, remediationLog);
+                        allFixes.addAll(applied);
                         reportRemainingIssues(issues);
                     } else {
                         listener.onSuccess(check.passedMessage());
@@ -304,7 +306,12 @@ public class ProcessingService {
             cleanupPipelineTempDir();
 
             return new ProcessingResult(
-                    allIssues, allFixes, allIssues.getRemainingIssues(), finalOutput, isDirty);
+                    allIssues,
+                    allFixes,
+                    allIssues.getRemainingIssues(),
+                    finalOutput,
+                    isDirty,
+                    List.copyOf(remediationLog));
         } catch (Exception e) {
             cleanupPipelineTempDir();
             throw e;
@@ -422,13 +429,28 @@ public class ProcessingService {
     private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
 
     /** Applies fixes and reports results. Returns the applied fixes. */
-    private IssueList applyAndReportFixes(DocContext ctx, IssueList issues) {
-        IssueList applied = issues.applyFixes(ctx);
+    private IssueList applyAndReportFixes(
+            DocContext ctx, IssueList issues, List<RemediationEntry> remediationLog) {
+        IssueList applied =
+                issues.applyFixes(ctx, issue -> logRemediation(remediationLog, issue, ctx));
         if (!applied.isEmpty()) {
             listener.onFixesSectionStart();
         }
         reportFixesGrouped(applied);
         return applied;
+    }
+
+    /**
+     * Records one applied fix. Bookkeeping must never abort a remediation in progress, so a capture
+     * failure costs its log entry and nothing else.
+     */
+    private void logRemediation(
+            List<RemediationEntry> remediationLog, Issue issue, DocContext ctx) {
+        try {
+            remediationLog.add(RemediationEntry.capture(issue, ctx));
+        } catch (Exception e) {
+            listener.onError("Could not log " + issue.type() + " fix: " + e.getMessage());
+        }
     }
 
     private void reportRemainingIssues(IssueList issues) {

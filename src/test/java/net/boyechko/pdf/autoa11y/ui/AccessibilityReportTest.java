@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -179,7 +180,12 @@ class AccessibilityReportTest {
 
     private ProcessingResult resultWith(IssueList issues) {
         return new ProcessingResult(
-                issues, issues.getResolvedIssues(), issues.getRemainingIssues(), null, false);
+                issues,
+                issues.getResolvedIssues(),
+                issues.getRemainingIssues(),
+                null,
+                false,
+                List.of());
     }
 
     private String generateReport(ProcessingResult result) throws IOException {
