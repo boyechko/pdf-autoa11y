@@ -23,6 +23,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
+import net.boyechko.pdf.autoa11y.document.ModificationStamp;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.SafeOutput;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
@@ -323,6 +324,7 @@ public class Cli {
                     result =
                             TreeDiagram.annotateFromString(
                                     pdfDoc, content, msg -> logger().warn(msg));
+                    ModificationStamp.apply(pdfDoc);
                 }
                 out.commit();
                 if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
@@ -381,6 +383,7 @@ public class Cli {
                     result =
                             OutlineEditor.applyFromString(
                                     pdfDoc, content, msg -> logger().warn(msg));
+                    ModificationStamp.apply(pdfDoc);
                 }
                 out.commit();
                 if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {

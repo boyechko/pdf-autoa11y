@@ -12,6 +12,7 @@ public final class VersionInfo {
     private static final VersionInfo INSTANCE = loadDefault();
 
     private final String version;
+    private final String releaseVersion;
     private final String commit;
     private final String fullCommit;
     private final String buildTime;
@@ -20,6 +21,7 @@ public final class VersionInfo {
     public VersionInfo(Properties props) {
         if (props == null || props.isEmpty()) {
             this.version = "dev";
+            this.releaseVersion = "dev";
             this.commit = "unknown";
             this.fullCommit = "unknown";
             this.buildTime = "unknown";
@@ -53,16 +55,33 @@ public final class VersionInfo {
                     this.version = cleanTag + (dirty ? "-dirty" : "");
                 }
             } else {
-                String buildVer = props.getProperty("git.build.version");
-                if (buildVer != null
-                        && !buildVer.isBlank()
-                        && !"1.0-SNAPSHOT".equals(buildVer.trim())) {
-                    this.version = stripLeadingV(buildVer.trim());
-                } else {
-                    this.version = "dev";
-                }
+                String pom = pomVersion(props);
+                this.version = (pom != null) ? pom : "dev";
             }
         }
+        this.releaseVersion = resolveReleaseVersion(props);
+    }
+
+    /**
+     * Returns the clean release version behind this build, without the commit count and dirty
+     * marker {@link #version()} carries: the nearest release tag, else the pom's own version.
+     */
+    private static String resolveReleaseVersion(Properties props) {
+        String tag = props.getProperty("git.closest.tag.name");
+        if (tag != null && !tag.isBlank()) {
+            return stripLeadingV(tag.trim());
+        }
+        String pom = pomVersion(props);
+        return (pom != null) ? pom : "dev";
+    }
+
+    /** Returns the pom's own version, or null when it is absent or still a SNAPSHOT. */
+    private static String pomVersion(Properties props) {
+        String buildVer = props.getProperty("git.build.version");
+        if (buildVer == null || buildVer.isBlank() || buildVer.trim().endsWith("-SNAPSHOT")) {
+            return null;
+        }
+        return stripLeadingV(buildVer.trim());
     }
 
     private static VersionInfo loadDefault() {
@@ -90,6 +109,14 @@ public final class VersionInfo {
      */
     public String version() {
         return version;
+    }
+
+    /**
+     * Returns the release version alone (e.g. "0.5.0"), for places that want to name the release
+     * rather than pin down the exact build. Returns "dev" when no release can be identified.
+     */
+    public String releaseVersion() {
+        return releaseVersion;
     }
 
     /** Returns the abbreviated Git commit hash (e.g. "c983a1e"), or "unknown". */

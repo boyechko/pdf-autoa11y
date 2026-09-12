@@ -122,4 +122,42 @@ class VersionInfoTest {
         VersionInfo info = new VersionInfo(props);
         assertEquals("2.0.0", info.version());
     }
+
+    @Test
+    void releaseVersionDropsCommitCountAndDirtyMarker() {
+        Properties props = new Properties();
+        props.setProperty("git.closest.tag.name", "v0.5.0");
+        props.setProperty("git.commit.id.describe", "v0.5.0-5-g0f2128e-dirty");
+        props.setProperty("git.commit.id.abbrev", "0f2128e");
+        props.setProperty("git.dirty", "true");
+
+        VersionInfo info = new VersionInfo(props);
+        assertEquals("0.5.0-5-g0f2128e-dirty", info.version());
+        assertEquals("0.5.0", info.releaseVersion());
+    }
+
+    @Test
+    void releaseVersionFallsBackToPomVersionWhenNoGitTags() {
+        Properties props = new Properties();
+        props.setProperty("git.build.version", "0.5.0");
+
+        VersionInfo info = new VersionInfo(props);
+        assertEquals("0.5.0", info.releaseVersion());
+    }
+
+    @Test
+    void snapshotPomVersionIsNotAReleaseVersion() {
+        Properties props = new Properties();
+        props.setProperty("git.build.version", "1.0-SNAPSHOT");
+
+        VersionInfo info = new VersionInfo(props);
+        assertEquals("dev", info.releaseVersion());
+        assertEquals("dev", info.version());
+    }
+
+    @Test
+    void releaseVersionIsDevWithoutAnyGitMetadata() {
+        assertEquals("dev", new VersionInfo(null).releaseVersion());
+        assertEquals("dev", new VersionInfo(new Properties()).releaseVersion());
+    }
 }

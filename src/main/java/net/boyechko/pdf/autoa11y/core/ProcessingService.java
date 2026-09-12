@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.ModificationStamp;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -293,6 +294,17 @@ public class ProcessingService {
                 }
                 current = output;
             }
+
+            // Record the modification on the Document element as the last pipeline step
+            Path stamped = pipelineDir.resolve(String.format("step%02d_stamp.pdf", stepNum++));
+            tempFiles.add(stamped);
+            try (PdfDocument doc = PdfCustodian.openTempForModification(current, stamped)) {
+                ModificationStamp.apply(doc);
+            }
+            if (!KEEP_PIPELINE_TEMPS) {
+                Files.deleteIfExists(current);
+            }
+            current = stamped;
 
             // Finalize: copy the result out of the pipeline directory
             Path finalOutput = pipelineDir.resolve("output.pdf");

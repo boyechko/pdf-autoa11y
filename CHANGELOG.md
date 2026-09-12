@@ -8,6 +8,13 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Every PDF the tool writes now records that it was modified: a tool-authored
+  timestamp scribbled on the `Document` element, e.g.
+  `__:STAMP 2026-08-21 Fri 12:01`, and a `modified using PDF-AutoA11y
+  v0.5.0` note appended to the document's `/Creator` entry. This covers
+  remediation as well as `--annotate-tree` and `--apply-outline`. Re-running
+  replaces the previous stamp rather than adding to it, leaving other scribble
+  segments and the original authoring application intact.
 - Remediation runs now append to a per-document remediation log,
   `<basename>.autoa11y.log`, recording which fix changed which element and
   when. Entries are anchored on PDF object numbers, so they line up with
@@ -19,6 +26,9 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- `pom.xml` now carries the released version instead of `1.0-SNAPSHOT`, so a
+  build made without git can still name its release. The git tag remains
+  authoritative; see `docs/releasing.md` for the bump step.
 - Tool-authored scribble segments now all open with an upper-case tag naming
   what wrote them. A list records what each fix did in its own segment and
   keeps the item count in a `LIST` segment of its own, so a list touched by
