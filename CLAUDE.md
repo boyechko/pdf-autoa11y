@@ -3,6 +3,14 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with
 code in this repository.
 
+## When Responding
+
+Be as concise as possible and don't dump multiple paragraphs of text for the
+user to read. When possible, focus each response on one point only; other
+related points or ideas can be mentioned once the discussion about the first
+point is exhausted. The user will prompt for "Is there anything else you wanted
+to bring up?" when they are ready to shift topics.
+
 ## Project Overview
 
 PDF-Auto-A11y is a Java-based PDF accessibility remediation tool that validates
