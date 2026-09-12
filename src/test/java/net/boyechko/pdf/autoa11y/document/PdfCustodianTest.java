@@ -11,6 +11,7 @@ import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.WriterProperties;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,5 +96,39 @@ public class PdfCustodianTest extends PdfTestBase {
         } catch (BadPasswordException e) {
             // Also acceptable — iText blocks opening without password
         }
+    }
+
+    // ── modifyAndSave ──────────────────────────────────────────────
+
+    @Test
+    void modifyAndSaveStampsTheDocumentItPublishes() throws Exception {
+        PdfCustodian custodian = new PdfCustodian(clearPdf);
+        Path output = testOutputPath("modified.pdf");
+
+        String returned = custodian.modifyAndSave(output, doc -> "edited");
+
+        assertEquals("edited", returned);
+        assertTrue(Files.exists(output));
+        try (PdfDocument doc = new PdfDocument(new PdfReader(output.toString()))) {
+            assertTrue(doc.getDocumentInfo().getCreator().contains("modified using PDF-AutoA11y"));
+        }
+    }
+
+    @Test
+    void modifyAndSavePublishesNothingWhenTheEditFails() throws Exception {
+        PdfCustodian custodian = new PdfCustodian(clearPdf);
+        Path output = testOutputPath("never_written.pdf");
+        Files.deleteIfExists(output);
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        custodian.modifyAndSave(
+                                output,
+                                doc -> {
+                                    throw new IllegalStateException("edit failed");
+                                }));
+
+        assertFalse(Files.exists(output));
     }
 }

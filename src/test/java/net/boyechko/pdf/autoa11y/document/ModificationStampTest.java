@@ -16,7 +16,13 @@ import org.junit.jupiter.api.Test;
 public class ModificationStampTest {
 
     private static final LocalDateTime WHEN = LocalDateTime.of(2026, 8, 21, 12, 1);
-    private static final String STAMP = "__:STAMP 2026-08-21 Fri 12:01";
+
+    /** The segment the stamp writes for {@link #WHEN}, and that segment as a whole scribble. */
+    private static final String SEGMENT = "STAMP 2026-08-21 Fri 12:01";
+
+    private static final String TOOL_SCRIBBLE =
+            StructTree.SCRIBBLE_PREFIX + StructTree.SCRIBBLE_TOOL_MARK + SEGMENT;
+
     private static final String NOTE = "modified using PDF-AutoA11y";
 
     @Test
@@ -26,7 +32,7 @@ public class ModificationStampTest {
 
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(STAMP, StructTree.getScribble(document).rawValue());
+            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(document).rawValue());
         }
     }
 
@@ -38,7 +44,7 @@ public class ModificationStampTest {
             ModificationStamp.apply(doc, WHEN.minusDays(3));
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(STAMP, StructTree.getScribble(document).rawValue());
+            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(document).rawValue());
         }
     }
 
@@ -51,7 +57,7 @@ public class ModificationStampTest {
             ModificationStamp.apply(doc, WHEN);
 
             assertEquals(
-                    "__OK" + StructTree.SCRIBBLE_SEPARATOR + "STAMP 2026-08-21 Fri 12:01",
+                    StructTree.SCRIBBLE_PREFIX + "OK" + StructTree.SCRIBBLE_SEPARATOR + SEGMENT,
                     StructTree.getScribble(document).rawValue());
         }
     }
@@ -65,9 +71,10 @@ public class ModificationStampTest {
             ModificationStamp.apply(doc, WHEN);
 
             assertEquals(
-                    "__STAMPING needed on figure 4"
+                    StructTree.SCRIBBLE_PREFIX
+                            + "STAMPING needed on figure 4"
                             + StructTree.SCRIBBLE_SEPARATOR
-                            + "STAMP 2026-08-21 Fri 12:01",
+                            + SEGMENT,
                     StructTree.getScribble(document).rawValue());
         }
     }
@@ -79,7 +86,7 @@ public class ModificationStampTest {
 
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(STAMP, StructTree.getScribble(part).rawValue());
+            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(part).rawValue());
         }
     }
 

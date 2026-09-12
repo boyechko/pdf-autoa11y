@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.ReaderProperties;
 import com.itextpdf.kernel.pdf.WriterProperties;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,25 @@ public final class PdfCustodian {
         PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
 
         return new PdfDocument(pdfReader, pdfWriter);
+    }
+
+    /**
+     * Opens the input for modification, applies {@code edit}, stamps the result, and publishes it
+     * atomically to {@code outputPath}. Nothing is published if {@code edit} throws.
+     *
+     * <p>Prefer this over {@link #openForModification} for a whole edit-and-save operation: the
+     * caller never holds the document, so it cannot close one without the modification stamp.
+     */
+    public <R> R modifyAndSave(Path outputPath, Function<PdfDocument, R> edit) throws IOException {
+        try (SafeOutput out = SafeOutput.at(outputPath)) {
+            R result;
+            try (PdfDocument doc = openForModification(out.workingPath())) {
+                result = edit.apply(doc);
+                ModificationStamp.apply(doc);
+            }
+            out.commit();
+            return result;
+        }
     }
 
     /** Opens the original (possibly encrypted) input and writes to output WITHOUT encryption. */

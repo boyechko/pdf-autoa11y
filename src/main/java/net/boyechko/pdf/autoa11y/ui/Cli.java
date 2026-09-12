@@ -23,7 +23,6 @@ import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
-import net.boyechko.pdf.autoa11y.document.ModificationStamp;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.document.SafeOutput;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
@@ -318,25 +317,21 @@ public class Cli {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             String content = Files.readString(config.annotateTreePath());
-            try (SafeOutput out = SafeOutput.at(config.outputPath())) {
-                TreeDiagram.AnnotateResult result;
-                try (PdfDocument pdfDoc = custodian.openForModification(out.workingPath())) {
-                    result =
-                            TreeDiagram.annotateFromString(
-                                    pdfDoc, content, msg -> logger().warn(msg));
-                    ModificationStamp.apply(pdfDoc);
-                }
-                out.commit();
-                if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
-                    System.out.printf(
-                            "Annotations applied: %d updated, %d cleared, %d unchanged"
-                                    + " (%d unmatched line(s), %d element(s) not listed)%n",
-                            result.updated(),
-                            result.cleared(),
-                            result.unchanged(),
-                            result.unmatchedLines(),
-                            result.unmatchedElements());
-                }
+            TreeDiagram.AnnotateResult result =
+                    custodian.modifyAndSave(
+                            config.outputPath(),
+                            pdfDoc ->
+                                    TreeDiagram.annotateFromString(
+                                            pdfDoc, content, msg -> logger().warn(msg)));
+            if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
+                System.out.printf(
+                        "Annotations applied: %d updated, %d cleared, %d unchanged"
+                                + " (%d unmatched line(s), %d element(s) not listed)%n",
+                        result.updated(),
+                        result.cleared(),
+                        result.unchanged(),
+                        result.unmatchedLines(),
+                        result.unmatchedElements());
             }
         } catch (Exception e) {
             System.err.println("✗ Failed to annotate tree: " + e.getMessage());
@@ -377,21 +372,17 @@ public class Cli {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             String content = Files.readString(config.applyOutlinePath());
-            try (SafeOutput out = SafeOutput.at(config.outputPath())) {
-                OutlineEditor.ApplyResult result;
-                try (PdfDocument pdfDoc = custodian.openForModification(out.workingPath())) {
-                    result =
-                            OutlineEditor.applyFromString(
-                                    pdfDoc, content, msg -> logger().warn(msg));
-                    ModificationStamp.apply(pdfDoc);
-                }
-                out.commit();
-                if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
-                    System.out.printf(
-                            "Outline replaced: %d previous entry(ies) removed,"
-                                    + " %d new entry(ies) written (%d parse error(s))%n",
-                            result.previousEntries(), result.newEntries(), result.parseErrors());
-                }
+            OutlineEditor.ApplyResult result =
+                    custodian.modifyAndSave(
+                            config.outputPath(),
+                            pdfDoc ->
+                                    OutlineEditor.applyFromString(
+                                            pdfDoc, content, msg -> logger().warn(msg)));
+            if (config.verbosity().shouldShow(VerbosityLevel.NORMAL)) {
+                System.out.printf(
+                        "Outline replaced: %d previous entry(ies) removed,"
+                                + " %d new entry(ies) written (%d parse error(s))%n",
+                        result.previousEntries(), result.newEntries(), result.parseErrors());
             }
         } catch (Exception e) {
             System.err.println("✗ Failed to apply outline: " + e.getMessage());
