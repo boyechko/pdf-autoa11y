@@ -1070,8 +1070,99 @@ class ScribbledInstructionFixTest extends PdfTestBase {
                     scribble.segments().contains("keep me"),
                     "Existing scribble segments should survive");
             assertTrue(
-                    scribble.value().contains("2"),
-                    "Breadcrumb should accumulate both absorbed siblings: " + scribble.value());
+                    scribble.segments()
+                            .contains(
+                                    ScribbledInstructionFix.INSTRUCTION_TAG + " MERGE absorbed 2"),
+                    "Receipt should accumulate both absorbed siblings: " + scribble.value());
+        }
+    }
+
+    @Test
+    void setRoleReceiptNamesOldAndNewRole() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(p, "!SET_ROLE H4").apply(ctx);
+
+            var scribble = StructTree.getScribble(p);
+            assertNotNull(scribble);
+            assertTrue(scribble.toolAuthored(), "Receipt should read as tool-authored");
+            assertEquals(
+                    ScribbledInstructionFix.INSTRUCTION_TAG + " SET_ROLE P -> H4", scribble.body());
+        }
+    }
+
+    @Test
+    void addParentReceiptNamesTheChain() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(p);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(p, "!ADD_PARENT Note[]").apply(ctx);
+
+            var scribble = StructTree.getScribble(p);
+            assertNotNull(scribble);
+            assertTrue(scribble.toolAuthored(), "Receipt should read as tool-authored");
+            assertEquals(
+                    ScribbledInstructionFix.INSTRUCTION_TAG + " ADD_PARENT Note[]",
+                    scribble.body());
+        }
+    }
+
+    @Test
+    void addChildReceiptNamesTheTemplate() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            document.addKid(li);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(li, "!ADD_CHILD Lbl[],LBody[]").apply(ctx);
+
+            var scribble = StructTree.getScribble(li);
+            assertNotNull(scribble);
+            assertTrue(scribble.toolAuthored(), "Receipt should read as tool-authored");
+            assertEquals(
+                    ScribbledInstructionFix.INSTRUCTION_TAG + " ADD_CHILD Lbl[],LBody[]",
+                    scribble.body());
+        }
+    }
+
+    @Test
+    void reorderReceiptNamesOldAndNewPosition() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            StructTree.setScribble(document, "!REORDER_KIDS");
+
+            PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.H1);
+            document.addKid(first);
+            StructTree.setScribble(first, "!REORDER 002");
+
+            PdfStructElem second = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(second);
+            StructTree.setScribble(second, "!REORDER 001");
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);
+
+            var scribble = StructTree.getScribble(second);
+            assertNotNull(scribble);
+            assertTrue(scribble.toolAuthored(), "Receipt should read as tool-authored");
+            assertEquals(
+                    ScribbledInstructionFix.INSTRUCTION_TAG + " REORDER 2 -> 1", scribble.body());
         }
     }
 }

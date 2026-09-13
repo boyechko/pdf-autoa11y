@@ -189,7 +189,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {
-        StructTree.addScribble(elem, CHECK_SCRIBBLE_PREFIX + " " + message);
+        StructTree.addToolScribble(elem, CHECK_SCRIBBLE_PREFIX + " " + message);
     }
 
     private String formatRole(String role) {

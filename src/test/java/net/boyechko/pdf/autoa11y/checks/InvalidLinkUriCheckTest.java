@@ -43,11 +43,12 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
 
             DocValue.Scribble scribble = DocValue.Scribble.of(link);
             assertNotNull(scribble, "Expected a scribble on the Link element");
+            assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
             assertTrue(
-                    scribble.value().startsWith(InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX),
-                    "Scribble should start with check prefix");
+                    scribble.body().startsWith(InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX),
+                    "Scribble should open with the check's tag");
             assertTrue(
-                    scribble.value().contains("https://practice.10"),
+                    scribble.body().contains("https://practice.10"),
                     "Scribble should include offending URI");
         }
     }

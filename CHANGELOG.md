@@ -26,6 +26,11 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- An executed scribbled instruction now leaves a receipt naming what it did
+  rather than a bare `INST OK`: `!SET_ROLE H2` leaves `INST SET_ROLE P -> H2`,
+  `!MERGE` leaves `INST MERGE absorbed 2`, and a reordered child leaves
+  `INST REORDER 3 -> 1` in place of the old `MOVE` segment. `OK` no longer
+  appears in tool output at all, leaving it to the user's verification mark.
 - `pom.xml` now carries the released version instead of `1.0-SNAPSHOT`, so a
   build made without git can still name its release. The git tag remains
   authoritative; see `docs/releasing.md` for the bump step.
@@ -38,6 +43,10 @@ Versioning](https://semver.org/).
   `SPLIT content`. See `docs/checks-and-fixes.md`.
 
 ### Fixed
+- Tool-written scribble segments are now consistently marked tool-authored.
+  The merge and reorder receipts, `SchemaValidationCheck` findings, and
+  `InvalidLinkUriCheck` findings were written as if by hand, so
+  `StaleScribbleCheck` in `TOOL_AUTHORED` scope left them behind.
 - A list touched by more than one automatic fix no longer keeps a stale item
   count in its `/T` scribble. The count segment is now recognized and replaced
   whichever fix stamped it, instead of accumulating one segment per fix.

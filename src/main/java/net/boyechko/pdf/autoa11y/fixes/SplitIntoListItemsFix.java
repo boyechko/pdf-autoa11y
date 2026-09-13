@@ -58,7 +58,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
     private final PdfStructElem element;
     private final Integer expectedLines;
     private final List<Integer> itemSizes;
-    private PdfStructElem resultingList;
 
     /** Splits at every detected line, deriving the item count from the content stream. */
     public SplitIntoListItemsFix(PdfStructElem element) {
@@ -132,7 +131,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
         PdfStructElem list = (PdfStructElem) li.getParent();
         List<Integer> newMcids = buildItems(ctx, list, li, plans, sizes);
         ListItemScribble.update(list, "SPLIT items");
-        resultingList = list;
 
         logger.debug(
                 "Split {} MCR(s) on {} into {} items (new MCIDs {})",
@@ -140,11 +138,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
                 pages,
                 sizes.size(),
                 newMcids);
-    }
-
-    /** The list the split items joined or created; null until {@link #apply} runs. */
-    PdfStructElem resultingList() {
-        return resultingList;
     }
 
     /**

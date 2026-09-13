@@ -35,13 +35,11 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(ScribbledInstructionFix.class);
 
     /**
-     * Scribble segment head identifying this fix's own /T output (e.g. "INST OK"). Segments with
-     * this head are cleared before each run so completion markers don't accumulate.
+     * Scribble segment head identifying this fix's own /T output (e.g. "INST SET_ROLE P -> H2").
+     * Segments with this head are cleared before each run so receipts name the last run's work
+     * only.
      */
     public static final String INSTRUCTION_TAG = "INST";
-
-    /** Full completion scribble ("INST OK") an applyXxx returns for the dispatcher to stamp. */
-    private static final String OK_SCRIBBLE = INSTRUCTION_TAG + " OK";
 
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
@@ -77,36 +75,43 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
         Matcher unwrapList = UNWRAP_LIST_PATTERN.matcher(instruction);
 
-        // Each applyXxx returns the scribble to stamp onto /T ("INST OK", or "INST OK (was: P)"
-        // for a role change), or null to leave /T untouched because the instruction manages its
-        // own scribble or destroys the element.
-        String okScribble;
+        // Each applyXxx returns the receipt to stamp onto /T (e.g. "INST SET_ROLE P -> H2"), or
+        // null to leave /T untouched because the instruction manages its own scribble or destroys
+        // the element.
+        String receipt;
         if (addChild.matches()) {
-            okScribble = applyAddChild(ctx, addChild.group(1));
+            receipt = applyAddChild(ctx, addChild.group(1));
         } else if (addParent.matches()) {
-            okScribble = applyAddParent(ctx, addParent.group(1));
+            receipt = applyAddParent(ctx, addParent.group(1));
         } else if (artifact.matches()) {
-            okScribble = applyArtifact(ctx);
+            receipt = applyArtifact(ctx);
         } else if (merge.matches()) {
-            okScribble = applyMerge();
+            receipt = applyMerge();
         } else if (reorderKids.matches()) {
-            okScribble = applyReorderKids(ctx);
+            receipt = applyReorderKids(ctx);
         } else if (setRole.matches()) {
-            okScribble = applySetRole(setRole.group(1));
+            receipt = applySetRole(setRole.group(1));
         } else if (splitLines.matches()) {
-            okScribble = applySplitLines(ctx, splitLines.group(1));
+            receipt = applySplitLines(ctx, splitLines.group(1));
         } else if (unlink.matches()) {
-            okScribble = applyUnlink(ctx);
+            receipt = applyUnlink(ctx);
         } else if (unwrapList.matches()) {
-            okScribble = applyUnwrapList();
+            receipt = applyUnwrapList();
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
         }
 
         // setToolScribble replaces /T wholesale, so the scribbled instruction is cleared here.
-        if (okScribble != null) {
-            StructTree.setToolScribble(element, okScribble);
+        if (receipt != null) {
+            StructTree.setToolScribble(element, receipt);
         }
+    }
+
+    /**
+     * Builds a receipt segment naming what was carried out, e.g. {@code "INST SET_ROLE P -> H2"}.
+     */
+    private static String receipt(String done) {
+        return INSTRUCTION_TAG + " " + done;
     }
 
     // === Instruction: ADD_CHILD ==============================================
@@ -132,7 +137,7 @@ public class ScribbledInstructionFix implements IssueFix {
             element.addKid(wrapper);
             populateWrapper(ctx.doc(), wrapper, spec, origKids, kidCount, effectivePg);
         }
-        return OK_SCRIBBLE;
+        return receipt("ADD_CHILD " + tagExpr);
     }
 
     private void populateWrapper(
@@ -334,14 +339,14 @@ public class ScribbledInstructionFix implements IssueFix {
     private String applySetRole(String roleName) {
         String prevRole = element.getRole().getValue();
         element.setRole(RoleMap.toPdfName(roleName));
-        return OK_SCRIBBLE + " (was: " + prevRole + ")";
+        return receipt("SET_ROLE " + prevRole + " -> " + roleName);
     }
 
     // === Instruction: ARTIFACT ===============================================
 
     /**
      * Delegates to MistaggedArtifactFix to convert the element's content to artifacts. Returns null
-     * because the element is removed from the tree, so there is nothing left to mark "INST OK".
+     * because the element is removed from the tree, so there is nothing left to leave a receipt on.
      */
     private String applyArtifact(DocContext ctx) throws Exception {
         new MistaggedArtifactFix(element).apply(ctx);
@@ -352,10 +357,8 @@ public class ScribbledInstructionFix implements IssueFix {
 
     /** Delegates to SplitIntoListItemsFix to split the element's lumped blocks into list items. */
     private String applySplitLines(DocContext ctx, String spec) throws Exception {
-        SplitIntoListItemsFix fix = new SplitIntoListItemsFix(element, spec);
-        fix.apply(ctx);
-        StructTree.addScribble(fix.resultingList(), OK_SCRIBBLE + " (on child)");
-        return OK_SCRIBBLE;
+        new SplitIntoListItemsFix(element, spec).apply(ctx);
+        return receipt(spec == null ? "SPLIT_LINES" : "SPLIT_LINES " + spec);
     }
 
     /** Returns true if the instruction operates on the entire subtree, not just the element. */
@@ -365,16 +368,16 @@ public class ScribbledInstructionFix implements IssueFix {
 
     // === Instruction: MERGE ==================================================
 
-    /** Pattern for reading back the running count from an earlier merge's breadcrumb. */
+    /** Pattern for reading back the running count from an earlier merge's receipt. */
     private static final Pattern MERGED_COUNT_PATTERN =
-            Pattern.compile(Pattern.quote(OK_SCRIBBLE) + " \\(absorbed (\\d+)\\)");
+            Pattern.compile(Pattern.quote(receipt("MERGE absorbed ")) + "(\\d+)");
 
     /**
      * Folds the element's kids into its preceding sibling and removes the emptied element, so a run
      * of siblings a tagger split apart reads as one. Marked as {@code !MERGE} on each element to be
      * absorbed, a whole run collapses leftward: every fix resolves its preceding sibling against
      * the current tree, so by the time the third element merges, the second is already gone. The
-     * element is destroyed, so the breadcrumb goes on the survivor instead.
+     * element is destroyed, so the receipt goes on the survivor instead.
      */
     private String applyMerge() {
         if (!(element.getParent() instanceof PdfStructElem parent)) {
@@ -412,12 +415,12 @@ public class ScribbledInstructionFix implements IssueFix {
             StructTree.moveKid(kid, element, target);
         }
         parent.removeKid(element);
-        breadcrumbMerge(target);
+        stampMergeReceipt(target);
         return null;
     }
 
-    /** Stamps "INST OK (absorbed N)" on the survivor, folding in an earlier merge's count. */
-    private static void breadcrumbMerge(PdfStructElem target) {
+    /** Stamps "INST MERGE absorbed N" on the survivor, folding in an earlier merge's count. */
+    private static void stampMergeReceipt(PdfStructElem target) {
         DocValue.Scribble existing = StructTree.getScribble(target);
         int absorbed = 1;
         if (existing != null) {
@@ -427,7 +430,7 @@ public class ScribbledInstructionFix implements IssueFix {
             }
         }
         StructTree.clearScribbleSegments(target, INSTRUCTION_TAG);
-        StructTree.addScribble(target, OK_SCRIBBLE + " (absorbed " + absorbed + ")");
+        StructTree.addToolScribble(target, receipt("MERGE absorbed " + absorbed));
     }
 
     // === Instruction: REORDER ================================================
@@ -463,16 +466,16 @@ public class ScribbledInstructionFix implements IssueFix {
         for (AnnotatedKid a : annotated) addToParent(element, a.kid());
         for (IStructureNode kid : unannotated) addToParent(element, kid);
 
-        // Clear consumed instructions and record the move as a "MOVE old → new" breadcrumb.
+        // Clear the consumed instruction and leave a receipt naming the move. Receipts left by an
+        // earlier run are swept tree-wide by ScribbledInstructionCheck before this one starts.
         for (int newIdx = 0; newIdx < annotated.size(); newIdx++) {
             AnnotatedKid a = annotated.get(newIdx);
             if (a.kid() instanceof PdfStructElem se) {
                 StructTree.clearScribbleSegments(se, "!REORDER");
-                StructTree.clearScribbleSegments(se, "MOVE");
                 int oldPos = a.originalIndex();
                 int newPos = newIdx + 1;
                 if (oldPos != newPos) {
-                    StructTree.addScribble(se, "MOVE " + oldPos + " -> " + newPos);
+                    StructTree.addToolScribble(se, receipt("REORDER " + oldPos + " -> " + newPos));
                 }
             }
         }
@@ -507,7 +510,7 @@ public class ScribbledInstructionFix implements IssueFix {
     /**
      * Unwraps a Link struct element: promotes its non-OBJR kids to its parent at its original
      * position, removes the Link element, and deletes the associated Link annotation from its
-     * page's /Annots array. The element is destroyed, so no breadcrumb is written.
+     * page's /Annots array. The element is destroyed, so no receipt is written.
      */
     private String applyUnlink(DocContext ctx) {
         if (!PdfName.Link.equals(element.getRole())) {
@@ -588,7 +591,7 @@ public class ScribbledInstructionFix implements IssueFix {
      * parent at the L's position, then removes the L and its wrappers. Only lists whose every item
      * is an Lbl-less LI &gt; LBody chain wrapping structure elements qualify; anything else (real
      * bullets, direct MCR content) is refused before any mutation, leaving the tree untouched. The
-     * element is destroyed, so no breadcrumb is written.
+     * element is destroyed, so no receipt is written.
      */
     private String applyUnwrapList() {
         String role = StructTree.mappedRole(element);
@@ -697,7 +700,7 @@ public class ScribbledInstructionFix implements IssueFix {
 
         parent.removeKid(element);
         innermost.addKid(element);
-        return OK_SCRIBBLE;
+        return receipt("ADD_PARENT " + tagExpr);
     }
 
     /**

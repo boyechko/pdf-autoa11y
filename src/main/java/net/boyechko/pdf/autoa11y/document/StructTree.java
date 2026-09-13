@@ -508,16 +508,6 @@ public final class StructTree {
         setScribble(elem, SCRIBBLE_TOOL_MARK + scribble);
     }
 
-    /** Appends to an existing scribble or creates a new one if none exists. */
-    public static void addScribble(PdfStructElem elem, String scribble) {
-        DocValue.Scribble existing = getScribble(elem);
-        if (existing == null) {
-            setScribble(elem, scribble);
-        } else {
-            setScribble(elem, existing.value() + SCRIBBLE_SEPARATOR + scribble);
-        }
-    }
-
     /**
      * Appends a tool-authored segment, creating the scribble when the element has none. An existing
      * scribble keeps its own authorship, so a tool note appended to a hand-written scribble does

@@ -57,8 +57,7 @@ its entire subtree, so no check sees it and no fix touches it — including
 scribble to bring the subtree back under remediation.
 
 Only a user-authored mark counts: a tool-authored scribble (leading `:`)
-never verifies an element, and the `INST OK` receipt left by executed
-instructions does not either.
+never verifies an element.
 
 ## Scribbles and plain titles
 
@@ -90,8 +89,7 @@ Segments come in two kinds:
 | `WRAP` | event | fixes that wrap content into a list |
 | `SPLIT` | event | fixes that split one element into several |
 | `MERGE` | event | fixes that fold one element into another |
-| `INST` | event | `ScribbledInstructionCheck`, as an instruction receipt |
-| `MOVE` | event | the `!REORDER_KIDS` instruction, per moved child |
+| `INST` | event | `ScribbledInstructionFix`, as an instruction receipt |
 | `SCHEMA` | event | `SchemaValidationCheck` findings |
 | `LINK_URI` | event | `InvalidLinkUriCheck` findings |
 
@@ -112,8 +110,12 @@ it to the tool's own scribbles, so hand-written notes survive the run.
 `ScribbledInstructionCheck` detects structure elements whose `/T`
 (scribble) value starts with `!` and treats it as a structural
 instruction. The fix carries out the instruction and replaces the
-scribble with `INST OK`. Scribbles are written in Acrobat's tags
-panel and executed by the tool on the next run.
+scribble with a receipt naming what it did — the instruction without
+its `!`, plus the outcome where there is one, e.g. `!SET_ROLE H2`
+leaves `INST SET_ROLE P -> H2`. Receipts from an earlier run are swept
+from the whole tree before each run, so they always describe the last
+run only. Scribbles are written in Acrobat's tags panel and executed by
+the tool on the next run.
 
 The following instructions are supported:
 
@@ -194,8 +196,10 @@ Merging into a different role or loose marked content is refused without
 changing the tree. The content stream is not changed, and moved content
 keeps its page when the siblings span pages.
 
-The survivor receives `INST OK (absorbed N)`, where `N` is the number of
-elements absorbed.
+The survivor receives `INST MERGE absorbed N`, where `N` is the number of
+elements absorbed. The count is state rather than history: it is replaced
+each time, so a run collapsing leftward ends with one receipt naming the
+total.
 
 ```text
 Instruction := "!MERGE"
@@ -273,7 +277,7 @@ Spec        := N                          (* expected total lines, one item each
 Unwraps a `Link` element: promotes its non-`OBJR` kids to the parent
 at the Link's original position, removes the Link element, and
 deletes the associated Link annotation from the page's `/Annots`
-array. The element is destroyed, so no breadcrumb is written. Only
+array. The element is destroyed, so no receipt is written. Only
 valid on `Link` elements; applying it elsewhere raises an error.
 
 ```text
@@ -296,12 +300,12 @@ offenders as `!UNLINK`, then rerun the tool.
 Undoes a bare list conversion: hoists the elements wrapped inside each
 `LI > LBody` back to the list's parent at the list's position, in
 order, and removes the `L` and its wrappers. The element is destroyed,
-so no breadcrumb is written.
+so no receipt is written.
 
 Only lists whose every item is an `Lbl`-less `LI > LBody` chain
 wrapping structure elements qualify — the shape `MistaggedListCheck`
 produces when it wraps paragraphs (its lists carry a tool scribble
-like `:7 items`). A list with real `Lbl` bullets or direct
+like `:LIST 7 items`). A list with real `Lbl` bullets or direct
 marked content inside an `LBody` is refused before any mutation,
 since it was likely a genuine list to begin with.
 

@@ -3,10 +3,10 @@ Document #48
   Art #64 "__www-washington-edu-students-gencat-program-B-BusinessAdministration-881"
     H5 #65
       [text &10] `Required Business Core (30 Credits)'
-    L #719 "__:6 items // INST OK (on child)"
+    L #719
       LI #720
         LBody #721
-          P #66 "__:INST OK"
+          P #66
             [text &9] `B BUS 300 - Organizational…+34'
       LI #722
         LBody #723
@@ -30,10 +30,10 @@ Document #48
             [text &23] `BBUS350-BusinessFinance'
     H5 #67
       [text &12] `Capstone (10 Credits)'
-    L #737 "__:2 items // INST OK (on child)"
+    L #737
       LI #738
         LBody #739
-          P #68 "__:INST OK"
+          P #68
             [text &11] `B BUS 470 - Business Policy…+25'
       LI #740
         LBody #741
@@ -41,10 +41,10 @@ Document #48
             [text &24] `B BUS 480 - Global…+24'
     H5 #69
       [text &2] `Supply Chain Management Core Courses (30 credits)'
-    L #743 "__:6 items // INST OK (on child)"
+    L #743
       LI #744
         LBody #745
-          P #70 "__:INST OK"
+          P #70
             [text &3] `B BUS 441 or ELCBUS 400 -…+19'
       LI #746
         LBody #747
@@ -91,10 +91,10 @@ Document #48
         LBody #270
           P #271
             [text &17] `Core courses- 45 credits'
-          L #272 "__:9 items // INST OK (on child)"
+          L #272
             LI #273
               LBody #274
-                P #275 "__:INST OK"
+                P #275
                   [text &16] `ELCBUS 300 - Organizational…+34'
             LI #761
               LBody #762
@@ -145,7 +145,7 @@ Document #48
             [text &26] `ELCBUS 470 - Business Policy…+25'
       LI #259
         LBody #260
-          P #261 "__split"
+          P #261
             [text &24] `Other UWB and/or transfer…+20'
     H4 #78
       [text &9] `Additional Completion Requirements'
@@ -154,10 +154,10 @@ Document #48
         LBody #249
           P #250
             [text &14] `Supply Chain Management…+20'
-          L #251 "__:5 items // INST OK (on child)"
+          L #251
             LI #252
               LBody #253
-                P #254 "__:INST OK"
+                P #254
                   [text &15] `B BUS/ELCBUS 482 -…+40'
             LI #785
               LBody #786
@@ -180,10 +180,10 @@ Document #48
         LBody #242
           P #243
             [text &8] `Plus, one from the following…+13'
-          L #244 "__:2 items // INST OK (on child)"
+          L #244
             LI #245
               LBody #246
-                P #247 "__:INST OK"
+                P #247
                   [text &10] `B BUS/ELCBUS 485 -…+38'
             LI #797
               LBody #798
@@ -193,10 +193,10 @@ Document #48
         LBody #236
           P #237
             [text &12] `Plus, two from the following…+14'
-          L #238 "__:9 items // INST OK (on child)"
+          L #238
             LI #239
               LBody #240
-                P #241 "__:INST OK"
+                P #241
                   [text &13] `BBUS373-CostAccounting'
             LI #800
               LBody #801
@@ -262,10 +262,10 @@ Document #48
       [text &5] `Admission Requirements'
     P #91
       [text &6] `Students must earn a 2.7…+117'
-    L #824 "__:5 items // INST OK (on child)"
+    L #824
       LI #825
         LBody #826
-          P #92 "__:INST OK"
+          P #92
             [text &7] `Microeconomics'
       LI #827
         LBody #828
@@ -400,10 +400,10 @@ Document #48
       [text &9] `Introduction to Business'
     H4 #112
       [text &2] `Completion Requirements'
-    L #839 "__:6 items // INST OK (on child)"
+    L #839
       LI #840
         LBody #841
-          P #113 "__:INST OK"
+          P #113
             [text &3] `B BUS 300 - Organizational…+34'
       LI #842
         LBody #843
