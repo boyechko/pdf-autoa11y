@@ -102,3 +102,12 @@ fixes (`WrapParagraphRunInList`, `WrapBulletAlignedKidsInLBody`,
 `MergeAdjacentListsFix`, `ParagraphOfLinksFix`) as separate classes, as
 this decision prescribes. The check's Javadoc lists its fixes via `@see`;
 transformation-named fixes remain the convention for multi-fix checks.
+
+## Postscript (2026-09-12)
+
+`MistaggedListCheck` has since been narrowed to bullet evidence alone, and its
+indentation and link-only detection dropped, taking `ParagraphOfLinksFix` with
+them. `WrapParagraphRunInList` and `WrapBulletAlignedKidsInLBody` have merged
+into one `WrapBulletedRunInList`: both built list items out of a detected run,
+one moving whole elements and the other the kids of a part-prose element, and
+splitting that across two fixes made the second guess at which list to join.

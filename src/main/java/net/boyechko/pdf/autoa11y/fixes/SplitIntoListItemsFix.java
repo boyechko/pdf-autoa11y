@@ -100,7 +100,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     @Override
     public int priority() {
-        return 5; // census phase: before list creation (10), LBody wraps (20), merges (30)
+        return 5; // before the wrap fix (10), which only sees whole elements
     }
 
     @Override
@@ -130,7 +130,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         PdfStructElem li = ensureListItemChain(ctx, plans.get(0).page());
         PdfStructElem list = (PdfStructElem) li.getParent();
         List<Integer> newMcids = buildItems(ctx, list, li, plans, sizes);
-        ListItemScribble.update(list, "SPLIT items");
+        ListItemScribble.update(list, "BULLETS " + sizes.size());
 
         logger.debug(
                 "Split {} MCR(s) on {} into {} items (new MCIDs {})",

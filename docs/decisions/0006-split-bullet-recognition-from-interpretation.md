@@ -37,3 +37,20 @@ content-stream parsing into `checks/` and break standalone testing
 * Good, because either side can be retuned without risking the other.
 * Bad, because a reader follows one concept through three files. Mitigate
   with cross-referencing Javadoc, not consolidation.
+
+## Postscript (2026-09-12)
+
+`BulletMatcher`, `BulletCensusDetector` and `BulletRunDetector` have since been
+folded into `MistaggedListCheck`, which reads bullets per text line as its one
+primitive. The split this decision defends is unchanged --- `Content` still
+owns what counts as a bullet, and the check still owns what a bullet's position
+means --- but the interpretation side is now one class rather than three, so
+the "reader follows one concept through three files" consequence no longer
+applies.
+
+The boundary moved once in the process, and in the direction this decision
+predicts. `getLineBoundsForElement` returned one rectangle per run of marked
+content while documenting one per line, so a line an element set in several
+runs was counted several times. Which rectangles constitute a line is a fact
+about the page, not check policy, so the merge belongs in `Content` --- where
+it now is.

@@ -12,14 +12,13 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
-class WrapParagraphRunInListTest extends PdfTestBase {
+class WrapBulletedRunInListTest extends PdfTestBase {
 
     @Test
-    void convertsSuspectedParagraphRunToList() throws Exception {
+    void wrapsARunOfWholeElementsInOneList() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
@@ -36,21 +35,17 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
 
             DocContext ctx = new DocContext(pdfDoc);
-            WrapParagraphRunInList fix = new WrapParagraphRunInList(document, List.of(p1, p2, p3));
+            WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(p1, p2, p3));
             fix.apply(ctx);
 
             assertEquals(
                     "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
                     StructTree.toRoleTree(document).toString());
-            PdfStructElem list = (PdfStructElem) document.getKids().get(0);
-            DocValue.Scribble scribble = StructTree.getScribble(list);
-            assertTrue(scribble.toolAuthored());
-            assertTrue(scribble.body().contains(ListItemScribble.countSegment(3)));
         }
     }
 
     @Test
-    void nestsSublistIntoPrecedingListItem() throws Exception {
+    void nestsARunAsASublistOfThePrecedingList() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
@@ -73,8 +68,8 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             document.addKid(sub2);
 
             DocContext ctx = new DocContext(pdfDoc);
-            WrapParagraphRunInList fix =
-                    new WrapParagraphRunInList(document, List.of(sub1, sub2), list);
+            WrapBulletedRunInList fix =
+                    new WrapBulletedRunInList(document, List.of(sub1, sub2), list);
             fix.apply(ctx);
 
             assertEquals(
@@ -84,7 +79,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
     }
 
     @Test
-    void fallsBackToSiblingListWhenNestTargetHasNoLBody() throws Exception {
+    void fallsBackToASiblingListWhenTheNestTargetHasNoLBody() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
@@ -99,7 +94,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             document.addKid(sub1);
 
             DocContext ctx = new DocContext(pdfDoc);
-            WrapParagraphRunInList fix = new WrapParagraphRunInList(document, List.of(sub1), list);
+            WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(sub1), list);
             fix.apply(ctx);
 
             assertEquals(
@@ -125,7 +120,7 @@ class WrapParagraphRunInListTest extends PdfTestBase {
             assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
 
             DocContext ctx = new DocContext(pdfDoc);
-            WrapParagraphRunInList fix = new WrapParagraphRunInList(document, List.of(p1, p2, p3));
+            WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(p1, p2, p3));
             fix.apply(ctx);
 
             assertEquals(

@@ -26,6 +26,14 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- `MistaggedListCheck` now reads bullets one text line at a time throughout,
+  instead of also matching them against whole elements. A paragraph that ends
+  with the first item of a list has that item carved out of it and the prose
+  left where it stands. Lumping the tool cannot split safely is reported for
+  review.
+- List fixes now scribble the bullet count they acted on, e.g. `BULLETS 5`, in
+  place of a name for the internal pass that ran, so a list's `/T` reads as the
+  evidence beside the item count it produced.
 - An executed scribbled instruction now leaves a receipt naming what it did
   rather than a bare `INST OK`: `!SET_ROLE H2` leaves `INST SET_ROLE P -> H2`,
   `!MERGE` leaves `INST MERGE absorbed 2`, and a reordered child leaves
@@ -41,6 +49,12 @@ Versioning](https://semver.org/).
   one. Segments naming an action now lead with the verb throughout: the former
   `LINKS MERGED` and `CONTENT SPLIT` scribbles are now `MERGE links` and
   `SPLIT content`. See `docs/checks-and-fixes.md`.
+
+### Removed
+- Indentation-only and link-only list detection. `MistaggedListCheck` now
+  reports bulleted content only: a run of paragraphs was previously called a
+  list on the strength of a shared indent, or of holding nothing but links,
+  which led to false positives.
 
 ### Fixed
 - Tool-written scribble segments are now consistently marked tool-authored.

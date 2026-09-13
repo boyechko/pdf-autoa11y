@@ -76,8 +76,7 @@ tag is what `clearScribbleSegments` keys on.
 Segments come in two kinds:
 
 - **State** describes the element as it now stands, and is replaced each
-  time it is written. `LIST 5 items` is the only one so far: whichever
-  list fix runs last leaves the accurate count.
+  time it is written.
 - **Event** records something a fix or check did, and accumulates. A list
   touched by two fixes carries both, so the scribble reads as a short
   history ending in the current state, e.g.
@@ -93,10 +92,10 @@ Segments come in two kinds:
 | `SCHEMA` | event | `SchemaValidationCheck` findings |
 | `LINK_URI` | event | `InvalidLinkUriCheck` findings |
 
-Appending a segment that is already present is a no-op, so a fix that
-runs twice does not stamp itself twice. A tool segment appended to a
-hand-written scribble leaves that scribble user-authored, so the `OK`
-mark and `scope: TOOL_AUTHORED` keep working.
+Appending a segment that is already present is a no-op, so a fix that runs twice
+does not stamp itself twice. A tool segment appended to a hand-written scribble
+leaves that scribble user-authored, so the `SCRIBBLE_VERIFIED_TOKEN` mark and
+`StaleScribbleCheck` with `scope: TOOL_AUTHORED` keep working.
 
 ## StaleScribbleCheck
 
