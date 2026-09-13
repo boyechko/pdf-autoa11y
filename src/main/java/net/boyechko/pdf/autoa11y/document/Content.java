@@ -101,6 +101,9 @@ public final class Content {
     /** Position of a detected bullet glyph in page coordinates. */
     public record BulletPosition(float x, float y) {}
 
+    /** Maximum difference (pt) between two fragments' vertical centres for them to share a line. */
+    private static final float SAME_LINE_TOLERANCE = 3.0f;
+
     /**
      * Scans a page's content stream for Bézier-circle bullet glyphs drawn as artifacts. Matches the
      * specific two-curve circle pattern produced by web-to-PDF converters:
@@ -486,7 +489,10 @@ public final class Content {
         return mcidBounds.get(mcid);
     }
 
-    /** Gets an element's text lines on one page, in reading order, one rectangle per line. */
+    /**
+     * Gets an element's text lines on one page, in reading order, one rectangle per line. A line
+     * broken up into multiple MCRs still returns a single bounding rectangle.
+     */
     public static List<Rectangle> getLineBoundsForElement(
             PdfStructElem node, DocContext ctx, int pageNum) {
         Map<Integer, List<Rectangle>> lineBounds = ctx.getMcidLineBounds(pageNum);
@@ -494,10 +500,30 @@ public final class Content {
         List<Rectangle> lines = new ArrayList<>();
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
             if (StructTree.pageOf(mcr) == pageNum) {
-                lines.addAll(lineBounds.getOrDefault(mcr.getMcid(), List.of()));
+                lineBounds
+                        .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
+                        .forEach(fragment -> mergeIntoLines(lines, fragment));
             }
         }
         return lines;
+    }
+
+    /** Adds a fragment to the line it sits on, widening that line, or starts a new line with it. */
+    private static void mergeIntoLines(List<Rectangle> lines, Rectangle fragment) {
+        for (int i = 0; i < lines.size(); i++) {
+            if (onSameLine(lines.get(i), fragment)) {
+                lines.set(i, Geometry.union(lines.get(i), fragment));
+                return;
+            }
+        }
+        lines.add(new Rectangle(fragment));
+    }
+
+    /** Whether two fragments share a text line, judged by how far their vertical centres differ. */
+    private static boolean onSameLine(Rectangle one, Rectangle other) {
+        float centre = one.getBottom() + one.getHeight() / 2;
+        float otherCentre = other.getBottom() + other.getHeight() / 2;
+        return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;
     }
 
     /** Gets the union bounding box for all MCRs within a structure element. */
