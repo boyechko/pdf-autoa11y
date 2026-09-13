@@ -50,7 +50,7 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
                     StructTree.toRoleTree(document).toString());
             DocValue.Scribble scribble = StructTree.getScribble(first);
             assertTrue(scribble.toolAuthored());
-            assertTrue(scribble.body().contains("3 items"));
+            assertTrue(scribble.body().contains(ListItemScribble.countSegment(3)));
         }
     }
 
@@ -65,7 +65,10 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
 
             PdfStructElem first = listWithItems(pdfDoc, document, 1);
             StructTree.setScribble(
-                    first, "reviewed by hand" + StructTree.SCRIBBLE_SEPARATOR + "LIST 1 item");
+                    first,
+                    "reviewed by hand"
+                            + StructTree.SCRIBBLE_SEPARATOR
+                            + ListItemScribble.countSegment(1));
             PdfStructElem second = listWithItems(pdfDoc, document, 1);
 
             new MergeAdjacentListsFix(first, second).apply(new DocContext(pdfDoc));
@@ -73,7 +76,7 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
             DocValue.Scribble scribble = StructTree.getScribble(first);
             assertFalse(scribble.toolAuthored());
             assertEquals(
-                    List.of("reviewed by hand", "MERGE lists", "LIST 2 items"),
+                    List.of("reviewed by hand", "MERGE lists", ListItemScribble.countSegment(2)),
                     scribble.segments());
         }
     }

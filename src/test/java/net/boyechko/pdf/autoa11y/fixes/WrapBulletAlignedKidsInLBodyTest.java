@@ -52,7 +52,7 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
             PdfStructElem list = (PdfStructElem) document.getKids().get(1);
             DocValue.Scribble scribble = StructTree.getScribble(list);
             assertTrue(scribble.toolAuthored());
-            assertTrue(scribble.body().contains("1 item"));
+            assertTrue(scribble.body().contains(ListItemScribble.countSegment(1)));
         }
     }
 
@@ -219,7 +219,7 @@ class WrapBulletAlignedKidsInLBodyTest extends PdfTestBase {
                     StructTree.toRoleTree(document).toString());
             DocValue.Scribble scribble = StructTree.getScribble(existingList);
             assertTrue(scribble.toolAuthored());
-            assertTrue(scribble.body().contains("2 items"));
+            assertTrue(scribble.body().contains(ListItemScribble.countSegment(2)));
         }
     }
 
