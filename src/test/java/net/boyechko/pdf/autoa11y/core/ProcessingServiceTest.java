@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
@@ -342,5 +343,36 @@ public class ProcessingServiceTest extends PdfTestBase {
         return issueType == IssueType.TAG_WRONG_CHILD
                 || issueType == IssueType.TAG_WRONG_CHILD_COUNT
                 || issueType == IssueType.TAG_WRONG_CHILD_PATTERN;
+    }
+
+    @Test
+    void remediatedDocumentIsStamped() throws Exception {
+        ProcessingResult result = createProcessingService(TAGGED_BASELINE_PDF).remediate();
+
+        assertTrue(result.issuesResolved() > 0);
+        assertTrue(isStamped(result.tempOutputFile()));
+    }
+
+    @Test
+    void runThatChangesNothingIsNotStamped() throws Exception {
+        ProcessingResult result =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                        .withListener(new NoOpProcessingListener())
+                        .withChecks(List.of())
+                        .build()
+                        .remediate();
+
+        assertEquals(0, result.issuesResolved());
+        assertFalse(result.dirty());
+        assertFalse(isStamped(result.tempOutputFile()));
+    }
+
+    /** Whether the tool recorded a modification on the document it wrote. */
+    private static boolean isStamped(Path pdf) throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfReader(pdf.toString()))) {
+            String creator = doc.getDocumentInfo().getCreator();
+            return creator != null && creator.contains("modified using PDF-AutoA11y");
+        }
     }
 }

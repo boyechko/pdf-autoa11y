@@ -295,16 +295,20 @@ public class ProcessingService {
                 current = output;
             }
 
-            // Record the modification on the Document element as the last pipeline step
-            Path stamped = pipelineDir.resolve(String.format("step%02d_stamp.pdf", stepNum++));
-            tempFiles.add(stamped);
-            try (PdfDocument doc = PdfCustodian.openTempForModification(current, stamped)) {
-                ModificationStamp.apply(doc);
+            // Record the modification on the Document element as the last pipeline step. A run
+            // that changed nothing has nothing to record, and its output is normally discarded
+            // by the caller, so skip the step rather than rewrite the document to no purpose.
+            if (isDirty || !allFixes.isEmpty()) {
+                Path stamped = pipelineDir.resolve(String.format("step%02d_stamp.pdf", stepNum++));
+                tempFiles.add(stamped);
+                try (PdfDocument doc = PdfCustodian.openTempForModification(current, stamped)) {
+                    ModificationStamp.apply(doc);
+                }
+                if (!KEEP_PIPELINE_TEMPS) {
+                    Files.deleteIfExists(current);
+                }
+                current = stamped;
             }
-            if (!KEEP_PIPELINE_TEMPS) {
-                Files.deleteIfExists(current);
-            }
-            current = stamped;
 
             // Finalize: copy the result out of the pipeline directory
             Path finalOutput = pipelineDir.resolve("output.pdf");
