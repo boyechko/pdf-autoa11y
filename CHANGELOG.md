@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- Tag schemas now support explicit `types` lists for grouping, block, inline,
+  illustration, heading, list, and table classifications. Role assignments
+  remain editable in YAML, with unknown type names rejected during loading.
 - Every PDF the tool writes now records that it was modified: a tool-authored
   timestamp scribbled on the `Document` element, e.g.
   `__:STAMP 2026-08-21 Fri 12:01`, and a `modified using PDF-AutoA11y

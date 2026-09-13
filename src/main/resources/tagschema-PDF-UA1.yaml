@@ -5,124 +5,169 @@
 # Note: parent_must_be constraints are supported but not used in this schema.
 # All parent-child relationships are expressed via allowed_children for
 # consistency.
+#
+# types is always a list, including for a single type. Names come from TagType:
+# grouping, block, inline, illustration, heading, list, table. Membership is
+# explicit: heading does not imply block, and illustration does not imply inline.
+# Main types follow ISO 32000-1:2008, 14.8.4; heading, list, and table identify
+# families. Table internals are neither block nor inline (Table 337, Note 1).
 
 roles:
   Annot:
+    types: [inline]
     allowed_children: [Span]
 
   Art:
+    types: [grouping]
     allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table, TOC]
 
   BibEntry:
+    types: [inline]
     allowed_children: [Span]
 
   BlockQuote:
+    types: [grouping]
     allowed_children: [L, Link, P, Reference, Span]
 
   Caption:
+    types: [grouping]
     allowed_children: [Lbl, Span, P]
 
   Code:
+    types: [inline]
     allowed_children:
 
   Div:
+    types: [grouping]
     allowed_children: [BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table, TOC]
 
   Document:
+    types: [grouping]
     allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, Index, L, Note, P, Part, Sect, Table, TOC]
 
   Figure:
+    types: [illustration]
     allowed_children: [Caption, Lbl]
 
   Form:
+    types: [illustration]
     allowed_children:
 
   Formula:
+    types: [illustration]
     allowed_children: [Caption, Lbl]
 
   H1:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   H2:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   H3:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   H4:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   H5:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   H6:
+    types: [block, heading]
     allowed_children: [Lbl, Span, Note, Reference]
 
   Index:
+    types: [grouping]
     allowed_children: [L, P]
 
   L:
+    types: [block, list]
     required_children: [LI]
     allowed_children: [Caption, LI]
 
   Lbl:
+    types: [block, list]
     allowed_children: [Span, Figure]
 
   LBody:
+    types: [block, list]
     allowed_children: [Code, Figure, Formula, L, Link, Note, Quote, P, Reference, Span]
 
   LI:
+    types: [block, list]
     child_pattern: "Lbl? LBody"
     allowed_children: [Lbl, LBody]
 
   Link:
+    types: [inline]
     allowed_children: [Figure, Lbl, P, Span]
 
   Note:
+    types: [inline]
     allowed_children: [L, Lbl, P, Figure, Caption]
 
   P:
+    types: [block]
     allowed_children: [Annot, BibEntry, Code, Figure, Form, Formula, Link, Note, Quote, Reference, Span]
 
   Part:
+    types: [grouping]
     allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Link, Note, P, Sect, Table, TOC]
 
   Quote:
+    types: [inline]
     allowed_children: [Span]
 
   Reference:
+    types: [inline]
     allowed_children: [Lbl, Link, Span]
   # Link is also allowed, but Acrobat's autotag abuses that, so need to mark it
 
   Sect:
+    types: [grouping]
     allowed_children: [Art, BlockQuote, Caption, Div, Figure, H1, H2, H3, H4, H5, H6, L, Note, P, Sect, Table]
 
   Span:
+    types: [inline]
     allowed_children: [Link, Reference, Span]
 
   Table:
+    types: [block, table]
     allowed_children: [Caption, TR, THead, TBody, TFoot]
 
   TBody:
+    types: [table]
     allowed_children: [TR]
 
   TD:
+    types: [table]
     allowed_children: [P, Span]
 
   TFoot:
+    types: [table]
     allowed_children: [TR]
 
   TH:
+    types: [table]
     allowed_children: [P, Span]
 
   THead:
+    types: [table]
     allowed_children: [TR]
 
   TOC:
+    types: [grouping]
     allowed_children: [Caption, TOC, TOCI]
 
   TOCI:
+    types: [grouping]
     allowed_children: [Lbl, P, Span]
 
   TR:
+    types: [table]
     allowed_children: [TH, TD]

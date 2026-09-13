@@ -1,17 +1,25 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.validation;
+package net.boyechko.pdf.autoa11y.document;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.error.YAMLException;
+import org.yaml.snakeyaml.nodes.Node;
+import org.yaml.snakeyaml.nodes.SequenceNode;
 
+/** Role classifications and structural constraints loaded from YAML. */
 public final class TagSchema {
     private static final String DEFAULT_SCHEMA_RESOURCE = "/tagschema-PDF-UA1.yaml";
     private static final Logger logger = LoggerFactory.getLogger(TagSchema.class);
@@ -19,6 +27,8 @@ public final class TagSchema {
     public Map<String, Rule> roles;
 
     public static final class Rule {
+        public Set<TagType> types = Set.of();
+
         /**
          * parent_must_be (Optional): If specified, this element can only appear under the listed
          * parent roles. If null or empty, the element can appear under any parent that lists it in
@@ -35,6 +45,10 @@ public final class TagSchema {
         public Integer min_children;
         public Integer max_children;
         public String child_pattern;
+
+        public Set<TagType> getTypes() {
+            return types;
+        }
 
         public Set<String> getParentMustBe() {
             return parent_must_be;
@@ -61,12 +75,34 @@ public final class TagSchema {
         }
     }
 
+    /** A schema inconsistency, named by kind so callers need not parse the message. */
+    public record Warning(Kind kind, String message) {
+        public enum Kind {
+            ASYMMETRIC_PARENT,
+            REQUIRED_CHILD_NOT_ALLOWED,
+            MIN_EXCEEDS_MAX,
+            REQUIRED_EXCEEDS_MAX,
+            MIN_WITH_NO_ALLOWED,
+            REQUIRED_WITH_NO_ALLOWED
+        }
+
+        private static Warning of(Kind kind, String format, Object... args) {
+            return new Warning(kind, String.format(format, args));
+        }
+    }
+
     public TagSchema() {
         this.roles = new HashMap<>();
     }
 
     public Map<String, Rule> getRoles() {
         return roles;
+    }
+
+    /** Whether the role explicitly declares this type; unknown and untyped roles return false. */
+    public boolean hasType(String role, TagType type) {
+        Rule rule = roles.get(role);
+        return rule != null && rule.types.contains(type);
     }
 
     /**
@@ -80,28 +116,10 @@ public final class TagSchema {
                 throw new IllegalArgumentException("Resource not found: " + resourcePath);
             }
 
-            var yaml = new Yaml(new Constructor(TagSchema.class, new LoaderOptions()));
-            TagSchema schema = yaml.load(inputStream);
-
-            int originalSchemaSize = schema.roles.size();
-            schema.populateMissingRoles();
-            int populatedSchemaSize = schema.roles.size();
+            TagSchema schema =
+                    fromYaml(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
             logger.debug(
-                    "Loaded TagSchema with {} roles ({}) from {}",
-                    originalSchemaSize,
-                    populatedSchemaSize,
-                    resourcePath);
-
-            var warnings = schema.validateConsistency();
-            if (!warnings.isEmpty()) {
-                logger.warn(
-                        "Schema loaded from {} has {} consistency warnings:",
-                        resourcePath,
-                        warnings.size());
-                for (String warning : warnings) {
-                    logger.warn("  - {}", warning);
-                }
-            }
+                    "Loaded TagSchema with {} roles from {}", schema.roles.size(), resourcePath);
 
             return schema;
         } catch (Exception e) {
@@ -118,31 +136,33 @@ public final class TagSchema {
         return fromResource(DEFAULT_SCHEMA_RESOURCE);
     }
 
-    public static TagSchema minimal() {
-        TagSchema s = new TagSchema();
+    /** Loads a schema from YAML text using the same rules as classpath resources. */
+    public static TagSchema fromYaml(String source) {
+        var options = new LoaderOptions();
+        options.setEnumCaseSensitive(false);
+        var constructor = new Constructor(TagSchema.class, options);
+        constructor.addTypeDescription(
+                new TypeDescription(Rule.class) {
+                    @Override
+                    public boolean setupPropertyType(String key, Node valueNode) {
+                        if ("types".equals(key) && !(valueNode instanceof SequenceNode)) {
+                            throw new YAMLException("Role types must be a list");
+                        }
+                        return super.setupPropertyType(key, valueNode);
+                    }
+                });
+        var yaml = new Yaml(constructor);
+        TagSchema schema = yaml.load(source);
+        schema.populateMissingRoles();
 
-        Rule L = new Rule();
-        L.allowed_children = Set.of("LI");
-        L.min_children = 1;
-        s.roles.put("L", L);
-
-        Rule LI = new Rule();
-        LI.parent_must_be = Set.of("L");
-        LI.allowed_children = Set.of("Lbl", "LBody");
-        LI.min_children = 1;
-        LI.max_children = 2;
-        s.roles.put("LI", LI);
-
-        Rule Lbl = new Rule();
-        s.roles.put("Lbl", Lbl);
-
-        Rule LBody = new Rule();
-        LBody.parent_must_be = Set.of("LI");
-        s.roles.put("LBody", LBody);
-
-        s.populateMissingRoles();
-
-        return s;
+        var warnings = schema.validateConsistency();
+        if (!warnings.isEmpty()) {
+            logger.warn("Tag schema has {} consistency warnings:", warnings.size());
+            for (Warning warning : warnings) {
+                logger.warn("  - {}", warning.message());
+            }
+        }
+        return schema;
     }
 
     private void populateMissingRoles() {
@@ -177,10 +197,10 @@ public final class TagSchema {
      * for: - Asymmetric parent_must_be constraints (child requires parent, but parent doesn't allow
      * child) - Contradictory child count constraints - Required children not in allowed children
      *
-     * @return List of warning messages describing inconsistencies (empty if schema is consistent)
+     * @return List of warnings describing inconsistencies (empty if schema is consistent)
      */
-    public java.util.List<String> validateConsistency() {
-        java.util.List<String> warnings = new java.util.ArrayList<>();
+    public List<Warning> validateConsistency() {
+        List<Warning> warnings = new ArrayList<>();
 
         for (Map.Entry<String, Rule> entry : roles.entrySet()) {
             String roleName = entry.getKey();
@@ -194,9 +214,13 @@ public final class TagSchema {
                         if (!parentRule.allowed_children.isEmpty()
                                 && !parentRule.allowed_children.contains(roleName)) {
                             warnings.add(
-                                    String.format(
+                                    Warning.of(
+                                            Warning.Kind.ASYMMETRIC_PARENT,
                                             "Asymmetric constraint: <%s> requires parent <%s>, but <%s> doesn't list <%s> in allowed_children",
-                                            roleName, parentRole, parentRole, roleName));
+                                            roleName,
+                                            parentRole,
+                                            parentRole,
+                                            roleName));
                         }
                     }
                 }
@@ -208,9 +232,11 @@ public final class TagSchema {
                     for (String requiredChild : rule.required_children) {
                         if (!rule.allowed_children.contains(requiredChild)) {
                             warnings.add(
-                                    String.format(
+                                    Warning.of(
+                                            Warning.Kind.REQUIRED_CHILD_NOT_ALLOWED,
                                             "Contradiction: <%s> requires child <%s> but doesn't allow it",
-                                            roleName, requiredChild));
+                                            roleName,
+                                            requiredChild));
                         }
                     }
                 }
@@ -220,9 +246,12 @@ public final class TagSchema {
             if (rule.min_children != null && rule.max_children != null) {
                 if (rule.min_children > rule.max_children) {
                     warnings.add(
-                            String.format(
+                            Warning.of(
+                                    Warning.Kind.MIN_EXCEEDS_MAX,
                                     "Contradiction: <%s> has min_children=%d > max_children=%d",
-                                    roleName, rule.min_children, rule.max_children));
+                                    roleName,
+                                    rule.min_children,
+                                    rule.max_children));
                 }
             }
 
@@ -230,9 +259,12 @@ public final class TagSchema {
             if (rule.max_children != null && rule.required_children != null) {
                 if (rule.required_children.size() > rule.max_children) {
                     warnings.add(
-                            String.format(
+                            Warning.of(
+                                    Warning.Kind.REQUIRED_EXCEEDS_MAX,
                                     "Contradiction: <%s> requires %d children but max_children=%d",
-                                    roleName, rule.required_children.size(), rule.max_children));
+                                    roleName,
+                                    rule.required_children.size(),
+                                    rule.max_children));
                 }
             }
 
@@ -240,9 +272,11 @@ public final class TagSchema {
             if (rule.min_children != null && rule.min_children > 0) {
                 if (rule.allowed_children != null && rule.allowed_children.isEmpty()) {
                     warnings.add(
-                            String.format(
+                            Warning.of(
+                                    Warning.Kind.MIN_WITH_NO_ALLOWED,
                                     "Contradiction: <%s> has min_children=%d but allowed_children is empty",
-                                    roleName, rule.min_children));
+                                    roleName,
+                                    rule.min_children));
                 }
             }
 
@@ -250,7 +284,8 @@ public final class TagSchema {
             if (rule.required_children != null && !rule.required_children.isEmpty()) {
                 if (rule.allowed_children == null || rule.allowed_children.isEmpty()) {
                     warnings.add(
-                            String.format(
+                            Warning.of(
+                                    Warning.Kind.REQUIRED_WITH_NO_ALLOWED,
                                     "Suspicious: <%s> has required_children but no allowed_children defined",
                                     roleName));
                 }
