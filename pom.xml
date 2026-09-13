@@ -163,7 +163,6 @@
             <trimTrailingWhitespace />
             <endWithNewline />
             <googleJavaFormat>
-              <version>1.19.2</version>
               <style>AOSP</style>
             </googleJavaFormat>
           </java>

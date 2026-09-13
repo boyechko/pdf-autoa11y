@@ -124,11 +124,11 @@ public final class Format {
                 yield s + ")";
             }
             case IssueLoc.AtMcid(
-                    var pageNum,
-                    var mcid,
-                    var ownerObjNum,
-                    var role,
-                    var structPath) -> {
+                            var pageNum,
+                            var mcid,
+                            var ownerObjNum,
+                            var role,
+                            var structPath) -> {
                 String s = " (" + mcid(mcid);
                 s += ", " + page(pageNum);
                 if (ownerObjNum != null) s += ", " + objNum(ownerObjNum);

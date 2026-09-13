@@ -34,11 +34,11 @@ public final class UserIssueFormatter implements IssueFormatter {
                 yield objNum != null ? " (" + Format.objNum(objNum) + ")" : "";
             }
             case IssueLoc.AtMcid(
-                    var pageNum,
-                    var mcid,
-                    var ownerObjNum,
-                    var role,
-                    var structPath) -> {
+                            var pageNum,
+                            var mcid,
+                            var ownerObjNum,
+                            var role,
+                            var structPath) -> {
                 if (role != null && !role.isBlank()) {
                     yield " (" + role + ", " + Format.page(pageNum) + ")";
                 }
