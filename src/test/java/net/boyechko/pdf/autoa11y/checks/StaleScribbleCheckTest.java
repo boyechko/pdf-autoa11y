@@ -16,7 +16,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.checks.StaleScribbleCheck.Scope;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -190,7 +189,7 @@ class StaleScribbleCheckTest extends PdfTestBase {
     }
 
     private IssueList runCheck(PdfDocument pdfDoc, Scope scope) {
-        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(scope == null ? new StaleScribbleCheck() : new StaleScribbleCheck(scope));
         return walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
     }

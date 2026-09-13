@@ -9,7 +9,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 
 /**
  * Immutable context passed to visitors during structure tree traversal. Contains pre-computed
@@ -21,7 +20,6 @@ public record StructTreeContext(
         String path,
         String role,
         String mappedRole,
-        TagSchema.Rule schemaRule,
         String parentRole,
         List<PdfStructElem> children,
         List<String> childRoles,
@@ -38,22 +36,15 @@ public record StructTreeContext(
      * @param parentPath The path to the parent of the current node.
      * @param depth The depth of the current node in the tree.
      * @param globalIndex The index of the current node in the traversal order.
-     * @param schema The schema to use for the current node.
      * @param docCtx The document context.
      * @return A new StructTreeContext.
      */
     public static StructTreeContext fromNode(
-            PdfStructElem node,
-            String parentPath,
-            int depth,
-            int globalIndex,
-            TagSchema schema,
-            DocContext docCtx) {
+            PdfStructElem node, String parentPath, int depth, int globalIndex, DocContext docCtx) {
         // TODO: Update callers to use mappedRole, then change to PdfName.
         String role = StructTree.mappedRole(node);
         String mappedRole = StructTree.mappedRole(node);
         String path = parentPath + role + "[" + globalIndex + "]";
-        TagSchema.Rule schemaRule = schema != null ? schema.roles.get(mappedRole) : null;
 
         PdfStructElem parent = StructTree.parentOf(node);
         String parentRole = parent != null ? StructTree.mappedRole(parent) : null;
@@ -66,7 +57,6 @@ public record StructTreeContext(
                 path,
                 role,
                 mappedRole,
-                schemaRule,
                 parentRole,
                 children,
                 childRoles,

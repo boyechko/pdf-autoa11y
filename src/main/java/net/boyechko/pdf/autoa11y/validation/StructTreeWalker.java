@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +21,11 @@ import org.slf4j.LoggerFactory;
 public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
 
-    private final TagSchema schema;
     private final List<StructTreeCheck> visitors = new ArrayList<>();
 
     private PdfStructTreeRoot root;
     private DocContext docCtx;
     private int globalIndex;
-
-    public StructTreeWalker(TagSchema schema) {
-        this.schema = schema;
-    }
 
     public StructTreeWalker addVisitor(StructTreeCheck visitor) {
         visitors.add(visitor);
@@ -82,7 +76,7 @@ public class StructTreeWalker {
         globalIndex++;
 
         StructTreeContext ctx =
-                StructTreeContext.fromNode(node, parentPath, depth, globalIndex, schema, docCtx);
+                StructTreeContext.fromNode(node, parentPath, depth, globalIndex, docCtx);
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;

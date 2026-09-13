@@ -21,7 +21,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -150,7 +149,7 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
 
     private IssueList runCheck(PdfDocument pdfDoc) {
         DocContext ctx = new DocContext(pdfDoc);
-        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(new InvalidLinkUriCheck());
         return walker.walk(pdfDoc.getStructTreeRoot(), ctx);
     }

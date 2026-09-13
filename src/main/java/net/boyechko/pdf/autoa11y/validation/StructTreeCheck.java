@@ -7,9 +7,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// Abstract base for checks that walk the PDF structure tree. Subclasses override
 /// [#enterElement] and/or [#leaveElement] to inspect each node, accumulating issues via
@@ -20,6 +21,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 /// interface. The [#findIssues] method creates a [StructTreeWalker] internally, walks
 /// the tree, and returns the collected issues.
 public abstract class StructTreeCheck implements Check {
+    private static final Logger logger = LoggerFactory.getLogger(StructTreeCheck.class);
 
     public abstract String name();
 
@@ -39,10 +41,11 @@ public abstract class StructTreeCheck implements Check {
     public IssueList findIssues(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
+            logger.debug("No structure tree found, skipping {}", name());
             return new IssueList();
         }
 
-        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(this);
         return walker.walk(root, ctx);
     }

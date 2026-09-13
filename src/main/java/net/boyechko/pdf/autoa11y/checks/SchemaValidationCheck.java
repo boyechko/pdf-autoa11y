@@ -32,6 +32,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     /** Tag prefix written to /T on elements with schema violations and cleared on each run. */
     static final String CHECK_SCRIBBLE_PREFIX = "SCHEMA";
 
+    private final TagSchema schema = TagSchema.loadDefault();
     private final IssueList issues = new IssueList();
 
     @Override
@@ -78,7 +79,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
 
     private void validateUnknownRole(StructTreeContext ctx) {
         /* If the schema rule is null, the role is not defined in the schema. */
-        if (ctx.schemaRule() == null) {
+        if (ruleFor(ctx) == null) {
             String message =
                     String.format(
                             "%s role is not defined in schema",
@@ -90,7 +91,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void validateParentRule(StructTreeContext ctx) {
-        TagSchema.Rule rule = ctx.schemaRule();
+        TagSchema.Rule rule = ruleFor(ctx);
         if (rule == null || rule.getParentMustBe() == null) return;
         if (ctx.parentRole() == null) return;
 
@@ -107,7 +108,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void validateChildCount(StructTreeContext ctx) {
-        TagSchema.Rule rule = ctx.schemaRule();
+        TagSchema.Rule rule = ruleFor(ctx);
         if (rule == null) return;
 
         int childCount = ctx.childRoles().size();
@@ -146,7 +147,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void validateAllowedChildren(StructTreeContext ctx) {
-        TagSchema.Rule rule = ctx.schemaRule();
+        TagSchema.Rule rule = ruleFor(ctx);
         if (rule == null || rule.getAllowedChildren() == null) return;
         if (rule.getAllowedChildren().isEmpty()) return;
 
@@ -167,7 +168,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void validateChildPattern(StructTreeContext ctx) {
-        TagSchema.Rule rule = ctx.schemaRule();
+        TagSchema.Rule rule = ruleFor(ctx);
         if (rule == null || rule.getChildPattern() == null) return;
 
         PatternMatcher pm = PatternMatcher.compile(rule.getChildPattern());
@@ -186,6 +187,11 @@ public class SchemaValidationCheck extends StructTreeCheck {
                             locAtElem(ctx),
                             message));
         }
+    }
+
+    /** Returns the schema rule for the element's role, or null if the role is not in the schema. */
+    private TagSchema.Rule ruleFor(StructTreeContext ctx) {
+        return schema.roles.get(ctx.mappedRole());
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {

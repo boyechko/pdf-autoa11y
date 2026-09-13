@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -56,7 +55,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void defaultConstructorLoadsBuiltInPatterns() throws Exception {
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertTrue(issues.size() > 0, "Built-in patterns should detect footer URL+timestamp");
@@ -68,7 +67,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void emptyRulesListDetectsNothing() throws Exception {
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck(List.of()));
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertEquals(0, issues.size(), "Empty rules list means no text artifacting");
@@ -98,7 +97,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void detectsTinyTaggedImageAsMistaggedArtifact() throws Exception {
         Path pdfFile = createTaggedImagePdf("MistaggedArtifactCheckTest-tiny-image.pdf", 12f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -113,7 +112,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
         // 48pt is above the tiny threshold (20pt) but below meaningful (144w × 72h)
         Path pdfFile = createTaggedImagePdf("MistaggedArtifactCheckTest-decorative.pdf", 48f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -127,7 +126,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
         // 200pt × 200pt is above the meaningful thresholds (144w × 72h)
         Path pdfFile = createTaggedImagePdf("MistaggedArtifactCheckTest-meaningful.pdf", 200f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -140,7 +139,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
         Path pdfFile =
                 createTaggedImagePdf("MistaggedArtifactCheckTest-with-alt.pdf", 48f, "A photo");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -159,7 +158,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
                         "Regular body text.",
                         "CONFIDENTIAL FOOTER");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck(patterns));
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -173,7 +172,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void detectsFigureWithPathOnlyAsDecorative() throws Exception {
         Path pdfFile = createTaggedPathPdf("MistaggedArtifactCheckTest-path-figure.pdf", 20f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -187,7 +186,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void doesNotFlagLargePathFigureAsDecorative() throws Exception {
         Path pdfFile = createTaggedPathPdf("MistaggedArtifactCheckTest-large-path.pdf", 200f);
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -199,7 +198,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void detectsSpaceOnlySpanAsArtifact() throws Exception {
         Path pdfFile = createSpaceOnlySpanPdf("MistaggedArtifactCheckTest-space-span.pdf");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck());
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -213,7 +212,7 @@ class MistaggedArtifactCheckTest extends PdfTestBase {
     void doesNotFlagSpanWithRealText() throws Exception {
         Path pdfFile = createTextPdf("MistaggedArtifactCheckTest-real-span.pdf", "Real content");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new MistaggedArtifactCheck(List.of()));
 
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));

@@ -6,6 +6,7 @@ package net.boyechko.pdf.autoa11y.checks;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -17,14 +18,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class MistaggedListCheckTest extends PdfTestBase {
 
@@ -50,7 +54,7 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     private static void walkWith(PdfDocument pdfDoc, MistaggedListCheck check) throws Exception {
-        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(check);
         walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
     }
@@ -68,6 +72,53 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     // == Lumped items: one element covering several bullets ==============
+
+    @ParameterizedTest
+    @CsvSource({"Note, false", "Link, false", "Span, false", "Em, true", "Strong, true"})
+    void lumpedItemsBelongOnlyToRolesNotClassifiedAsInline(String role, boolean reported)
+            throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(LUMPED_PDF.toString()),
+                        new PdfWriter(testOutputStream(role + ".pdf")))) {
+            elementByObjNum(pdfDoc, 43).setRole(RoleMap.toPdfName(role));
+
+            walkWith(pdfDoc, check);
+
+            assertEquals(
+                    reported, issuesByObjNum(check, IssueType.LIST_ITEMS_LUMPED).containsKey(43));
+        }
+    }
+
+    @Test
+    void paragraphOwnsLumpedItemsWrappedInAnInlineNote() throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(LUMPED_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            PdfStructElem paragraph = elementByObjNum(pdfDoc, 43);
+            var kids = List.copyOf(StructTree.kidsOf(paragraph));
+            PdfStructElem note = new PdfStructElem(pdfDoc, PdfName.Note);
+            paragraph.addKid(note);
+            for (var kid : kids) {
+                StructTree.moveKid(kid, paragraph, note);
+            }
+
+            walkWith(pdfDoc, check);
+
+            Map<Integer, String> lumped = issuesByObjNum(check, IssueType.LIST_ITEMS_LUMPED);
+            assertTrue(lumped.containsKey(43));
+            assertFalse(lumped.containsKey(StructTree.objNum(note)));
+            Issue issue =
+                    check.getIssues().stream()
+                            .filter(i -> i.type() == IssueType.LIST_ITEMS_LUMPED)
+                            .filter(i -> Integer.valueOf(43).equals(i.where().objNum()))
+                            .findFirst()
+                            .orElseThrow();
+            assertNull(issue.fix(), "Inline markup requires manual review");
+        }
+    }
 
     @Test
     void derivesItemLineCountsFromBulletSpacing() throws Exception {
@@ -163,6 +214,29 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     // == Loose items: several siblings each covering one bullet ==========
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Div", "L", "Table"})
+    void groupingListAndTableRolesDoNotBecomeLooseItems(String role) throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(LOOSE_PDF.toString()),
+                        new PdfWriter(testOutputStream(role + ".pdf")))) {
+            for (int objNum = 48; objNum <= 51; objNum++) {
+                elementByObjNum(pdfDoc, objNum).setRole(RoleMap.toPdfName(role));
+            }
+
+            walkWith(pdfDoc, check);
+            check.getIssues().applyFixes(new DocContext(pdfDoc));
+
+            for (int objNum = 48; objNum <= 51; objNum++) {
+                assertEquals(
+                        44,
+                        StructTree.objNum(StructTree.parentOf(elementByObjNum(pdfDoc, objNum))));
+            }
+        }
+    }
 
     @Test
     void wrapsConsecutiveBulletedSiblingsInOneList() throws Exception {

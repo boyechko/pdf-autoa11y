@@ -15,7 +15,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -264,7 +263,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
     }
 
     private IssueList runCheck(PdfDocument pdfDoc) {
-        StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+        StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(new ScribbledInstructionCheck());
         return walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
     }

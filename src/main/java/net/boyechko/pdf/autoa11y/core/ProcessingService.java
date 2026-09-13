@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.core;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,13 +19,10 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.ModificationStamp;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
-import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +38,6 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final ProcessingListener listener;
     private final List<Supplier<Check>> checks;
-    private final TagSchema schema;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -115,7 +110,6 @@ public class ProcessingService {
     private ProcessingService(ProcessingServiceBuilder builder) {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
-        this.schema = TagSchema.loadDefault();
 
         List<Supplier<Check>> filtered;
         if (builder.orderedCheckNames != null) {
@@ -268,7 +262,7 @@ public class ProcessingService {
                 listener.onCheckStart(check);
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
                     DocContext ctx = new DocContext(doc);
-                    IssueList issues = runCheck(ctx, check);
+                    IssueList issues = check.findIssues(ctx);
                     allIssues.addAll(issues);
 
                     if (allIssues.hasFatalIssues()) {
@@ -342,7 +336,7 @@ public class ProcessingService {
             for (Supplier<Check> supplier : checks) {
                 Check check = supplier.get();
                 listener.onCheckStart(check);
-                IssueList issues = runCheck(context, check);
+                IssueList issues = check.findIssues(context);
                 allIssues.addAll(issues);
 
                 if (allIssues.hasFatalIssues()) {
@@ -361,27 +355,6 @@ public class ProcessingService {
     }
 
     // == Check execution ==============================================
-
-    /** Runs a single check, dispatching by type to the appropriate execution mechanism. */
-    private IssueList runCheck(DocContext ctx, Check check) {
-        if (check instanceof StructTreeCheck treeCheck) {
-            return walkStructTree(ctx, treeCheck);
-        }
-        return check.findIssues(ctx);
-    }
-
-    /** Walks the structure tree with a single check. */
-    private IssueList walkStructTree(DocContext ctx, StructTreeCheck check) {
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
-        if (root == null || root.getKids() == null) {
-            logger.debug("No structure tree found, skipping {}", check.name());
-            return new IssueList();
-        }
-
-        StructTreeWalker walker = new StructTreeWalker(schema);
-        walker.addVisitor(check);
-        return walker.walk(root, ctx);
-    }
 
     // == Pipeline helpers =============================================
 

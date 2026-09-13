@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TagSchema;
+import net.boyechko.pdf.autoa11y.document.TagType;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoListItemsFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
@@ -66,45 +68,11 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Minimum bullet indent (pt) past a list's own for content to read as its sublist. */
     private static final float SUBLIST_INDENT_MIN = 10.0f;
 
-    /** Roles that sit within a line of text rather than owning lines of their own. */
-    private static final Set<String> INLINE_ROLES =
-            Set.of(
-                    "Link",
-                    "Span",
-                    "Em",
-                    "Strong",
-                    "Quote",
-                    "Code",
-                    "Reference",
-                    "BibEntry",
-                    "Annot");
-
     /** Roles whose children are examined for loose items. */
     private static final Set<String> CONTAINER_ROLES =
             Set.of("Art", "Part", "Sect", "Div", "Document");
 
-    /**
-     * Roles that never count as a loose item: containers, and anything already list- or table-like.
-     */
-    private static final Set<String> SKIP_ROLES =
-            Set.of(
-                    "Art",
-                    "Part",
-                    "Sect",
-                    "Div",
-                    "Document",
-                    "L",
-                    "LI",
-                    "Lbl",
-                    "LBody",
-                    "Table",
-                    "TR",
-                    "TD",
-                    "TH",
-                    "THead",
-                    "TBody",
-                    "TFoot");
-
+    private final TagSchema schema = TagSchema.loadDefault();
     private final IssueList issues = new IssueList();
     private final Set<Integer> claimed = new HashSet<>();
 
@@ -133,9 +101,9 @@ public class MistaggedListCheck extends StructTreeCheck {
      * Whether an author wrapped an item's text in a Link decides nothing about which element the
      * bullets belong to, so having such children does not disqualify it.
      */
-    private static boolean ownsItsLines(StructTreeContext ctx) {
-        return !INLINE_ROLES.contains(ctx.role())
-                && ctx.childRoles().stream().allMatch(INLINE_ROLES::contains);
+    private boolean ownsItsLines(StructTreeContext ctx) {
+        return !schema.hasType(ctx.role(), TagType.INLINE)
+                && ctx.childRoles().stream().allMatch(role -> schema.hasType(role, TagType.INLINE));
     }
 
     @Override
@@ -364,7 +332,10 @@ public class MistaggedListCheck extends StructTreeCheck {
             PdfStructElem child = ctx.children().get(i);
             String childRole = ctx.childRoles().get(i);
             Item item =
-                    SKIP_ROLES.contains(childRole) || claimed.contains(StructTree.objNum(child))
+                    schema.hasType(childRole, TagType.GROUPING)
+                                    || schema.hasType(childRole, TagType.LIST)
+                                    || schema.hasType(childRole, TagType.TABLE)
+                                    || claimed.contains(StructTree.objNum(child))
                             ? null
                             : itemOf(ctx, child, run.isEmpty());
 

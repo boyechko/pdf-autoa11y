@@ -19,7 +19,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -58,7 +57,7 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
 
             DocContext ctx = new DocContext(pdfDoc);
             ctx.getOrComputeMcidBounds(1, () -> Map.of(mcr.getMcid(), mcrRect));
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new EmptyLinkTagCheck());
             IssueList issues = walker.walk(root, ctx);
 

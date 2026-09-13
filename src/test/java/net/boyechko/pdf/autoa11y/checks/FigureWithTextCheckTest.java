@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -68,7 +67,7 @@ public class FigureWithTextCheckTest extends PdfTestBase {
         Path pdfFile = createTestPdf();
         assertTrue(Files.exists(pdfFile), "PDF file should exist");
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new FigureWithTextCheck());
             IssueList issues = walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
             assertTrue(issues.size() > 0, "Should create at least 1 issue for Figure");

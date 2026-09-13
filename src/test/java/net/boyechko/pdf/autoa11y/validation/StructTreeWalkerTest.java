@@ -15,7 +15,6 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +65,7 @@ class StructTreeWalkerTest extends PdfTestBase {
 
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(trackingVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
@@ -109,7 +108,7 @@ class StructTreeWalkerTest extends PdfTestBase {
 
         Path pdfFile = createTestPdf();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(pathVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
@@ -180,7 +179,7 @@ class StructTreeWalkerTest extends PdfTestBase {
                 };
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(visitor1);
             walker.addVisitor(visitor2);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
@@ -241,7 +240,7 @@ class StructTreeWalkerTest extends PdfTestBase {
             PdfStructElem siblingP = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(siblingP);
 
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(trackingVisitor);
             walker.walk(root, new DocContext(pdfDoc));
         }
@@ -284,7 +283,7 @@ class StructTreeWalkerTest extends PdfTestBase {
                 };
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfFile.toString()))) {
-            StructTreeWalker walker = new StructTreeWalker(TagSchema.loadDefault());
+            StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(childRoleVisitor);
             walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
         }
