@@ -38,6 +38,7 @@ public class ProcessingService {
     private final PdfCustodian custodian;
     private final ProcessingListener listener;
     private final List<Supplier<Check>> checks;
+    private final int scopeObjNum;
 
     public static class ProcessingServiceBuilder {
         private PdfCustodian custodian;
@@ -48,6 +49,7 @@ public class ProcessingService {
         private List<String> orderedCheckNames;
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
         private final Map<String, Supplier<Check>> replacedChecks = new HashMap<>();
+        private int scopeObjNum;
 
         public ProcessingServiceBuilder withPdfCustodian(PdfCustodian custodian) {
             this.custodian = custodian;
@@ -56,6 +58,15 @@ public class ProcessingService {
 
         public ProcessingServiceBuilder withListener(ProcessingListener listener) {
             this.listener = listener;
+            return this;
+        }
+
+        /**
+         * Confines structure-tree checks to the subtree rooted at {@code objNum}. Document-level
+         * checks are unaffected, since they do not walk the tree.
+         */
+        public ProcessingServiceBuilder scopeTo(int objNum) {
+            this.scopeObjNum = objNum;
             return this;
         }
 
@@ -110,6 +121,7 @@ public class ProcessingService {
     private ProcessingService(ProcessingServiceBuilder builder) {
         this.custodian = builder.custodian;
         this.listener = builder.listener;
+        this.scopeObjNum = builder.scopeObjNum;
 
         List<Supplier<Check>> filtered;
         if (builder.orderedCheckNames != null) {
@@ -261,7 +273,7 @@ public class ProcessingService {
 
                 listener.onCheckStart(check);
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
-                    DocContext ctx = new DocContext(doc);
+                    DocContext ctx = new DocContext(doc, scopeObjNum);
                     IssueList issues = check.findIssues(ctx);
                     allIssues.addAll(issues);
 
@@ -330,7 +342,7 @@ public class ProcessingService {
 
     public IssueList analyze() throws Exception {
         try (PdfDocument pdfDoc = custodian.openForReading()) {
-            DocContext context = new DocContext(pdfDoc);
+            DocContext context = new DocContext(pdfDoc, scopeObjNum);
             IssueList allIssues = new IssueList();
 
             for (Supplier<Check> supplier : checks) {

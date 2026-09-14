@@ -21,6 +21,7 @@ public class DocContext {
     private final Map<Integer, Map<Integer, Content.McidContent>> mcidContentCache;
     private final Map<Integer, Map<Integer, String>> mcidTextCache;
     private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
+    private final int scopeObjNum;
     private boolean dirty = false;
 
     /**
@@ -37,6 +38,16 @@ public class DocContext {
     }
 
     public DocContext(PdfDocument doc) {
+        this(doc, 0);
+    }
+
+    /**
+     * Creates a context whose tree traversals are confined to the subtree rooted at {@code
+     * scopeObjNum} (0 for the whole document). Only structure-tree checks honor the scope;
+     * document-level checks see the whole file regardless.
+     */
+    public DocContext(PdfDocument doc, int scopeObjNum) {
+        this.scopeObjNum = scopeObjNum;
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
         this.mcidBoundsCache = new HashMap<>();
@@ -48,6 +59,11 @@ public class DocContext {
 
     public PdfDocument doc() {
         return doc;
+    }
+
+    /** Object number of the element traversals are confined to, or 0 for the whole tree. */
+    public int scopeObjNum() {
+        return scopeObjNum;
     }
 
     /** Returns the page number for a given object number based on the object-to-page mapping. */

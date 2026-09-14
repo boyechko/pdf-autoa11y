@@ -293,4 +293,114 @@ class StructTreeWalkerTest extends PdfTestBase {
                 documentChildRoles.stream().allMatch(r -> r.equals("P")),
                 "Children should be P elements");
     }
+
+    @Test
+    void scopedWalkVisitsOnlyTheTargetSubtree() throws Exception {
+        RoleTracker tracker = new RoleTracker();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            var root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem scopedArt = new PdfStructElem(pdfDoc, PdfName.Art);
+            document.addKid(scopedArt);
+            PdfStructElem pInsideArt = new PdfStructElem(pdfDoc, PdfName.P);
+            scopedArt.addKid(pInsideArt);
+
+            PdfStructElem siblingP = new PdfStructElem(pdfDoc, PdfName.P);
+            document.addKid(siblingP);
+
+            StructTreeWalker walker = new StructTreeWalker();
+            walker.addVisitor(tracker);
+            walker.walk(root, new DocContext(pdfDoc, StructTree.objNum(scopedArt)));
+        }
+
+        assertEquals(
+                List.of("Art", "P"),
+                tracker.entered,
+                "only the scoped Art and its descendants must be visited");
+        assertEquals(List.of("P", "Art"), tracker.left, "leaveElement must also stay in scope");
+    }
+
+    @Test
+    void scopeOnMissingObjectNumberVisitsNothing() throws Exception {
+        RoleTracker tracker = new RoleTracker();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            var root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P));
+
+            StructTreeWalker walker = new StructTreeWalker();
+            walker.addVisitor(tracker);
+            walker.walk(root, new DocContext(pdfDoc, 999999));
+        }
+
+        assertTrue(tracker.entered.isEmpty(), "an unresolvable scope must visit nothing");
+    }
+
+    @Test
+    void verifiedSubtreeInsideScopeIsStillSkipped() throws Exception {
+        RoleTracker tracker = new RoleTracker();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            var root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem scopedArt = new PdfStructElem(pdfDoc, PdfName.Art);
+            document.addKid(scopedArt);
+            PdfStructElem verifiedSect = new PdfStructElem(pdfDoc, PdfName.Sect);
+            scopedArt.addKid(verifiedSect);
+            verifiedSect.addKid(new PdfStructElem(pdfDoc, PdfName.P));
+            StructTree.setScribble(verifiedSect, StructTree.SCRIBBLE_VERIFIED_TOKEN);
+
+            StructTreeWalker walker = new StructTreeWalker();
+            walker.addVisitor(tracker);
+            walker.walk(root, new DocContext(pdfDoc, StructTree.objNum(scopedArt)));
+        }
+
+        assertEquals(List.of("Art"), tracker.entered, "verified subtree must be skipped in scope");
+    }
+
+    /** Records the roles entered and left, in traversal order. */
+    private static class RoleTracker extends StructTreeCheck {
+        final List<String> entered = new ArrayList<>();
+        final List<String> left = new ArrayList<>();
+        private final IssueList issues = new IssueList();
+
+        @Override
+        public String name() {
+            return "Role Tracker";
+        }
+
+        @Override
+        public String description() {
+            return "Tracks entered and left roles";
+        }
+
+        @Override
+        public boolean enterElement(StructTreeContext ctx) {
+            entered.add(ctx.role());
+            return true;
+        }
+
+        @Override
+        public void leaveElement(StructTreeContext ctx) {
+            left.add(ctx.role());
+        }
+
+        @Override
+        public IssueList getIssues() {
+            return issues;
+        }
+    }
 }

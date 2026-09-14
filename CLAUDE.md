@@ -58,6 +58,12 @@ mvn exec:java -Dexec.args="--dump-tree input.pdf"  # print structure tree with M
 ./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck input.pdf
 ./pdf-autoa11y --include-checks=WrapWebCapturesCheck input.pdf  # defaults + optional
 
+# Confining a run to one subtree. Takes an object number as shown by --dump-tree
+# (the `#` is optional), and applies to structure-tree checks only; document-level
+# checks still see the whole file. Useful for verifying a new check's behavior on
+# one section of a long document instead of the whole thing at once.
+./pdf-autoa11y --only-checks=MistaggedListCheck --scope=4287 input.pdf output.pdf
+
 # Edit the PDF outline (bookmarks): dump to text, edit, then apply back
 ./pdf-autoa11y --dump-outline input.pdf > outline.txt
 ./pdf-autoa11y --apply-outline=outline.txt input.pdf output.pdf

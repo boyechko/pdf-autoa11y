@@ -59,7 +59,8 @@ public class Cli {
             Path sidecarPath,
             Set<String> skipChecks,
             Set<String> onlyChecks,
-            Set<String> includeChecks) {
+            Set<String> includeChecks,
+            int scopeObjNum) {
         public CLIConfig {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
@@ -167,6 +168,10 @@ public class Cli {
                         .skipChecks(config.skipChecks())
                         .onlyChecks(config.onlyChecks())
                         .includeChecks(config.includeChecks());
+            }
+            if (config.scopeObjNum() > 0) {
+                serviceBuilder.scopeTo(config.scopeObjNum());
+                listener.onInfo("Scoped to element #" + config.scopeObjNum());
             }
             applyCheckConfigs(sidecar.checkConfigs(), serviceBuilder, listener);
             if (config.printStructureTree()) {
@@ -431,6 +436,8 @@ public class Cli {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else if (args[i].startsWith("--apply-outline=")) {
                 b.applyOutlinePath = Paths.get(args[i].substring("--apply-outline=".length()));
+            } else if (args[i].startsWith("--scope=")) {
+                b.scopeObjNum = parseObjNum(args[i].substring("--scope=".length()));
             } else if (args[i].startsWith("--sidecar=")) {
                 b.sidecarPath = Paths.get(args[i].substring("--sidecar=".length()));
             } else {
@@ -476,6 +483,13 @@ public class Cli {
                             b.applyOutlinePath = Paths.get(args[++i]);
                         } else {
                             throw new CLIException("File path not specified after --apply-outline");
+                        }
+                    }
+                    case "--scope" -> {
+                        if (i + 1 < args.length) {
+                            b.scopeObjNum = parseObjNum(args[++i]);
+                        } else {
+                            throw new CLIException("Object number not specified after --scope");
                         }
                     }
                     case "--sidecar" -> {
@@ -561,6 +575,7 @@ public class Cli {
         Set<String> skipChecks = Set.of();
         Set<String> onlyChecks = Set.of();
         Set<String> includeChecks = Set.of();
+        int scopeObjNum;
 
         CLIConfig build() throws CLIException {
             if (inputPath == null) {
@@ -600,7 +615,8 @@ public class Cli {
                     sidecarPath,
                     skipChecks,
                     onlyChecks,
-                    includeChecks);
+                    includeChecks,
+                    scopeObjNum);
         }
 
         private void resolveOutputPath(String baseName) {
@@ -652,6 +668,17 @@ public class Cli {
         } catch (IllegalArgumentException e) {
             throw new CLIException(
                     "Unknown tree style '" + value + "' (expected 'box' or 'plain')");
+        }
+    }
+
+    /** Parses a {@code --scope} value, tolerating the {@code #4287} spelling used in tree dumps. */
+    private static int parseObjNum(String value) throws CLIException {
+        try {
+            int objNum = Integer.parseInt(value.trim().replaceFirst("^#", ""));
+            if (objNum <= 0) throw new NumberFormatException();
+            return objNum;
+        } catch (NumberFormatException e) {
+            throw new CLIException("Invalid object number for --scope: " + value);
         }
     }
 
@@ -711,6 +738,9 @@ public class Cli {
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
+                + "  --scope <objnum>  Confine structure-tree checks to the subtree rooted at\n"
+                + "                    this element (e.g. --scope=4287, as shown by --dump-tree).\n"
+                + "                    Document-level checks still see the whole file.\n"
                 + "\n"
                 + "Sidecar config: place a <basename>.autoa11y.yaml file next to the input PDF\n"
                 + "to set persistent per-file check configuration. You can generate a template\n"

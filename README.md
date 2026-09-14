@@ -104,6 +104,7 @@ Common options:
 - `--dump-roles` print the structure tree roles and exit
 - `--skip-checks <a,b,c>` skip specific checks
 - `--only-checks <a,b,c>` run only specific checks
+- `--scope <objnum>` confine tree checks to one element's subtree
 - `--sidecar <file>` use a specific sidecar config file
 - `--create-sidecar` create a template sidecar config file and exit
 - `-f, --force` write an output PDF even if no fixes were applied

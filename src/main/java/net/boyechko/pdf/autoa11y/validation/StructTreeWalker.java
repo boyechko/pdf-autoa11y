@@ -16,7 +16,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Walks the PDF structure tree once, invoking one or more visitors at each node. Subtrees the user
  * has marked verified (see {@link StructTree#isVerified}) are skipped entirely, so no check sees or
- * touches them.
+ * touches them. When {@link DocContext#scopeObjNum} is set, the walk starts at that element instead
+ * of the tree root, confining every visitor to its subtree.
  */
 public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
@@ -53,6 +54,18 @@ public class StructTreeWalker {
     }
 
     private void walkRoot() {
+        int scopeObjNum = docCtx.scopeObjNum();
+        if (scopeObjNum > 0) {
+            PdfStructElem scope = StructTree.findByObjNumber(root, scopeObjNum);
+            if (scope == null) {
+                logger.warn("Scope element #{} not found; nothing to walk", scopeObjNum);
+                return;
+            }
+            logger.debug("Confining walk to {} #{}", StructTree.mappedRole(scope), scopeObjNum);
+            walkElement(scope, "/", 0);
+            return;
+        }
+
         List<IStructureNode> kids = root.getKids();
         if (kids == null) return;
 

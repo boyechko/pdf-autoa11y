@@ -8,6 +8,11 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `--scope=<objnum>` option confines structure-tree checks to the subtree
+  rooted at one element, e.g. `--scope=4287` for the `Art #4287` shown by
+  `--dump-tree`. Fixes follow the checks, so a scoped run changes nothing
+  outside that subtree, making a long document reviewable one section at a
+  time. Document-level checks still see the whole file.
 - Tag schemas now support explicit `types` lists for grouping, block, inline,
   illustration, heading, list, and table classifications. Role assignments
   remain editable in YAML, with unknown type names rejected during loading.
