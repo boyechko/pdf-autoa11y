@@ -8,6 +8,12 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `MistaggedListCheck` now remediates a list item that runs on across a page
+  break into a block opening further items at the same indent: the continuing
+  lines are folded back into the item that began them and the rest become the
+  list's next items, instead of being reported for manual review. The item to
+  fold into is resolved when the fix runs, so an item ahead that lumps several
+  of its own is followed into the items it is split into.
 - New `--scope=<objnum>` option confines structure-tree checks to the subtree
   rooted at one element, e.g. `--scope=4287` for the `Art #4287` shown by
   `--dump-tree`. Fixes follow the checks, so a scoped run changes nothing

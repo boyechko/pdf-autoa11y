@@ -1,0 +1,90 @@
+------------------------- Page 1 ---
+Document #31 "__:STAMP 2026-09-15 Tue 12:02"
+  Art #32 "__www-washington-edu-students-gencat-program-B-SchoolofNursingandHealthStudies-870"
+    P #33
+      [text &1] `Master of Nursing (BSN/MN)'
+    P #34
+      [text &2] `Completion Requirements'
+    P #35
+      [text &3] `51-55 credits, depending on…+7'
+    L #36
+      LI #38
+        Lbl #39
+          [text &4] `1.'
+        LBody #40
+          [text &5] `Core Nursing Coursework (24…+81'
+      LI #41
+        Lbl #42
+          [text &6] `2.'
+        LBody #43
+          [text &7] `Fieldwork and Capstone (11…+45'
+      LI #44
+        Lbl #45
+          [text &8] `3.'
+        LBody #46
+          [text &9] `Additional Requirements: See…+47'
+    P #47
+      [text &11] `Master of Nursing (Nurse…+10'
+    P #48
+      [text &12] `Completion Requirements'
+    P #49
+      [text &13] `51-55 credits, depending on…+7'
+    L #50
+      LI #52
+        Lbl #53
+          [text &14] `1.'
+        LBody #54
+          [text &15] `Core Nursing Coursework (24…+81'
+      LI #55
+        Lbl #56
+          [text &16] `2.'
+        LBody #57
+          [text &17] `Fieldwork and Capstone (11…+45'
+      LI #58
+        Lbl #59
+          [text &18] `3.'
+        LBody #60
+          [text &19] `Additional Requirements: See…+47'
+    P #61
+      [text &21] `Additional Information'
+    P #62
+      [text &22] `Program Learning Goals'
+    L #63 "__:BULLETS 4 // ITEMS 4"
+      LI #64
+        LBody #65
+          P #66
+            [text &23] `Evaluate the adequacy of…+120'
+      LI #88
+        LBody #89
+          P #90
+            [text &24] `Competently access and…+141'
+------------------------- Page 2 ---
+            [text &15] `Utilize knowledge and skills…+57'
+            [text &14] `populations.'
+      LI #67
+        LBody #68
+          P #69
+            [text &16] `Demonstrate competence in…+74'
+      LI #101
+        LBody #99
+          P #98
+            [text &17] `Develop and utilize…+62'
+    P #70
+      [text &2] `Program of Study: Master of…+47'
+    P #72
+      [text &9] `Program Overview'
+    L #73
+      LI #74
+        LBody #75
+          P #76
+            [text &3] `This program of study leads…+86'
+    P #77
+      [text &4] `Admission Requirements'
+    P #78
+      [text &5] `Contact department for…+14'
+    P #79
+      [text &6] `Master of Science in…+36'
+    P #80
+      [text &7] `Completion Requirements'
+    P #81
+      [text &8] `Contact department for…+14'
