@@ -20,6 +20,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.fixes.FoldIntoPreviousItemFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -44,6 +45,12 @@ class MistaggedListCheckTest extends PdfTestBase {
      * link, plus P #55, two lines deep with a single bullet on the first.
      */
     private static final Path LOOSE_PDF = Path.of("src/test/resources/catalog_006.pdf");
+
+    /**
+     * Catalog pages whose L #76 is tagged as two items but sets three: P #79 opens the first item
+     * on page 1, and P #82 finishes it on page 2 before running two more items at that same indent.
+     */
+    private static final Path CONTINUED_PDF = Path.of("src/test/resources/catalog_110-111.pdf");
 
     private static MistaggedListCheck checkOf(Path pdf) throws Exception {
         MistaggedListCheck check = new MistaggedListCheck();
@@ -178,6 +185,39 @@ class MistaggedListCheckTest extends PdfTestBase {
                             + "LI[LBody[P[]]],LI[LBody[P[]]]]",
                     StructTree.toRoleTreeString(elementByObjNum(pdfDoc, 77)),
                     "one list of three items, the first carrying the ten-item sublist");
+        }
+    }
+
+    @Test
+    void foldsLeadingLinesIntoThePreviousItemOfTheSameList() throws Exception {
+        // P #82's bullets sit at P #79's own indent, so its opening line finishes #79's item
+        // and the rest open the list's next items rather than a sublist of the one it continues.
+        Issue issue =
+                checkOf(CONTINUED_PDF).getIssues().stream()
+                        .filter(i -> i.type() == IssueType.LIST_ITEMS_LUMPED)
+                        .filter(i -> Integer.valueOf(82).equals(i.where().objNum()))
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("P #82 not reported"));
+
+        assertTrue(issue.message().contains("2 bullet glyphs"), issue.message());
+        assertTrue(issue.message().contains("3,3"), issue.message());
+        assertInstanceOf(FoldIntoPreviousItemFix.class, issue.fix());
+    }
+
+    @Test
+    void continuedListEndsWithTheItemsItsBulletsPromise() throws Exception {
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(CONTINUED_PDF.toString()),
+                        new PdfWriter(testOutputStream()))) {
+            walkWith(pdfDoc, check);
+            check.getIssues().applyFixes(new DocContext(pdfDoc));
+
+            assertEquals(
+                    "L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]]]",
+                    StructTree.toRoleTreeString(elementByObjNum(pdfDoc, 76)),
+                    "the two tagged items become the three the bullets promise");
         }
     }
 

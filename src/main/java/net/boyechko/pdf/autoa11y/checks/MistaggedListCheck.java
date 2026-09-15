@@ -17,11 +17,13 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
+import net.boyechko.pdf.autoa11y.fixes.FoldIntoPreviousItemFix;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoListItemsFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -170,44 +172,70 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     /**
      * Handles an element whose opening lines carry no bullet and so finish the item its predecessor
-     * began. When that predecessor is itself a bulleted item one level out, the lines can be folded
-     * back into it and the rest nested as its sublist; otherwise there is nothing to fold into and
-     * the element is left for review.
+     * began. Where that item can be identified the lines are folded back into it; otherwise there
+     * is nothing to fold into and the element is left for review.
      */
     private void emitContinuedItem(
             StructTreeContext ctx, int items, int leadingLines, String spec, float levelX) {
-        ContinuedItem continued = continuedItem(ctx, levelX);
-
-        // Claim the opener either way: its bullet makes it the start of an item that runs
-        // on into this element, so wrapping it alone as a one-item list is wrong.
-        if (continued != null) {
-            claimed.add(StructTree.objNum(continued.opener()));
-        }
+        IssueFix fix = continuationFix(ctx, leadingLines, spec, levelX);
 
         issues.add(
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
                         StructTreeCheck.locAtElem(ctx),
-                        lumpedMessage(items, spec, leadingLines, continued != null),
-                        continued == null
-                                ? null
-                                : new SplitIntoSublistFix(
-                                        ctx.node(),
-                                        continued.opener(),
-                                        leadingLines,
-                                        spec,
-                                        continued.joinInto())));
+                        lumpedMessage(items, spec, leadingLines, fix != null),
+                        fix));
 
         logger.debug(
-                "Element #{} lumps {} bulleted items behind {} continuation line(s) of #{}{}",
+                "Element #{} lumps {} bulleted items behind {} continuation line(s), remedy {}",
                 StructTree.objNum(ctx.node()),
                 items,
                 leadingLines,
-                continued == null ? null : StructTree.objNum(continued.opener()),
-                continued == null || continued.joinInto() == null
-                        ? ""
-                        : ", joining list #" + StructTree.objNum(continued.joinInto()));
+                fix == null ? "none" : fix.getClass().getSimpleName());
+    }
+
+    /**
+     * The fix for an element that opens mid-item, chosen by where its own bullets sit relative to
+     * the item it continues: indented past it, they are that item's sublist; at its own indent,
+     * they are the next items of the list the two share. Null where no item can be identified,
+     * leaving the element for review.
+     */
+    private IssueFix continuationFix(
+            StructTreeContext ctx, int leadingLines, String spec, float levelX) {
+        ContinuedItem continued = continuedItem(ctx, levelX);
+        if (continued != null) {
+            // Claim the opener: its bullet makes it the start of an item that runs on into
+            // this element, so wrapping it alone as a one-item list is wrong. An opener inside
+            // a list needs no claim, loose items being looked for under containers only.
+            claimed.add(StructTree.objNum(continued.opener()));
+            return new SplitIntoSublistFix(
+                    ctx.node(), continued.opener(), leadingLines, spec, continued.joinInto());
+        }
+        return continuesAnItemOfItsList(ctx, levelX)
+                ? new FoldIntoPreviousItemFix(ctx.node(), leadingLines, spec)
+                : null;
+    }
+
+    /**
+     * Whether this element continues an item of the list it sits in: there must be an item before
+     * its own, whose last bullet sits at this element's own indent — the bullet that opened the
+     * item running on into it. The two must also agree on role, since the lines are folded into the
+     * opener as one paragraph. A preceding item lumping several items of its own qualifies on its
+     * last bullet, the fold being resolved against the items it is split into.
+     */
+    private boolean continuesAnItemOfItsList(StructTreeContext ctx, float levelX) {
+        PdfStructElem opener = FoldIntoPreviousItemFix.openerFor(ctx.node());
+        if (opener == null || !ctx.role().equals(StructTree.mappedRole(opener))) {
+            return false;
+        }
+        List<Float> bulleted =
+                bulletLinesOf(ctx, opener).stream()
+                        .map(BulletLine::bulletX)
+                        .filter(Objects::nonNull)
+                        .toList();
+        return !bulleted.isEmpty()
+                && Math.abs(levelX - bulleted.get(bulleted.size() - 1)) <= SAME_LEVEL_TOLERANCE;
     }
 
     /**
@@ -495,12 +523,16 @@ public class MistaggedListCheck extends StructTreeCheck {
                 StructTree.objNum(second));
     }
 
+    /** Returns a list's items in order. */
+    private static List<PdfStructElem> itemsOf(PdfStructElem list) {
+        return StructTree.childrenOf(list, PdfStructElem.class).stream()
+                .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+                .toList();
+    }
+
     /** Returns the bullet x of a list's first or last item, or NaN when it carries none. */
     private float listItemBulletX(StructTreeContext ctx, PdfStructElem list, boolean lastItem) {
-        List<PdfStructElem> items =
-                StructTree.childrenOf(list, PdfStructElem.class).stream()
-                        .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
-                        .toList();
+        List<PdfStructElem> items = itemsOf(list);
         if (items.isEmpty()) {
             return Float.NaN;
         }
