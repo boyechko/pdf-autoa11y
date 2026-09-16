@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
+import net.boyechko.pdf.autoa11y.document.ContentStream.SegmentMcids;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -98,7 +99,7 @@ public final class SplitIntoSublistFix implements IssueFix {
                 ContentStream.blockEditsFor(
                         plan,
                         List.of(plan.splitOffsets().get(leadingLines - 1)),
-                        index -> tailMcr.getMcid());
+                        SegmentMcids.oneBlockPerSegment(plan, index -> tailMcr.getMcid()));
         ContentStream.applyEdits(plan.stream(), edits);
 
         new SplitIntoListItemsFix(tail, itemSpec).apply(ctx);

@@ -9,6 +9,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -51,6 +53,13 @@ class MistaggedListCheckTest extends PdfTestBase {
      * on page 1, and P #82 finishes it on page 2 before running two more items at that same indent.
      */
     private static final Path CONTINUED_PDF = Path.of("src/test/resources/catalog_110-111.pdf");
+
+    /**
+     * Catalog pages whose L #63 is tagged as two items but sets four: P #66 lumps two of them on
+     * page 1, and P #69 finishes the second on page 2 before opening two more at that indent.
+     */
+    private static final Path CONTINUED_AFTER_LUMP_PDF =
+            Path.of("src/test/resources/catalog_199-200.pdf");
 
     private static MistaggedListCheck checkOf(Path pdf) throws Exception {
         MistaggedListCheck check = new MistaggedListCheck();
@@ -222,6 +231,30 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     @Test
+    void foldsIntoTheItemTheLumpAheadOfItWasSplitInto() throws Exception {
+        // The item P #69 continues does not exist until P #66's lump is split, and the fold must
+        // land in the last of the items it becomes, not the element the lump started as.
+        MistaggedListCheck check = new MistaggedListCheck();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(CONTINUED_AFTER_LUMP_PDF.toString()),
+                        new PdfWriter(testOutputStream()))) {
+            walkWith(pdfDoc, check);
+            check.getIssues().applyFixes(new DocContext(pdfDoc));
+
+            PdfStructElem list = elementByObjNum(pdfDoc, 63);
+            List<PdfStructElem> items =
+                    StructTree.childrenOf(list, PdfStructElem.class).stream()
+                            .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+                            .toList();
+            assertEquals(4, items.size(), "one item per bullet");
+            String second = itemText(pdfDoc, items.get(1));
+            assertTrue(second.startsWith("Competently access"), second);
+            assertTrue(second.endsWith("populations."), second);
+        }
+    }
+
+    @Test
     void ignoresElementCoveringASingleBullet() throws Exception {
         // P #52, P #75 and P #89 are each one bulleted line: correctly one item apiece.
         Map<Integer, String> lumped =
@@ -332,6 +365,20 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     // == Helpers =========================================================
+
+    /** Concatenates the raw text of every MCR under an element, in reading order. */
+    private static String itemText(PdfDocument doc, PdfStructElem elem) {
+        StringBuilder text = new StringBuilder();
+        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
+            int pageNum = StructTree.pageOf(mcr);
+            Content.McidContent content =
+                    Content.extractContentForPage(doc.getPage(pageNum)).get(mcr.getMcid());
+            if (content != null) {
+                content.spans().forEach(span -> text.append(span.text()));
+            }
+        }
+        return text.toString().strip();
+    }
 
     /** Returns the element following the given one among its parent's children. */
     private static PdfStructElem nextSiblingOf(PdfDocument doc, int objNum) {

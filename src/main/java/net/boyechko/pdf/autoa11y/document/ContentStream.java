@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntUnaryOperator;
@@ -145,6 +146,41 @@ public final class ContentStream {
 
     /** A byte-level stream edit: replaces deleteLen bytes at offset with the given text. */
     public record Edit(int offset, int deleteLen, byte[] text) {}
+
+    /**
+     * Supplies the MCID opening one marked-content block of a segment, where segment 0 is the
+     * block's original content and segment i+1 the content after splice i.
+     *
+     * <p>Called once per block rather than once per segment: each text object must open and close
+     * its own marked content, so a segment whose lines straddle text objects needs a block in each,
+     * and every block after a segment's first needs an MCID of its own. An implementation either
+     * mints one — attaching its marked-content reference to the same element, which then owns
+     * several — or refuses, leaving the block unsplittable.
+     */
+    @FunctionalInterface
+    public interface SegmentMcids {
+        int nextFor(int segment);
+
+        /**
+         * Allows each segment one block only, looking its MCID up by splice index, and refuses a
+         * segment that asks for a second — the contract callers owning one marked-content reference
+         * per segment can keep.
+         */
+        static SegmentMcids oneBlockPerSegment(SplitPlan plan, IntUnaryOperator mcidOf) {
+            // Segment 0 starts out spent: its first block reuses the original BDC and never asks.
+            Set<Integer> spent = new HashSet<>(Set.of(0));
+            return segment -> {
+                if (!spent.add(segment)) {
+                    throw new IllegalStateException(
+                            "Splitting the "
+                                    + plan.tag().getValue()
+                                    + " block is not possible: an item's lines sit in separate"
+                                    + " text objects");
+                }
+                return mcidOf.applyAsInt(segment - 1);
+            };
+        }
+    }
 
     /** Locates the MCID's BDC...EMC block on the page and plans the line splits. */
     public static SplitPlan planLineSplit(PdfPage page, int targetMcid) throws IOException {
@@ -476,13 +512,14 @@ public final class ContentStream {
     }
 
     /**
-     * Builds the byte edits realizing one block's MCID switches, refusing shapes that cannot be
-     * spliced without interleaving operator pairs or orphaning painted content. When the block's
-     * BDC opened inside a text object, every splice must stay in that text object and the plain
-     * EMC/BDC splice is legal; otherwise the boundaries are relocated around the text objects.
+     * Builds the byte edits realizing one block's MCID switches (i.e. the transitions between
+     * MCIDs), refusing shapes that cannot be spliced without interleaving operator pairs or
+     * orphaning painted content. When the block's BDC opened inside a text object, every splice
+     * must stay in that text object and then a plain EMC/BDC insertion at each splice suffices.
+     * Otherwise, the block is demoted to sit inside each text object it covers.
      */
     public static List<Edit> blockEditsFor(
-            SplitPlan plan, List<Integer> spliceOffsets, IntUnaryOperator mcidOf) {
+            SplitPlan plan, List<Integer> spliceOffsets, SegmentMcids mcids) {
         if (plan.bdcInsideText()) {
             if (spliceOffsets.get(spliceOffsets.size() - 1) >= plan.bdcTextEnd()) {
                 throw new IllegalStateException(
@@ -492,7 +529,7 @@ public final class ContentStream {
             }
             List<Edit> edits = new ArrayList<>();
             for (int i = 0; i < spliceOffsets.size(); i++) {
-                String marker = "\nEMC " + bdcMarker(plan.tag(), mcidOf.applyAsInt(i)) + "\n";
+                String marker = "\nEMC " + bdcMarker(plan.tag(), mcids.nextFor(i + 1)) + "\n";
                 edits.add(new Edit(spliceOffsets.get(i), 0, ascii(marker)));
             }
             return edits;
@@ -512,7 +549,7 @@ public final class ContentStream {
                             + " block would leave painted content outside any marked-content"
                             + " block");
         }
-        return relocatedEdits(plan, spliceOffsets, mcidOf);
+        return relocatedEdits(plan, spliceOffsets, mcids);
     }
 
     /**
@@ -523,14 +560,14 @@ public final class ContentStream {
      * unsplit slivers produce no empty duplicate-MCID blocks.
      */
     private static List<Edit> relocatedEdits(
-            SplitPlan plan, List<Integer> splices, IntUnaryOperator mcidOf) {
+            SplitPlan plan, List<Integer> splices, SegmentMcids mcids) {
         BlockShape shape = plan.shape();
         List<Edit> edits = new ArrayList<>();
         edits.add(new Edit(shape.bdcStart(), shape.bdcEnd() - shape.bdcStart(), NO_BYTES));
         edits.add(new Edit(shape.emcStart(), shape.emcEnd() - shape.emcStart(), NO_BYTES));
 
         boolean open = false;
-        boolean[] opened = new boolean[splices.size() + 1];
+        boolean originalEmitted = false;
         int segment = 0; // 0 = the original MCID's segment; i+1 = splice i's segment
         int splice = 0;
         int show = 0;
@@ -551,23 +588,15 @@ public final class ContentStream {
                     segment = ++splice;
                 }
                 if (!open) {
-                    if (opened[segment]) {
-                        throw new IllegalStateException(
-                                "Splitting the "
-                                        + plan.tag().getValue()
-                                        + " block is not possible: an item's lines sit in separate"
-                                        + " text objects");
+                    // The original BDC opens the first block of segment 0, keeping its MCID and
+                    // any other entries it carries; every later block asks for an MCID of its own.
+                    byte[] marker;
+                    if (segment == 0 && !originalEmitted) {
+                        marker = wrapInNewlines(shape.bdcBytes());
+                        originalEmitted = true;
+                    } else {
+                        marker = ascii("\n" + bdcMarker(plan.tag(), mcids.nextFor(segment)) + "\n");
                     }
-                    opened[segment] = true;
-                    byte[] marker =
-                            segment == 0
-                                    ? wrapInNewlines(shape.bdcBytes())
-                                    : ascii(
-                                            "\n"
-                                                    + bdcMarker(
-                                                            plan.tag(),
-                                                            mcidOf.applyAsInt(segment - 1))
-                                                    + "\n");
                     edits.add(new Edit(pendingOpen, 0, marker));
                     open = true;
                 }

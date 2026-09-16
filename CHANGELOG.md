@@ -40,6 +40,11 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- Splitting a marked-content block no longer refuses when one of the resulting
+  items has its lines set in separate text objects. Each text object opens and
+  closes its own marked content, so such an item is now given a block in each
+  and owns a marked-content reference per block. This unblocks lumped listings
+  that previously had to be split by hand.
 - `MistaggedListCheck` now reads bullets one text line at a time throughout,
   instead of also matching them against whole elements. A paragraph that ends
   with the first item of a list has that item carved out of it and the prose

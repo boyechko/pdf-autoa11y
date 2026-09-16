@@ -34,6 +34,52 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
      */
     private static final Path CATALOG_PDF = Path.of("src/test/resources/catalog_038-044.pdf");
 
+    /**
+     * Catalog pages whose page-2 block sets one item's two lines in separate text objects: the
+     * first closes a BT...ET and the second opens the next, with two bulleted items after them.
+     */
+    private static final Path STRADDLING_PDF = Path.of("src/test/resources/catalog_199-200.pdf");
+
+    @Test
+    void splitsAnItemWhoseLinesStraddleTwoTextObjects() throws Exception {
+        // Each text object must open and close its own marked content, so an item spanning two
+        // of them needs a block in each: one item, two MCRs.
+        try (PdfDocument doc = openForStamping(STRADDLING_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 2, 0);
+            PdfStructElem list = grandListOf(p);
+
+            new SplitIntoListItemsFix(p, "2,2,1").apply(ctx);
+
+            List<PdfStructElem> items = listItems(list);
+            assertEquals(4, items.size(), "2 new LIs joined the original 2");
+            assertEquals(
+                    2,
+                    StructTree.descendantsOf(items.get(1), PdfMcr.class).size(),
+                    "the straddling item owns one marked-content block per text object");
+            assertProperlyNestedOperators(doc.getPage(2).getContentBytes());
+        }
+    }
+
+    @Test
+    void straddlingItemReadsAsOneRunOfText() throws Exception {
+        try (PdfDocument doc = openForStamping(STRADDLING_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 2, 0);
+            PdfStructElem list = grandListOf(p);
+
+            new SplitIntoListItemsFix(p, "2,2,1").apply(ctx);
+
+            Map<Integer, Content.McidContent> content =
+                    Content.extractContentForPage(doc.getPage(2));
+            List<String> texts = listItems(list).stream().map(li -> itemText(li, content)).toList();
+            assertTrue(texts.get(1).startsWith("Utilize knowledge"), texts.get(1));
+            assertTrue(texts.get(1).endsWith("populations."), texts.get(1));
+            assertTrue(texts.get(2).startsWith("Demonstrate competence"), texts.get(2));
+            assertTrue(texts.get(3).startsWith("Develop and utilize"), texts.get(3));
+        }
+    }
+
     @Test
     void splitsLumpedListItemIntoIndividualItems() throws Exception {
         try (PdfDocument doc = openForStamping(CATALOG_PDF)) {

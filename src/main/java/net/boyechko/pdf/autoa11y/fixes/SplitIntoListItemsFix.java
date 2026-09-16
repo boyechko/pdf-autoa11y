@@ -176,7 +176,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         List<List<Integer>> offsets = spliceOffsetsPerPlan(plans, sizes);
         for (int i = 0; i < plans.size(); i++) {
             if (!offsets.get(i).isEmpty()) {
-                ContentStream.blockEditsFor(plans.get(i).plan(), offsets.get(i), idx -> 0);
+                ContentStream.blockEditsFor(plans.get(i).plan(), offsets.get(i), segment -> 0);
             }
         }
     }
@@ -292,7 +292,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
         for (McrPlan mcrPlan : plans) {
             PdfPage page = mcrPlan.page();
-            List<Insertion> insertions = new ArrayList<>();
+            List<Integer> splices = new ArrayList<>();
+            List<PdfStructElem> bodyPerSegment = new ArrayList<>();
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
             for (int line = 0; line < mcrLines; line++) {
                 boolean startsItem = linesLeftInItem == 0;
@@ -304,23 +305,20 @@ public final class SplitIntoListItemsFix implements IssueFix {
                     if (mcrPlan.mcr() != plans.get(0).mcr()) {
                         moveMcr(mcrPlan.mcr(), page, itemBody);
                     }
+                    bodyPerSegment.add(itemBody);
                 } else if (startsItem) {
-                    PdfMcr newMcr = newMcrOn(page, itemBody);
-                    itemBody.addKid(newMcr);
-                    newMcids.add(newMcr.getMcid());
-                    insertions.add(
-                            new Insertion(
-                                    mcrPlan.plan().splitOffsets().get(line - 1), newMcr.getMcid()));
+                    splices.add(mcrPlan.plan().splitOffsets().get(line - 1));
+                    bodyPerSegment.add(itemBody);
                 }
                 // A line continuing its item within the same MCR needs no action.
                 linesLeftInItem--;
             }
-            if (!insertions.isEmpty()) {
+            if (!splices.isEmpty()) {
                 List<Edit> edits =
                         ContentStream.blockEditsFor(
                                 mcrPlan.plan(),
-                                insertions.stream().map(Insertion::offset).toList(),
-                                idx -> insertions.get(idx).mcid());
+                                splices,
+                                segment -> mintMcid(bodyPerSegment.get(segment), page, newMcids));
                 editsByStream
                         .computeIfAbsent(mcrPlan.plan().stream(), s -> new ArrayList<>())
                         .addAll(edits);
@@ -384,8 +382,17 @@ public final class SplitIntoListItemsFix implements IssueFix {
     /** A block plan paired with the MCR it belongs to and the page holding its block. */
     private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan) {}
 
-    /** A planned MCID switch: the byte offset where the new MCID's block takes over. */
-    private record Insertion(int offset, int mcid) {}
+    /**
+     * Gives an item's content element a further marked-content kid and returns its MCID. Called
+     * once per block the splice plan opens, so an item whose lines straddle two text objects ends
+     * up owning a reference to the block in each.
+     */
+    private int mintMcid(PdfStructElem itemBody, PdfPage page, List<Integer> newMcids) {
+        PdfMcr mcr = newMcrOn(page, itemBody);
+        itemBody.addKid(mcr);
+        newMcids.add(mcr.getMcid());
+        return mcr.getMcid();
+    }
 
     @Override
     public String describe() {

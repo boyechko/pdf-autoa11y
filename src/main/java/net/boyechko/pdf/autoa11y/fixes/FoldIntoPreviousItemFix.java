@@ -66,7 +66,8 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
         new SplitIntoListItemsFix(element, leadingLines + "," + itemSpec).apply(ctx);
         StructTree.moveKids(element, opener);
         int pruned = StructTree.pruneEmpty(element);
-        ListItemScribble.update(list, "FOLD into previous item");
+        // The list was reshaped by the split; the fold only moved content between its items.
+        ListItemScribble.refreshCount(list);
 
         logger.debug(
                 "Folded {} leading line(s) of #{} into #{}'s item, pruning {} emptied element(s)",
