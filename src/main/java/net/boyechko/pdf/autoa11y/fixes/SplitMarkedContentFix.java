@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
+import net.boyechko.pdf.autoa11y.document.ContentStream.SegmentMcids;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -72,7 +73,9 @@ public final class SplitMarkedContentFix implements IssueFix {
         }
         StructTree.addToolScribble(element, SPLIT_SCRIBBLE);
 
-        List<Edit> edits = ContentStream.blockEditsFor(plan, splices, newMcids::get);
+        List<Edit> edits =
+                ContentStream.blockEditsFor(
+                        plan, splices, SegmentMcids.oneBlockPerSegment(plan, newMcids::get));
         ContentStream.applyEdits(plan.stream(), edits);
 
         logger.debug(

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
+import net.boyechko.pdf.autoa11y.document.ContentStream.SegmentMcids;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -117,7 +118,8 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
     /** True when the block's size-change splices can be realized without an illegal splice. */
     private static boolean splittable(SplitPlan plan) {
         try {
-            ContentStream.blockEditsFor(plan, plan.sizeChangeOffsets(), i -> 0);
+            ContentStream.blockEditsFor(
+                    plan, plan.sizeChangeOffsets(), SegmentMcids.oneBlockPerSegment(plan, i -> 0));
             return true;
         } catch (RuntimeException e) {
             logger.debug(

@@ -102,6 +102,23 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
     }
 
     @Test
+    void recordsNoEventOfItsOwnOnTheList() throws Exception {
+        // The fold moves content between items; what happened to the list itself is the split.
+        // An event here would be read as the list having been folded into something.
+        try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem element = elementOwningMcid(doc, 2, 0);
+            PdfStructElem list = listAncestorOf(element);
+
+            new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
+
+            List<String> segments = StructTree.getScribble(list).segments();
+            assertEquals(2, segments.size(), "only the split's event and the count: " + segments);
+            assertEquals(ListItemScribble.countSegment(3), segments.get(1));
+        }
+    }
+
+    @Test
     void refusesToFoldIntoAnElementOfAnotherRole() throws Exception {
         try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
             DocContext ctx = new DocContext(doc);
