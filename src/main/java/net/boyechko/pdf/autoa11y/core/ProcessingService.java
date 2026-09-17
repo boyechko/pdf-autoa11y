@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -228,12 +227,7 @@ public class ProcessingService {
     private static void rejectUnknownNames(Set<String> knownNames, Set<String> requested) {
         for (String name : requested) {
             if (!knownNames.contains(name)) {
-                throw new IllegalArgumentException(
-                        "Unknown check: "
-                                + name
-                                + System.lineSeparator()
-                                + "Known checks: "
-                                + String.join(", ", new TreeSet<>(knownNames)));
+                throw new IllegalArgumentException("Unknown check: " + name);
             }
         }
     }

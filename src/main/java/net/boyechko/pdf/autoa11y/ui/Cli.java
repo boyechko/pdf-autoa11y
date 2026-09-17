@@ -19,6 +19,7 @@ import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
 import net.boyechko.pdf.autoa11y.checks.ReorderWebCapturesCheck;
 import net.boyechko.pdf.autoa11y.checks.ReplaceRoleMapCheck;
 import net.boyechko.pdf.autoa11y.checks.StaleScribbleCheck;
+import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
@@ -95,6 +96,10 @@ public class Cli {
             }
             if (isHelpRequested(args)) {
                 System.out.println(usageMessage());
+                return;
+            }
+            if (isCheckListRequested(args)) {
+                System.out.println(checkListMessage());
                 return;
             }
             CLIConfig config = parseArguments(args);
@@ -686,13 +691,56 @@ public class Cli {
         }
     }
 
-    /** Parses comma-separated check names, supplying the optional {@code Check} suffix. */
-    private static Set<String> parseCheckNames(String value) {
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> s.endsWith("Check") ? s : s + "Check")
+    /**
+     * Parses comma-separated check names, supplying the optional {@code Check} suffix. Throws if a
+     * name matches no known check.
+     */
+    private static Set<String> parseCheckNames(String value) throws CLIException {
+        Set<String> known = knownCheckNames();
+        Set<String> names = new LinkedHashSet<>();
+        for (String typed :
+                Arrays.stream(value.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList()) {
+            String name = known.contains(typed) ? typed : typed + "Check";
+            if (!known.contains(name)) {
+                throw new CLIException(
+                        "Unknown check: " + typed + " (run --list-checks to see the known checks)");
+            }
+            names.add(name);
+        }
+        return names;
+    }
+
+    private static Set<String> knownCheckNames() {
+        return ProcessingDefaults.allChecks().stream()
+                .map(supplier -> supplier.get().getClass().getSimpleName())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static boolean isCheckListRequested(String[] args) {
+        for (String arg : args) {
+            if ("--list-checks".equals(arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Lists the known checks, separating those that run by default from the optional ones. */
+    static String checkListMessage() {
+        return "Checks run by default (omit with --skip-checks):\n"
+                + indentedNames(ProcessingDefaults.defaultChecks())
+                + "\n\nOptional checks (add with --include-checks):\n"
+                + indentedNames(ProcessingDefaults.optionalChecks())
+                + "\n\nThe trailing \"Check\" may be omitted when naming a check on the command line.";
+    }
+
+    private static String indentedNames(List<Supplier<Check>> checks) {
+        return checks.stream()
+                .map(supplier -> "  " + supplier.get().getClass().getSimpleName())
+                .collect(Collectors.joining("\n"));
     }
 
     private static boolean isVersionRequested(String[] args) {
@@ -745,6 +793,7 @@ public class Cli {
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
                 + "                              The trailing \"Check\" in a name may be omitted\n"
+                + "  --list-checks     List the known checks and exit\n"
                 + "  --scope <objnum>  Confine structure-tree checks to the subtree rooted at\n"
                 + "                    this element (e.g. --scope=4287, as shown by --dump-tree).\n"
                 + "                    Document-level checks still see the whole file.\n"

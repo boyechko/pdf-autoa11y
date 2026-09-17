@@ -8,6 +8,8 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `--list-checks` option prints the known checks, separating those that
+  run by default from the optional ones that `--include-checks` activates.
 - `MistaggedListCheck` now remediates a list item that runs on across a page
   break into a block opening further items at the same indent: the continuing
   lines are folded back into the item that began them and the rest become the
@@ -41,8 +43,8 @@ Versioning](https://semver.org/).
 
 ### Changed
 - An unrecognized check name passed to `--only-checks`, `--skip-checks`, or
-  `--include-checks` now aborts the run with an error listing the known
-  checks, instead of being silently ignored.
+  `--include-checks` now aborts the run with an error pointing at
+  `--list-checks`, instead of being silently ignored.
 - `--only-checks`, `--skip-checks`, and `--include-checks` now accept check
   names with the trailing `Check` omitted, so `--only-checks=MistaggedList`
   selects `MistaggedListCheck`. Full class names still work.
