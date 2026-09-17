@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -156,6 +157,8 @@ public class ProcessingService {
      *   <li>{@code skip}: remove these from the active set
      *   <li>{@code replaceChecks}: substitute suppliers in-place by class name
      * </ul>
+     *
+     * <p>Throws {@link IllegalArgumentException} if any requested name is unknown.
      */
     private static ArrayList<Supplier<Check>> selectChecks(
             List<Supplier<Check>> allChecks,
@@ -164,6 +167,11 @@ public class ProcessingService {
             Set<String> only,
             Set<String> include,
             Map<String, Supplier<Check>> replaceChecks) {
+        Set<String> knownNames = collectNames(allChecks);
+        rejectUnknownNames(knownNames, skip);
+        rejectUnknownNames(knownNames, only);
+        rejectUnknownNames(knownNames, include);
+
         java.util.function.Predicate<String> predicate;
         if (!only.isEmpty()) {
             predicate = name -> only.contains(name) && !skip.contains(name);
@@ -214,6 +222,20 @@ public class ProcessingService {
             }
         }
         return result;
+    }
+
+    /** Rejects requested check names that name no known check. */
+    private static void rejectUnknownNames(Set<String> knownNames, Set<String> requested) {
+        for (String name : requested) {
+            if (!knownNames.contains(name)) {
+                throw new IllegalArgumentException(
+                        "Unknown check: "
+                                + name
+                                + System.lineSeparator()
+                                + "Known checks: "
+                                + String.join(", ", new TreeSet<>(knownNames)));
+            }
+        }
     }
 
     private static Set<String> collectNames(List<Supplier<Check>> checks) {

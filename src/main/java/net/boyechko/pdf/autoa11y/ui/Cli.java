@@ -178,7 +178,12 @@ public class Cli {
                 serviceBuilder.injectCheck(
                         () -> new StructTreeTablePrinter(listener::onVerboseOutput));
             }
-            ProcessingService service = serviceBuilder.build();
+            ProcessingService service;
+            try {
+                service = serviceBuilder.build();
+            } catch (IllegalArgumentException e) {
+                throw new CLIException(e.getMessage());
+            }
 
             if (config.analyzeOnly()) {
                 service.analyze();
