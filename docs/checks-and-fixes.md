@@ -374,23 +374,28 @@ authoring tool, and any fix that splits marked content mints new MCIDs
 at the end of a page's numbering. In a document this tool has already
 remediated, an element's MCID says nothing about where it sits.
 
-### Be careful with tables
+### Table rows, and what is still unhandled
 
-The check currently reports **false positives on table rows**. Cells in
-one row are often staggered vertically — a short cell sits centred in
-the row while a tall multi-line cell beside it starts higher — so their
-bands differ and the check orders them top-to-bottom instead of
-left-to-right, reporting a correctly ordered row as out of order.
-Applying the fix then genuinely scrambles that row.
+A `TR`'s children are ordered by distance from the left edge alone,
+ignoring the band. Cells in one row are usually staggered vertically — a
+short cell sits centred in the row while a tall multi-line cell beside
+it starts higher — so ordering them down the page would report a
+correctly ordered row as out of order and scramble it when fixed.
 
-Widening the band does not help: the stagger within a row is comparable
-to the line pitch of body text, so any band wide enough to merge a row's
-cells also merges adjacent prose lines. Ordering siblings correctly in
-both cases needs the children of one parent grouped into rows by
-vertical overlap before being ordered, which is not yet implemented.
+Widening the band is not an alternative: the stagger within a row is
+comparable to the line pitch of body text, so any band wide enough to
+merge a row's cells also merges adjacent prose lines.
 
-Until then, prefer `--scope` to confine a run to a subtree you have
-looked at, and review a reported `TR` before accepting its fix.
+The row's role is what selects the left-to-right rule, so the exemption
+reaches exactly as far as the tagging does. Siblings that share a
+vertical band **without** sitting in a `TR` are still ordered down the
+page, and may be reported out of order when they are not: cells tagged
+directly under a `Table` with no `TR` between, a page laid out in
+columns, or content flowed around a figure. Ordering those correctly
+needs the children of one parent grouped into rows by vertical overlap
+before being ordered, which is not implemented.
+
+Prefer `--scope` to confine a run to a subtree you have looked at.
 
 ### Elements the check declines to judge
 
