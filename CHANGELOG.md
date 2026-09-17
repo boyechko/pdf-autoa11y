@@ -97,10 +97,11 @@ Versioning](https://semver.org/).
   anything the tool had already split looking like it belonged at the foot of
   its page. The check also declines to judge a parent whose children include
   content it cannot locate, such as a paragraph holding only a link
-  annotation, rather than guessing at its position. Table rows are a known
-  weak spot: cells staggered vertically within a row can still be reported
-  out of order, so prefer `--scope` and review a reported `TR` before
-  accepting its fix. See `docs/checks-and-fixes.md`.
+  annotation, rather than guessing at its position. A table row's cells are
+  ordered left to right instead of down the page, since cells in one row are
+  staggered vertically; siblings that share a vertical band outside a `TR`,
+  such as a column layout, are still ordered down the page. See
+  `docs/checks-and-fixes.md`.
 - Tool-written scribble segments are now consistently marked tool-authored.
   The merge and reorder receipts, `SchemaValidationCheck` findings, and
   `InvalidLinkUriCheck` findings were written as if by hand, so

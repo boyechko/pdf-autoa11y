@@ -71,7 +71,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
         DocContext doc = ctx.docCtx();
         if (children.size() >= 2
                 && allChildrenLocatable(ctx, children, doc)
-                && !isInOrder(children, doc, cache)) {
+                && !isInOrder(ctx.node(), children, doc)) {
             IssueFix fix = new StructTreeOrderFix(ctx.node(), cache);
             issues.add(
                     new Issue(
@@ -105,22 +105,35 @@ public class StructTreeOrderCheck extends StructTreeCheck {
         return true;
     }
 
-    /** Checks whether children are already sorted by reading position. */
-    public static boolean isInOrder(
-            List<PdfStructElem> children, DocContext doc, Map<Integer, ReadingPosition> cache) {
-        ReadingPosition prev = null;
-        for (PdfStructElem child : children) {
-            ReadingPosition key = readingPositionOf(child, doc, cache);
-            if (prev != null && key.compareTo(prev) < 0) {
+    /** Checks whether children already stand in the order their content is read. */
+    private boolean isInOrder(PdfStructElem parent, List<PdfStructElem> children, DocContext doc) {
+        Comparator<PdfStructElem> order = readingOrderWithin(parent, doc, cache);
+        for (int i = 1; i < children.size(); i++) {
+            if (order.compare(children.get(i), children.get(i - 1)) < 0) {
                 return false;
             }
-            prev = key;
         }
         return true;
     }
 
+    /**
+     * Returns the comparator that puts a parent's children in reading order. A table row is read
+     * left to right, so its cells are ordered by their distance from the left edge alone: cells in
+     * one row are staggered vertically, a short cell sitting centred beside a tall one, and
+     * ordering those down the page would scramble the row.
+     */
+    public static Comparator<PdfStructElem> readingOrderWithin(
+            PdfStructElem parent, DocContext doc, Map<Integer, ReadingPosition> cache) {
+        Comparator<ReadingPosition> order =
+                "TR".equals(StructTree.mappedRole(parent))
+                        ? Comparator.comparingInt(ReadingPosition::page)
+                                .thenComparing(ReadingPosition::left)
+                        : Comparator.naturalOrder();
+        return Comparator.comparing(elem -> readingPositionOf(elem, doc, cache), order);
+    }
+
     /** Returns the reading position of an element, computing and caching if needed. */
-    public static ReadingPosition readingPositionOf(
+    private static ReadingPosition readingPositionOf(
             PdfStructElem elem, DocContext doc, Map<Integer, ReadingPosition> cache) {
         int objNum = StructTree.objNum(elem);
         if (objNum >= 0) {

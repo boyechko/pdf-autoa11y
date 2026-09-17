@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck;
@@ -51,9 +50,7 @@ public class StructTreeOrderFix implements IssueFix {
 
         // Sort children by reading position
         List<PdfStructElem> sorted = new ArrayList<>(children);
-        sorted.sort(
-                Comparator.comparing(
-                        elem -> StructTreeOrderCheck.readingPositionOf(elem, ctx, cache)));
+        sorted.sort(StructTreeOrderCheck.readingOrderWithin(parent, ctx, cache));
 
         // Find positions of struct elem refs in the K array
         List<Integer> structIndices = new ArrayList<>();
