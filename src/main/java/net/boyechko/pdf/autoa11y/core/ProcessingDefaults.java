@@ -32,8 +32,6 @@ public final class ProcessingDefaults {
                 PdfUaConformanceCheck::new,
                 // Structure tree checks
                 OrphanedContentCheck::new,
-                NeedlessNestingCheck::new,
-                MissingPagePartsCheck::new,
                 MistaggedArtifactCheck::new,
                 FigureWithTextCheck::new,
                 MissingAltTextCheck::new,
@@ -59,6 +57,8 @@ public final class ProcessingDefaults {
                 InconsistentParentTreeCheck::new,
                 InlineDestinationsCheck::new,
                 MisartifactedTextCheck::new,
+                MissingPagePartsCheck::new,
+                NeedlessNestingCheck::new,
                 ReorderWebCapturesCheck::new,
                 WrapWebCapturesCheck::new);
     }
