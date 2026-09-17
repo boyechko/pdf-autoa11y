@@ -40,6 +40,9 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- `--only-checks`, `--skip-checks`, and `--include-checks` now accept check
+  names with the trailing `Check` omitted, so `--only-checks=MistaggedList`
+  selects `MistaggedListCheck`. Full class names still work.
 - Replaced the `!UNWRAP_LIST` scribble instruction with a general `!FLATTEN`,
   which hoists every leaf element in the scribbled element's subtree to become
   an immediate child of it and drops the emptied intermediates. Undoing a
