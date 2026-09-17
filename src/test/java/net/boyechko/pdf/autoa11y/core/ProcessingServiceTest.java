@@ -196,6 +196,7 @@ public class ProcessingServiceTest extends PdfTestBase {
                         new ProcessingService.ProcessingServiceBuilder()
                                 .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
                                 .withListener(new NoOpProcessingListener())
+                                .withChecks(java.util.List.of("MissingPagePartsCheck"))
                                 .skipChecks(java.util.Set.of("NeedlessNestingCheck"))
                                 .build(),
                 "Skipping NeedlessNestingCheck should fail because MissingPagePartsCheck depends on it");
