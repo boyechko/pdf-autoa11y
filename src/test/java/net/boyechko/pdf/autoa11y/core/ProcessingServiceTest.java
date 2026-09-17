@@ -355,6 +355,38 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     @Test
+    void unknownCheckNameIsRejected() {
+        ProcessingService.ProcessingServiceBuilder builder =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                        .withListener(new NoOpProcessingListener())
+                        .onlyChecks(java.util.Set.of("NoSuchCheck"));
+
+        assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    void unknownSkippedCheckNameIsRejected() {
+        ProcessingService.ProcessingServiceBuilder builder =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                        .withListener(new NoOpProcessingListener())
+                        .skipChecks(java.util.Set.of("NoSuchCheck"));
+
+        assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    void knownCheckNamesAreAccepted() {
+        new ProcessingService.ProcessingServiceBuilder()
+                .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                .withListener(new NoOpProcessingListener())
+                .onlyChecks(java.util.Set.of("MistaggedListCheck"))
+                .includeChecks(java.util.Set.of("NeedlessNestingCheck"))
+                .build();
+    }
+
+    @Test
     void runThatChangesNothingIsNotStamped() throws Exception {
         ProcessingResult result =
                 new ProcessingService.ProcessingServiceBuilder()

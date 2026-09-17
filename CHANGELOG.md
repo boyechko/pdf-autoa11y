@@ -40,6 +40,9 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- An unrecognized check name passed to `--only-checks`, `--skip-checks`, or
+  `--include-checks` now aborts the run with an error listing the known
+  checks, instead of being silently ignored.
 - `--only-checks`, `--skip-checks`, and `--include-checks` now accept check
   names with the trailing `Check` omitted, so `--only-checks=MistaggedList`
   selects `MistaggedListCheck`. Full class names still work.
