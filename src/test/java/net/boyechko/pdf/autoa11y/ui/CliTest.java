@@ -55,6 +55,28 @@ class CliTest {
     }
 
     @Test
+    void unknownCheckNameIsRejectedAsTyped() {
+        Cli.CLIException e =
+                assertThrows(
+                        Cli.CLIException.class,
+                        () ->
+                                Cli.parseArguments(
+                                        new String[] {
+                                            "--only-checks=MistagedList", input, output
+                                        }));
+
+        assertTrue(e.getMessage().contains("MistagedList"), e.getMessage());
+    }
+
+    @Test
+    void checkListNamesBothDefaultAndOptionalChecks() {
+        String listing = Cli.checkListMessage();
+
+        assertTrue(listing.contains("MistaggedListCheck"), listing);
+        assertTrue(listing.contains("WrapWebCapturesCheck"), listing);
+    }
+
+    @Test
     void nameEndingInCheckIsNotDoubleSuffixed() throws Cli.CLIException {
         CLIConfig config =
                 Cli.parseArguments(
