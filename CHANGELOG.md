@@ -83,6 +83,16 @@ Versioning](https://semver.org/).
   which led to false positives.
 
 ### Fixed
+- `StructTreeOrderCheck` now reads reading order off the page geometry instead
+  of MCID order, so it no longer moves correctly placed elements out of place.
+  Splitting fixes mint new MCIDs at the end of a page's numbering, which left
+  anything the tool had already split looking like it belonged at the foot of
+  its page. The check also declines to judge a parent whose children include
+  content it cannot locate, such as a paragraph holding only a link
+  annotation, rather than guessing at its position. Table rows are a known
+  weak spot: cells staggered vertically within a row can still be reported
+  out of order, so prefer `--scope` and review a reported `TR` before
+  accepting its fix. See `docs/checks-and-fixes.md`.
 - Tool-written scribble segments are now consistently marked tool-authored.
   The merge and reorder receipts, `SchemaValidationCheck` findings, and
   `InvalidLinkUriCheck` findings were written as if by hand, so

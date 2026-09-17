@@ -37,21 +37,23 @@ public class StructTreeOrderFix implements IssueFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         List<PdfStructElem> children = StructTree.childrenOf(element, PdfStructElem.class);
-        reorderChildren(element, children);
+        reorderChildren(element, children, ctx);
     }
 
     /**
      * Reorders struct element children within a parent's /K array by reading position. Non-struct
      * entries (MCRs, OBJRs) are left in place; only struct element references are repositioned.
      */
-    private void reorderChildren(PdfStructElem parent, List<PdfStructElem> children) {
+    private void reorderChildren(
+            PdfStructElem parent, List<PdfStructElem> children, DocContext ctx) {
         PdfArray kArray = StructTree.kArrayAsArray(parent);
         if (kArray == null) return;
 
         // Sort children by reading position
         List<PdfStructElem> sorted = new ArrayList<>(children);
         sorted.sort(
-                Comparator.comparing(elem -> StructTreeOrderCheck.readingPositionOf(elem, cache)));
+                Comparator.comparing(
+                        elem -> StructTreeOrderCheck.readingPositionOf(elem, ctx, cache)));
 
         // Find positions of struct elem refs in the K array
         List<Integer> structIndices = new ArrayList<>();
