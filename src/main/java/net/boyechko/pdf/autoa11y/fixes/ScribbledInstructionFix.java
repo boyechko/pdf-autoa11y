@@ -44,13 +44,13 @@ public class ScribbledInstructionFix implements IssueFix {
     private static final Pattern ADD_CHILD_PATTERN = Pattern.compile("!ADD_CHILD(?:REN)?\\s+(.+)");
     private static final Pattern ADD_PARENT_PATTERN = Pattern.compile("!ADD_PARENTS?\\s+(.+)");
     private static final Pattern ARTIFACT_PATTERN = Pattern.compile("!ARTIFACT");
+    private static final Pattern FLATTEN_PATTERN = Pattern.compile("!FLATTEN");
     private static final Pattern MERGE_PATTERN = Pattern.compile("!MERGE");
     private static final Pattern REORDER_KIDS_PATTERN = Pattern.compile("!REORDER_KIDS");
     private static final Pattern SET_ROLE_PATTERN = Pattern.compile("!SET_ROLE\\s+(\\S+)");
     private static final Pattern SPLIT_LINES_PATTERN =
             Pattern.compile("!SPLIT_LINES(?:\\s+([\\d,]+))?");
     private static final Pattern UNLINK_PATTERN = Pattern.compile("!UNLINK");
-    private static final Pattern UNWRAP_LIST_PATTERN = Pattern.compile("!UNWRAP_LIST");
 
     /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
     private static final Pattern REORDER_POSITION_PATTERN = Pattern.compile("!REORDER\\s+(\\d+)");
@@ -68,12 +68,12 @@ public class ScribbledInstructionFix implements IssueFix {
         Matcher addChild = ADD_CHILD_PATTERN.matcher(instruction);
         Matcher addParent = ADD_PARENT_PATTERN.matcher(instruction);
         Matcher artifact = ARTIFACT_PATTERN.matcher(instruction);
+        Matcher flatten = FLATTEN_PATTERN.matcher(instruction);
         Matcher merge = MERGE_PATTERN.matcher(instruction);
         Matcher reorderKids = REORDER_KIDS_PATTERN.matcher(instruction);
         Matcher setRole = SET_ROLE_PATTERN.matcher(instruction);
         Matcher splitLines = SPLIT_LINES_PATTERN.matcher(instruction);
         Matcher unlink = UNLINK_PATTERN.matcher(instruction);
-        Matcher unwrapList = UNWRAP_LIST_PATTERN.matcher(instruction);
 
         // Each applyXxx returns the receipt to stamp onto /T (e.g. "INST SET_ROLE P -> H2"), or
         // null to leave /T untouched because the instruction manages its own scribble or destroys
@@ -85,6 +85,8 @@ public class ScribbledInstructionFix implements IssueFix {
             receipt = applyAddParent(ctx, addParent.group(1));
         } else if (artifact.matches()) {
             receipt = applyArtifact(ctx);
+        } else if (flatten.matches()) {
+            receipt = applyFlatten();
         } else if (merge.matches()) {
             receipt = applyMerge();
         } else if (reorderKids.matches()) {
@@ -95,8 +97,6 @@ public class ScribbledInstructionFix implements IssueFix {
             receipt = applySplitLines(ctx, splitLines.group(1));
         } else if (unlink.matches()) {
             receipt = applyUnlink(ctx);
-        } else if (unwrapList.matches()) {
-            receipt = applyUnwrapList();
         } else {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
         }
@@ -363,7 +363,8 @@ public class ScribbledInstructionFix implements IssueFix {
 
     /** Returns true if the instruction operates on the entire subtree, not just the element. */
     public static boolean isSubtreeInstruction(String instruction) {
-        return ARTIFACT_PATTERN.matcher(instruction).matches();
+        return ARTIFACT_PATTERN.matcher(instruction).matches()
+                || FLATTEN_PATTERN.matcher(instruction).matches();
     }
 
     // === Instruction: MERGE ==================================================
@@ -584,79 +585,85 @@ public class ScribbledInstructionFix implements IssueFix {
         return null;
     }
 
-    // === Instruction: UNWRAP_LIST ============================================
+    // === Instruction: FLATTEN ================================================
 
     /**
-     * Undoes a bare list conversion: hoists each LI &gt; LBody's wrapped elements back to the L's
-     * parent at the L's position, then removes the L and its wrappers. Only lists whose every item
-     * is an Lbl-less LI &gt; LBody chain wrapping structure elements qualify; anything else (real
-     * bullets, direct MCR content) is refused before any mutation, leaving the tree untouched. The
-     * element is destroyed, so no receipt is written.
+     * Hoists every leaf element in the element's subtree to become an immediate kid of it, in
+     * document order, and removes the intermediate elements the hoisting empties. A leaf is a
+     * structure element with no structure-element kids of its own, so its own marked content rides
+     * along; kids that are already leaves, and the element's own marked content, stay where they
+     * are. An intermediate holding marked content directly alongside nested elements is refused
+     * before any mutation, since hoisting its leaves would orphan that content.
      */
-    private String applyUnwrapList() {
-        String role = StructTree.mappedRole(element);
-        if (!"L".equals(role)) {
-            throw new IllegalArgumentException("!UNWRAP_LIST requires an L element, got: " + role);
-        }
-        PdfStructElem parent = (PdfStructElem) element.getParent();
-        if (parent == null) {
-            logger.warn("Cannot unwrap list: element has no parent");
-            return null;
-        }
-        int insertAt = StructTree.findKidIndex(parent, element);
-        if (insertAt < 0) {
-            logger.warn("Cannot unwrap list: element not found in parent's kids");
-            return null;
-        }
-
-        // Validate the whole list before touching anything, so a refusal is side-effect free.
-        List<PdfStructElem> hoistees = new ArrayList<>();
+    private String applyFlatten() {
+        // Validate the whole subtree first, so a refusal is side-effect free.
         for (IStructureNode kid : kidsOf(element)) {
-            PdfStructElem li = requireRole(kid, "LI", "list item");
-            for (IStructureNode liKid : kidsOf(li)) {
-                PdfStructElem lBody = requireRole(liKid, "LBody", "LI kid");
-                for (IStructureNode bodyKid : kidsOf(lBody)) {
-                    if (!(bodyKid instanceof PdfStructElem wrapped)) {
-                        throw new IllegalArgumentException(
-                                "!UNWRAP_LIST refuses: LBody holds direct content, not a wrapped"
-                                        + " element");
-                    }
-                    hoistees.add(wrapped);
-                }
+            if (kid instanceof PdfStructElem se) {
+                refuseMixedContent(se);
             }
         }
 
-        for (PdfStructElem wrapped : hoistees) {
-            // Pin the page the element resolved through its old ancestors, so bare-int MCRs
-            // inside it still find their page under the new parent.
-            PdfObject effectivePg = StructTree.effectivePageDict(wrapped);
-            if (effectivePg != null && wrapped.getPdfObject().get(PdfName.Pg) == null) {
-                wrapped.getPdfObject().put(PdfName.Pg, effectivePg);
-                wrapped.setModified();
+        int hoisted = 0;
+        int insertAt = 0;
+        for (IStructureNode kid : kidsOf(element)) {
+            if (!(kid instanceof PdfStructElem intermediate) || isLeaf(intermediate)) {
+                insertAt++;
+                continue;
             }
-            ((PdfStructElem) wrapped.getParent()).removeKid(wrapped);
-            parent.addKid(insertAt++, wrapped);
+            // Insert ahead of the intermediate, so hoistees land where their subtree was, then
+            // drop the emptied subtree. Its leaves' ancestry stays intact until each is detached,
+            // which is what lets the inherited page be written down.
+            for (PdfStructElem leaf : leavesOf(intermediate)) {
+                StructTree.materializeInheritedPage(leaf);
+                ((PdfStructElem) leaf.getParent()).removeKid(leaf);
+                element.addKid(insertAt++, leaf);
+                hoisted++;
+            }
+            element.removeKid(intermediate);
         }
-        parent.removeKid(element);
-        return null;
+        return receipt("FLATTEN hoisted " + hoisted);
+    }
+
+    /**
+     * Refuses the flatten if any intermediate element mixes marked content with nested elements.
+     */
+    private static void refuseMixedContent(PdfStructElem elem) {
+        if (isLeaf(elem)) {
+            return;
+        }
+        for (IStructureNode kid : kidsOf(elem)) {
+            if (kid instanceof PdfStructElem se) {
+                refuseMixedContent(se);
+            } else {
+                throw new IllegalArgumentException(
+                        "!FLATTEN refuses: "
+                                + StructTree.mappedRole(elem)
+                                + " holds marked content alongside nested elements");
+            }
+        }
+    }
+
+    /** Returns true when the element has no structure-element kids of its own. */
+    private static boolean isLeaf(PdfStructElem elem) {
+        return StructTree.childrenOf(elem, PdfStructElem.class).isEmpty();
+    }
+
+    /** Collects the element's leaf descendants in document order. */
+    private static List<PdfStructElem> leavesOf(PdfStructElem elem) {
+        List<PdfStructElem> leaves = new ArrayList<>();
+        for (PdfStructElem child : StructTree.childrenOf(elem, PdfStructElem.class)) {
+            if (isLeaf(child)) {
+                leaves.add(child);
+            } else {
+                leaves.addAll(leavesOf(child));
+            }
+        }
+        return leaves;
     }
 
     /** Returns the node's kids, or an empty list when it has none. */
     private static List<IStructureNode> kidsOf(PdfStructElem elem) {
         return elem.getKids() == null ? List.of() : new ArrayList<>(elem.getKids());
-    }
-
-    /** Asserts the kid is a struct elem with the given mapped role, or refuses the unwrap. */
-    private static PdfStructElem requireRole(IStructureNode kid, String role, String what) {
-        if (kid instanceof PdfStructElem se && role.equals(StructTree.mappedRole(se))) {
-            return se;
-        }
-        String got =
-                kid instanceof PdfStructElem se
-                        ? StructTree.mappedRole(se)
-                        : kid.getClass().getSimpleName();
-        throw new IllegalArgumentException(
-                "!UNWRAP_LIST refuses: expected " + what + " to be " + role + ", got " + got);
     }
 
     // === Instruction: ADD_PARENT =============================================
