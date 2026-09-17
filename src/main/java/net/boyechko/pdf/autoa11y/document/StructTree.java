@@ -187,7 +187,7 @@ public final class StructTree {
     }
 
     /** Copies an ancestor's /Pg onto the element itself, so iText can resolve its kids' pages. */
-    private static void materializeInheritedPage(PdfStructElem elem) {
+    public static void materializeInheritedPage(PdfStructElem elem) {
         if (elem.getPdfObject().get(PdfName.Pg) != null) return;
         PdfObject pg = effectivePageDict(elem);
         if (pg == null) return;

@@ -668,7 +668,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
-    void unwrapListHoistsWrappedElementsPreservingPosition() throws Exception {
+    void flattenHoistsNestedLeavesPreservingPosition() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
@@ -692,7 +692,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             }
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx);
+            new ScribbledInstructionFix(document, "!FLATTEN").apply(ctx);
 
             var kids = document.getKids();
             assertEquals(4, kids.size(), "Document should hold H4, P1, P2, trailing P");
@@ -708,49 +708,58 @@ class ScribbledInstructionFixTest extends PdfTestBase {
     }
 
     @Test
-    void unwrapListRejectsNonListElement() throws Exception {
+    void flattenHoistsLeavesFromUnevenDepths() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(document);
+            PdfStructElem sect = new PdfStructElem(pdfDoc, PdfName.Sect);
+            root.addKid(sect);
+
+            PdfStructElem outer = new PdfStructElem(pdfDoc, PdfName.Div);
+            sect.addKid(outer);
+            PdfStructElem shallow = new PdfStructElem(pdfDoc, PdfName.P);
+            outer.addKid(shallow);
+            PdfStructElem inner = new PdfStructElem(pdfDoc, PdfName.Div);
+            outer.addKid(inner);
+            PdfStructElem deep = new PdfStructElem(pdfDoc, PdfName.P);
+            inner.addKid(deep);
+            PdfStructElem trailing = new PdfStructElem(pdfDoc, PdfName.P);
+            sect.addKid(trailing);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(sect, "!FLATTEN").apply(ctx);
+
+            var kids = sect.getKids();
+            assertEquals(3, kids.size(), "Both Divs should be gone, leaving three paragraphs");
+            assertEquals(shallow.getPdfObject(), ((PdfStructElem) kids.get(0)).getPdfObject());
+            assertEquals(deep.getPdfObject(), ((PdfStructElem) kids.get(1)).getPdfObject());
+            assertEquals(trailing.getPdfObject(), ((PdfStructElem) kids.get(2)).getPdfObject());
+        }
+    }
+
+    @Test
+    void flattenOnAlreadyFlatElementChangesNothing() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem sect = new PdfStructElem(pdfDoc, PdfName.Sect);
+            root.addKid(sect);
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);
+            sect.addKid(h1);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
-            document.addKid(p);
+            sect.addKid(p);
 
             DocContext ctx = new DocContext(pdfDoc);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(p, "!UNWRAP_LIST").apply(ctx));
+            new ScribbledInstructionFix(sect, "!FLATTEN").apply(ctx);
+            new ScribbledInstructionFix(sect, "!FLATTEN").apply(ctx);
+
+            var kids = sect.getKids();
+            assertEquals(2, kids.size(), "Flat children should stay put across repeated runs");
+            assertEquals(h1.getPdfObject(), ((PdfStructElem) kids.get(0)).getPdfObject());
+            assertEquals(p.getPdfObject(), ((PdfStructElem) kids.get(1)).getPdfObject());
         }
     }
 
     @Test
-    void unwrapListRejectsListWithLabelsLeavingTreeUntouched() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            root.addKid(document);
-
-            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
-            document.addKid(list);
-            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
-            list.addKid(li);
-            li.addKid(new PdfStructElem(pdfDoc, PdfName.Lbl));
-            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
-            li.addKid(lBody);
-            lBody.addKid(new PdfStructElem(pdfDoc, PdfName.P));
-
-            DocContext ctx = new DocContext(pdfDoc);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx));
-
-            assertEquals(1, document.getKids().size(), "List should remain in place");
-            assertEquals(2, li.getKids().size(), "LI should keep its Lbl and LBody");
-        }
-    }
-
-    @Test
-    void unwrapListRejectsDirectContentInLBody() throws Exception {
+    void flattenRefusesElementMixingContentWithNestedElements() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -758,23 +767,24 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
-            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L, page);
-            document.addKid(list);
-            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI, page);
-            list.addKid(li);
-            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody, page);
-            li.addKid(lBody);
-            lBody.addKid(new PdfMcrNumber(page, lBody));
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div, page);
+            document.addKid(div);
+            div.addKid(new PdfMcrNumber(page, div));
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
+            div.addKid(p);
 
             DocContext ctx = new DocContext(pdfDoc);
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx));
+                    () -> new ScribbledInstructionFix(document, "!FLATTEN").apply(ctx));
+
+            assertEquals(1, document.getKids().size(), "Div should remain in place");
+            assertEquals(2, div.getKids().size(), "Div should keep its marked content and its P");
         }
     }
 
     @Test
-    void unwrapListPinsPageOnHoistedElementLackingPg() throws Exception {
+    void flattenPinsPageOnHoistedElementLackingPg() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -794,7 +804,7 @@ class ScribbledInstructionFixTest extends PdfTestBase {
             p.addKid(new PdfMcrNumber(page, p));
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(list, "!UNWRAP_LIST").apply(ctx);
+            new ScribbledInstructionFix(document, "!FLATTEN").apply(ctx);
 
             assertNotNull(
                     p.getPdfObject().get(PdfName.Pg),

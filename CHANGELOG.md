@@ -40,6 +40,13 @@ Versioning](https://semver.org/).
   bullet run to qualify for merging.
 
 ### Changed
+- Replaced the `!UNWRAP_LIST` scribble instruction with a general `!FLATTEN`,
+  which hoists every leaf element in the scribbled element's subtree to become
+  an immediate child of it and drops the emptied intermediates. Undoing a
+  false-positive list conversion now means scribbling `!FLATTEN` on the list's
+  parent. It knows no roles, so it will take apart a genuine list as readily as
+  a spurious one; only an intermediate mixing marked content with nested
+  elements is refused.
 - Splitting a marked-content block no longer refuses when one of the resulting
   items has its lines set in separate text objects. Each text object opens and
   closes its own marked content, so such an item is now given a block in each
