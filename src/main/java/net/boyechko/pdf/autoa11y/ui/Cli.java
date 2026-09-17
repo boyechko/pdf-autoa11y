@@ -408,7 +408,7 @@ public class Cli {
         }
     }
 
-    private static CLIConfig parseArguments(String[] args) throws CLIException {
+    static CLIConfig parseArguments(String[] args) throws CLIException {
         if (args.length == 0) {
             throw new CLIException("No input file specified\n" + usageMessage());
         }
@@ -423,12 +423,11 @@ public class Cli {
                 b.reportPath = Paths.get(args[i].substring("-r=".length()));
                 b.generateReport = true;
             } else if (args[i].startsWith("--skip-checks=")) {
-                b.skipChecks = parseCommaSeparated(args[i].substring("--skip-checks=".length()));
+                b.skipChecks = parseCheckNames(args[i].substring("--skip-checks=".length()));
             } else if (args[i].startsWith("--only-checks=")) {
-                b.onlyChecks = parseCommaSeparated(args[i].substring("--only-checks=".length()));
+                b.onlyChecks = parseCheckNames(args[i].substring("--only-checks=".length()));
             } else if (args[i].startsWith("--include-checks=")) {
-                b.includeChecks =
-                        parseCommaSeparated(args[i].substring("--include-checks=".length()));
+                b.includeChecks = parseCheckNames(args[i].substring("--include-checks=".length()));
             } else if (args[i].startsWith("--dump-tree=")) {
                 b.dumpTreeDetailed = true;
                 b.treeStyle = parseTreeStyle(args[i].substring("--dump-tree=".length()));
@@ -451,21 +450,21 @@ public class Cli {
                     }
                     case "--skip-checks" -> {
                         if (i + 1 < args.length) {
-                            b.skipChecks = parseCommaSeparated(args[++i]);
+                            b.skipChecks = parseCheckNames(args[++i]);
                         } else {
                             throw new CLIException("Check names not specified after --skip-checks");
                         }
                     }
                     case "--only-checks" -> {
                         if (i + 1 < args.length) {
-                            b.onlyChecks = parseCommaSeparated(args[++i]);
+                            b.onlyChecks = parseCheckNames(args[++i]);
                         } else {
                             throw new CLIException("Check names not specified after --only-checks");
                         }
                     }
                     case "--include-checks" -> {
                         if (i + 1 < args.length) {
-                            b.includeChecks = parseCommaSeparated(args[++i]);
+                            b.includeChecks = parseCheckNames(args[++i]);
                         } else {
                             throw new CLIException(
                                     "Check names not specified after --include-checks");
@@ -682,10 +681,12 @@ public class Cli {
         }
     }
 
-    private static Set<String> parseCommaSeparated(String value) {
+    /** Parses comma-separated check names, supplying the optional {@code Check} suffix. */
+    private static Set<String> parseCheckNames(String value) {
         return Arrays.stream(value.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
+                .map(s -> s.endsWith("Check") ? s : s + "Check")
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -738,6 +739,7 @@ public class Cli {
                 + "  --skip-checks <names>       Skip specific checks (comma-separated class names)\n"
                 + "  --only-checks <names>       Run only these checks (comma-separated class names)\n"
                 + "  --include-checks <names>    Include optional checks (comma-separated class names)\n"
+                + "                              The trailing \"Check\" in a name may be omitted\n"
                 + "  --scope <objnum>  Confine structure-tree checks to the subtree rooted at\n"
                 + "                    this element (e.g. --scope=4287, as shown by --dump-tree).\n"
                 + "                    Document-level checks still see the whole file.\n"
@@ -751,6 +753,6 @@ public class Cli {
                 + "  java Cli -r -t document.pdf\n"
                 + "  java Cli --dump-tree document.pdf\n"
                 + "  java Cli --report=report.txt -v document.pdf output.pdf\n"
-                + "  java Cli --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck document.pdf";
+                + "  java Cli --skip-checks=NeedlessNesting,MissingPageParts document.pdf";
     }
 }
