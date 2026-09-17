@@ -25,7 +25,7 @@ previous step in the execution order listed below.
 | ImageOnlyDocumentCheck | Detects scanned/image-only PDFs that need OCR | None (fatal) |
 | StructureTreeExistsCheck | Verifies the PDF has a structure tree | None (fatal) |
 | MissingDocumentCheck | Verifies a Document element exists under the structure tree root | Creates Document element |
-| StructTreeOrderCheck | Detects structure tree siblings out of reading order | Reorders siblings by page and MCID |
+| StructTreeOrderCheck | Detects structure tree siblings out of reading order | Reorders siblings by where their content sits on the page |
 | UnmarkedLinkCheck | Detects Link annotations not tagged as structure elements | Creates Link tags |
 | UnexpectedWidgetCheck | Detects non-functional Widget annotation remnants | Removes Widget annotations |
 | BadlyMappedLigatureCheck | Detects fonts with broken ligature-to-Unicode mappings | Remaps ligatures |
@@ -362,19 +362,42 @@ role-map:
 
 ## StructTreeOrderCheck
 
-The structure tree order check sorts siblings by their first
-marked-content reference: `(page number, MCID)`. This effectively
-fixes **cross-page** ordering problems (e.g., pages appearing as
-10, 9, 1, 5 instead of 1, 5, 9, 10).
+The structure tree order check sorts siblings by where their earliest
+content is painted on the page: page number first, then a band counted
+down the page, then distance from the left edge. This covers both
+**cross-page** ordering (pages appearing as 10, 9, 1, 5 instead of
+1, 5, 9, 10) and **intra-page** ordering within a single-column flow.
 
-However, **intra-page** ordering may remain incorrect. MCIDs within a
-page reflect the order content was written to the content stream, which
-depends on the authoring tool. In InDesign exports, this corresponds to
-the order text frames were created or threaded, not the visual reading
-order. A heading at the top of a page may have a higher MCID than body
-text below it if the heading's text frame was created later.
+Position deliberately does not come from MCID order. MCIDs reflect the
+order content was written to the content stream, which depends on the
+authoring tool, and any fix that splits marked content mints new MCIDs
+at the end of a page's numbering. In a document this tool has already
+remediated, an element's MCID says nothing about where it sits.
 
-Fixing intra-page order would require spatial analysis (comparing
-y-coordinates and handling multi-column layouts), which is not currently
-implemented. Documents with significant intra-page ordering issues may
-require manual remediation.
+### Be careful with tables
+
+The check currently reports **false positives on table rows**. Cells in
+one row are often staggered vertically — a short cell sits centred in
+the row while a tall multi-line cell beside it starts higher — so their
+bands differ and the check orders them top-to-bottom instead of
+left-to-right, reporting a correctly ordered row as out of order.
+Applying the fix then genuinely scrambles that row.
+
+Widening the band does not help: the stagger within a row is comparable
+to the line pitch of body text, so any band wide enough to merge a row's
+cells also merges adjacent prose lines. Ordering siblings correctly in
+both cases needs the children of one parent grouped into rows by
+vertical overlap before being ordered, which is not yet implemented.
+
+Until then, prefer `--scope` to confine a run to a subtree you have
+looked at, and review a reported `TR` before accepting its fix.
+
+### Elements the check declines to judge
+
+When any child of an element paints nothing findable, the check reports
+nothing for that element rather than guessing at a position. This covers
+a paragraph holding only a link annotation (the annotation has no text
+marked-content reference), an empty `LBody`, and a placeholder cell
+whose text lives only in `/ActualText`. Run with `-vv` and
+`-Dorg.slf4j.simpleLogger.log.net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck=debug`
+to see which element was skipped and why.
