@@ -16,10 +16,10 @@
 # Progress goes to stderr, the output path to stdout, so callers can capture
 # the path (or discard it) without losing the messages.
 #
-# No post-processing: running the extract through `mutool clean -ggg -z -Z`
-# shrinks it ~8% on disk but under 1% once git deflates the blob, so it is not
-# worth the dependency. (`-z` alone gains nothing at all — iText already
-# deflates its streams — and font subsetting, `-S`, corrupts text extraction.)
+# The extract is then run through tools/StripFontPrograms.java: it would
+# otherwise carry the source's whole-document font subsets, which make up most
+# of a few-page fixture. Dropping the font programs leaves text extraction
+# intact, unlike re-subsetting (`mutool clean -S`), which corrupts it.
 #
 # Examples:
 #   tools/extract-pages.sh catalog.pdf 89-90
@@ -67,8 +67,15 @@ if [ ! -f "$CLASSPATH_CACHE" ] || [ "$REPO/pom.xml" -nt "$CLASSPATH_CACHE" ]; th
     (cd "$REPO" && mvn -q dependency:build-classpath -Dmdep.outputFile="$CLASSPATH_CACHE")
 fi
 
+FULL=$(mktemp)
+trap 'rm -f "$FULL"' EXIT
+
 [ "$QUIET" -eq 1 ] || echo "==> extracting pages $FIRST-$LAST from $SOURCE" >&2
 java -cp "$(cat "$CLASSPATH_CACHE")" "$REPO/tools/ExtractPages.java" \
-    "$SOURCE" "$OUTPUT" "$FIRST" "$LAST" >/dev/null
+    "$SOURCE" "$FULL" "$FIRST" "$LAST" >/dev/null
+
+[ "$QUIET" -eq 1 ] || echo "==> stripping embedded font programs" >&2
+java -cp "$(cat "$CLASSPATH_CACHE")" "$REPO/tools/StripFontPrograms.java" \
+    "$FULL" "$OUTPUT" >/dev/null
 
 echo "$OUTPUT"
