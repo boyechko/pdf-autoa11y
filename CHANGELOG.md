@@ -7,6 +7,8 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [0.6.0] - 2026-09-17
+
 ### Added
 - New `--list-checks` option prints the known checks, separating those that
   run by default from the optional ones that `--include-checks` activates.
