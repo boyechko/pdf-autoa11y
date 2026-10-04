@@ -116,12 +116,7 @@ public final class TagSchema {
                 throw new IllegalArgumentException("Resource not found: " + resourcePath);
             }
 
-            TagSchema schema =
-                    fromYaml(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
-            logger.debug(
-                    "Loaded TagSchema with {} roles from {}", schema.roles.size(), resourcePath);
-
-            return schema;
+            return fromYaml(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
         } catch (Exception e) {
             logger.error(
                     "Failed to load TagSchema from resource {}: {}", resourcePath, e.getMessage());
