@@ -43,6 +43,7 @@ public enum IssueType {
     SUBLIST_TAGGED_AS_PARAGRAPHS("bulleted content not tagged as a sublist"),
     LIST_SPLIT_BY_SUBLIST("list split in two around a sublist"),
     ADJACENT_LISTS("adjacent sibling lists"),
+    LIST_MISSHAPEN("list tagging that disagrees with the outline its bullets set"),
     LIST_ITEMS_LUMPED("content lumping several bulleted items into one element"),
     ROLEMAP_PRESENT("RoleMap present in structure tree root"),
     SCRIBBLED_INSTRUCTION("elements with structural-instruction scribbles"),

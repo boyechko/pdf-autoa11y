@@ -61,6 +61,14 @@ class MistaggedListCheckTest extends PdfTestBase {
     private static final Path CONTINUED_AFTER_LUMP_PDF =
             Path.of("src/test/resources/catalog_199-200.pdf");
 
+    /**
+     * A catalog page whose Div #25 sets five bullets with two sublists, the first two-deep and the
+     * fourth three-deep: P #26 lumps item 1 with its sublist, items 2-4 sit in L #27, the fourth
+     * item's sublist is L #37 beside it rather than inside it, and item 5 is L #47 on its own. L
+     * #53 after it sets four bullets as one well-formed list.
+     */
+    private static final Path MISSHAPEN_PDF = Path.of("src/test/resources/catalog_123.pdf");
+
     private static MistaggedListCheck checkOf(Path pdf) throws Exception {
         MistaggedListCheck check = new MistaggedListCheck();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdf.toString()))) {
@@ -362,6 +370,24 @@ class MistaggedListCheckTest extends PdfTestBase {
                     StructTree.toRoleTreeString(nextSiblingOf(pdfDoc, 55)),
                     "the carved item and P #56 become one two-item list");
         }
+    }
+
+    // == Misshapen lists: tagging that disagrees with the bullets' outline =
+
+    @Test
+    void reportsListWhoseTaggingDisagreesWithItsBulletOutline() throws Exception {
+        Map<Integer, String> misshapen =
+                issuesByObjNum(checkOf(MISSHAPEN_PDF), IssueType.LIST_MISSHAPEN);
+
+        assertTrue(misshapen.containsKey(25), "Div #25 should be reported: " + misshapen);
+    }
+
+    @Test
+    void acceptsListWhoseTaggingMatchesItsBulletOutline() throws Exception {
+        Map<Integer, String> misshapen =
+                issuesByObjNum(checkOf(MISSHAPEN_PDF), IssueType.LIST_MISSHAPEN);
+
+        assertEquals(List.of(25), List.copyOf(misshapen.keySet()), "only Div #25: " + misshapen);
     }
 
     // == Helpers =========================================================

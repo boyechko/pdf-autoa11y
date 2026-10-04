@@ -7,13 +7,19 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
@@ -25,6 +31,7 @@ import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -48,6 +55,10 @@ import org.slf4j.LoggerFactory;
  *       flanking such a run at one indent were one list before it came between them.
  * </ul>
  *
+ * <p>Beyond those two, every bullet in the document is read into the outline its indents set, and a
+ * list whose tagging disagrees with that outline is reported as <b>misshapen</b>. A list ends at
+ * the first unbulleted line no further in than its outermost bullets.
+ *
  * <p>Lumped items are diagnosed on leaves as the tree is left, before any container is examined,
  * and the leaf is then claimed: the container pass sees whole elements only and would misread a
  * leaf whose insides were already understood. Both passes require {@link #MIN_ITEMS_PER_LIST}
@@ -70,6 +81,9 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Minimum bullet indent (pt) past a list's own for content to read as its sublist. */
     private static final float SUBLIST_INDENT_MIN = 10.0f;
 
+    /** Roles that tag one list item; a TOCI is a table of contents' LI. */
+    private static final Set<String> ITEM_ROLES = Set.of("LI", "TOCI");
+
     /** Roles whose children are examined for loose items. */
     private static final Set<String> CONTAINER_ROLES =
             Set.of("Art", "Part", "Sect", "Div", "Document");
@@ -77,6 +91,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     private final TagSchema schema = TagSchema.loadDefault();
     private final IssueList issues = new IssueList();
     private final Set<Integer> claimed = new HashSet<>();
+    private final List<OwnedLine> laidOut = new ArrayList<>();
 
     @Override
     public String name() {
@@ -91,7 +106,9 @@ public class MistaggedListCheck extends StructTreeCheck {
     @Override
     public void leaveElement(StructTreeContext ctx) {
         if (ownsItsLines(ctx)) {
-            detectLumpedItems(ctx);
+            List<BulletLine> lines = bulletLinesOf(ctx, ctx.node());
+            lines.forEach(line -> laidOut.add(new OwnedLine(line, ctx.node())));
+            detectLumpedItems(ctx, lines);
         } else if (CONTAINER_ROLES.contains(ctx.role())) {
             detectLooseItems(ctx);
         }
@@ -109,6 +126,11 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     @Override
+    public void afterTraversal(DocContext docCtx) {
+        detectMisshapenLists();
+    }
+
+    @Override
     public IssueList getIssues() {
         return issues;
     }
@@ -119,8 +141,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      * Reports a leaf whose lines cover several bullets at one indent. The gaps between those
      * bullets give each item's line count, which is the spec {@link SplitIntoListItemsFix} takes.
      */
-    private void detectLumpedItems(StructTreeContext ctx) {
-        List<BulletLine> lines = bulletLinesOf(ctx, ctx.node());
+    private void detectLumpedItems(StructTreeContext ctx, List<BulletLine> lines) {
         Float levelX =
                 lines.stream()
                         .map(BulletLine::bulletX)
@@ -543,10 +564,247 @@ public class MistaggedListCheck extends StructTreeCheck {
                 .orElse(Float.NaN);
     }
 
+    // == Misshapen lists: tagging that disagrees with the bullets' outline =
+
+    /** A text line read off the page, with the element whose own line it is. */
+    private record OwnedLine(BulletLine line, PdfStructElem owner) {}
+
+    /** A bullet placed in the outline, under the bullet whose item it is nested in, if any. */
+    private record OutlineBullet(OwnedLine at, OutlineBullet parent) {
+        float x() {
+            return at.line().bulletX();
+        }
+    }
+
+    /** Reads every list off the laid-out lines and reports each one tagged against its outline. */
+    private void detectMisshapenLists() {
+        for (List<OwnedLine> list : bulletedListsOf(laidOut)) {
+            if (list.size() < MIN_ITEMS_PER_LIST) {
+                continue;
+            }
+            Map<String, Integer> breaches = breachesOf(outlineOf(list));
+            if (breaches.isEmpty()) {
+                continue;
+            }
+            PdfStructElem host = commonAncestorOf(list.stream().map(OwnedLine::owner).toList());
+            issues.add(
+                    new Issue(
+                            IssueType.LIST_MISSHAPEN,
+                            IssueSev.WARNING,
+                            IssueLoc.atElem(
+                                    host,
+                                    list.get(0).line().page(),
+                                    StructTree.mappedRole(host),
+                                    null),
+                            misshapenMessage(list.size(), breaches),
+                            null));
+            logger.debug(
+                    "List of {} bullets under #{} breaches its outline: {}; owners {}",
+                    list.size(),
+                    StructTree.objNum(host),
+                    breaches,
+                    list.stream()
+                            .map(
+                                    owned ->
+                                            owned.line().page()
+                                                    + ":#"
+                                                    + StructTree.objNum(owned.owner()))
+                            .toList());
+        }
+    }
+
+    /**
+     * Splits the lines, in page order, into the bulleted lines of each list. Lines between bullets
+     * either continue an item or end the list; see {@link OpenList#isEndedBy}.
+     */
+    private static List<List<OwnedLine>> bulletedListsOf(List<OwnedLine> lines) {
+        List<OwnedLine> inPageOrder =
+                lines.stream()
+                        .sorted(
+                                Comparator.comparingInt((OwnedLine owned) -> owned.line().page())
+                                        .thenComparing(owned -> -owned.line().bounds().getTop()))
+                        .toList();
+
+        List<List<OwnedLine>> lists = new ArrayList<>();
+        OpenList open = null;
+        for (OwnedLine owned : inPageOrder) {
+            if (open != null && owned.line().bulletX() == null && open.isEndedBy(owned)) {
+                lists.add(open.bullets);
+                open = null;
+            }
+            if (open == null && owned.line().bulletX() != null) {
+                open = new OpenList();
+            }
+            if (open != null) {
+                open.add(owned);
+            }
+        }
+        if (open != null) {
+            lists.add(open.bullets);
+        }
+        return lists;
+    }
+
+    /** A list still being read off the page: its bullets so far and the layout they set. */
+    private static final class OpenList {
+        private final List<OwnedLine> bullets = new ArrayList<>();
+        private float outermostBulletX = Float.MAX_VALUE;
+        private float itemTextX = Float.MAX_VALUE;
+        private float pitch = Float.MAX_VALUE;
+        private BulletLine previous;
+
+        void add(OwnedLine owned) {
+            BulletLine line = owned.line();
+            if (line.bulletX() != null) {
+                bullets.add(owned);
+                outermostBulletX = Math.min(outermostBulletX, line.bulletX());
+                itemTextX = Math.min(itemTextX, line.bounds().getLeft());
+            }
+            if (previous != null && previous.page() == line.page()) {
+                pitch = Math.min(pitch, gapAbove(line));
+            }
+            previous = line;
+        }
+
+        /**
+         * Whether an unbulleted line ends the list rather than continuing an item: it is set no
+         * further in than the outermost bullet, or no further in than the items' text with more
+         * than the list's line pitch above it. The second test catches bullets hung in the margin,
+         * whose items' text aligns with the prose around them; a gap on a new page is unknown.
+         */
+        boolean isEndedBy(OwnedLine owned) {
+            float left = owned.line().bounds().getLeft();
+            if (left <= outermostBulletX + SAME_LEVEL_TOLERANCE) {
+                return true;
+            }
+            return left <= itemTextX + SAME_LEVEL_TOLERANCE
+                    && pitch != Float.MAX_VALUE
+                    && previous.page() == owned.line().page()
+                    && gapAbove(owned.line()) > pitch + SAME_LINE_TOLERANCE;
+        }
+
+        /** Top-to-top distance from the previous line down to the given one on the same page. */
+        private float gapAbove(BulletLine line) {
+            return previous.bounds().getTop() - line.bounds().getTop();
+        }
+    }
+
+    /** Nests each bullet under the nearest bullet before it set far enough out to own a sublist. */
+    private static List<OutlineBullet> outlineOf(List<OwnedLine> list) {
+        List<OutlineBullet> outline = new ArrayList<>();
+        Deque<OutlineBullet> open = new ArrayDeque<>();
+        for (OwnedLine owned : list) {
+            float x = owned.line().bulletX();
+            while (!open.isEmpty() && x - open.peek().x() < SUBLIST_INDENT_MIN) {
+                open.pop();
+            }
+            OutlineBullet bullet = new OutlineBullet(owned, open.peek());
+            open.push(bullet);
+            outline.add(bullet);
+        }
+        return outline;
+    }
+
+    /**
+     * Tallies the ways the tagging breaks the outline: every bullet opens an item of its own, items
+     * under one parent share one list, and a sublist nests under its parent item.
+     */
+    private static Map<String, Integer> breachesOf(List<OutlineBullet> outline) {
+        Map<String, Integer> breaches = new LinkedHashMap<>();
+        List<PdfStructElem> itemsSeen = new ArrayList<>();
+        Map<OutlineBullet, PdfStructElem> listOfFirstChild = new LinkedHashMap<>();
+        PdfStructElem topLevelList = null;
+
+        for (OutlineBullet bullet : outline) {
+            PdfStructElem item = nearestItemOf(bullet.at().owner());
+            if (item == null) {
+                breaches.merge("outside any list item", 1, Integer::sum);
+                continue;
+            }
+            if (itemsSeen.stream().anyMatch(seen -> StructTree.isSameElement(seen, item))) {
+                breaches.merge("sharing a list item", 1, Integer::sum);
+                continue;
+            }
+            itemsSeen.add(item);
+
+            PdfStructElem list = StructTree.parentOf(item);
+            PdfStructElem siblingsList =
+                    bullet.parent() == null ? topLevelList : listOfFirstChild.get(bullet.parent());
+            if (siblingsList == null) {
+                if (bullet.parent() == null) {
+                    topLevelList = list;
+                } else {
+                    listOfFirstChild.put(bullet.parent(), list);
+                }
+            } else if (list == null || !StructTree.isSameElement(list, siblingsList)) {
+                breaches.merge("in a different list from the items before it", 1, Integer::sum);
+            }
+
+            if (bullet.parent() != null
+                    && (list == null
+                            || !nestsUnder(list, nearestItemOf(bullet.parent().at().owner())))) {
+                breaches.merge("in a sublist outside its parent item", 1, Integer::sum);
+            }
+        }
+        return breaches;
+    }
+
+    /** Summarizes a misshapen list's breaches, counted in bullets. */
+    private static String misshapenMessage(int bullets, Map<String, Integer> breaches) {
+        return bullets
+                + " bullet glyphs tagged against their outline: "
+                + breaches.entrySet().stream()
+                        .map(breach -> breach.getValue() + " " + breach.getKey())
+                        .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * Whether a sublist nests under the given item: inside it, or as a sibling in the list that
+     * holds it, which is how a nested TOC sits beside its TOCI and an L may sit beside its LI.
+     */
+    private static boolean nestsUnder(PdfStructElem sublist, PdfStructElem parentItem) {
+        if (parentItem == null) {
+            return false;
+        }
+        PdfStructElem host = StructTree.parentOf(sublist);
+        PdfStructElem hostItem = nearestItemOf(host);
+        PdfStructElem parentList = StructTree.parentOf(parentItem);
+        return (hostItem != null && StructTree.isSameElement(hostItem, parentItem))
+                || (host != null
+                        && parentList != null
+                        && StructTree.isSameElement(host, parentList));
+    }
+
+    /** Returns the element itself or its nearest ancestor that tags a list item, or null. */
+    private static PdfStructElem nearestItemOf(PdfStructElem element) {
+        PdfStructElem elem = element;
+        while (elem != null && !ITEM_ROLES.contains(StructTree.mappedRole(elem))) {
+            elem = StructTree.parentOf(elem);
+        }
+        return elem;
+    }
+
+    /** Returns the deepest element that is, or contains, every one of the given elements. */
+    private static PdfStructElem commonAncestorOf(List<PdfStructElem> elements) {
+        PdfStructElem candidate = elements.get(0);
+        while (candidate != null) {
+            PdfStructElem ancestor = candidate;
+            if (elements.stream()
+                    .allMatch(
+                            elem ->
+                                    StructTree.isSameElement(elem, ancestor)
+                                            || StructTree.isDescendantOf(elem, ancestor))) {
+                return candidate;
+            }
+            candidate = StructTree.parentOf(candidate);
+        }
+        return elements.get(0);
+    }
+
     // == Reading bullets off the page ====================================
 
     /** One of an element's text lines: its bounds, and the x of its bullet, or null for none. */
-    private record BulletLine(Rectangle bounds, Float bulletX) {}
+    private record BulletLine(int page, Rectangle bounds, Float bulletX) {}
 
     /**
      * Returns each of the element's text lines in reading order with the bullet it carries. Pages
@@ -563,7 +821,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                                             Content.extractBulletPositionsForPage(
                                                     ctx.doc().getPage(pageNum)));
             for (Rectangle line : Content.getLineBoundsForElement(element, ctx.docCtx(), pageNum)) {
-                perLine.add(new BulletLine(line, bulletOnLine(bullets, line)));
+                perLine.add(new BulletLine(pageNum, line, bulletOnLine(bullets, line)));
             }
         }
         return perLine;
