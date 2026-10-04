@@ -7,6 +7,13 @@ Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- `MistaggedListCheck` now reads each bulleted list's outline from the
+  placement of its bullet glyphs and reports lists whose tagging disagrees
+  with it: lumped or loose items, one list split across several, or a sublist
+  outside its parent item. Such lists are rebuilt from the outline, keeping
+  any headings or prose mistagged into them in reading order.
+
 ## [0.6.0] - 2026-09-17
 
 ### Added

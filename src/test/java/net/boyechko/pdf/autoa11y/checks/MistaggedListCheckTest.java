@@ -390,6 +390,33 @@ class MistaggedListCheckTest extends PdfTestBase {
         assertEquals(List.of(25), List.copyOf(misshapen.keySet()), "only Div #25: " + misshapen);
     }
 
+    @Test
+    void rebuildsMisshapenListFromItsBulletOutline() throws Exception {
+        // Item 1 and its two sub-bullets are split out of P #26; items 2-5 gather into one list,
+        // and the sublist L #37 moves inside item 4, where its bullets set it.
+        String item = "LI[LBody[P[]]]";
+        String itemWith2 = "LI[LBody[P[],L[" + String.join(",", item, item) + "]]]";
+        String itemWith3 = "LI[LBody[P[],L[" + String.join(",", item, item, item) + "]]]";
+        String expected =
+                "Div[L[" + String.join(",", itemWith2, item, item, itemWith3, item) + "]]";
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(MISSHAPEN_PDF.toString()),
+                        new PdfWriter(testOutputStream()))) {
+            MistaggedListCheck check = new MistaggedListCheck();
+            walkWith(pdfDoc, check);
+            check.getIssues().applyFixes(new DocContext(pdfDoc));
+
+            assertEquals(expected, StructTree.toRoleTreeString(elementByObjNum(pdfDoc, 25)));
+
+            MistaggedListCheck recheck = new MistaggedListCheck();
+            walkWith(pdfDoc, recheck);
+            assertTrue(
+                    issuesByObjNum(recheck, IssueType.LIST_MISSHAPEN).isEmpty(),
+                    "the rebuilt list matches its outline");
+        }
+    }
+
     // == Helpers =========================================================
 
     /** Concatenates the raw text of every MCR under an element, in reading order. */

@@ -343,6 +343,23 @@ public final class StructTree {
         return false;
     }
 
+    /** Returns the deepest element that is, or contains, every one of the given elements. */
+    public static PdfStructElem commonAncestorOf(List<PdfStructElem> elements) {
+        PdfStructElem candidate = elements.get(0);
+        while (candidate != null) {
+            PdfStructElem ancestor = candidate;
+            if (elements.stream()
+                    .allMatch(
+                            elem ->
+                                    isSameElement(elem, ancestor)
+                                            || isDescendantOf(elem, ancestor))) {
+                return candidate;
+            }
+            candidate = parentOf(candidate);
+        }
+        return null;
+    }
+
     /** Finds a structure element by its PDF object number, searching recursively. */
     public static PdfStructElem findByObjNumber(IStructureNode parent, int objNum) {
         List<IStructureNode> kids = parent.getKids();
