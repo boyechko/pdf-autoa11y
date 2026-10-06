@@ -343,6 +343,16 @@ public final class StructTree {
         return false;
     }
 
+    /** Returns the element itself or its nearest ancestor with one of the mapped roles, or null. */
+    public static PdfStructElem closest(PdfStructElem elem, String... roles) {
+        List<String> wanted = List.of(roles);
+        PdfStructElem current = elem;
+        while (current != null && !wanted.contains(mappedRole(current))) {
+            current = parentOf(current);
+        }
+        return current;
+    }
+
     /** Returns the deepest element that is, or contains, every one of the given elements. */
     public static PdfStructElem commonAncestorOf(List<PdfStructElem> elements) {
         PdfStructElem candidate = elements.get(0);

@@ -104,6 +104,68 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void closestReturnsTheElementItselfWhenItHasTheRole() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+            doc.getStructTreeRoot().addKid(list);
+            PdfStructElem item = new PdfStructElem(doc, PdfName.LI);
+            list.addKid(item);
+
+            assertTrue(StructTree.isSameElement(item, StructTree.closest(item, "LI")));
+        }
+    }
+
+    @Test
+    void closestReturnsTheNearestAncestorWithOneOfTheRoles() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+            doc.getStructTreeRoot().addKid(list);
+            PdfStructElem item = new PdfStructElem(doc, PdfName.LI);
+            list.addKid(item);
+            PdfStructElem body = new PdfStructElem(doc, PdfName.LBody);
+            item.addKid(body);
+            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
+            body.addKid(para);
+
+            assertTrue(StructTree.isSameElement(item, StructTree.closest(para, "L", "LI")));
+        }
+    }
+
+    @Test
+    void closestMatchesTheMappedRole() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            root.addRoleMapping("Bullet", "LI");
+            PdfStructElem item = new PdfStructElem(doc, new PdfName("Bullet"));
+            root.addKid(item);
+            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
+            item.addKid(para);
+
+            assertTrue(StructTree.isSameElement(item, StructTree.closest(para, "LI")));
+        }
+    }
+
+    @Test
+    void closestReturnsNullWhenNoElementHasTheRole() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            doc.getStructTreeRoot().addKid(document);
+            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
+            document.addKid(para);
+
+            assertNull(StructTree.closest(para, "L"));
+        }
+    }
+
+    @Test
     void isSamePageMatchesSamePage() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

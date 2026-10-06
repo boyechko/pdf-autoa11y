@@ -84,9 +84,6 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Minimum bullet indent (pt) past a list's own for content to read as its sublist. */
     private static final float SUBLIST_INDENT_MIN = 10.0f;
 
-    /** Roles that tag one list item; a TOCI is a table of contents' LI. */
-    private static final Set<String> ITEM_ROLES = Set.of("LI", "TOCI");
-
     /** Roles whose children are examined for loose items. */
     private static final Set<String> CONTAINER_ROLES =
             Set.of("Art", "Part", "Sect", "Div", "Document");
@@ -921,13 +918,12 @@ public class MistaggedListCheck extends StructTreeCheck {
                             && StructTree.isSameElement(host, parentList));
         }
 
-        /** Returns the element itself or its nearest ancestor that tags a list item, or null. */
+        /**
+         * Returns the element itself or its nearest ancestor that tags a list item, or null; a TOCI
+         * is a table of contents' LI.
+         */
         private static PdfStructElem nearestItemOf(PdfStructElem element) {
-            PdfStructElem elem = element;
-            while (elem != null && !ITEM_ROLES.contains(StructTree.mappedRole(elem))) {
-                elem = StructTree.parentOf(elem);
-            }
-            return elem;
+            return StructTree.closest(element, "LI", "TOCI");
         }
     }
 

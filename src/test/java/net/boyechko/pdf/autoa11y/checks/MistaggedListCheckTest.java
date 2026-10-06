@@ -14,7 +14,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -335,11 +334,11 @@ class MistaggedListCheckTest extends PdfTestBase {
             walkWith(pdfDoc, check);
             check.getIssues().applyFixes(new DocContext(pdfDoc));
 
-            PdfStructElem wrapped = parentOfRole(pdfDoc, 48, "LBody");
             assertEquals(
                     "L[LI[LBody[P[Link[]]]],LI[LBody[P[Link[]]]],LI[LBody[P[Link[]]]],"
                             + "LI[LBody[P[Link[]]]]]",
-                    StructTree.toRoleTreeString(listAncestorOf(wrapped)),
+                    StructTree.toRoleTreeString(
+                            StructTree.closest(elementByObjNum(pdfDoc, 48), "L")),
                     "the four bulleted paragraphs become one four-item list");
         }
     }
@@ -662,37 +661,7 @@ class MistaggedListCheckTest extends PdfTestBase {
         throw new AssertionError("no sibling after #" + objNum);
     }
 
-    /** Returns the nearest ancestor of the element with the given role. */
-    private static PdfStructElem parentOfRole(PdfDocument doc, int objNum, String role) {
-        PdfStructElem elem = elementByObjNum(doc, objNum);
-        while (elem != null && !role.equals(StructTree.mappedRole(elem))) {
-            elem = StructTree.parentOf(elem) instanceof PdfStructElem p ? p : null;
-        }
-        return elem;
-    }
-
-    /** Walks up from an LBody to the L that owns it. */
-    private static PdfStructElem listAncestorOf(PdfStructElem lBody) {
-        PdfStructElem elem = lBody;
-        while (elem != null && !"L".equals(StructTree.mappedRole(elem))) {
-            elem = StructTree.parentOf(elem) instanceof PdfStructElem p ? p : null;
-        }
-        return elem;
-    }
-
-    /** Finds a structure element by object number anywhere under the Document. */
     private static PdfStructElem elementByObjNum(PdfDocument doc, int objNum) {
-        return allElements(StructTree.findDocument(doc.getStructTreeRoot())).stream()
-                .filter(elem -> StructTree.objNum(elem) == objNum)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("no element #" + objNum));
-    }
-
-    private static List<PdfStructElem> allElements(PdfStructElem root) {
-        List<PdfStructElem> all = new ArrayList<>();
-        all.add(root);
-        StructTree.childrenOf(root, PdfStructElem.class)
-                .forEach(kid -> all.addAll(allElements(kid)));
-        return all;
+        return StructTree.findByObjNumber(doc.getStructTreeRoot(), objNum);
     }
 }

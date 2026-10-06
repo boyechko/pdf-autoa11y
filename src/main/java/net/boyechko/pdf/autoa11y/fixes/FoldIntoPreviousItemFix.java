@@ -56,7 +56,10 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        list = listOwning(element);
+        list = StructTree.closest(element, "L");
+        if (list == null) {
+            throw new IllegalStateException("Element is not inside a list");
+        }
         PdfStructElem opener = openerFor(element);
         if (opener == null) {
             throw new IllegalStateException("No item precedes the one this element continues");
@@ -142,18 +145,6 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
             throw new IllegalStateException(
                     "Cannot fold a " + elementRole + " into a " + openerRole);
         }
-    }
-
-    /** Walks up from the element to the list that owns its item. */
-    private static PdfStructElem listOwning(PdfStructElem element) {
-        PdfStructElem current = element;
-        while (current != null && !"L".equals(StructTree.mappedRole(current))) {
-            current = StructTree.parentOf(current) instanceof PdfStructElem parent ? parent : null;
-        }
-        if (current == null) {
-            throw new IllegalStateException("Element is not inside a list");
-        }
-        return current;
     }
 
     @Override

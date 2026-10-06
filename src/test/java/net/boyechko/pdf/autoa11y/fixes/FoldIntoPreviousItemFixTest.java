@@ -40,7 +40,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = listAncestorOf(element);
+            PdfStructElem list = StructTree.closest(element, "L");
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -74,7 +74,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
             PdfStructElem emptied = (PdfStructElem) element.getParent().getParent();
-            PdfStructElem list = listAncestorOf(element);
+            PdfStructElem list = StructTree.closest(element, "L");
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -91,7 +91,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = listAncestorOf(element);
+            PdfStructElem list = StructTree.closest(element, "L");
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -108,7 +108,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
         try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
             DocContext ctx = new DocContext(doc);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = listAncestorOf(element);
+            PdfStructElem list = StructTree.closest(element, "L");
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -157,15 +157,6 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
 
     private PdfDocument openForStamping(Path input) throws Exception {
         return new PdfDocument(new PdfReader(input.toString()), new PdfWriter(testOutputStream()));
-    }
-
-    /** Walks up from an element to the L that owns it. */
-    private static PdfStructElem listAncestorOf(PdfStructElem element) {
-        PdfStructElem elem = element;
-        while (elem != null && !"L".equals(StructTree.mappedRole(elem))) {
-            elem = StructTree.parentOf(elem) instanceof PdfStructElem p ? p : null;
-        }
-        return elem;
     }
 
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
