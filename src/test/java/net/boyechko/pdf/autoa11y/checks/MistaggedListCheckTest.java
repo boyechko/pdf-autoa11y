@@ -5,11 +5,13 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.checks.MistaggedListCheck.BulletLine;
+import net.boyechko.pdf.autoa11y.checks.MistaggedListCheck.MisshapenLists;
+import net.boyechko.pdf.autoa11y.checks.MistaggedListCheck.MisshapenLists.OwnedLine;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
@@ -375,19 +380,198 @@ class MistaggedListCheckTest extends PdfTestBase {
     // == Misshapen lists: tagging that disagrees with the bullets' outline =
 
     @Test
-    void reportsListWhoseTaggingDisagreesWithItsBulletOutline() throws Exception {
-        Map<Integer, String> misshapen =
-                issuesByObjNum(checkOf(MISSHAPEN_PDF), IssueType.LIST_MISSHAPEN);
+    void reportsListWhoseItemsAreTaggedInSeparateLists() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem first = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+            PdfStructElem second = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
 
-        assertTrue(misshapen.containsKey(25), "Div #25 should be reported: " + misshapen);
+            List<Issue> issues =
+                    MisshapenLists.find(
+                            List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72)));
+
+            assertEquals(1, issues.size(), "one misshapen list: " + issues);
+            assertEquals(StructTree.objNum(document), issues.get(0).where().objNum());
+            assertNotNull(issues.get(0).fix(), "the list can be rebuilt");
+        }
     }
 
     @Test
     void acceptsListWhoseTaggingMatchesItsBulletOutline() throws Exception {
-        Map<Integer, String> misshapen =
-                issuesByObjNum(checkOf(MISSHAPEN_PDF), IssueType.LIST_MISSHAPEN);
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem list = addKid(pdfDoc, document, PdfName.L);
+            PdfStructElem first = addItem(pdfDoc, list, PdfName.P);
+            PdfStructElem second = addItem(pdfDoc, list, PdfName.P);
 
-        assertEquals(List.of(25), List.copyOf(misshapen.keySet()), "only Div #25: " + misshapen);
+            assertEquals(
+                    List.of(),
+                    MisshapenLists.find(
+                            List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
+        }
+    }
+
+    @Test
+    void rebuildsSublistTaggedBesideItsParentItemInsideIt() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem list = addKid(pdfDoc, document, PdfName.L);
+            PdfStructElem first = addItem(pdfDoc, list, PdfName.P);
+            PdfStructElem parent = addItem(pdfDoc, list, PdfName.P);
+            PdfStructElem sublist = addKid(pdfDoc, document, PdfName.L);
+            PdfStructElem child1 = addItem(pdfDoc, sublist, PdfName.P);
+            PdfStructElem child2 = addItem(pdfDoc, sublist, PdfName.P);
+            List<OwnedLine> lines =
+                    List.of(
+                            bulletLine(first, 0, 72),
+                            bulletLine(parent, 1, 72),
+                            bulletLine(child1, 2, 90),
+                            bulletLine(child2, 3, 90));
+
+            for (Issue issue : MisshapenLists.find(lines)) {
+                issue.fix().apply(new DocContext(pdfDoc));
+            }
+
+            assertEquals(
+                    "Document[L[LI[LBody[P[]]],LI[LBody[P[],L[LI[LBody[P[]]],LI[LBody[P[]]]]]]]]",
+                    StructTree.toRoleTreeString(document));
+            assertEquals(List.of(), MisshapenLists.find(lines), "the rebuilt list matches");
+        }
+    }
+
+    @Test
+    void doesNotRebuildListWhenAnElementRunsOnPastIt() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem first = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+            PdfStructElem second = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+
+            // The second item's element runs on into a line set back at the bullets, ending the
+            // list
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(
+                                    bulletLine(first, 0, 72),
+                                    bulletLine(second, 1, 72),
+                                    textLine(second, 2, 72))));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Div", "L", "Table"})
+    void doesNotRebuildListWhoseBulletIsOwnedByAGroupingListOrTable(String role) throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream(role + ".pdf")))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem first =
+                    addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), RoleMap.toPdfName(role));
+            PdfStructElem second = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
+        }
+    }
+
+    @Test
+    void doesNotRebuildListWhenAnElementOpensOnAContinuation() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem first = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+            PdfStructElem second = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+
+            // The second element finishes the first item before opening its own
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(
+                                    bulletLine(first, 0, 72),
+                                    textLine(second, 1, 84),
+                                    bulletLine(second, 2, 72))));
+        }
+    }
+
+    @Test
+    void doesNotRebuildBulletsLumpedAroundInlineMarkup() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem lumped = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+            lumped.addKid(new PdfMcrNumber(pdfDoc.getPage(1), lumped));
+            addKid(pdfDoc, lumped, PdfName.Link);
+
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(bulletLine(lumped, 0, 72), bulletLine(lumped, 1, 72))));
+        }
+    }
+
+    @Test
+    void doesNotRebuildTableOfContentsIntoAPlainList() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            PdfStructElem first =
+                    addKid(
+                            pdfDoc,
+                            addKid(pdfDoc, addKid(pdfDoc, document, PdfName.TOC), PdfName.TOCI),
+                            PdfName.P);
+            PdfStructElem second =
+                    addKid(
+                            pdfDoc,
+                            addKid(pdfDoc, addKid(pdfDoc, document, PdfName.TOC), PdfName.TOCI),
+                            PdfName.P);
+
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
+        }
+    }
+
+    @Test
+    void doesNotRebuildListWhoseWrapperHoldsAnotherListsBullets() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            // L holds the first list's opening item and both items of the list after it
+            PdfStructElem shared = addKid(pdfDoc, document, PdfName.L);
+            PdfStructElem opener = addItem(pdfDoc, shared, PdfName.P);
+            PdfStructElem stray = addItem(pdfDoc, addKid(pdfDoc, document, PdfName.L), PdfName.P);
+            PdfStructElem prose = addKid(pdfDoc, document, PdfName.P);
+            PdfStructElem later1 = addItem(pdfDoc, shared, PdfName.P);
+            PdfStructElem later2 = addItem(pdfDoc, shared, PdfName.P);
+
+            assertReportedWithoutFix(
+                    MisshapenLists.find(
+                            List.of(
+                                    bulletLine(opener, 0, 72),
+                                    bulletLine(stray, 1, 72),
+                                    textLine(prose, 2, 72),
+                                    bulletLine(later1, 3, 72),
+                                    bulletLine(later2, 4, 72))));
+        }
     }
 
     @Test
@@ -418,6 +602,37 @@ class MistaggedListCheckTest extends PdfTestBase {
     }
 
     // == Helpers =========================================================
+
+    /** Asserts that one misshapen list was reported and that it was left without a fix. */
+    private static void assertReportedWithoutFix(List<Issue> issues) {
+        assertEquals(1, issues.size(), "one misshapen list: " + issues);
+        assertNull(issues.get(0).fix(), "the list should not be rebuilt");
+    }
+
+    /** A page-1 line in the given row, its bullet at x and its text 12pt past the bullet. */
+    private static OwnedLine bulletLine(PdfStructElem owner, int row, float x) {
+        Rectangle bounds = new Rectangle(x + 12, 688 - 14 * row, 300, 12);
+        return new OwnedLine(new BulletLine(1, bounds, x), owner);
+    }
+
+    /** A page-1 unbulleted line in the given row, its text starting at left. */
+    private static OwnedLine textLine(PdfStructElem owner, int row, float left) {
+        Rectangle bounds = new Rectangle(left, 688 - 14 * row, 300, 12);
+        return new OwnedLine(new BulletLine(1, bounds, null), owner);
+    }
+
+    /** Appends a new element of the given role to the parent and returns it. */
+    private static PdfStructElem addKid(PdfDocument pdfDoc, PdfStructElem parent, PdfName role) {
+        PdfStructElem kid = new PdfStructElem(pdfDoc, role);
+        parent.addKid(kid);
+        return kid;
+    }
+
+    /** Appends an LI &gt; LBody item to the list and returns its new content element. */
+    private static PdfStructElem addItem(PdfDocument pdfDoc, PdfStructElem list, PdfName role) {
+        PdfStructElem lBody = addKid(pdfDoc, addKid(pdfDoc, list, PdfName.LI), PdfName.LBody);
+        return addKid(pdfDoc, lBody, role);
+    }
 
     /** Concatenates the raw text of every MCR under an element, in reading order. */
     private static String itemText(PdfDocument doc, PdfStructElem elem) {
