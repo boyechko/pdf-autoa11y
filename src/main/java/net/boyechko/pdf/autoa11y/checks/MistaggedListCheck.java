@@ -91,10 +91,10 @@ public class MistaggedListCheck extends StructTreeCheck {
     private static final Set<String> CONTAINER_ROLES =
             Set.of("Art", "Part", "Sect", "Div", "Document");
 
-    private final TagSchema schema = TagSchema.loadDefault();
+    private static final TagSchema schema = TagSchema.loadDefault();
     private final IssueList issues = new IssueList();
     private final Set<Integer> claimed = new HashSet<>();
-    private final List<OwnedLine> laidOut = new ArrayList<>();
+    private final List<MisshapenLists.OwnedLine> laidOut = new ArrayList<>();
 
     @Override
     public String name() {
@@ -110,7 +110,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     public void leaveElement(StructTreeContext ctx) {
         if (ownsItsLines(ctx)) {
             List<BulletLine> lines = bulletLinesOf(ctx, ctx.node());
-            lines.forEach(line -> laidOut.add(new OwnedLine(line, ctx.node())));
+            lines.forEach(line -> laidOut.add(new MisshapenLists.OwnedLine(line, ctx.node())));
             detectLumpedItems(ctx, lines);
         } else if (CONTAINER_ROLES.contains(ctx.role())) {
             detectLooseItems(ctx);
@@ -130,7 +130,7 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     @Override
     public void afterTraversal(DocContext docCtx) {
-        detectMisshapenLists();
+        MisshapenLists.find(laidOut).forEach(issues::add);
     }
 
     @Override
@@ -564,341 +564,377 @@ public class MistaggedListCheck extends StructTreeCheck {
                 .orElse(Float.NaN);
     }
 
-    // == Misshapen lists: tagging that disagrees with the bullets' outline =
-
-    /** A text line read off the page, with the element whose own line it is. */
-    private record OwnedLine(BulletLine line, PdfStructElem owner) {}
-
-    /** A bullet placed in the outline, under the bullet whose item it is nested in, if any. */
-    private record OutlineBullet(OwnedLine at, OutlineBullet parent) {
-        float x() {
-            return at.line().bulletX();
-        }
-
-        int depth() {
-            return parent == null ? 0 : parent.depth() + 1;
-        }
-    }
-
-    /** Reads every list off the laid-out lines and reports each one tagged against its outline. */
-    private void detectMisshapenLists() {
-        for (OpenList list : listsOf(laidOut)) {
-            List<OwnedLine> bullets = list.bullets;
-            if (bullets.size() < MIN_ITEMS_PER_LIST) {
-                continue;
-            }
-            List<OutlineBullet> outline = outlineOf(bullets);
-            Map<String, Integer> breaches = breachesOf(outline);
-            if (breaches.isEmpty()) {
-                continue;
-            }
-            PdfStructElem host =
-                    StructTree.commonAncestorOf(bullets.stream().map(OwnedLine::owner).toList());
-            List<RebuildListFix.Piece> pieces = piecesOf(list.lines, outline);
-            issues.add(
-                    new Issue(
-                            IssueType.LIST_MISSHAPEN,
-                            IssueSev.WARNING,
-                            IssueLoc.atElem(
-                                    host,
-                                    bullets.get(0).line().page(),
-                                    StructTree.mappedRole(host),
-                                    null),
-                            misshapenMessage(bullets.size(), breaches),
-                            pieces != null ? new RebuildListFix(pieces) : null));
-            logger.debug(
-                    "List of {} bullets under #{} breaches its outline: {}; owners {}{}",
-                    bullets.size(),
-                    StructTree.objNum(host),
-                    breaches,
-                    bullets.stream()
-                            .map(
-                                    owned ->
-                                            owned.line().page()
-                                                    + ":#"
-                                                    + StructTree.objNum(owned.owner()))
-                            .toList(),
-                    pieces != null ? "" : "; not rebuildable");
-        }
-    }
-
-    /**
-     * Reads the list's extent into the pieces of a rebuild, one per element in reading order, or
-     * returns null when the extent cannot be rebuilt: an element with lines outside the list, one
-     * tagged with a grouping, list or table role that is no item's content, one opening on a
-     * continuation before its first bullet, one lumping bullets around inline markup, or a bullet
-     * in a table of contents, which the rebuild would turn into a plain list. Nor can it flatten a
-     * wrapper that also holds another list's bullets, which would leave that list's items loose.
-     */
-    private List<RebuildListFix.Piece> piecesOf(
-            List<OwnedLine> extent, List<OutlineBullet> outline) {
-        Map<OwnedLine, Integer> depthOf = new IdentityHashMap<>();
-        outline.forEach(bullet -> depthOf.put(bullet.at(), bullet.depth()));
-
-        Map<Integer, List<OwnedLine>> linesByOwner = new LinkedHashMap<>();
-        for (OwnedLine owned : extent) {
-            linesByOwner
-                    .computeIfAbsent(StructTree.objNum(owned.owner()), objNum -> new ArrayList<>())
-                    .add(owned);
-        }
-
-        List<RebuildListFix.Piece> pieces = new ArrayList<>();
-        for (List<OwnedLine> lines : linesByOwner.values()) {
-            PdfStructElem owner = lines.get(0).owner();
-            if (lines.size() != linesOwnedBy(owner)
-                    || isGroupingListOrTable(StructTree.mappedRole(owner))) {
-                return null;
-            }
-            List<Integer> itemStarts = new ArrayList<>();
-            for (int i = 0; i < lines.size(); i++) {
-                if (lines.get(i).line().bulletX() != null) {
-                    itemStarts.add(i);
-                }
-            }
-            if (!itemStarts.isEmpty() && itemStarts.get(0) != 0
-                    || itemStarts.size() > 1 && !ownsOnlyMarkedContent(owner)
-                    || !itemStarts.isEmpty() && "TOCI".equals(roleOfItemOf(owner))) {
-                return null;
-            }
-            pieces.add(
-                    new RebuildListFix.Piece(
-                            owner,
-                            lines.get(0).line().page(),
-                            itemStarts.stream().map(i -> depthOf.get(lines.get(i))).toList(),
-                            itemStarts.size() > 1 ? specOf(itemStarts, lines.size()) : null));
-        }
-        return holdsForeignBullets(extent) ? null : pieces;
-    }
-
-    /** Whether a wrapper the rebuild would flatten holds bullets outside the list's extent. */
-    private boolean holdsForeignBullets(List<OwnedLine> extent) {
-        Set<OwnedLine> inExtent = Collections.newSetFromMap(new IdentityHashMap<>());
-        inExtent.addAll(extent);
-        List<PdfStructElem> flattened =
-                extent.stream()
-                        .map(owned -> outermostWrapperOf(owned.owner()))
-                        .filter(Objects::nonNull)
-                        .toList();
-        return laidOut.stream()
-                .filter(owned -> owned.line().bulletX() != null && !inExtent.contains(owned))
-                .anyMatch(
-                        owned ->
-                                flattened.stream()
-                                        .anyMatch(
-                                                wrapper ->
-                                                        StructTree.isDescendantOf(
-                                                                owned.owner(), wrapper)));
-    }
-
-    /** Returns the outermost list wrapper in the unbroken chain above the element, or null. */
-    private static PdfStructElem outermostWrapperOf(PdfStructElem element) {
-        PdfStructElem outermost = null;
-        PdfStructElem parent = StructTree.parentOf(element);
-        while (parent != null
-                && RebuildListFix.WRAPPER_ROLES.contains(StructTree.mappedRole(parent))) {
-            outermost = parent;
-            parent = StructTree.parentOf(parent);
-        }
-        return outermost;
-    }
-
     /** Whether the role groups, lists or tabulates content rather than holding it. */
-    private boolean isGroupingListOrTable(String role) {
+    private static boolean isGroupingListOrTable(String role) {
         return schema.hasType(role, TagType.GROUPING)
                 || schema.hasType(role, TagType.LIST)
                 || schema.hasType(role, TagType.TABLE);
     }
 
-    /** Returns how many of the laid-out lines the element owns. */
-    private long linesOwnedBy(PdfStructElem owner) {
-        return laidOut.stream()
-                .filter(owned -> StructTree.isSameElement(owned.owner(), owner))
-                .count();
-    }
-
-    /** Returns the role of the item enclosing the element, or null when it is in none. */
-    private static String roleOfItemOf(PdfStructElem element) {
-        PdfStructElem item = nearestItemOf(element);
-        return item != null ? StructTree.mappedRole(item) : null;
-    }
+    // == Misshapen lists: tagging that disagrees with the bullets' outline =
 
     /**
-     * Splits the lines, in page order, into lists. Lines between bullets either continue an item or
-     * end the list; see {@link OpenList#isEndedBy}.
+     * Reads every list off the laid-out lines into the outline its bullets' indents set, and
+     * reports each list tagged against that outline. It works on the lines alone, never the page.
      */
-    private static List<OpenList> listsOf(List<OwnedLine> lines) {
-        List<OwnedLine> inPageOrder =
-                lines.stream()
-                        .sorted(
-                                Comparator.comparingInt((OwnedLine owned) -> owned.line().page())
-                                        .thenComparing(owned -> -owned.line().bounds().getTop()))
-                        .toList();
+    static final class MisshapenLists {
 
-        List<OpenList> lists = new ArrayList<>();
-        OpenList open = null;
-        for (OwnedLine owned : inPageOrder) {
-            if (open != null && owned.line().bulletX() == null && open.isEndedBy(owned)) {
-                lists.add(open);
-                open = null;
-            }
-            if (open == null && owned.line().bulletX() != null) {
-                open = new OpenList();
-            }
-            if (open != null) {
-                open.add(owned);
-            }
-        }
-        if (open != null) {
-            lists.add(open);
-        }
-        return lists;
-    }
+        /** A text line read off the page, with the element whose own line it is. */
+        record OwnedLine(BulletLine line, PdfStructElem owner) {}
 
-    /** A list being read off the page: its lines and bullets so far, and the layout they set. */
-    private static final class OpenList {
-        private final List<OwnedLine> lines = new ArrayList<>();
-        private final List<OwnedLine> bullets = new ArrayList<>();
-        private float outermostBulletX = Float.MAX_VALUE;
-        private float itemTextX = Float.MAX_VALUE;
-        private float pitch = Float.MAX_VALUE;
-        private BulletLine previous;
+        private final List<OwnedLine> laidOut;
 
-        void add(OwnedLine owned) {
-            BulletLine line = owned.line();
-            lines.add(owned);
-            if (line.bulletX() != null) {
-                bullets.add(owned);
-                outermostBulletX = Math.min(outermostBulletX, line.bulletX());
-                itemTextX = Math.min(itemTextX, line.bounds().getLeft());
-            }
-            if (previous != null && previous.page() == line.page()) {
-                pitch = Math.min(pitch, gapAbove(line));
-            }
-            previous = line;
+        private MisshapenLists(List<OwnedLine> laidOut) {
+            this.laidOut = laidOut;
         }
 
         /**
-         * Whether an unbulleted line ends the list rather than continuing an item: it is set no
-         * further in than the outermost bullet, or no further in than the items' text with more
-         * than the list's line pitch above it. The second test catches bullets hung in the margin,
-         * whose items' text aligns with the prose around them; a gap on a new page is unknown.
+         * Returns an issue for each list among the lines whose tagging disagrees with its outline.
          */
-        boolean isEndedBy(OwnedLine owned) {
-            float left = owned.line().bounds().getLeft();
-            if (left <= outermostBulletX + SAME_LEVEL_TOLERANCE) {
-                return true;
-            }
-            return left <= itemTextX + SAME_LEVEL_TOLERANCE
-                    && pitch != Float.MAX_VALUE
-                    && previous.page() == owned.line().page()
-                    && gapAbove(owned.line()) > pitch + SAME_LINE_TOLERANCE;
+        static List<Issue> find(List<OwnedLine> laidOut) {
+            return new MisshapenLists(laidOut).detectMisshapenLists();
         }
 
-        /** Top-to-top distance from the previous line down to the given one on the same page. */
-        private float gapAbove(BulletLine line) {
-            return previous.bounds().getTop() - line.bounds().getTop();
+        /** A bullet placed in the outline, under the bullet whose item it is nested in, if any. */
+        private record OutlineBullet(OwnedLine at, OutlineBullet parent) {
+            float x() {
+                return at.line().bulletX();
+            }
+
+            int depth() {
+                return parent == null ? 0 : parent.depth() + 1;
+            }
         }
-    }
 
-    /** Nests each bullet under the nearest bullet before it set far enough out to own a sublist. */
-    private static List<OutlineBullet> outlineOf(List<OwnedLine> list) {
-        List<OutlineBullet> outline = new ArrayList<>();
-        Deque<OutlineBullet> open = new ArrayDeque<>();
-        for (OwnedLine owned : list) {
-            float x = owned.line().bulletX();
-            while (!open.isEmpty() && x - open.peek().x() < SUBLIST_INDENT_MIN) {
-                open.pop();
-            }
-            OutlineBullet bullet = new OutlineBullet(owned, open.peek());
-            open.push(bullet);
-            outline.add(bullet);
-        }
-        return outline;
-    }
-
-    /**
-     * Tallies the ways the tagging breaks the outline: every bullet opens an item of its own, items
-     * under one parent share one list, and a sublist nests under its parent item.
-     */
-    private static Map<String, Integer> breachesOf(List<OutlineBullet> outline) {
-        Map<String, Integer> breaches = new LinkedHashMap<>();
-        List<PdfStructElem> itemsSeen = new ArrayList<>();
-        Map<OutlineBullet, PdfStructElem> listOfFirstChild = new LinkedHashMap<>();
-        PdfStructElem topLevelList = null;
-
-        for (OutlineBullet bullet : outline) {
-            PdfStructElem item = nearestItemOf(bullet.at().owner());
-            if (item == null) {
-                breaches.merge("outside any list item", 1, Integer::sum);
-                continue;
-            }
-            if (itemsSeen.stream().anyMatch(seen -> StructTree.isSameElement(seen, item))) {
-                breaches.merge("sharing a list item", 1, Integer::sum);
-                continue;
-            }
-            itemsSeen.add(item);
-
-            PdfStructElem list = StructTree.parentOf(item);
-            PdfStructElem siblingsList =
-                    bullet.parent() == null ? topLevelList : listOfFirstChild.get(bullet.parent());
-            if (siblingsList == null) {
-                if (bullet.parent() == null) {
-                    topLevelList = list;
-                } else {
-                    listOfFirstChild.put(bullet.parent(), list);
+        private List<Issue> detectMisshapenLists() {
+            List<Issue> issues = new ArrayList<>();
+            for (OpenList list : listsOf(laidOut)) {
+                List<OwnedLine> bullets = list.bullets;
+                if (bullets.size() < MIN_ITEMS_PER_LIST) {
+                    continue;
                 }
-            } else if (list == null || !StructTree.isSameElement(list, siblingsList)) {
-                breaches.merge("in a different list from the items before it", 1, Integer::sum);
+                List<OutlineBullet> outline = outlineOf(bullets);
+                Map<String, Integer> breaches = breachesOf(outline);
+                if (breaches.isEmpty()) {
+                    continue;
+                }
+                PdfStructElem host =
+                        StructTree.commonAncestorOf(
+                                bullets.stream().map(OwnedLine::owner).toList());
+                List<RebuildListFix.Piece> pieces = piecesOf(list.lines, outline);
+                issues.add(
+                        new Issue(
+                                IssueType.LIST_MISSHAPEN,
+                                IssueSev.WARNING,
+                                IssueLoc.atElem(
+                                        host,
+                                        bullets.get(0).line().page(),
+                                        StructTree.mappedRole(host),
+                                        null),
+                                misshapenMessage(bullets.size(), breaches),
+                                pieces != null ? new RebuildListFix(pieces) : null));
+                logger.debug(
+                        "List of {} bullets under #{} breaches its outline: {}; owners {}{}",
+                        bullets.size(),
+                        StructTree.objNum(host),
+                        breaches,
+                        bullets.stream()
+                                .map(
+                                        owned ->
+                                                owned.line().page()
+                                                        + ":#"
+                                                        + StructTree.objNum(owned.owner()))
+                                .toList(),
+                        pieces != null ? "" : "; not rebuildable");
+            }
+            return issues;
+        }
+
+        /**
+         * Reads the list's extent into the pieces of a rebuild, one per element in reading order,
+         * or returns null when the extent cannot be rebuilt: an element with lines outside the
+         * list, one tagged with a grouping, list or table role that is no item's content, one
+         * opening on a continuation before its first bullet, one lumping bullets around inline
+         * markup, or a bullet in a table of contents, which the rebuild would turn into a plain
+         * list. Nor can it flatten a wrapper that also holds another list's bullets, which would
+         * leave that list's items loose.
+         */
+        private List<RebuildListFix.Piece> piecesOf(
+                List<OwnedLine> extent, List<OutlineBullet> outline) {
+            Map<OwnedLine, Integer> depthOf = new IdentityHashMap<>();
+            outline.forEach(bullet -> depthOf.put(bullet.at(), bullet.depth()));
+
+            Map<Integer, List<OwnedLine>> linesByOwner = new LinkedHashMap<>();
+            for (OwnedLine owned : extent) {
+                linesByOwner
+                        .computeIfAbsent(
+                                StructTree.objNum(owned.owner()), objNum -> new ArrayList<>())
+                        .add(owned);
             }
 
-            if (bullet.parent() != null
-                    && (list == null
-                            || !nestsUnder(list, nearestItemOf(bullet.parent().at().owner())))) {
-                breaches.merge("in a sublist outside its parent item", 1, Integer::sum);
+            List<RebuildListFix.Piece> pieces = new ArrayList<>();
+            for (List<OwnedLine> lines : linesByOwner.values()) {
+                PdfStructElem owner = lines.get(0).owner();
+                if (lines.size() != linesOwnedBy(owner)
+                        || isGroupingListOrTable(StructTree.mappedRole(owner))) {
+                    return null;
+                }
+                List<Integer> itemStarts = new ArrayList<>();
+                for (int i = 0; i < lines.size(); i++) {
+                    if (lines.get(i).line().bulletX() != null) {
+                        itemStarts.add(i);
+                    }
+                }
+                if (!itemStarts.isEmpty() && itemStarts.get(0) != 0
+                        || itemStarts.size() > 1 && !ownsOnlyMarkedContent(owner)
+                        || !itemStarts.isEmpty() && "TOCI".equals(roleOfItemOf(owner))) {
+                    return null;
+                }
+                pieces.add(
+                        new RebuildListFix.Piece(
+                                owner,
+                                lines.get(0).line().page(),
+                                itemStarts.stream().map(i -> depthOf.get(lines.get(i))).toList(),
+                                itemStarts.size() > 1 ? specOf(itemStarts, lines.size()) : null));
+            }
+            return holdsForeignBullets(extent) ? null : pieces;
+        }
+
+        /** Whether a wrapper the rebuild would flatten holds bullets outside the list's extent. */
+        private boolean holdsForeignBullets(List<OwnedLine> extent) {
+            Set<OwnedLine> inExtent = Collections.newSetFromMap(new IdentityHashMap<>());
+            inExtent.addAll(extent);
+            List<PdfStructElem> flattened =
+                    extent.stream()
+                            .map(owned -> outermostWrapperOf(owned.owner()))
+                            .filter(Objects::nonNull)
+                            .toList();
+            return laidOut.stream()
+                    .filter(owned -> owned.line().bulletX() != null && !inExtent.contains(owned))
+                    .anyMatch(
+                            owned ->
+                                    flattened.stream()
+                                            .anyMatch(
+                                                    wrapper ->
+                                                            StructTree.isDescendantOf(
+                                                                    owned.owner(), wrapper)));
+        }
+
+        /** Returns the outermost list wrapper in the unbroken chain above the element, or null. */
+        private static PdfStructElem outermostWrapperOf(PdfStructElem element) {
+            PdfStructElem outermost = null;
+            PdfStructElem parent = StructTree.parentOf(element);
+            while (parent != null
+                    && RebuildListFix.WRAPPER_ROLES.contains(StructTree.mappedRole(parent))) {
+                outermost = parent;
+                parent = StructTree.parentOf(parent);
+            }
+            return outermost;
+        }
+
+        /** Returns how many of the laid-out lines the element owns. */
+        private long linesOwnedBy(PdfStructElem owner) {
+            return laidOut.stream()
+                    .filter(owned -> StructTree.isSameElement(owned.owner(), owner))
+                    .count();
+        }
+
+        /** Returns the role of the item enclosing the element, or null when it is in none. */
+        private static String roleOfItemOf(PdfStructElem element) {
+            PdfStructElem item = nearestItemOf(element);
+            return item != null ? StructTree.mappedRole(item) : null;
+        }
+
+        /**
+         * Splits the lines, in page order, into lists. Lines between bullets either continue an
+         * item or end the list; see {@link OpenList#isEndedBy}.
+         */
+        private static List<OpenList> listsOf(List<OwnedLine> lines) {
+            List<OwnedLine> inPageOrder =
+                    lines.stream()
+                            .sorted(
+                                    Comparator.comparingInt(
+                                                    (OwnedLine owned) -> owned.line().page())
+                                            .thenComparing(
+                                                    owned -> -owned.line().bounds().getTop()))
+                            .toList();
+
+            List<OpenList> lists = new ArrayList<>();
+            OpenList open = null;
+            for (OwnedLine owned : inPageOrder) {
+                if (open != null && owned.line().bulletX() == null && open.isEndedBy(owned)) {
+                    lists.add(open);
+                    open = null;
+                }
+                if (open == null && owned.line().bulletX() != null) {
+                    open = new OpenList();
+                }
+                if (open != null) {
+                    open.add(owned);
+                }
+            }
+            if (open != null) {
+                lists.add(open);
+            }
+            return lists;
+        }
+
+        /**
+         * A list being read off the page: its lines and bullets so far, and the layout they set.
+         */
+        private static final class OpenList {
+            private final List<OwnedLine> lines = new ArrayList<>();
+            private final List<OwnedLine> bullets = new ArrayList<>();
+            private float outermostBulletX = Float.MAX_VALUE;
+            private float itemTextX = Float.MAX_VALUE;
+            private float pitch = Float.MAX_VALUE;
+            private BulletLine previous;
+
+            void add(OwnedLine owned) {
+                BulletLine line = owned.line();
+                lines.add(owned);
+                if (line.bulletX() != null) {
+                    bullets.add(owned);
+                    outermostBulletX = Math.min(outermostBulletX, line.bulletX());
+                    itemTextX = Math.min(itemTextX, line.bounds().getLeft());
+                }
+                if (previous != null && previous.page() == line.page()) {
+                    pitch = Math.min(pitch, gapAbove(line));
+                }
+                previous = line;
+            }
+
+            /**
+             * Whether an unbulleted line ends the list rather than continuing an item: it is set no
+             * further in than the outermost bullet, or no further in than the items' text with more
+             * than the list's line pitch above it. The second test catches bullets hung in the
+             * margin, whose items' text aligns with the prose around them; a gap on a new page is
+             * unknown.
+             */
+            boolean isEndedBy(OwnedLine owned) {
+                float left = owned.line().bounds().getLeft();
+                if (left <= outermostBulletX + SAME_LEVEL_TOLERANCE) {
+                    return true;
+                }
+                return left <= itemTextX + SAME_LEVEL_TOLERANCE
+                        && pitch != Float.MAX_VALUE
+                        && previous.page() == owned.line().page()
+                        && gapAbove(owned.line()) > pitch + SAME_LINE_TOLERANCE;
+            }
+
+            /**
+             * Top-to-top distance from the previous line down to the given one on the same page.
+             */
+            private float gapAbove(BulletLine line) {
+                return previous.bounds().getTop() - line.bounds().getTop();
             }
         }
-        return breaches;
-    }
 
-    /** Summarizes a misshapen list's breaches, counted in bullets. */
-    private static String misshapenMessage(int bullets, Map<String, Integer> breaches) {
-        return bullets
-                + " bullet glyphs tagged against their outline: "
-                + breaches.entrySet().stream()
-                        .map(breach -> breach.getValue() + " " + breach.getKey())
-                        .collect(Collectors.joining(", "));
-    }
-
-    /**
-     * Whether a sublist nests under the given item: inside it, or as a sibling in the list that
-     * holds it, which is how a nested TOC sits beside its TOCI and an L may sit beside its LI.
-     */
-    private static boolean nestsUnder(PdfStructElem sublist, PdfStructElem parentItem) {
-        if (parentItem == null) {
-            return false;
+        /**
+         * Nests each bullet under the nearest bullet before it set far enough out to own a sublist.
+         */
+        private static List<OutlineBullet> outlineOf(List<OwnedLine> list) {
+            List<OutlineBullet> outline = new ArrayList<>();
+            Deque<OutlineBullet> open = new ArrayDeque<>();
+            for (OwnedLine owned : list) {
+                float x = owned.line().bulletX();
+                while (!open.isEmpty() && x - open.peek().x() < SUBLIST_INDENT_MIN) {
+                    open.pop();
+                }
+                OutlineBullet bullet = new OutlineBullet(owned, open.peek());
+                open.push(bullet);
+                outline.add(bullet);
+            }
+            return outline;
         }
-        PdfStructElem host = StructTree.parentOf(sublist);
-        PdfStructElem hostItem = nearestItemOf(host);
-        PdfStructElem parentList = StructTree.parentOf(parentItem);
-        return (hostItem != null && StructTree.isSameElement(hostItem, parentItem))
-                || (host != null
-                        && parentList != null
-                        && StructTree.isSameElement(host, parentList));
-    }
 
-    /** Returns the element itself or its nearest ancestor that tags a list item, or null. */
-    private static PdfStructElem nearestItemOf(PdfStructElem element) {
-        PdfStructElem elem = element;
-        while (elem != null && !ITEM_ROLES.contains(StructTree.mappedRole(elem))) {
-            elem = StructTree.parentOf(elem);
+        /**
+         * Tallies the ways the tagging breaks the outline: every bullet opens an item of its own,
+         * items under one parent share one list, and a sublist nests under its parent item.
+         */
+        private static Map<String, Integer> breachesOf(List<OutlineBullet> outline) {
+            Map<String, Integer> breaches = new LinkedHashMap<>();
+            List<PdfStructElem> itemsSeen = new ArrayList<>();
+            Map<OutlineBullet, PdfStructElem> listOfFirstChild = new LinkedHashMap<>();
+            PdfStructElem topLevelList = null;
+
+            for (OutlineBullet bullet : outline) {
+                PdfStructElem item = nearestItemOf(bullet.at().owner());
+                if (item == null) {
+                    breaches.merge("outside any list item", 1, Integer::sum);
+                    continue;
+                }
+                if (itemsSeen.stream().anyMatch(seen -> StructTree.isSameElement(seen, item))) {
+                    breaches.merge("sharing a list item", 1, Integer::sum);
+                    continue;
+                }
+                itemsSeen.add(item);
+
+                PdfStructElem list = StructTree.parentOf(item);
+                PdfStructElem siblingsList =
+                        bullet.parent() == null
+                                ? topLevelList
+                                : listOfFirstChild.get(bullet.parent());
+                if (siblingsList == null) {
+                    if (bullet.parent() == null) {
+                        topLevelList = list;
+                    } else {
+                        listOfFirstChild.put(bullet.parent(), list);
+                    }
+                } else if (list == null || !StructTree.isSameElement(list, siblingsList)) {
+                    breaches.merge("in a different list from the items before it", 1, Integer::sum);
+                }
+
+                if (bullet.parent() != null
+                        && (list == null
+                                || !nestsUnder(
+                                        list, nearestItemOf(bullet.parent().at().owner())))) {
+                    breaches.merge("in a sublist outside its parent item", 1, Integer::sum);
+                }
+            }
+            return breaches;
         }
-        return elem;
+
+        /** Summarizes a misshapen list's breaches, counted in bullets. */
+        private static String misshapenMessage(int bullets, Map<String, Integer> breaches) {
+            return bullets
+                    + " bullet glyphs tagged against their outline: "
+                    + breaches.entrySet().stream()
+                            .map(breach -> breach.getValue() + " " + breach.getKey())
+                            .collect(Collectors.joining(", "));
+        }
+
+        /**
+         * Whether a sublist nests under the given item: inside it, or as a sibling in the list that
+         * holds it, which is how a nested TOC sits beside its TOCI and an L may sit beside its LI.
+         */
+        private static boolean nestsUnder(PdfStructElem sublist, PdfStructElem parentItem) {
+            if (parentItem == null) {
+                return false;
+            }
+            PdfStructElem host = StructTree.parentOf(sublist);
+            PdfStructElem hostItem = nearestItemOf(host);
+            PdfStructElem parentList = StructTree.parentOf(parentItem);
+            return (hostItem != null && StructTree.isSameElement(hostItem, parentItem))
+                    || (host != null
+                            && parentList != null
+                            && StructTree.isSameElement(host, parentList));
+        }
+
+        /** Returns the element itself or its nearest ancestor that tags a list item, or null. */
+        private static PdfStructElem nearestItemOf(PdfStructElem element) {
+            PdfStructElem elem = element;
+            while (elem != null && !ITEM_ROLES.contains(StructTree.mappedRole(elem))) {
+                elem = StructTree.parentOf(elem);
+            }
+            return elem;
+        }
     }
 
     // == Reading bullets off the page ====================================
 
     /** One of an element's text lines: its bounds, and the x of its bullet, or null for none. */
-    private record BulletLine(int page, Rectangle bounds, Float bulletX) {}
+    record BulletLine(int page, Rectangle bounds, Float bulletX) {}
 
     /**
      * Returns each of the element's text lines in reading order with the bullet it carries. Pages
