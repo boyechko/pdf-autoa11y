@@ -7,7 +7,7 @@ import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.validation.Check;
 
-/// Interface for reporting progress and results of the processing.
+/** Interface for reporting progress and results of the processing. */
 public interface ProcessingListener {
     void onCheckStart(Check check);
 
