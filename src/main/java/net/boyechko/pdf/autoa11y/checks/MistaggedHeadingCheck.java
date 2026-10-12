@@ -364,7 +364,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
 
     /** Returns a truncated text content of the given @code{StructTreeContext}. */
     private String getTruncatedText(StructTreeContext ctx) {
-        int pageNum = ctx.getPageNumber();
+        int pageNum = ctx.page();
         if (pageNum <= 0) {
             return "";
         }

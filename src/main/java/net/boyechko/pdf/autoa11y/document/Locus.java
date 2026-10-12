@@ -66,7 +66,7 @@ public sealed interface Locus {
         return switch (this) {
             case AtPage(var pageNum) -> pageNum;
             case AtObj(var objNum, var pageNum, var kind) -> pageNum;
-            case AtElem(var element, var pageNum, var role) -> pageNum != null ? pageNum : null;
+            case AtElem(var element, var pageNum, var role) -> pageNum;
             case AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> pageNum;
             default -> null;
         };

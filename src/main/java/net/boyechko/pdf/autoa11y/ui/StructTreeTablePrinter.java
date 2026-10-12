@@ -85,7 +85,7 @@ public class StructTreeTablePrinter extends StructTreeCheck {
     private void printElement(StructTreeContext ctx) {
         String paddedIndex = String.format("%" + INDEX_WIDTH + "d", ctx.globalIndex());
         String elementName = INDENT.repeat(ctx.depth()) + "- " + ctx.role();
-        int pageNum = ctx.getPageNumber();
+        int pageNum = ctx.page();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
         String mcrText = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
@@ -94,11 +94,6 @@ public class StructTreeTablePrinter extends StructTreeCheck {
 
         output.accept(
                 String.format(
-                        ROW_FORMAT,
-                        paddedIndex,
-                        elementName,
-                        pageString,
-                        ctx.getObjNum(),
-                        truncated));
+                        ROW_FORMAT, paddedIndex, elementName, pageString, ctx.objNum(), truncated));
     }
 }
