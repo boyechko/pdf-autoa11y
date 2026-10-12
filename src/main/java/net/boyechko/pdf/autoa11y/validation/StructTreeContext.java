@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.validation;
 
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -70,28 +69,16 @@ public record StructTreeContext(
         return docCtx.doc();
     }
 
-    public int getPageNumber() {
-        PdfDictionary dict = node.getPdfObject();
-        PdfDictionary pg = dict.getAsDictionary(PdfName.Pg);
+    public int page() {
+        return StructTree.pageOf(node, docCtx);
+    }
 
-        if (pg != null) {
-            return doc().getPageNumber(pg);
-        }
-
-        int objNum = StructTree.objNum(node);
-        if (objNum >= 0) {
-            return docCtx.getPageNumber(objNum);
-        }
-
-        return 0;
+    public int objNum() {
+        return StructTree.objNum(node);
     }
 
     public Locus locus() {
         return Locus.atElem(docCtx, node);
-    }
-
-    public int getObjNum() {
-        return StructTree.objNum(node);
     }
 
     public boolean hasRole(String roleName) {

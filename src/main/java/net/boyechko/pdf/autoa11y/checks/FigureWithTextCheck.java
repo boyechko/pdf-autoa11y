@@ -34,7 +34,7 @@ public class FigureWithTextCheck extends StructTreeCheck {
             return true;
         }
 
-        int pageNumber = ctx.getPageNumber();
+        int pageNumber = ctx.page();
         if (pageNumber == 0) {
             return true;
         }

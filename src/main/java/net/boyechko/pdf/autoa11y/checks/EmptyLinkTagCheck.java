@@ -73,7 +73,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                 continue;
             }
 
-            int pageNum = ctx.getPageNumber();
+            int pageNum = ctx.page();
             if (pageNum <= 0) {
                 continue;
             }

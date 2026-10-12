@@ -250,7 +250,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     private String getTextContent(StructTreeContext ctx) {
-        int pageNumber = ctx.getPageNumber();
+        int pageNumber = ctx.page();
         if (pageNumber == 0) {
             return "";
         }

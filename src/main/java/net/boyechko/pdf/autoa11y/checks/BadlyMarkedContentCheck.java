@@ -67,7 +67,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
         if (mcr == null) {
             return true;
         }
-        int pageNum = ctx.getPageNumber();
+        int pageNum = ctx.page();
         if (pageNum <= 0) {
             return true;
         }
