@@ -12,9 +12,7 @@ public final class Issue {
     private final String message;
     private final IssueFix fix; // may be null if no automatic fix exists
 
-    private boolean resolved;
-    private boolean failed;
-    private boolean skipped;
+    private IssueStatus status = IssueStatus.UNRESOLVED;
     private IssueMsg resolution;
 
     public Issue(IssueType type, IssueSev sev, String message) {
@@ -58,19 +56,23 @@ public final class Issue {
         return fix;
     }
 
+    public IssueStatus status() {
+        return status;
+    }
+
     /** True if the fix was attempted and threw; failed issues are never also resolved. */
     public boolean hasFailed() {
-        return failed;
+        return status == IssueStatus.FAILED;
     }
 
     /** True once a fix resolved the issue, including fixes skipped as covered by another fix. */
     public boolean isResolved() {
-        return resolved;
+        return status == IssueStatus.RESOLVED || status == IssueStatus.SKIPPED;
     }
 
     /** True if another fix made this one unnecessary, so this issue's fix never ran. */
     public boolean isSkipped() {
-        return skipped;
+        return status == IssueStatus.SKIPPED;
     }
 
     /** Outcome message recorded by markResolved/markFailed; null while the issue is open. */
@@ -80,7 +82,7 @@ public final class Issue {
 
     /** Records a successful (or superseded) fix outcome. */
     public void markResolved(IssueMsg resolution) {
-        this.resolved = true;
+        this.status = IssueStatus.RESOLVED;
         this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 
@@ -88,13 +90,13 @@ public final class Issue {
      * Records an issue resolved by another fix; this issue's own fix never touched the document.
      */
     public void markSkipped(IssueMsg resolution) {
-        markResolved(resolution);
-        this.skipped = true;
+        this.status = IssueStatus.SKIPPED;
+        this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 
     /** Records a failed fix attempt; the issue stays unresolved for manual-review reporting. */
     public void markFailed(IssueMsg resolution) {
-        this.failed = true;
+        this.status = IssueStatus.FAILED;
         this.resolution = Objects.requireNonNull(resolution, "resolution");
     }
 }

@@ -17,11 +17,19 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
  * @param pageNum 1-based page number from the issue's location or document mapping, or null if
  *     unknown
  * @param role structure role from the issue's location, or null if unknown
- * @param fixClass simple fix class name, falling back to its enclosing class or full class name
- * @param message resolution message, falling back to the fix's description if no resolution exists
+ * @param fixClass associated fix class name, or null when no automatic fix exists
+ * @param message original detection message
+ * @param status remediation outcome; see {@link IssueStatus}
+ * @param resolution outcome message, or null while the issue is unresolved
  */
 public record IssueSnapshot(
-        Integer objNum, Integer pageNum, String role, String fixClass, String message) {
+        Integer objNum,
+        Integer pageNum,
+        String role,
+        String fixClass,
+        String message,
+        IssueStatus status,
+        String resolution) {
 
     /**
      * Copies the issue's location, fix identity, and outcome while the document is still open. The
@@ -35,7 +43,9 @@ public record IssueSnapshot(
                 resolvePage(where, objNum, ctx),
                 where.role(),
                 fixNameOf(issue.fix()),
-                issue.resolution() != null ? issue.resolution().message() : issue.fix().describe());
+                issue.message(),
+                issue.status(),
+                issue.resolution() != null ? issue.resolution().message() : null);
     }
 
     /**
