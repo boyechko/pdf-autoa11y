@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import org.junit.jupiter.api.Test;
 
 class IssueListTest {
@@ -19,14 +20,14 @@ class IssueListTest {
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
-                        IssueLoc.none(),
+                        Locus.none(),
                         "low",
                         new StubFix(200));
         Issue highPriority =
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
-                        IssueLoc.none(),
+                        Locus.none(),
                         "high",
                         new StubFix(100));
         issues.add(lowPriority);
@@ -47,14 +48,14 @@ class IssueListTest {
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
-                        IssueLoc.none(),
+                        Locus.none(),
                         "kept",
                         new InvalidatingFix(100));
         Issue skipped =
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
                         IssueSev.WARNING,
-                        IssueLoc.none(),
+                        Locus.none(),
                         "skipped",
                         new StubFix(200));
         issues.add(kept);

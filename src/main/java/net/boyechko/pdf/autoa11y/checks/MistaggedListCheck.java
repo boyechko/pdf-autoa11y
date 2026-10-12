@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
@@ -34,7 +35,6 @@ import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -176,7 +176,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        ctx.loc(),
+                        ctx.locus(),
                         lumpedMessage(itemStarts.size(), spec, 0, splittable),
                         splittable ? new SplitIntoListItemsFix(ctx.node(), spec) : null));
 
@@ -204,7 +204,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        ctx.loc(),
+                        ctx.locus(),
                         lumpedMessage(items, spec, leadingLines, fix != null),
                         fix));
 
@@ -479,7 +479,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                                 ? IssueType.SUBLIST_TAGGED_AS_PARAGRAPHS
                                 : IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        ctx.loc(),
+                        ctx.locus(),
                         run.size()
                                 + " elements each carry a bullet but no "
                                 + (nestInto != null ? "sublist" : "list")
@@ -531,7 +531,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_SPLIT_BY_SUBLIST,
                         IssueSev.WARNING,
-                        IssueLoc.atElem(ctx.docCtx(), second),
+                        Locus.atElem(ctx.docCtx(), second),
                         "list split in two around a sublist",
                         new MergeAdjacentListsFix(first, second)));
 
@@ -626,7 +626,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                         new Issue(
                                 IssueType.LIST_MISSHAPEN,
                                 IssueSev.WARNING,
-                                IssueLoc.atElem(docCtx, host),
+                                Locus.atElem(docCtx, host),
                                 misshapenMessage(bullets.size(), breaches),
                                 pieces != null ? new RebuildListFix(pieces) : null));
                 logger.debug(

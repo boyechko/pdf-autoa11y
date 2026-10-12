@@ -12,8 +12,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +103,6 @@ public class MissingDocumentFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.none());
+        return new IssueMsg(describe(ctx), Locus.none());
     }
 }

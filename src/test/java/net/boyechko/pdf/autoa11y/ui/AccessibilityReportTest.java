@@ -10,10 +10,10 @@ import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -62,13 +62,13 @@ class AccessibilityReportTest {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
-                        IssueLoc.atPage(3),
+                        Locus.atPage(3),
                         "Figure missing alt text"));
         issues.add(
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.ERROR,
-                        IssueLoc.atPage(7),
+                        Locus.atPage(7),
                         "Figure missing alt text"));
 
         ProcessingResult result = resultWith(issues);
@@ -124,7 +124,7 @@ class AccessibilityReportTest {
                         "Found grouping wrappers",
                         new FixedCountIssueFix(49));
         needlessNesting.markResolved(
-                new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
+                new IssueMsg("Flattened 49 grouping element(s)", Locus.none()));
         issues.add(needlessNesting);
 
         Issue pageParts =
@@ -136,7 +136,7 @@ class AccessibilityReportTest {
         pageParts.markResolved(
                 new IssueMsg(
                         "Normalized page Parts: created 653 Part(s), moved 9675 element(s)",
-                        IssueLoc.none()));
+                        Locus.none()));
         issues.add(pageParts);
 
         ProcessingResult result = resultWith(issues);
@@ -153,7 +153,7 @@ class AccessibilityReportTest {
 
         Issue langIssue =
                 new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.ERROR, "Document language not set");
-        langIssue.markResolved(new IssueMsg("Set document language to \"en\"", IssueLoc.none()));
+        langIssue.markResolved(new IssueMsg("Set document language to \"en\"", Locus.none()));
         issues.add(langIssue);
 
         Issue nestingIssue =
@@ -162,8 +162,7 @@ class AccessibilityReportTest {
                         IssueSev.WARNING,
                         "Found grouping wrappers",
                         new FixedCountIssueFix(49));
-        nestingIssue.markResolved(
-                new IssueMsg("Flattened 49 grouping element(s)", IssueLoc.none()));
+        nestingIssue.markResolved(new IssueMsg("Flattened 49 grouping element(s)", Locus.none()));
         issues.add(nestingIssue);
 
         ProcessingResult result = resultWith(issues);

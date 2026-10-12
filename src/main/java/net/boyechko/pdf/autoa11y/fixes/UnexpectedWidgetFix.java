@@ -14,9 +14,9 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,16 +198,16 @@ public class UnexpectedWidgetFix implements IssueFix {
                 : null;
     }
 
-    /** Builds an {@link IssueLoc} for the widget, preferring object-number precision over page. */
-    private IssueLoc widgetLoc() {
+    /** Builds an {@link Locus} for the widget, preferring object-number precision over page. */
+    private Locus widgetLoc() {
         Integer objNum = objNumberOrNull();
         if (objNum != null) {
-            return IssueLoc.atObj(objNum, pageNum, IssueLoc.ObjKind.ANNOT);
+            return Locus.atObj(objNum, pageNum, Locus.ObjKind.ANNOT);
         }
         if (pageNum > 0) {
-            return IssueLoc.atPage(pageNum);
+            return Locus.atPage(pageNum);
         }
-        return IssueLoc.none();
+        return Locus.none();
     }
 
     /** Returns a log-friendly reference string identifying the widget and its location. */

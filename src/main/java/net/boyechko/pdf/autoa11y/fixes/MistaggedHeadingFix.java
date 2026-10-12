@@ -6,9 +6,9 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Retags a P or H1-H6 element as a heading of an appropriate level. */
@@ -40,7 +40,7 @@ public class MistaggedHeadingFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(), IssueLoc.atElem(ctx, element));
+        return new IssueMsg(describe(), Locus.atElem(ctx, element));
     }
 
     @Override

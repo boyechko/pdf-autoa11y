@@ -2,5 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.issue;
 
+import net.boyechko.pdf.autoa11y.document.Locus;
+
 /** Message text paired with an optional location for interface-specific rendering. */
-public record IssueMsg(String message, IssueLoc where) {}
+public record IssueMsg(String message, Locus where) {}

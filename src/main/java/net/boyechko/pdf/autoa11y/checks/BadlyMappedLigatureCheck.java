@@ -8,10 +8,10 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.fixes.BadlyMappedLigatureFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
@@ -67,10 +67,10 @@ public class BadlyMappedLigatureCheck extends DocumentCheck {
                     new Issue(
                             IssueType.LIGATURE_MAPPING_BROKEN,
                             IssueSev.WARNING,
-                            IssueLoc.atObj(
+                            Locus.atObj(
                                     fontObjNum,
                                     firstPage > 0 ? firstPage : null,
-                                    IssueLoc.ObjKind.FONT),
+                                    Locus.ObjKind.FONT),
                             message,
                             new BadlyMappedLigatureFix(fontObjNum, fontName, replacements));
             issues.add(issue);

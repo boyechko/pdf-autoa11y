@@ -79,7 +79,7 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.INVALID_LINK_URI,
                         IssueSev.WARNING,
-                        ctx.loc(),
+                        ctx.locus(),
                         "Link has invalid URI: " + uri));
         return true;
     }

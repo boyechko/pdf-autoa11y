@@ -1,28 +1,25 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.issue;
+package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
-public sealed interface IssueLoc {
+public sealed interface Locus {
     /** No location — a document-wide issue (e.g. missing metadata). */
-    record None() implements IssueLoc {}
+    record None() implements Locus {}
 
     /** A whole page, 1-based. */
-    record AtPage(int pageNum) implements IssueLoc {}
+    record AtPage(int pageNum) implements Locus {}
 
     /** An indirect object such as an annotation or font; pageNum is an optional context. */
-    record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements IssueLoc {}
+    record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements Locus {}
 
     /** A structure element; pageNum and role are optional reporting context. */
-    record AtElem(PdfStructElem element, Integer pageNum, String roleName) implements IssueLoc {}
+    record AtElem(PdfStructElem element, Integer pageNum, String roleName) implements Locus {}
 
     /** A marked-content sequence on a page; ownerObjNum is the owning structure element. */
-    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName)
-            implements IssueLoc {}
+    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName) implements Locus {}
 
     /** What kind of indirect object an {@link AtObj} points at. */
     enum ObjKind {
@@ -35,20 +32,20 @@ public sealed interface IssueLoc {
 
     // --- Factory Methods ---
 
-    static IssueLoc none() {
+    static Locus none() {
         return new None();
     }
 
-    static IssueLoc atPage(int pageNum) {
+    static Locus atPage(int pageNum) {
         return new AtPage(pageNum);
     }
 
-    static IssueLoc atObj(int objNum, Integer pageNum, ObjKind kind) {
+    static Locus atObj(int objNum, Integer pageNum, ObjKind kind) {
         return new AtObj(objNum, pageNum, kind != null ? kind : ObjKind.GENERIC);
     }
 
     /** Element location with page and role resolved from the document; none() on null input. */
-    static IssueLoc atElem(DocContext ctx, PdfStructElem element) {
+    static Locus atElem(DocContext ctx, PdfStructElem element) {
         if (ctx == null || element == null) {
             return none();
         }
@@ -58,7 +55,7 @@ public sealed interface IssueLoc {
         return new AtElem(element, maybePage, role);
     }
 
-    static IssueLoc atMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {
+    static Locus atMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {
         return new AtMcid(pageNum, mcid, ownerObjNum, role);
     }
 

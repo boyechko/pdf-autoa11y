@@ -9,6 +9,7 @@ import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Link;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.fixes.UnmarkedLinkFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
@@ -61,7 +62,7 @@ public class UnmarkedLinkCheck extends DocumentCheck {
                             new Issue(
                                     IssueType.UNMARKED_LINK,
                                     IssueSev.ERROR,
-                                    IssueLoc.atObj(objNumber, pageNum, IssueLoc.ObjKind.ANNOT),
+                                    Locus.atObj(objNumber, pageNum, Locus.ObjKind.ANNOT),
                                     "Untagged " + description,
                                     fix);
                     issues.add(issue);

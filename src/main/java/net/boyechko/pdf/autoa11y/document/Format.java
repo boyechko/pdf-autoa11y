@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
 /**
  * Formatting utilities for PDF entities in log messages and reports.
@@ -99,17 +98,17 @@ public final class Format {
      * Returns a parenthesized location string for an issue, e.g. {@code " (obj. #42, p. 3)"}.
      * Returns empty string when no location info is available.
      */
-    public static String loc(IssueLoc where) {
+    public static String loc(Locus where) {
         return switch (where) {
             case null -> "";
-            case IssueLoc.None n -> "";
-            case IssueLoc.AtPage(var pageNum) -> " (" + page(pageNum) + ")";
-            case IssueLoc.AtObj(var objNum, var pageNum, var kind) -> {
+            case Locus.None n -> "";
+            case Locus.AtPage(var pageNum) -> " (" + page(pageNum) + ")";
+            case Locus.AtObj(var objNum, var pageNum, var kind) -> {
                 String s = " (" + typedObj(kind, objNum);
                 if (pageNum != null) s += ", " + page(pageNum);
                 yield s + ")";
             }
-            case IssueLoc.AtElem(var element, var pageNum, var role) -> {
+            case Locus.AtElem(var element, var pageNum, var role) -> {
                 DocValue.ObjNum obj = DocValue.ObjNum.of(element);
                 if (obj == null && pageNum == null) {
                     yield (role != null && !role.isBlank()) ? " (" + role + ")" : "";
@@ -123,7 +122,7 @@ public final class Format {
                 }
                 yield s + ")";
             }
-            case IssueLoc.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> {
+            case Locus.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> {
                 String s = " (" + mcid(mcid);
                 s += ", " + page(pageNum);
                 if (ownerObjNum != null) s += ", " + objNum(ownerObjNum);
@@ -132,8 +131,8 @@ public final class Format {
         };
     }
 
-    private static String typedObj(IssueLoc.ObjKind kind, int objNum) {
-        IssueLoc.ObjKind resolvedKind = kind != null ? kind : IssueLoc.ObjKind.GENERIC;
+    private static String typedObj(Locus.ObjKind kind, int objNum) {
+        Locus.ObjKind resolvedKind = kind != null ? kind : Locus.ObjKind.GENERIC;
         return switch (resolvedKind) {
             case ANNOT -> "annot " + objNum(objNum);
             case STRUCT_ELEM -> "struct " + objNum(objNum);

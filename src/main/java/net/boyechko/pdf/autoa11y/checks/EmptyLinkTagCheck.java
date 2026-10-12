@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Geometry;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.EmptyLinkTagFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -94,7 +94,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.EMPTY_LINK_TAG,
                             IssueSev.WARNING,
-                            IssueLoc.atPage(pageNum),
+                            Locus.atPage(pageNum),
                             "Link element (after/inside "
                                     + prev.getRole().getValue()
                                     + ") is missing link description",

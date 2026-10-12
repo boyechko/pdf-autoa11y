@@ -20,9 +20,9 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Link;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,12 +249,12 @@ public class UnmarkedLinkFix implements IssueFix {
                         : 0;
         if (objNumber > 0) {
             return new IssueMsg(
-                    describe(ctx), IssueLoc.atObj(objNumber, pageNum, IssueLoc.ObjKind.ANNOT));
+                    describe(ctx), Locus.atObj(objNumber, pageNum, Locus.ObjKind.ANNOT));
         }
         if (pageNum > 0) {
-            return new IssueMsg(describe(ctx), IssueLoc.atPage(pageNum));
+            return new IssueMsg(describe(ctx), Locus.atPage(pageNum));
         }
-        return new IssueMsg(describe(ctx), IssueLoc.none());
+        return new IssueMsg(describe(ctx), Locus.none());
     }
 
     @Override

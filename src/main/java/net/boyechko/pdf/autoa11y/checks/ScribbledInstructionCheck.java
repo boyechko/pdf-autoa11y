@@ -52,7 +52,7 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.SCRIBBLED_INSTRUCTION,
                             IssueSev.WARNING,
-                            ctx.loc(),
+                            ctx.locus(),
                             "Scribbled instruction: " + scribble.value(),
                             new ScribbledInstructionFix(ctx.node(), instruction)));
             return !ScribbledInstructionFix.isSubtreeInstruction(instruction);

@@ -8,9 +8,9 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /**
@@ -61,7 +61,7 @@ public class OrphanedContentFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(), IssueLoc.atElem(ctx, parent));
+        return new IssueMsg(describe(), Locus.atElem(ctx, parent));
     }
 
     @Override

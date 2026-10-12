@@ -4,11 +4,12 @@ package net.boyechko.pdf.autoa11y.issue;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import net.boyechko.pdf.autoa11y.document.Locus;
 import org.junit.jupiter.api.Test;
 
 class IssueTest {
 
-    private static final IssueMsg OUTCOME = new IssueMsg("outcome", IssueLoc.none());
+    private static final IssueMsg OUTCOME = new IssueMsg("outcome", Locus.none());
 
     @Test
     void newIssueIsUnresolved() {

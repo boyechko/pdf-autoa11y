@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -249,7 +250,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         @Override
         public boolean enterElement(StructTreeContext ctx) {
             if (PdfName.Figure.equals(ctx.node().getRole())) {
-                IssueLoc where = new IssueLoc.AtElem(ctx.node(), ctx.getPageNumber(), null);
+                Locus where = new Locus.AtElem(ctx.node(), ctx.getPageNumber(), null);
                 issues.add(
                         new Issue(
                                 IssueType.FIGURE_WITH_TEXT,

@@ -6,8 +6,8 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
 /** Clears the /T key from a structure element that contains a stale workflow scribble. */
 public class StaleScribbleFix implements IssueFix {
@@ -32,7 +32,7 @@ public class StaleScribbleFix implements IssueFix {
 
     @Override
     public String describe(DocContext ctx) {
-        return describe() + Format.loc(IssueLoc.atElem(ctx, element));
+        return describe() + Format.loc(Locus.atElem(ctx, element));
     }
 
     @Override

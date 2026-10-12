@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Repairs broken ligature mappings in a font's ToUnicode CMap. */
@@ -293,7 +293,7 @@ public class BadlyMappedLigatureFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.atObj(fontObjNum, null, IssueLoc.ObjKind.FONT));
+        return new IssueMsg(describe(ctx), Locus.atObj(fontObjNum, null, Locus.ObjKind.FONT));
     }
 
     @Override

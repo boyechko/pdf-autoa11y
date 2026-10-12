@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MisartifactedTextFix;
 import net.boyechko.pdf.autoa11y.issue.*;
@@ -171,7 +172,7 @@ public class MisartifactedTextCheck extends DocumentCheck {
                     new Issue(
                             IssueType.MISARTIFACTED_TEXT,
                             IssueSev.WARNING,
-                            IssueLoc.atPage(pageNum),
+                            Locus.atPage(pageNum),
                             "Artifact block contains text '"
                                     + block.text()
                                     + "' that may have been mis-artifacted",
