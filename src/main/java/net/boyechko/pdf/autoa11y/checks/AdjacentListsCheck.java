@@ -9,6 +9,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -63,7 +64,7 @@ public class AdjacentListsCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.ADJACENT_LISTS,
                         IssueSev.WARNING,
-                        locAtElem(ctx, laterList),
+                        IssueLoc.atElem(ctx.docCtx(), laterList),
                         "Adjacent sibling lists should be one list",
                         new MergeAdjacentListsFix(firstList, laterList)));
     }

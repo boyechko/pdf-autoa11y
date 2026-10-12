@@ -149,7 +149,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.MISTAGGED_HEADING,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "Mistagged "
                                 + headingLevel.getValue()
                                 + ": \""
@@ -183,7 +183,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.IMPROPERLY_NESTED_HEADING,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "Improperly nested "
                                 + sizeLevel.getValue()
                                 + ": \""

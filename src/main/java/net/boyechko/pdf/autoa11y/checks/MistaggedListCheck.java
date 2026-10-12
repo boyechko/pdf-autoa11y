@@ -176,7 +176,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        StructTreeCheck.locAtElem(ctx),
+                        ctx.loc(),
                         lumpedMessage(itemStarts.size(), spec, 0, splittable),
                         splittable ? new SplitIntoListItemsFix(ctx.node(), spec) : null));
 
@@ -204,7 +204,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        StructTreeCheck.locAtElem(ctx),
+                        ctx.loc(),
                         lumpedMessage(items, spec, leadingLines, fix != null),
                         fix));
 
@@ -479,7 +479,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                                 ? IssueType.SUBLIST_TAGGED_AS_PARAGRAPHS
                                 : IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        StructTreeCheck.locAtElem(ctx),
+                        ctx.loc(),
                         run.size()
                                 + " elements each carry a bullet but no "
                                 + (nestInto != null ? "sublist" : "list")
@@ -531,7 +531,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_SPLIT_BY_SUBLIST,
                         IssueSev.WARNING,
-                        StructTreeCheck.locAtElem(ctx, second),
+                        IssueLoc.atElem(ctx.docCtx(), second),
                         "list split in two around a sublist",
                         new MergeAdjacentListsFix(first, second)));
 

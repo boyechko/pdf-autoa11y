@@ -83,7 +83,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.MIXED_FONT_MARKED_CONTENT,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "Marked content mixing font sizes: \"" + text + "\"",
                         fix));
         return true;

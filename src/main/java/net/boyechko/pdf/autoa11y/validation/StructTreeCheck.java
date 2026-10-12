@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.validation;
 
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,16 +70,6 @@ public abstract class StructTreeCheck implements Check {
     public void afterTraversal(DocContext docCtx) {}
 
     public abstract IssueList getIssues();
-
-    /** Returns an {@link IssueLoc} for {@link StructTreeContext#node()} in {@code ctx}. */
-    public static IssueLoc locAtElem(StructTreeContext ctx) {
-        return IssueLoc.atElem(ctx.docCtx(), ctx.node());
-    }
-
-    /** Returns an {@link IssueLoc} for {@code element} in the document of {@code ctx}. */
-    public static IssueLoc locAtElem(StructTreeContext ctx, PdfStructElem element) {
-        return IssueLoc.atElem(ctx.docCtx(), element);
-    }
 
     @Override
     public Set<Class<? extends Check>> prerequisites() {

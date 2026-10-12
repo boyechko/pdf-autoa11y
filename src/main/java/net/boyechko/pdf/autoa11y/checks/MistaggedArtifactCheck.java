@@ -84,7 +84,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            locAtElem(ctx),
+                            ctx.loc(),
                             "Tagged content should be artifact: \""
                                     + Format.truncate(textContent)
                                     + "\"",
@@ -97,7 +97,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            locAtElem(ctx),
+                            ctx.loc(),
                             "Space-only element should be artifact",
                             new MistaggedArtifactFix(ctx.node())));
             return false;
@@ -237,7 +237,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            locAtElem(ctx),
+                            ctx.loc(),
                             "Decorative graphic MCR should be artifact",
                             fix));
         }
