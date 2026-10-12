@@ -47,7 +47,7 @@ public class OrphanedContentCheck extends StructTreeCheck {
                         new Issue(
                                 IssueType.ORPHANED_CONTENT,
                                 IssueSev.WARNING,
-                                locAtElem(ctx),
+                                ctx.loc(),
                                 "Orphaned " + typeOf(mcr) + " in " + ctx.role(),
                                 fix);
                 issues.add(issue);

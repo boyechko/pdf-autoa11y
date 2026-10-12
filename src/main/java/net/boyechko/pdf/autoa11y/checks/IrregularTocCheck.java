@@ -51,7 +51,7 @@ public class IrregularTocCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.IRREGULAR_TOC,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "TOC contents not nested into a TOCI hierarchy",
                         new IrregularTocFix(ctx.node())));
 

@@ -60,7 +60,7 @@ public class MissingAltTextCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "Figure without alt text");
         issues.add(issue);
         return true;

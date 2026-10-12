@@ -83,7 +83,7 @@ public class StaleScribbleCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.STALE_SCRIBBLE,
                         IssueSev.WARNING,
-                        locAtElem(ctx),
+                        ctx.loc(),
                         "Stale workflow scribble: " + scribble.rawValue(),
                         new StaleScribbleFix(ctx.node(), scribble.rawValue())));
         return true;

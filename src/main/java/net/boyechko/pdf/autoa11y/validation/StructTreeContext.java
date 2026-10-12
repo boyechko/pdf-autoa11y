@@ -9,6 +9,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 
 /**
  * Immutable context passed to visitors during structure tree traversal. Contains pre-computed
@@ -83,6 +84,10 @@ public record StructTreeContext(
         }
 
         return 0;
+    }
+
+    public IssueLoc loc() {
+        return IssueLoc.atElem(docCtx, node);
     }
 
     public int getObjNum() {
