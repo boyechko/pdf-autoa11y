@@ -17,15 +17,10 @@ public final class LogIssueFormatter implements IssueFormatter {
             case IssueLoc.AtPage(var pageNum) -> " (" + Format.page(pageNum) + ")";
             case IssueLoc.AtObj(var objNum, var pageNum, var kind) ->
                     " (" + objLabel(kind, objNum) + withPage(pageNum) + ")";
-            case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) ->
-                    " (" + joinElem(where.objNum(), pageNum, role, structPath) + ")";
-            case IssueLoc.AtMcid(
-                            var pageNum,
-                            var mcid,
-                            var ownerObjNum,
-                            var role,
-                            var structPath) ->
-                    " (" + joinMcid(pageNum, mcid, ownerObjNum, role, structPath) + ")";
+            case IssueLoc.AtElem(var element, var pageNum, var role) ->
+                    " (" + joinElem(where.objNum(), pageNum, role) + ")";
+            case IssueLoc.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) ->
+                    " (" + joinMcid(pageNum, mcid, ownerObjNum, role) + ")";
         };
     }
 
@@ -47,8 +42,7 @@ public final class LogIssueFormatter implements IssueFormatter {
         return pageNum != null ? ", " + Format.page(pageNum) : "";
     }
 
-    private static String joinElem(
-            Integer objNum, Integer pageNum, String role, String structPath) {
+    private static String joinElem(Integer objNum, Integer pageNum, String role) {
         StringJoiner joiner = new StringJoiner(", ");
         if (objNum != null) {
             joiner.add(Format.objNum(objNum));
@@ -62,8 +56,7 @@ public final class LogIssueFormatter implements IssueFormatter {
         return joiner.length() > 0 ? joiner.toString() : "elem";
     }
 
-    private static String joinMcid(
-            int pageNum, int mcid, Integer ownerObjNum, String role, String structPath) {
+    private static String joinMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {
         StringJoiner joiner = new StringJoiner(", ");
         joiner.add(Format.mcid(mcid));
         joiner.add(Format.page(pageNum));

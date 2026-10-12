@@ -249,7 +249,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         @Override
         public boolean enterElement(StructTreeContext ctx) {
             if (PdfName.Figure.equals(ctx.node().getRole())) {
-                IssueLoc where = IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), null, null);
+                IssueLoc where = new IssueLoc.AtElem(ctx.node(), ctx.getPageNumber(), null);
                 issues.add(
                         new Issue(
                                 IssueType.FIGURE_WITH_TEXT,

@@ -133,8 +133,7 @@ public class EmptyLinkTagFix implements IssueFix {
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
         if (pageNum > 0 && mcid >= 0) {
-            return new IssueMsg(
-                    describe(ctx), IssueLoc.atMcid(pageNum, mcid, linkObjNum, "Link", null));
+            return new IssueMsg(describe(ctx), IssueLoc.atMcid(pageNum, mcid, linkObjNum, "Link"));
         }
         if (linkObjNum > 0) {
             return new IssueMsg(

@@ -109,7 +109,7 @@ public final class Format {
                 if (pageNum != null) s += ", " + page(pageNum);
                 yield s + ")";
             }
-            case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) -> {
+            case IssueLoc.AtElem(var element, var pageNum, var role) -> {
                 DocValue.ObjNum obj = DocValue.ObjNum.of(element);
                 if (obj == null && pageNum == null) {
                     yield (role != null && !role.isBlank()) ? " (" + role + ")" : "";
@@ -123,12 +123,7 @@ public final class Format {
                 }
                 yield s + ")";
             }
-            case IssueLoc.AtMcid(
-                            var pageNum,
-                            var mcid,
-                            var ownerObjNum,
-                            var role,
-                            var structPath) -> {
+            case IssueLoc.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> {
                 String s = " (" + mcid(mcid);
                 s += ", " + page(pageNum);
                 if (ownerObjNum != null) s += ", " + objNum(ownerObjNum);

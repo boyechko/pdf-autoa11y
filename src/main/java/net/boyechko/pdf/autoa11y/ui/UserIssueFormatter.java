@@ -20,7 +20,7 @@ public final class UserIssueFormatter implements IssueFormatter {
                 }
                 yield objNum != null ? " (" + Format.objNum(objNum) + ")" : "";
             }
-            case IssueLoc.AtElem(var element, var pageNum, var role, var structPath) -> {
+            case IssueLoc.AtElem(var element, var pageNum, var role) -> {
                 if (pageNum != null && role != null && !role.isBlank()) {
                     yield " (" + role + ", " + Format.page(pageNum) + ")";
                 }
@@ -33,12 +33,7 @@ public final class UserIssueFormatter implements IssueFormatter {
                 Integer objNum = where.objNum();
                 yield objNum != null ? " (" + Format.objNum(objNum) + ")" : "";
             }
-            case IssueLoc.AtMcid(
-                            var pageNum,
-                            var mcid,
-                            var ownerObjNum,
-                            var role,
-                            var structPath) -> {
+            case IssueLoc.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> {
                 if (role != null && !role.isBlank()) {
                     yield " (" + role + ", " + Format.page(pageNum) + ")";
                 }
