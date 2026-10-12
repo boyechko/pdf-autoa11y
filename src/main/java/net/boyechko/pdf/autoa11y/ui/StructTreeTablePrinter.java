@@ -8,7 +8,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Outputs a tabular listing of the structure tree during traversal. */
 public class StructTreeTablePrinter extends StructTreeCheck {
@@ -48,17 +48,17 @@ public class StructTreeTablePrinter extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
+    public boolean enterElement(Visit visit) {
         if (!headerPrinted) {
             printHeader();
         }
 
         // Skip empty Span elements to reduce output noise.
-        if ("Span".equals(ctx.role()) && ctx.children().isEmpty()) {
+        if ("Span".equals(visit.role()) && visit.children().isEmpty()) {
             return true;
         }
 
-        printElement(ctx);
+        printElement(visit);
         return true;
     }
 
@@ -82,18 +82,23 @@ public class StructTreeTablePrinter extends StructTreeCheck {
                         "-".repeat(CONTENT_SUMMARY_WIDTH)));
     }
 
-    private void printElement(StructTreeContext ctx) {
-        String paddedIndex = String.format("%" + INDEX_WIDTH + "d", ctx.globalIndex());
-        String elementName = INDENT.repeat(ctx.depth()) + "- " + ctx.role();
-        int pageNum = ctx.page();
+    private void printElement(Visit visit) {
+        String paddedIndex = String.format("%" + INDEX_WIDTH + "d", visit.globalIndex());
+        String elementName = INDENT.repeat(visit.depth()) + "- " + visit.role();
+        int pageNum = visit.page();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
-        String mcrText = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum);
+        String mcrText = Content.getTextForElement(visit.node(), visit.docCtx(), pageNum);
         mcrText = (mcrText == null || mcrText.isEmpty()) ? "" : mcrText;
         String truncated = Format.truncate(mcrText, CONTENT_SUMMARY_WIDTH);
 
         output.accept(
                 String.format(
-                        ROW_FORMAT, paddedIndex, elementName, pageString, ctx.objNum(), truncated));
+                        ROW_FORMAT,
+                        paddedIndex,
+                        elementName,
+                        pageString,
+                        visit.objNum(),
+                        truncated));
     }
 }

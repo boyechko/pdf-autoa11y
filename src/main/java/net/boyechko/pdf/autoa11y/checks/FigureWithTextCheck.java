@@ -12,7 +12,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects Figure elements containing text content rather than actual images. */
 public class FigureWithTextCheck extends StructTreeCheck {
@@ -29,25 +29,25 @@ public class FigureWithTextCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (!PdfName.Figure.equals(ctx.node().getRole())) {
+    public boolean enterElement(Visit visit) {
+        if (!PdfName.Figure.equals(visit.node().getRole())) {
             return true;
         }
 
-        int pageNumber = ctx.page();
+        int pageNumber = visit.page();
         if (pageNumber == 0) {
             return true;
         }
 
-        String textContent = Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+        String textContent = Content.getTextForElement(visit.node(), visit.docCtx(), pageNumber);
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
-            IssueFix fix = new FigureWithTextFix(ctx.node(), PdfName.P);
+            IssueFix fix = new FigureWithTextFix(visit.node(), PdfName.P);
             Issue issue =
                     new Issue(
                             IssueType.FIGURE_WITH_TEXT,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Figure contains text: \"" + Format.truncate(textContent) + "\"",
                             fix);
             issues.add(issue);

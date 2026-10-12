@@ -15,7 +15,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.PatternMatcher;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Visitor that validates structure tree elements against the tag schema. Performs five validations:
@@ -63,12 +63,12 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        validateUnknownRole(ctx);
-        validateParentRule(ctx);
-        validateChildCount(ctx);
-        validateAllowedChildren(ctx);
-        validateChildPattern(ctx);
+    public boolean enterElement(Visit visit) {
+        validateUnknownRole(visit);
+        validateParentRule(visit);
+        validateChildCount(visit);
+        validateAllowedChildren(visit);
+        validateChildPattern(visit);
 
         return true; // Always continue to children
     }
@@ -78,113 +78,121 @@ public class SchemaValidationCheck extends StructTreeCheck {
         return issues;
     }
 
-    private void validateUnknownRole(StructTreeContext ctx) {
+    private void validateUnknownRole(Visit visit) {
         /* If the schema rule is null, the role is not defined in the schema. */
-        if (ruleFor(ctx) == null) {
+        if (ruleFor(visit) == null) {
             String message =
                     String.format(
                             "%s role is not defined in schema",
-                            formatRole(StructTree.mappedRole(ctx.node())));
-            scribbleIssue(ctx.node(), message);
-            issues.add(new Issue(IssueType.TAG_UNKNOWN_ROLE, IssueSev.ERROR, ctx.locus(), message));
+                            formatRole(StructTree.mappedRole(visit.node())));
+            scribbleIssue(visit.node(), message);
+            issues.add(
+                    new Issue(IssueType.TAG_UNKNOWN_ROLE, IssueSev.ERROR, visit.locus(), message));
         }
     }
 
-    private void validateParentRule(StructTreeContext ctx) {
-        TagSchema.Rule rule = ruleFor(ctx);
+    private void validateParentRule(Visit visit) {
+        TagSchema.Rule rule = ruleFor(visit);
         if (rule == null || rule.getParentMustBe() == null) return;
-        if (ctx.parentRole() == null) return;
+        if (visit.parentRole() == null) return;
 
-        if (!rule.getParentMustBe().contains(ctx.parentRole())) {
+        if (!rule.getParentMustBe().contains(visit.parentRole())) {
             String message =
                     "parent must be "
                             + formatRole(rule.getParentMustBe())
                             + " but is "
-                            + formatRole(ctx.parentRole());
-            scribbleIssue(ctx.node(), message);
-            issues.add(new Issue(IssueType.TAG_WRONG_PARENT, IssueSev.ERROR, ctx.locus(), message));
+                            + formatRole(visit.parentRole());
+            scribbleIssue(visit.node(), message);
+            issues.add(
+                    new Issue(IssueType.TAG_WRONG_PARENT, IssueSev.ERROR, visit.locus(), message));
         }
     }
 
-    private void validateChildCount(StructTreeContext ctx) {
-        TagSchema.Rule rule = ruleFor(ctx);
+    private void validateChildCount(Visit visit) {
+        TagSchema.Rule rule = ruleFor(visit);
         if (rule == null) return;
 
-        int childCount = ctx.childRoles().size();
+        int childCount = visit.childRoles().size();
 
         if (rule.getMinChildren() != null && childCount < rule.getMinChildren()) {
             String message =
-                    formatRole(ctx.role())
+                    formatRole(visit.role())
                             + " has "
                             + childCount
                             + " kids; min is "
                             + rule.getMinChildren();
-            scribbleIssue(ctx.node(), message);
+            scribbleIssue(visit.node(), message);
             issues.add(
                     new Issue(
-                            IssueType.TAG_WRONG_CHILD_COUNT, IssueSev.ERROR, ctx.locus(), message));
+                            IssueType.TAG_WRONG_CHILD_COUNT,
+                            IssueSev.ERROR,
+                            visit.locus(),
+                            message));
         }
 
         if (rule.getMaxChildren() != null && childCount > rule.getMaxChildren()) {
             String message =
-                    formatRole(ctx.role())
+                    formatRole(visit.role())
                             + " has "
                             + childCount
                             + " kids; max is "
                             + rule.getMaxChildren();
-            scribbleIssue(ctx.node(), message);
+            scribbleIssue(visit.node(), message);
             issues.add(
                     new Issue(
-                            IssueType.TAG_WRONG_CHILD_COUNT, IssueSev.ERROR, ctx.locus(), message));
+                            IssueType.TAG_WRONG_CHILD_COUNT,
+                            IssueSev.ERROR,
+                            visit.locus(),
+                            message));
         }
     }
 
-    private void validateAllowedChildren(StructTreeContext ctx) {
-        TagSchema.Rule rule = ruleFor(ctx);
+    private void validateAllowedChildren(Visit visit) {
+        TagSchema.Rule rule = ruleFor(visit);
         if (rule == null || rule.getAllowedChildren() == null) return;
         if (rule.getAllowedChildren().isEmpty()) return;
 
-        for (int i = 0; i < ctx.childRoles().size(); i++) {
-            String childRole = ctx.childRoles().get(i);
+        for (int i = 0; i < visit.childRoles().size(); i++) {
+            String childRole = visit.childRoles().get(i);
             if (!rule.getAllowedChildren().contains(childRole)) {
                 String message =
-                        formatRole(childRole) + " not allowed under " + formatRole(ctx.role());
-                scribbleIssue(ctx.children().get(i), message);
+                        formatRole(childRole) + " not allowed under " + formatRole(visit.role());
+                scribbleIssue(visit.children().get(i), message);
                 issues.add(
                         new Issue(
                                 IssueType.TAG_WRONG_CHILD,
                                 IssueSev.ERROR,
-                                Locus.atElem(ctx.docCtx(), ctx.children().get(i)),
+                                Locus.atElem(visit.docCtx(), visit.children().get(i)),
                                 message));
             }
         }
     }
 
-    private void validateChildPattern(StructTreeContext ctx) {
-        TagSchema.Rule rule = ruleFor(ctx);
+    private void validateChildPattern(Visit visit) {
+        TagSchema.Rule rule = ruleFor(visit);
         if (rule == null || rule.getChildPattern() == null) return;
 
         PatternMatcher pm = PatternMatcher.compile(rule.getChildPattern());
-        if (pm != null && !pm.fullMatch(ctx.childRoles())) {
+        if (pm != null && !pm.fullMatch(visit.childRoles())) {
             String message =
                     "kids "
-                            + ctx.childRoles()
+                            + visit.childRoles()
                             + " do not match pattern '"
                             + rule.getChildPattern()
                             + "'";
-            scribbleIssue(ctx.node(), message);
+            scribbleIssue(visit.node(), message);
             issues.add(
                     new Issue(
                             IssueType.TAG_WRONG_CHILD_PATTERN,
                             IssueSev.ERROR,
-                            ctx.locus(),
+                            visit.locus(),
                             message));
         }
     }
 
     /** Returns the schema rule for the element's role, or null if the role is not in the schema. */
-    private TagSchema.Rule ruleFor(StructTreeContext ctx) {
-        return schema.roles.get(ctx.mappedRole());
+    private TagSchema.Rule ruleFor(Visit visit) {
+        return schema.roles.get(visit.mappedRole());
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {

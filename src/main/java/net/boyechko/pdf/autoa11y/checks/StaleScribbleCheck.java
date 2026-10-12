@@ -12,7 +12,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Flags structure elements whose /T (title) value starts with StructTree.SCRIBBLE_PREFIX,
@@ -74,8 +74,8 @@ public class StaleScribbleCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        DocValue.Scribble scribble = DocValue.Scribble.of(ctx.node());
+    public boolean enterElement(Visit visit) {
+        DocValue.Scribble scribble = DocValue.Scribble.of(visit.node());
         if (scribble == null || !inScope(scribble)) {
             return true;
         }
@@ -83,9 +83,9 @@ public class StaleScribbleCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.STALE_SCRIBBLE,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Stale workflow scribble: " + scribble.rawValue(),
-                        new StaleScribbleFix(ctx.node(), scribble.rawValue())));
+                        new StaleScribbleFix(visit.node(), scribble.rawValue())));
         return true;
     }
 

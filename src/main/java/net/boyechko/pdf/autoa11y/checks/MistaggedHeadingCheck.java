@@ -22,7 +22,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,18 +73,18 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        PdfStructElem node = ctx.node();
+    public boolean enterElement(Visit visit) {
+        PdfStructElem node = visit.node();
         String role = StructTree.mappedRole(node);
 
         if (ART_ROLE.equals(role)) {
-            HeadingScope scope = buildScope(charCountsForElement(node, ctx.docCtx()));
+            HeadingScope scope = buildScope(charCountsForElement(node, visit.docCtx()));
             scopeStack.push(scope);
             logScope(
                     Label.of(new DocValue.Role("Art"))
                             .add("(")
                             .separator("")
-                            .add(new DocValue.PageNum(StructTree.pageOf(node, ctx.docCtx())))
+                            .add(new DocValue.PageNum(StructTree.pageOf(node, visit.docCtx())))
                             .add(")")
                             .toString(),
                     scope);
@@ -99,7 +99,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             return true;
         }
 
-        Float dominantSize = dominantSize(charCountsForElement(node, ctx.docCtx()));
+        Float dominantSize = dominantSize(charCountsForElement(node, visit.docCtx()));
         if (dominantSize == null) {
             return true;
         }
@@ -125,7 +125,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         int expectedLevel = scope.prevLevel() + 1;
         if (level > expectedLevel) {
             if (scope.prevLevel() == 0) {
-                flagTooDeepToOpen(ctx, sizeLevel, expectedLevel, dominantSize);
+                flagTooDeepToOpen(visit, sizeLevel, expectedLevel, dominantSize);
                 return true;
             }
             // A heading already stands above this one, so the gap is a ranking artifact rather
@@ -149,11 +149,11 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.MISTAGGED_HEADING,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Mistagged "
                                 + headingLevel.getValue()
                                 + ": \""
-                                + getTruncatedText(ctx)
+                                + getTruncatedText(visit)
                                 + "\"",
                         fix));
 
@@ -165,12 +165,12 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
      * with no heading above it to demote it against.
      */
     private void flagTooDeepToOpen(
-            StructTreeContext ctx, PdfName sizeLevel, int expectedLevel, float dominantSize) {
+            Visit visit, PdfName sizeLevel, int expectedLevel, float dominantSize) {
         // A tool-authored finding (":?"): the level the size suggests, why it was rejected, and
         // the measured size. It is informational only -- never an executable instruction, since
         // retagging to this level would itself be improperly nested.
         StructTree.setToolScribble(
-                ctx.node(),
+                visit.node(),
                 FINDING_MARK
                         + sizeLevel.getValue()
                         + " (expected H"
@@ -183,18 +183,18 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.IMPROPERLY_NESTED_HEADING,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Improperly nested "
                                 + sizeLevel.getValue()
                                 + ": \""
-                                + getTruncatedText(ctx)
+                                + getTruncatedText(visit)
                                 + "\"",
                         null));
     }
 
     @Override
-    public void leaveElement(StructTreeContext ctx) {
-        if (ART_ROLE.equals(StructTree.mappedRole(ctx.node())) && !scopeStack.isEmpty()) {
+    public void leaveElement(Visit visit) {
+        if (ART_ROLE.equals(StructTree.mappedRole(visit.node())) && !scopeStack.isEmpty()) {
             scopeStack.pop();
         }
     }
@@ -362,14 +362,14 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                 .orElse(null);
     }
 
-    /** Returns a truncated text content of the given @code{StructTreeContext}. */
-    private String getTruncatedText(StructTreeContext ctx) {
-        int pageNum = ctx.page();
+    /** Returns a truncated text content of the given @code{Visit}. */
+    private String getTruncatedText(Visit visit) {
+        int pageNum = visit.page();
         if (pageNum <= 0) {
             return "";
         }
 
-        return Format.truncate(Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNum));
+        return Format.truncate(Content.getTextForElement(visit.node(), visit.docCtx(), pageNum));
     }
 
     /** Rounds font size to the nearest 0.25pt to handle floating-point noise. */

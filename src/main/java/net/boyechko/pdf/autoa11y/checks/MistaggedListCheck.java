@@ -38,7 +38,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,13 +104,13 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     @Override
-    public void leaveElement(StructTreeContext ctx) {
-        if (ownsItsLines(ctx)) {
-            List<BulletLine> lines = bulletLinesOf(ctx, ctx.node());
-            lines.forEach(line -> laidOut.add(new MisshapenLists.OwnedLine(line, ctx.node())));
-            detectLumpedItems(ctx, lines);
-        } else if (CONTAINER_ROLES.contains(ctx.role())) {
-            detectLooseItems(ctx);
+    public void leaveElement(Visit visit) {
+        if (ownsItsLines(visit)) {
+            List<BulletLine> lines = bulletLinesOf(visit, visit.node());
+            lines.forEach(line -> laidOut.add(new MisshapenLists.OwnedLine(line, visit.node())));
+            detectLumpedItems(visit, lines);
+        } else if (CONTAINER_ROLES.contains(visit.role())) {
+            detectLooseItems(visit);
         }
     }
 
@@ -120,9 +120,10 @@ public class MistaggedListCheck extends StructTreeCheck {
      * Whether an author wrapped an item's text in a Link decides nothing about which element the
      * bullets belong to, so having such children does not disqualify it.
      */
-    private boolean ownsItsLines(StructTreeContext ctx) {
-        return !schema.hasType(ctx.role(), TagType.INLINE)
-                && ctx.childRoles().stream().allMatch(role -> schema.hasType(role, TagType.INLINE));
+    private boolean ownsItsLines(Visit visit) {
+        return !schema.hasType(visit.role(), TagType.INLINE)
+                && visit.childRoles().stream()
+                        .allMatch(role -> schema.hasType(role, TagType.INLINE));
     }
 
     @Override
@@ -141,7 +142,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      * Reports a leaf whose lines cover several bullets at one indent. The gaps between those
      * bullets give each item's line count, which is the spec {@link SplitIntoListItemsFix} takes.
      */
-    private void detectLumpedItems(StructTreeContext ctx, List<BulletLine> lines) {
+    private void detectLumpedItems(Visit visit, List<BulletLine> lines) {
         Float levelX =
                 lines.stream()
                         .map(BulletLine::bulletX)
@@ -162,28 +163,28 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (itemStarts.size() < MIN_ITEMS_PER_LIST) {
             return;
         }
-        claimed.add(StructTree.objNum(ctx.node()));
+        claimed.add(StructTree.objNum(visit.node()));
 
         int leadingLines = itemStarts.get(0);
         String spec = specOf(itemStarts, lines.size());
         if (leadingLines > 0) {
-            emitContinuedItem(ctx, itemStarts.size(), leadingLines, spec, levelX);
+            emitContinuedItem(visit, itemStarts.size(), leadingLines, spec, levelX);
             return;
         }
 
-        boolean splittable = ownsOnlyMarkedContent(ctx.node());
+        boolean splittable = ownsOnlyMarkedContent(visit.node());
         issues.add(
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         lumpedMessage(itemStarts.size(), spec, 0, splittable),
-                        splittable ? new SplitIntoListItemsFix(ctx.node(), spec) : null));
+                        splittable ? new SplitIntoListItemsFix(visit.node(), spec) : null));
 
         logger.debug(
                 "Element #{} lumps {} bulleted items at x={}, lines {}, behind {} leading line(s),"
                         + " splittable={}",
-                StructTree.objNum(ctx.node()),
+                StructTree.objNum(visit.node()),
                 itemStarts.size(),
                 String.format("%.1f", levelX),
                 spec,
@@ -197,20 +198,20 @@ public class MistaggedListCheck extends StructTreeCheck {
      * is nothing to fold into and the element is left for review.
      */
     private void emitContinuedItem(
-            StructTreeContext ctx, int items, int leadingLines, String spec, float levelX) {
-        IssueFix fix = continuationFix(ctx, leadingLines, spec, levelX);
+            Visit visit, int items, int leadingLines, String spec, float levelX) {
+        IssueFix fix = continuationFix(visit, leadingLines, spec, levelX);
 
         issues.add(
                 new Issue(
                         IssueType.LIST_ITEMS_LUMPED,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         lumpedMessage(items, spec, leadingLines, fix != null),
                         fix));
 
         logger.debug(
                 "Element #{} lumps {} bulleted items behind {} continuation line(s), remedy {}",
-                StructTree.objNum(ctx.node()),
+                StructTree.objNum(visit.node()),
                 items,
                 leadingLines,
                 fix == null ? "none" : fix.getClass().getSimpleName());
@@ -222,19 +223,18 @@ public class MistaggedListCheck extends StructTreeCheck {
      * they are the next items of the list the two share. Null where no item can be identified,
      * leaving the element for review.
      */
-    private IssueFix continuationFix(
-            StructTreeContext ctx, int leadingLines, String spec, float levelX) {
-        ContinuedItem continued = continuedItem(ctx, levelX);
+    private IssueFix continuationFix(Visit visit, int leadingLines, String spec, float levelX) {
+        ContinuedItem continued = continuedItem(visit, levelX);
         if (continued != null) {
             // Claim the opener: its bullet makes it the start of an item that runs on into
             // this element, so wrapping it alone as a one-item list is wrong. An opener inside
             // a list needs no claim, loose items being looked for under containers only.
             claimed.add(StructTree.objNum(continued.opener()));
             return new SplitIntoSublistFix(
-                    ctx.node(), continued.opener(), leadingLines, spec, continued.joinInto());
+                    visit.node(), continued.opener(), leadingLines, spec, continued.joinInto());
         }
-        return continuesAnItemOfItsList(ctx, levelX)
-                ? new FoldIntoPreviousItemFix(ctx.node(), leadingLines, spec)
+        return continuesAnItemOfItsList(visit, levelX)
+                ? new FoldIntoPreviousItemFix(visit.node(), leadingLines, spec)
                 : null;
     }
 
@@ -245,13 +245,13 @@ public class MistaggedListCheck extends StructTreeCheck {
      * opener as one paragraph. A preceding item lumping several items of its own qualifies on its
      * last bullet, the fold being resolved against the items it is split into.
      */
-    private boolean continuesAnItemOfItsList(StructTreeContext ctx, float levelX) {
-        PdfStructElem opener = FoldIntoPreviousItemFix.openerFor(ctx.node());
-        if (opener == null || !ctx.role().equals(StructTree.mappedRole(opener))) {
+    private boolean continuesAnItemOfItsList(Visit visit, float levelX) {
+        PdfStructElem opener = FoldIntoPreviousItemFix.openerFor(visit.node());
+        if (opener == null || !visit.role().equals(StructTree.mappedRole(opener))) {
             return false;
         }
         List<Float> bulleted =
-                bulletLinesOf(ctx, opener).stream()
+                bulletLinesOf(visit, opener).stream()
                         .map(BulletLine::bulletX)
                         .filter(Objects::nonNull)
                         .toList();
@@ -272,19 +272,19 @@ public class MistaggedListCheck extends StructTreeCheck {
      * carry a single bullet far enough out that this element's bullets read as its sublist. Null
      * when no such sibling exists, leaving the continuation no item to rejoin.
      */
-    private ContinuedItem continuedItem(StructTreeContext ctx, float levelX) {
-        if (!(StructTree.parentOf(ctx.node()) instanceof PdfStructElem container)) {
+    private ContinuedItem continuedItem(Visit visit, float levelX) {
+        if (!(StructTree.parentOf(visit.node()) instanceof PdfStructElem container)) {
             return null;
         }
         List<PdfStructElem> siblings = StructTree.childrenOf(container, PdfStructElem.class);
-        int index = indexOf(siblings, ctx.node());
+        int index = indexOf(siblings, visit.node());
         if (index <= 0) {
             return null;
         }
 
         PdfStructElem opener = siblings.get(index - 1);
         List<Float> bulleted =
-                bulletLinesOf(ctx, opener).stream()
+                bulletLinesOf(visit, opener).stream()
                         .map(BulletLine::bulletX)
                         .filter(Objects::nonNull)
                         .toList();
@@ -292,7 +292,7 @@ public class MistaggedListCheck extends StructTreeCheck {
             return null;
         }
         return new ContinuedItem(
-                opener, followingListAtLevel(ctx, siblings, index, bulleted.get(0)));
+                opener, followingListAtLevel(visit, siblings, index, bulleted.get(0)));
     }
 
     /**
@@ -301,7 +301,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      * its own. Rebuilding the item inside it is what keeps one list from becoming two.
      */
     private PdfStructElem followingListAtLevel(
-            StructTreeContext ctx, List<PdfStructElem> siblings, int index, float openerX) {
+            Visit visit, List<PdfStructElem> siblings, int index, float openerX) {
         if (index + 1 >= siblings.size()) {
             return null;
         }
@@ -309,7 +309,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (!"L".equals(StructTree.mappedRole(following))) {
             return null;
         }
-        float listX = listItemBulletX(ctx, following, false);
+        float listX = listItemBulletX(visit, following, false);
         return !Float.isNaN(listX) && Math.abs(listX - openerX) <= SAME_LEVEL_TOLERANCE
                 ? following
                 : null;
@@ -373,17 +373,17 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     /** Reports runs of consecutive children that each hold one bulleted item at the same indent. */
-    private void detectLooseItems(StructTreeContext ctx) {
+    private void detectLooseItems(Visit visit) {
         List<Item> run = new ArrayList<>();
         PdfStructElem predecessor = null;
 
-        for (int i = 0; i < ctx.children().size(); i++) {
-            PdfStructElem child = ctx.children().get(i);
-            String childRole = ctx.childRoles().get(i);
+        for (int i = 0; i < visit.children().size(); i++) {
+            PdfStructElem child = visit.children().get(i);
+            String childRole = visit.childRoles().get(i);
             Item item =
                     isGroupingListOrTable(childRole) || claimed.contains(StructTree.objNum(child))
                             ? null
-                            : itemOf(ctx, child, run.isEmpty());
+                            : itemOf(visit, child, run.isEmpty());
 
             // A run continues only while each child holds one item at the run's own indent;
             // it may span a page break, since lists do.
@@ -392,25 +392,25 @@ public class MistaggedListCheck extends StructTreeCheck {
                             || Math.abs(item.bulletX() - run.get(0).bulletX())
                                     <= SAME_LEVEL_TOLERANCE)) {
                 if (run.isEmpty()) {
-                    predecessor = i > 0 ? ctx.children().get(i - 1) : null;
+                    predecessor = i > 0 ? visit.children().get(i - 1) : null;
                 }
                 run.add(item);
                 continue;
             }
 
-            PdfStructElem host = emitLooseRun(ctx, run, predecessor);
+            PdfStructElem host = emitLooseRun(visit, run, predecessor);
             if (host != null && "L".equals(childRole)) {
                 // The nested run vacates the space between the two lists —
                 // if they sit at the same indent, they were one list
-                emitMergeIfSameLevel(ctx, host, child);
+                emitMergeIfSameLevel(visit, host, child);
             }
             run = new ArrayList<>();
             if (item != null) {
-                predecessor = i > 0 ? ctx.children().get(i - 1) : null;
+                predecessor = i > 0 ? visit.children().get(i - 1) : null;
                 run.add(item);
             }
         }
-        emitLooseRun(ctx, run, predecessor);
+        emitLooseRun(visit, run, predecessor);
     }
 
     /**
@@ -418,8 +418,8 @@ public class MistaggedListCheck extends StructTreeCheck {
      * a carve when only its last line does, which makes it the tail of a paragraph that runs into
      * the list. A carve can only open a run, since the rest of the element stays where it is.
      */
-    private Item itemOf(StructTreeContext ctx, PdfStructElem element, boolean opensRun) {
-        List<BulletLine> lines = bulletLinesOf(ctx, element);
+    private Item itemOf(Visit visit, PdfStructElem element, boolean opensRun) {
+        List<BulletLine> lines = bulletLinesOf(visit, element);
         List<Integer> bulleted = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
             if (lines.get(i).bulletX() != null) {
@@ -438,19 +438,21 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (!opensRun || at != lines.size() - 1) {
             return null;
         }
-        List<PdfObject> carved = kidsOnLine(ctx, element, line.bounds());
+        List<PdfObject> carved = kidsOnLine(visit, element, line.bounds());
         return carved.isEmpty()
                 ? null
                 : new Item(
-                        element, line.bulletX(), carved, StructTree.pageOf(element, ctx.docCtx()));
+                        element,
+                        line.bulletX(),
+                        carved,
+                        StructTree.pageOf(element, visit.docCtx()));
     }
 
     /** Returns the element's kids whose own content sits on the given line. */
-    private List<PdfObject> kidsOnLine(
-            StructTreeContext ctx, PdfStructElem element, Rectangle line) {
+    private List<PdfObject> kidsOnLine(Visit visit, PdfStructElem element, Rectangle line) {
         List<PdfObject> onLine = new ArrayList<>();
         for (IStructureNode kid : StructTree.kidsOf(element)) {
-            Rectangle bounds = boundsOfKid(ctx, kid);
+            Rectangle bounds = boundsOfKid(visit, kid);
             if (bounds != null && sitOnOneLine(bounds, line)) {
                 onLine.add(pdfObjectOf(kid));
             }
@@ -463,8 +465,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      * preceding list the run will nest into as a sublist, or null when it becomes a list of its own
      * (or is too short to be one).
      */
-    private PdfStructElem emitLooseRun(
-            StructTreeContext ctx, List<Item> run, PdfStructElem predecessor) {
+    private PdfStructElem emitLooseRun(Visit visit, List<Item> run, PdfStructElem predecessor) {
         if (run.size() < MIN_ITEMS_PER_LIST) {
             return null;
         }
@@ -472,22 +473,22 @@ public class MistaggedListCheck extends StructTreeCheck {
         Item opener = run.get(0);
         List<PdfStructElem> whole = run.stream().filter(Item::isWhole).map(Item::element).toList();
         PdfStructElem nestInto =
-                opener.isWhole() ? sublistTarget(ctx, predecessor, opener.bulletX()) : null;
+                opener.isWhole() ? sublistTarget(visit, predecessor, opener.bulletX()) : null;
         issues.add(
                 new Issue(
                         nestInto != null
                                 ? IssueType.SUBLIST_TAGGED_AS_PARAGRAPHS
                                 : IssueType.LIST_TAGGED_AS_PARAGRAPHS,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         run.size()
                                 + " elements each carry a bullet but no "
                                 + (nestInto != null ? "sublist" : "list")
                                 + " wraps them",
                         opener.isWhole()
-                                ? new WrapBulletedRunInList(ctx.node(), whole, nestInto)
+                                ? new WrapBulletedRunInList(visit.node(), whole, nestInto)
                                 : new WrapBulletedRunInList(
-                                        ctx.node(),
+                                        visit.node(),
                                         opener.element(),
                                         opener.carvedKids(),
                                         opener.page(),
@@ -498,7 +499,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         logger.debug(
                 "Elements {} under #{} each carry one bullet, unwrapped{}{}",
                 run.stream().map(item -> StructTree.objNum(item.element())).toList(),
-                StructTree.objNum(ctx.node()),
+                StructTree.objNum(visit.node()),
                 opener.isWhole()
                         ? ""
                         : " (first carved out of #" + StructTree.objNum(opener.element()) + ")",
@@ -507,20 +508,18 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     /** Returns the preceding list an indented run should nest into as a sublist, or null. */
-    private PdfStructElem sublistTarget(
-            StructTreeContext ctx, PdfStructElem predecessor, float bulletX) {
+    private PdfStructElem sublistTarget(Visit visit, PdfStructElem predecessor, float bulletX) {
         if (predecessor == null || !"L".equals(StructTree.mappedRole(predecessor))) {
             return null;
         }
-        float listX = listItemBulletX(ctx, predecessor, true);
+        float listX = listItemBulletX(visit, predecessor, true);
         return !Float.isNaN(listX) && bulletX - listX >= SUBLIST_INDENT_MIN ? predecessor : null;
     }
 
     /** Emits a merge fix when two lists flanking a nested sublist share the same indent. */
-    private void emitMergeIfSameLevel(
-            StructTreeContext ctx, PdfStructElem first, PdfStructElem second) {
-        float firstX = listItemBulletX(ctx, first, true);
-        float secondX = listItemBulletX(ctx, second, false);
+    private void emitMergeIfSameLevel(Visit visit, PdfStructElem first, PdfStructElem second) {
+        float firstX = listItemBulletX(visit, first, true);
+        float secondX = listItemBulletX(visit, second, false);
         if (Float.isNaN(firstX)
                 || Float.isNaN(secondX)
                 || Math.abs(firstX - secondX) > SAME_LEVEL_TOLERANCE) {
@@ -531,7 +530,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.LIST_SPLIT_BY_SUBLIST,
                         IssueSev.WARNING,
-                        Locus.atElem(ctx.docCtx(), second),
+                        Locus.atElem(visit.docCtx(), second),
                         "list split in two around a sublist",
                         new MergeAdjacentListsFix(first, second)));
 
@@ -549,12 +548,12 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     /** Returns the bullet x of a list's first or last item, or NaN when it carries none. */
-    private float listItemBulletX(StructTreeContext ctx, PdfStructElem list, boolean lastItem) {
+    private float listItemBulletX(Visit visit, PdfStructElem list, boolean lastItem) {
         List<PdfStructElem> items = itemsOf(list);
         if (items.isEmpty()) {
             return Float.NaN;
         }
-        return bulletLinesOf(ctx, items.get(lastItem ? items.size() - 1 : 0)).stream()
+        return bulletLinesOf(visit, items.get(lastItem ? items.size() - 1 : 0)).stream()
                 .map(BulletLine::bulletX)
                 .filter(Objects::nonNull)
                 .findFirst()
@@ -935,17 +934,18 @@ public class MistaggedListCheck extends StructTreeCheck {
      * Returns each of the element's text lines in reading order with the bullet it carries. Pages
      * are visited in order, since an element spans page breaks.
      */
-    private List<BulletLine> bulletLinesOf(StructTreeContext ctx, PdfStructElem element) {
+    private List<BulletLine> bulletLinesOf(Visit visit, PdfStructElem element) {
         List<BulletLine> perLine = new ArrayList<>();
         for (int pageNum : pagesTouchedBy(element)) {
             List<Content.BulletPosition> bullets =
-                    ctx.docCtx()
+                    visit.docCtx()
                             .getOrComputeBulletPositions(
                                     pageNum,
                                     () ->
                                             Content.extractBulletPositionsForPage(
-                                                    ctx.doc().getPage(pageNum)));
-            for (Rectangle line : Content.getLineBoundsForElement(element, ctx.docCtx(), pageNum)) {
+                                                    visit.doc().getPage(pageNum)));
+            for (Rectangle line :
+                    Content.getLineBoundsForElement(element, visit.docCtx(), pageNum)) {
                 perLine.add(new BulletLine(pageNum, line, bulletOnLine(bullets, line)));
             }
         }
@@ -971,16 +971,16 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     /** Returns a kid's own bounds on its own page, or null when it has none (e.g. an OBJR). */
-    private static Rectangle boundsOfKid(StructTreeContext ctx, IStructureNode kid) {
+    private static Rectangle boundsOfKid(Visit visit, IStructureNode kid) {
         if (kid instanceof PdfMcr mcr) {
             int pageNum = StructTree.pageOf(mcr);
             return pageNum > 0 && mcr.getMcid() >= 0
-                    ? Content.getBoundsForMcid(ctx.docCtx(), pageNum, mcr.getMcid())
+                    ? Content.getBoundsForMcid(visit.docCtx(), pageNum, mcr.getMcid())
                     : null;
         }
         if (kid instanceof PdfStructElem elem) {
-            int pageNum = StructTree.pageOf(elem, ctx.docCtx());
-            return pageNum > 0 ? Content.getBoundsForElement(elem, ctx.docCtx(), pageNum) : null;
+            int pageNum = StructTree.pageOf(elem, visit.docCtx());
+            return pageNum > 0 ? Content.getBoundsForElement(elem, visit.docCtx(), pageNum) : null;
         }
         return null;
     }

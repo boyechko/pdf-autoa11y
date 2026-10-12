@@ -13,7 +13,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects adjacent sibling lists and merges each run into its first list. */
 public class AdjacentListsCheck extends StructTreeCheck {
@@ -31,8 +31,8 @@ public class AdjacentListsCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        List<IStructureNode> kids = ctx.node().getKids();
+    public boolean enterElement(Visit visit) {
+        List<IStructureNode> kids = visit.node().getKids();
         if (kids == null) {
             return true;
         }
@@ -43,7 +43,7 @@ public class AdjacentListsCheck extends StructTreeCheck {
                 if (firstList == null) {
                     firstList = elem;
                 } else {
-                    emitIssue(ctx, firstList, elem);
+                    emitIssue(visit, firstList, elem);
                 }
             } else {
                 firstList = null;
@@ -58,13 +58,12 @@ public class AdjacentListsCheck extends StructTreeCheck {
     }
 
     /** Emits a merge anchored to the first list so runs longer than two collapse leftward. */
-    private void emitIssue(
-            StructTreeContext ctx, PdfStructElem firstList, PdfStructElem laterList) {
+    private void emitIssue(Visit visit, PdfStructElem firstList, PdfStructElem laterList) {
         issues.add(
                 new Issue(
                         IssueType.ADJACENT_LISTS,
                         IssueSev.WARNING,
-                        Locus.atElem(ctx.docCtx(), laterList),
+                        Locus.atElem(visit.docCtx(), laterList),
                         "Adjacent sibling lists should be one list",
                         new MergeAdjacentListsFix(firstList, laterList)));
     }

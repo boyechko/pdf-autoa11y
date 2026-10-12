@@ -10,7 +10,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Reports meaningful Figure elements that lack alt text. These are content images large enough to
@@ -31,27 +31,27 @@ public class MissingAltTextCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (!PdfName.Figure.equals(ctx.node().getRole())) {
+    public boolean enterElement(Visit visit) {
+        if (!PdfName.Figure.equals(visit.node().getRole())) {
             return true;
         }
-        if (ctx.node().getAlt() != null) {
+        if (visit.node().getAlt() != null) {
             return true;
         }
 
-        int pageNumber = ctx.page();
+        int pageNumber = visit.page();
         if (pageNumber == 0) {
             return true;
         }
 
         boolean hasImage =
-                Content.findMcidsForElem(ctx.node(), ctx.docCtx()).values().stream()
+                Content.findMcidsForElem(visit.node(), visit.docCtx()).values().stream()
                         .anyMatch(mc -> mc.kinds().contains(Content.ContentKind.IMAGE));
         if (!hasImage) {
             return true;
         }
 
-        Rectangle bounds = Content.getBoundsForElement(ctx.node(), ctx.docCtx(), pageNumber);
+        Rectangle bounds = Content.getBoundsForElement(visit.node(), visit.docCtx(), pageNumber);
         if (bounds == null || !MistaggedArtifactCheck.isMeaningfulSize(bounds)) {
             return true;
         }
@@ -60,7 +60,7 @@ public class MissingAltTextCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.FIGURE_MISSING_ALT,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Figure without alt text");
         issues.add(issue);
         return true;

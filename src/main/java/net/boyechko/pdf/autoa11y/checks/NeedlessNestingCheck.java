@@ -15,7 +15,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects Part/Sect/Art wrapper elements that add no semantic value. */
 public class NeedlessNestingCheck extends StructTreeCheck {
@@ -36,9 +36,9 @@ public class NeedlessNestingCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (GROUPING_ROLES.contains(ctx.role()) && !isPageContainer(ctx.node())) {
-            groupingElementsToFlatten.add(ctx.node());
+    public boolean enterElement(Visit visit) {
+        if (GROUPING_ROLES.contains(visit.role()) && !isPageContainer(visit.node())) {
+            groupingElementsToFlatten.add(visit.node());
         }
         return true;
     }

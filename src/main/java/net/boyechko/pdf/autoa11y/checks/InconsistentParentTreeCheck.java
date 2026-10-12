@@ -14,7 +14,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Detects structure elements whose marked-content kids are not reflected in the page ParentTree --
@@ -38,12 +38,12 @@ public class InconsistentParentTreeCheck extends StructTreeCheck {
     }
 
     @Override
-    public void leaveElement(StructTreeContext ctx) {
-        PdfStructElem node = ctx.node();
+    public void leaveElement(Visit visit) {
+        PdfStructElem node = visit.node();
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return;
 
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        PdfStructTreeRoot root = visit.doc().getStructTreeRoot();
         int broken = 0;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfMcr mcr
@@ -58,10 +58,10 @@ public class InconsistentParentTreeCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.INCONSISTENT_PARENT_TREE,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         broken
                                 + " marked-content reference(s) missing from ParentTree in "
-                                + ctx.role(),
+                                + visit.role(),
                         fix));
     }
 
