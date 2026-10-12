@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
 import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
+import net.boyechko.pdf.autoa11y.issue.IssueStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,7 +19,14 @@ class RemediationLogTest {
     @TempDir Path tempDir;
 
     private static final IssueSnapshot ENTRY =
-            new IssueSnapshot(97, 1, "Figure", "FigureWithTextFix", "Retagged Figure as H1");
+            new IssueSnapshot(
+                    97,
+                    1,
+                    "Figure",
+                    "FigureWithTextFix",
+                    "Figure contains heading text",
+                    IssueStatus.RESOLVED,
+                    "Retagged Figure as H1");
 
     @Test
     void runRecordPrecedesItsFixRecords() throws IOException {
@@ -40,7 +48,7 @@ class RemediationLogTest {
         assertTrue(fixLine.contains("\"page\":1"), fixLine);
         assertTrue(fixLine.contains("\"role\":\"Figure\""), fixLine);
         assertTrue(fixLine.contains("\"fix\":\"FigureWithTextFix\""), fixLine);
-        assertTrue(fixLine.contains("\"message\":\"Retagged Figure as H1\""), fixLine);
+        assertEquals(ENTRY.message(), valueOf(fixLine, "message"));
     }
 
     @Test
@@ -72,7 +80,14 @@ class RemediationLogTest {
     @Test
     void quotesAndBackslashesInDescriptionsStayParseable() throws IOException {
         IssueSnapshot entry =
-                new IssueSnapshot(8018, 12, "L", "StaleScribbleFix", "Cleared \"a\\b\" // x");
+                new IssueSnapshot(
+                        8018,
+                        12,
+                        "L",
+                        "StaleScribbleFix",
+                        "Stale scribble \"a\\b\" // x",
+                        IssueStatus.RESOLVED,
+                        "Cleared \"a\\b\" // x");
 
         String fixLine = appendAndRead(List.of(entry)).get(1);
 
@@ -82,7 +97,15 @@ class RemediationLogTest {
 
     @Test
     void controlCharactersAreEscapedRatherThanBreakingTheLine() throws IOException {
-        IssueSnapshot entry = new IssueSnapshot(1, 1, "P", "SomeFix", "line one\nline two\ttabbed");
+        IssueSnapshot entry =
+                new IssueSnapshot(
+                        1,
+                        1,
+                        "P",
+                        "SomeFix",
+                        "line one\nline two\ttabbed",
+                        IssueStatus.RESOLVED,
+                        "Corrected paragraph content");
 
         List<String> lines = appendAndRead(List.of(entry));
 
@@ -94,7 +117,14 @@ class RemediationLogTest {
     @Test
     void missingLocationFieldsAreRecordedAsNull() throws IOException {
         IssueSnapshot entry =
-                new IssueSnapshot(null, null, null, "LanguageSetFix", "Set language to en");
+                new IssueSnapshot(
+                        null,
+                        null,
+                        null,
+                        "LanguageSetFix",
+                        "Document language not set",
+                        IssueStatus.RESOLVED,
+                        "Set language to en");
 
         String fixLine = appendAndRead(List.of(entry)).get(1);
 
