@@ -88,39 +88,38 @@ public class StructTreeWalker {
 
         globalIndex++;
 
-        StructTreeContext ctx =
-                StructTreeContext.fromNode(node, parentPath, depth, globalIndex, docCtx);
+        Visit visit = Visit.fromNode(node, parentPath, depth, globalIndex, docCtx);
 
         // Call enterElement on all visitors; track if any want to skip children
         boolean continueToChildren = true;
         for (StructTreeCheck visitor : visitors) {
             try {
-                if (!visitor.enterElement(ctx)) {
+                if (!visitor.enterElement(visit)) {
                     continueToChildren = false;
                 }
             } catch (Exception e) {
                 logger.error(
                         "Error in visitor {} at {}: {}",
                         visitor.name(),
-                        ctx.path(),
+                        visit.path(),
                         e.getMessage());
             }
         }
 
         if (continueToChildren) {
-            for (PdfStructElem child : ctx.children()) {
-                walkElement(child, ctx.path() + ".", depth + 1);
+            for (PdfStructElem child : visit.children()) {
+                walkElement(child, visit.path() + ".", depth + 1);
             }
         }
 
         for (StructTreeCheck visitor : visitors) {
             try {
-                visitor.leaveElement(ctx);
+                visitor.leaveElement(visit);
             } catch (Exception e) {
                 logger.error(
                         "Error in visitor {} leaving {}: {}",
                         visitor.name(),
-                        ctx.path(),
+                        visit.path(),
                         e.getMessage());
             }
         }

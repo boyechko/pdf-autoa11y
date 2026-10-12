@@ -16,7 +16,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,23 +66,23 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     }
 
     @Override
-    public void leaveElement(StructTreeContext ctx) {
-        List<PdfStructElem> children = ctx.children();
-        DocContext doc = ctx.docCtx();
+    public void leaveElement(Visit visit) {
+        List<PdfStructElem> children = visit.children();
+        DocContext doc = visit.docCtx();
         if (children.size() >= 2
-                && allChildrenLocatable(ctx, children, doc)
-                && !isInOrder(ctx.node(), children, doc)) {
-            IssueFix fix = new StructTreeOrderFix(ctx.node(), cache);
+                && allChildrenLocatable(visit, children, doc)
+                && !isInOrder(visit.node(), children, doc)) {
+            IssueFix fix = new StructTreeOrderFix(visit.node(), cache);
             issues.add(
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Children are out of reading order",
                             fix));
         }
         // Cache this element's reading position now that all descendants have been visited
-        readingPositionOf(ctx.node(), doc, cache);
+        readingPositionOf(visit.node(), doc, cache);
     }
 
     @Override
@@ -92,12 +92,12 @@ public class StructTreeOrderCheck extends StructTreeCheck {
 
     /** Whether every child paints something findable, without which reordering would guess. */
     private boolean allChildrenLocatable(
-            StructTreeContext ctx, List<PdfStructElem> children, DocContext doc) {
+            Visit visit, List<PdfStructElem> children, DocContext doc) {
         for (PdfStructElem child : children) {
             if (readingPositionOf(child, doc, cache).equals(ReadingPosition.MAX)) {
                 logger.debug(
                         "Not judging the order of #{}: child #{} paints nothing locatable",
-                        StructTree.objNum(ctx.node()),
+                        StructTree.objNum(visit.node()),
                         StructTree.objNum(child));
                 return false;
             }

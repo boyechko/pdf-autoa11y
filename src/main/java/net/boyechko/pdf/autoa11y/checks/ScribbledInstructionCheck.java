@@ -12,7 +12,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects elements whose /T scribble encodes a structural instruction. */
 public class ScribbledInstructionCheck extends StructTreeCheck {
@@ -41,8 +41,8 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        DocValue.Scribble scribble = DocValue.Scribble.of(ctx.node());
+    public boolean enterElement(Visit visit) {
+        DocValue.Scribble scribble = DocValue.Scribble.of(visit.node());
         if (scribble == null) {
             return true;
         }
@@ -52,9 +52,9 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.SCRIBBLED_INSTRUCTION,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Scribbled instruction: " + scribble.value(),
-                            new ScribbledInstructionFix(ctx.node(), instruction)));
+                            new ScribbledInstructionFix(visit.node(), instruction)));
             return !ScribbledInstructionFix.isSubtreeInstruction(instruction);
         }
         return true;

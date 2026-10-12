@@ -22,7 +22,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects Link tags that are missing link descriptions. */
 public class EmptyLinkTagCheck extends StructTreeCheck {
@@ -40,9 +40,9 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
+    public boolean enterElement(Visit visit) {
         // Get the raw IStructureNode children (includes MCRs, not just PdfStructElems)
-        List<IStructureNode> kids = ctx.node().getKids();
+        List<IStructureNode> kids = visit.node().getKids();
         if (kids == null || kids.isEmpty()) {
             return true;
         }
@@ -73,16 +73,18 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                 continue;
             }
 
-            int pageNum = ctx.page();
+            int pageNum = visit.page();
             if (pageNum <= 0) {
                 continue;
             }
 
             Map<Integer, Rectangle> mcidBounds =
-                    ctx.docCtx()
+                    visit.docCtx()
                             .getOrComputeMcidBounds(
                                     pageNum,
-                                    () -> Content.extractBoundsForPage(ctx.doc().getPage(pageNum)));
+                                    () ->
+                                            Content.extractBoundsForPage(
+                                                    visit.doc().getPage(pageNum)));
             Rectangle mcrRect = mcidBounds.get(mcr.getMcid());
             Rectangle annotRect = Geometry.getAnnotationBounds(annotDict);
             if (!Geometry.boundsSimilar(mcrRect, annotRect)) {

@@ -52,8 +52,8 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        visitedRoles.add(ctx.role());
+                    public boolean enterElement(Visit visit) {
+                        visitedRoles.add(visit.role());
                         return true;
                     }
 
@@ -95,8 +95,8 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        paths.add(ctx.path());
+                    public boolean enterElement(Visit visit) {
+                        paths.add(visit.path());
                         return true;
                     }
 
@@ -141,8 +141,8 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        visitor1Indices.add(ctx.globalIndex());
+                    public boolean enterElement(Visit visit) {
+                        visitor1Indices.add(visit.globalIndex());
                         return true;
                     }
 
@@ -167,8 +167,8 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        visitor2Indices.add(ctx.globalIndex());
+                    public boolean enterElement(Visit visit) {
+                        visitor2Indices.add(visit.globalIndex());
                         return true;
                     }
 
@@ -208,14 +208,14 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        entered.add(ctx.role());
+                    public boolean enterElement(Visit visit) {
+                        entered.add(visit.role());
                         return true;
                     }
 
                     @Override
-                    public void leaveElement(StructTreeContext ctx) {
-                        left.add(ctx.role());
+                    public void leaveElement(Visit visit) {
+                        left.add(visit.role());
                     }
 
                     @Override
@@ -269,9 +269,9 @@ class StructTreeWalkerTest extends PdfTestBase {
                     }
 
                     @Override
-                    public boolean enterElement(StructTreeContext ctx) {
-                        if (ctx.hasRole("Document")) {
-                            documentChildRoles.addAll(ctx.childRoles());
+                    public boolean enterElement(Visit visit) {
+                        if (visit.hasRole("Document")) {
+                            documentChildRoles.addAll(visit.childRoles());
                         }
                         return true;
                     }
@@ -388,14 +388,14 @@ class StructTreeWalkerTest extends PdfTestBase {
         }
 
         @Override
-        public boolean enterElement(StructTreeContext ctx) {
-            entered.add(ctx.role());
+        public boolean enterElement(Visit visit) {
+            entered.add(visit.role());
             return true;
         }
 
         @Override
-        public void leaveElement(StructTreeContext ctx) {
-            left.add(ctx.role());
+        public void leaveElement(Visit visit) {
+            left.add(visit.role());
         }
 
         @Override

@@ -50,15 +50,15 @@ public abstract class StructTreeCheck implements Check {
     }
 
     /**
-     * Called before visiting {@code ctx} and returns {@code false} to skip traversing this
+     * Called before visiting {@code visit} and returns {@code false} to skip traversing this
      * element's children.
      */
-    public boolean enterElement(StructTreeContext ctx) {
+    public boolean enterElement(Visit visit) {
         return true;
     }
 
-    /** Called after {@code ctx} is visited (and after any children are traversed or skipped). */
-    public void leaveElement(StructTreeContext ctx) {}
+    /** Called after {@code visit} is visited (and after any children are traversed or skipped). */
+    public void leaveElement(Visit visit) {}
 
     /**
      * Called once before traversal begins. No current node exists yet, so only the document context

@@ -9,7 +9,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Detects a {@code <TOC>} whose contents were never nested into a TOCI hierarchy — typically a web
@@ -39,11 +39,11 @@ public class IrregularTocCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (!ctx.hasRole("TOC") || ctx.children().isEmpty()) {
+    public boolean enterElement(Visit visit) {
+        if (!visit.hasRole("TOC") || visit.children().isEmpty()) {
             return true;
         }
-        if (ctx.childRoles().stream().allMatch(ALLOWED_CHILD_ROLES::contains)) {
+        if (visit.childRoles().stream().allMatch(ALLOWED_CHILD_ROLES::contains)) {
             return true;
         }
 
@@ -51,9 +51,9 @@ public class IrregularTocCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.IRREGULAR_TOC,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "TOC contents not nested into a TOCI hierarchy",
-                        new IrregularTocFix(ctx.node())));
+                        new IrregularTocFix(visit.node())));
 
         // The fix rebuilds the whole subtree, so nested irregularities go with it.
         return false;

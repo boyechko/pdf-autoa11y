@@ -28,7 +28,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.yaml.snakeyaml.Yaml;
 
 /** Visitor that detects tagged content that should be artifacts. */
@@ -72,19 +72,19 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        if (!CHECKABLE_ROLES.contains(ctx.role())) {
+    public boolean enterElement(Visit visit) {
+        if (!CHECKABLE_ROLES.contains(visit.role())) {
             return true;
         }
 
-        String textContent = getTextContent(ctx);
+        String textContent = getTextContent(visit);
         if (matchesTextArtifactPattern(textContent)) {
-            IssueFix fix = new MistaggedArtifactFix(ctx.node());
+            IssueFix fix = new MistaggedArtifactFix(visit.node());
             issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Tagged content should be artifact: \""
                                     + Format.truncate(textContent)
                                     + "\"",
@@ -92,18 +92,18 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             return false;
         }
 
-        if (isSpaceOnlyLeaf(ctx, textContent)) {
+        if (isSpaceOnlyLeaf(visit, textContent)) {
             issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Space-only element should be artifact",
-                            new MistaggedArtifactFix(ctx.node())));
+                            new MistaggedArtifactFix(visit.node())));
             return false;
         }
 
-        detectDecorativeMcrs(ctx);
+        detectDecorativeMcrs(visit);
         return true;
     }
 
@@ -116,12 +116,12 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
      * Detects leaf elements whose only children are MCRs containing nothing but whitespace glyphs.
      * These are typically InDesign typographic spacers that got tagged instead of artifacted.
      */
-    private boolean isSpaceOnlyLeaf(StructTreeContext ctx, String textContent) {
+    private boolean isSpaceOnlyLeaf(Visit visit, String textContent) {
         if (textContent != null && !textContent.isBlank()) {
             return false;
         }
 
-        List<IStructureNode> kids = ctx.node().getKids();
+        List<IStructureNode> kids = visit.node().getKids();
         if (kids == null || kids.isEmpty()) {
             return false;
         }
@@ -152,11 +152,11 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (pageDict == null) {
                 continue;
             }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
+            int pageNum = visit.doc().getPageNumber(pageDict);
             if (pageNum <= 0) {
                 continue;
             }
-            Content.McidContent mc = ctx.docCtx().getMcidContent(pageNum).get(mcid);
+            Content.McidContent mc = visit.docCtx().getMcidContent(pageNum).get(mcid);
             if (mc != null && !mc.kinds().isEmpty()) {
                 return false;
             }
@@ -177,13 +177,13 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
     }
 
     /** Detects individual decorative MCRs (images/paths without text, below size thresholds). */
-    private void detectDecorativeMcrs(StructTreeContext ctx) {
-        boolean isFigure = PdfName.Figure.equals(ctx.node().getRole());
-        if (isFigure && ctx.node().getAlt() != null) {
+    private void detectDecorativeMcrs(Visit visit) {
+        boolean isFigure = PdfName.Figure.equals(visit.node().getRole());
+        if (isFigure && visit.node().getAlt() != null) {
             return;
         }
 
-        List<IStructureNode> kids = ctx.node().getKids();
+        List<IStructureNode> kids = visit.node().getKids();
         if (kids == null) {
             return;
         }
@@ -201,17 +201,17 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (pageDict == null) {
                 continue;
             }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
+            int pageNum = visit.doc().getPageNumber(pageDict);
             if (pageNum <= 0) {
                 continue;
             }
 
-            String mcidText = ctx.docCtx().getMcidText(pageNum, mcid);
+            String mcidText = visit.docCtx().getMcidText(pageNum, mcid);
             if (mcidText != null && !mcidText.isBlank()) {
                 continue;
             }
 
-            Content.McidContent mc = ctx.docCtx().getMcidContent(pageNum).get(mcid);
+            Content.McidContent mc = visit.docCtx().getMcidContent(pageNum).get(mcid);
             if (mc == null
                     || mc.kinds().contains(Content.ContentKind.TEXT)
                     || (!mc.kinds().contains(Content.ContentKind.IMAGE)
@@ -220,24 +220,26 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             }
 
             Map<Integer, Rectangle> boundsByMcid =
-                    ctx.docCtx()
+                    visit.docCtx()
                             .getOrComputeMcidBounds(
                                     pageNum,
-                                    () -> Content.extractBoundsForPage(ctx.doc().getPage(pageNum)));
+                                    () ->
+                                            Content.extractBoundsForPage(
+                                                    visit.doc().getPage(pageNum)));
             Rectangle bounds = boundsByMcid.get(mcid);
             if (bounds != null && isMeaningfulSize(bounds)) {
                 continue;
             }
 
-            PdfPage page = ctx.doc().getPage(pageNum);
+            PdfPage page = visit.doc().getPage(pageNum);
             Map<PdfPage, Set<Integer>> targetMcids = new LinkedHashMap<>();
             targetMcids.computeIfAbsent(page, k -> new LinkedHashSet<>()).add(mcid);
-            IssueFix fix = new MistaggedArtifactFix(ctx.node(), targetMcids);
+            IssueFix fix = new MistaggedArtifactFix(visit.node(), targetMcids);
             issues.add(
                     new Issue(
                             IssueType.MISTAGGED_ARTIFACT,
                             IssueSev.WARNING,
-                            ctx.locus(),
+                            visit.locus(),
                             "Decorative graphic MCR should be artifact",
                             fix));
         }
@@ -249,12 +251,12 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         return width > MEANINGFUL_MIN_WIDTH && height > MEANINGFUL_MIN_HEIGHT;
     }
 
-    private String getTextContent(StructTreeContext ctx) {
-        int pageNumber = ctx.page();
+    private String getTextContent(Visit visit) {
+        int pageNumber = visit.page();
         if (pageNumber == 0) {
             return "";
         }
-        return Content.getTextForElement(ctx.node(), ctx.docCtx(), pageNumber);
+        return Content.getTextForElement(visit.node(), visit.docCtx(), pageNumber);
     }
 
     @SuppressWarnings("unchecked")

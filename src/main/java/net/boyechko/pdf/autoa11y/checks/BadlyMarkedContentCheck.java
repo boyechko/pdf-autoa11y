@@ -21,7 +21,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +58,8 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        PdfStructElem node = ctx.node();
+    public boolean enterElement(Visit visit) {
+        PdfStructElem node = visit.node();
         if (!SPLITTABLE_ROLES.contains(StructTree.mappedRole(node))) {
             return true;
         }
@@ -67,23 +67,23 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
         if (mcr == null) {
             return true;
         }
-        int pageNum = ctx.page();
+        int pageNum = visit.page();
         if (pageNum <= 0) {
             return true;
         }
 
-        SplitPlan plan = planSplit(ctx.doc().getPage(pageNum), mcr.getMcid());
+        SplitPlan plan = planSplit(visit.doc().getPage(pageNum), mcr.getMcid());
         if (plan == null || plan.sizeChangeOffsets().isEmpty() || !splittable(plan)) {
             return true;
         }
 
-        String text = Format.truncate(Content.getTextForElement(node, ctx.docCtx(), pageNum));
+        String text = Format.truncate(Content.getTextForElement(node, visit.docCtx(), pageNum));
         IssueFix fix = new SplitMarkedContentFix(node);
         issues.add(
                 new Issue(
                         IssueType.MIXED_FONT_MARKED_CONTENT,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Marked content mixing font sizes: \"" + text + "\"",
                         fix));
         return true;

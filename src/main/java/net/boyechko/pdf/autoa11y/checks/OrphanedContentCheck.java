@@ -14,7 +14,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Detects MCRs and OBJRs whose page reference no longer resolves -- typically remnants left in the
@@ -35,8 +35,8 @@ public class OrphanedContentCheck extends StructTreeCheck {
     }
 
     @Override
-    public void leaveElement(StructTreeContext ctx) {
-        PdfStructElem node = ctx.node();
+    public void leaveElement(Visit visit) {
+        PdfStructElem node = visit.node();
         List<IStructureNode> kids = node.getKids();
         if (kids == null) return;
 
@@ -47,8 +47,8 @@ public class OrphanedContentCheck extends StructTreeCheck {
                         new Issue(
                                 IssueType.ORPHANED_CONTENT,
                                 IssueSev.WARNING,
-                                ctx.locus(),
-                                "Orphaned " + typeOf(mcr) + " in " + ctx.role(),
+                                visit.locus(),
+                                "Orphaned " + typeOf(mcr) + " in " + visit.role(),
                                 fix);
                 issues.add(issue);
             }

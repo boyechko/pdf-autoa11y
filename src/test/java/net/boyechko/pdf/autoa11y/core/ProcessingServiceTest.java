@@ -30,7 +30,7 @@ import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.junit.jupiter.api.Test;
 
 /** Test suite for ProcessingService. */
@@ -248,23 +248,23 @@ public class ProcessingServiceTest extends PdfTestBase {
         }
 
         @Override
-        public boolean enterElement(StructTreeContext ctx) {
-            if (PdfName.Figure.equals(ctx.node().getRole())) {
-                Locus where = new Locus.AtElem(ctx.node(), ctx.page(), null);
+        public boolean enterElement(Visit visit) {
+            if (PdfName.Figure.equals(visit.node().getRole())) {
+                Locus where = new Locus.AtElem(visit.node(), visit.page(), null);
                 issues.add(
                         new Issue(
                                 IssueType.FIGURE_WITH_TEXT,
                                 IssueSev.WARNING,
                                 where,
                                 "later",
-                                new RetaggingFix(ctx.node(), PdfName.H1, 20)));
+                                new RetaggingFix(visit.node(), PdfName.H1, 20)));
                 issues.add(
                         new Issue(
                                 IssueType.FIGURE_WITH_TEXT,
                                 IssueSev.WARNING,
                                 where,
                                 "earlier",
-                                new RetaggingFix(ctx.node(), PdfName.P, 10)));
+                                new RetaggingFix(visit.node(), PdfName.P, 10)));
             }
             return true;
         }

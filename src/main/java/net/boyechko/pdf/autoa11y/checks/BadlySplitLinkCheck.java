@@ -15,7 +15,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
  * Detects a single logical link that an authoring tool split across several {@code <Link>} tags —
@@ -44,8 +44,8 @@ public class BadlySplitLinkCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        List<IStructureNode> kids = ctx.node().getKids();
+    public boolean enterElement(Visit visit) {
+        List<IStructureNode> kids = visit.node().getKids();
         if (kids == null || kids.size() < 2) {
             return true;
         }
@@ -55,11 +55,11 @@ public class BadlySplitLinkCheck extends StructTreeCheck {
             if (kid instanceof PdfStructElem elem && isMergeableLink(elem)) {
                 run.add(elem);
             } else {
-                emitSharedDestinationRuns(ctx, run);
+                emitSharedDestinationRuns(visit, run);
                 run = new ArrayList<>();
             }
         }
-        emitSharedDestinationRuns(ctx, run);
+        emitSharedDestinationRuns(visit, run);
 
         return true;
     }
@@ -82,7 +82,7 @@ public class BadlySplitLinkCheck extends StructTreeCheck {
      * Emits one issue per maximal stretch of the run that shares a destination, so two split links
      * sitting back to back become two merges rather than one.
      */
-    private void emitSharedDestinationRuns(StructTreeContext ctx, List<PdfStructElem> run) {
+    private void emitSharedDestinationRuns(Visit visit, List<PdfStructElem> run) {
         int start = 0;
         while (start < run.size() - 1) {
             int end = start + 1;
@@ -90,18 +90,18 @@ public class BadlySplitLinkCheck extends StructTreeCheck {
                 end++;
             }
             if (end - start > 1) {
-                emitIssue(ctx, new ArrayList<>(run.subList(start, end)));
+                emitIssue(visit, new ArrayList<>(run.subList(start, end)));
             }
             start = end;
         }
     }
 
-    private void emitIssue(StructTreeContext ctx, List<PdfStructElem> links) {
+    private void emitIssue(Visit visit, List<PdfStructElem> links) {
         issues.add(
                 new Issue(
                         IssueType.LINK_SPLIT_ACROSS_TAGS,
                         IssueSev.WARNING,
-                        Locus.atElem(ctx.docCtx(), links.get(0)),
+                        Locus.atElem(visit.docCtx(), links.get(0)),
                         "One link split across " + links.size() + " Link tags",
                         new MergeSplitLinksFix(links)));
     }

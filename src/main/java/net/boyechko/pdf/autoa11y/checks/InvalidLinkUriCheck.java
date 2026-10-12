@@ -16,7 +16,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
+import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects Link elements whose URI is not a plausible http(s) web address. */
 public class InvalidLinkUriCheck extends StructTreeCheck {
@@ -52,8 +52,8 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
     }
 
     @Override
-    public boolean enterElement(StructTreeContext ctx) {
-        PdfStructElem node = ctx.node();
+    public boolean enterElement(Visit visit) {
+        PdfStructElem node = visit.node();
         if (!PdfName.Link.equals(node.getRole())) {
             return true;
         }
@@ -79,7 +79,7 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.INVALID_LINK_URI,
                         IssueSev.WARNING,
-                        ctx.locus(),
+                        visit.locus(),
                         "Link has invalid URI: " + uri));
         return true;
     }
