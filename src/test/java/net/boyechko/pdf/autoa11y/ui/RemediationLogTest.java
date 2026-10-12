@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.core.RemediationEntry;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
+import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,8 +17,8 @@ class RemediationLogTest {
 
     @TempDir Path tempDir;
 
-    private static final RemediationEntry ENTRY =
-            new RemediationEntry(97, 1, "Figure", "FigureWithTextFix", "Retagged Figure as H1");
+    private static final IssueSnapshot ENTRY =
+            new IssueSnapshot(97, 1, "Figure", "FigureWithTextFix", "Retagged Figure as H1");
 
     @Test
     void runRecordPrecedesItsFixRecords() throws IOException {
@@ -71,8 +71,8 @@ class RemediationLogTest {
 
     @Test
     void quotesAndBackslashesInDescriptionsStayParseable() throws IOException {
-        RemediationEntry entry =
-                new RemediationEntry(8018, 12, "L", "StaleScribbleFix", "Cleared \"a\\b\" // x");
+        IssueSnapshot entry =
+                new IssueSnapshot(8018, 12, "L", "StaleScribbleFix", "Cleared \"a\\b\" // x");
 
         String fixLine = appendAndRead(List.of(entry)).get(1);
 
@@ -82,8 +82,7 @@ class RemediationLogTest {
 
     @Test
     void controlCharactersAreEscapedRatherThanBreakingTheLine() throws IOException {
-        RemediationEntry entry =
-                new RemediationEntry(1, 1, "P", "SomeFix", "line one\nline two\ttabbed");
+        IssueSnapshot entry = new IssueSnapshot(1, 1, "P", "SomeFix", "line one\nline two\ttabbed");
 
         List<String> lines = appendAndRead(List.of(entry));
 
@@ -94,8 +93,8 @@ class RemediationLogTest {
 
     @Test
     void missingLocationFieldsAreRecordedAsNull() throws IOException {
-        RemediationEntry entry =
-                new RemediationEntry(null, null, null, "LanguageSetFix", "Set language to en");
+        IssueSnapshot entry =
+                new IssueSnapshot(null, null, null, "LanguageSetFix", "Set language to en");
 
         String fixLine = appendAndRead(List.of(entry)).get(1);
 
@@ -113,7 +112,7 @@ class RemediationLogTest {
 
     // == Helpers ==========================================================
 
-    private List<String> appendAndRead(List<RemediationEntry> entries) throws IOException {
+    private List<String> appendAndRead(List<IssueSnapshot> entries) throws IOException {
         Path log = tempDir.resolve("catalog.autoa11y.log");
         RemediationLog.append(
                 log, entries, tempDir.resolve("catalog.pdf"), tempDir.resolve("out.pdf"));

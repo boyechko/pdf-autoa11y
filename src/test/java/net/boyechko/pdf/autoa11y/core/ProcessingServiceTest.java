@@ -27,12 +27,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.issue.Issue;
-import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
-import net.boyechko.pdf.autoa11y.issue.IssueSev;
-import net.boyechko.pdf.autoa11y.issue.IssueType;
+import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.StructTreeContext;
 import org.junit.jupiter.api.Test;
@@ -229,7 +224,7 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         assertEquals(
                 List.of("P", "H1"),
-                result.remediationLog().stream().map(RemediationEntry::role).toList());
+                result.remediationLog().stream().map(IssueSnapshot::role).toList());
         assertNotNull(result.remediationLog().getFirst().objNum());
         assertEquals(
                 result.remediationLog().getFirst().objNum(),
