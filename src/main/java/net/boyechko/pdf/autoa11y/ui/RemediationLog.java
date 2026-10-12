@@ -11,15 +11,17 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.core.RemediationEntry;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
+import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 
 /**
- * Append-only per-document record of which fix changed which element, and when.
+ * Append-only per-document history of successfully applied fixes and their reported resolutions.
  *
  * <p>The log accumulates across runs in {@code <base>.autoa11y.log}, one JSON object per line: a
  * {@code run} record naming the tool version and the files involved, followed by a {@code fix}
- * record per changed element referencing that run's id.
+ * record per issue snapshot referencing that run's id. Each snapshot carries the issue's
+ * location and the fix's reported resolution; it does not enumerate every object changed by the
+ * fix. Skipped, failed, and unresolved issues are not currently logged.
  *
  * <p>Elements are anchored by PDF object number, which survives the remediation pipeline (see
  * docs/decisions/0007-keep-remediation-history-in-a-sidecar-log.md). Because the log is append-only
@@ -37,17 +39,18 @@ public final class RemediationLog {
     }
 
     /**
-     * Appends one run's worth of entries to {@code logPath}, creating the file if needed. The run
-     * record is written even when no fixes applied, so the log shows that the tool ran.
+     * Appends one run's issue snapshots to {@code logPath}, creating the file if needed. Callers
+     * supply snapshots of successful fix applications. The run record is written even when the
+     * snapshot list is empty, so the log shows that the tool ran.
      */
     public static void append(
-            Path logPath, List<RemediationEntry> entries, Path inputPath, Path outputPath)
+            Path logPath, List<IssueSnapshot> entries, Path inputPath, Path outputPath)
             throws IOException {
         String runId = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString();
 
         List<String> lines = new ArrayList<>(entries.size() + 1);
         lines.add(runRecord(runId, inputPath, outputPath));
-        for (RemediationEntry entry : entries) {
+        for (IssueSnapshot entry : entries) {
             lines.add(fixRecord(runId, entry));
         }
 
@@ -70,7 +73,7 @@ public final class RemediationLog {
                 + "}";
     }
 
-    private static String fixRecord(String runId, RemediationEntry entry) {
+    private static String fixRecord(String runId, IssueSnapshot entry) {
         return "{\"t\":\"fix\""
                 + field("run", runId)
                 + field("obj", entry.objNum())
