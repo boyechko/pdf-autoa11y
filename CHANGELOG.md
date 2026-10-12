@@ -14,6 +14,11 @@ Versioning](https://semver.org/).
   outside its parent item. Such lists are rebuilt from the outline, keeping
   any headings or prose mistagged into them in reading order.
 
+### Changed
+- Remediation logs now use descriptive JSON field names: `type`, `version`,
+  `input`, `output`, `object`, `page`, and `message` replace `t`, `tool`, `in`,
+  `out`, `obj`, `pg`, and `msg`.
+
 ## [0.6.0] - 2026-09-17
 
 ### Added

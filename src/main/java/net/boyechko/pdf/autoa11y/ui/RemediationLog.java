@@ -19,7 +19,7 @@ import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
  *
  * <p>The log accumulates across runs in {@code <base>.autoa11y.log}, one JSON object per line: a
  * {@code run} record naming the tool version and the files involved, followed by a {@code fix}
- * record per issue snapshot referencing that run's id. Each snapshot carries the issue's
+ * record per issue snapshot referencing that run's identifier. Each snapshot carries the issue's
  * location and the fix's reported resolution; it does not enumerate every object changed by the
  * fix. Skipped, failed, and unresolved issues are not currently logged.
  *
@@ -65,22 +65,22 @@ public final class RemediationLog {
     // == Record formatting ================================================
 
     private static String runRecord(String runId, Path inputPath, Path outputPath) {
-        return "{\"t\":\"run\""
+        return "{\"type\":\"run\""
                 + field("id", runId)
-                + field("tool", VersionInfo.current().version())
-                + field("in", fileNameOf(inputPath))
-                + field("out", fileNameOf(outputPath))
+                + field("version", VersionInfo.current().version())
+                + field("input", fileNameOf(inputPath))
+                + field("output", fileNameOf(outputPath))
                 + "}";
     }
 
     private static String fixRecord(String runId, IssueSnapshot entry) {
-        return "{\"t\":\"fix\""
+        return "{\"type\":\"fix\""
                 + field("run", runId)
-                + field("obj", entry.objNum())
-                + field("pg", entry.pageNum())
+                + field("object", entry.objNum())
+                + field("page", entry.pageNum())
                 + field("role", entry.role())
                 + field("fix", entry.fixClass())
-                + field("msg", entry.message())
+                + field("message", entry.message())
                 + "}";
     }
 

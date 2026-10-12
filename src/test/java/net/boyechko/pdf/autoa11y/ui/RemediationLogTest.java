@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.file.VersionInfo;
 import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 import net.boyechko.pdf.autoa11y.issue.IssueStatus;
 import org.junit.jupiter.api.Test;
@@ -32,19 +33,22 @@ class RemediationLogTest {
         List<String> lines = appendAndRead(List.of(ENTRY));
 
         assertEquals(2, lines.size());
-        assertTrue(lines.get(0).contains("\"t\":\"run\""), lines.get(0));
-        assertTrue(lines.get(1).contains("\"t\":\"fix\""), lines.get(1));
+        assertTrue(lines.get(0).contains("\"type\":\"run\""), lines.get(0));
+        assertEquals(VersionInfo.current().version(), valueOf(lines.get(0), "version"));
+        assertEquals("catalog.pdf", valueOf(lines.get(0), "input"));
+        assertEquals("out.pdf", valueOf(lines.get(0), "output"));
+        assertTrue(lines.get(1).contains("\"type\":\"fix\""), lines.get(1));
     }
 
     @Test
     void fixRecordCarriesElementIdentityAndDescription() throws IOException {
         String fixLine = appendAndRead(List.of(ENTRY)).get(1);
 
-        assertTrue(fixLine.contains("\"obj\":97"), fixLine);
-        assertTrue(fixLine.contains("\"pg\":1"), fixLine);
+        assertTrue(fixLine.contains("\"object\":97"), fixLine);
+        assertTrue(fixLine.contains("\"page\":1"), fixLine);
         assertTrue(fixLine.contains("\"role\":\"Figure\""), fixLine);
         assertTrue(fixLine.contains("\"fix\":\"FigureWithTextFix\""), fixLine);
-        assertEquals(ENTRY.message(), valueOf(fixLine, "msg"));
+        assertEquals(ENTRY.message(), valueOf(fixLine, "message"));
     }
 
     @Test
@@ -70,7 +74,7 @@ class RemediationLogTest {
         List<String> lines = appendAndRead(List.of());
 
         assertEquals(1, lines.size());
-        assertTrue(lines.get(0).contains("\"t\":\"run\""), lines.get(0));
+        assertTrue(lines.get(0).contains("\"type\":\"run\""), lines.get(0));
     }
 
     @Test
@@ -124,8 +128,8 @@ class RemediationLogTest {
 
         String fixLine = appendAndRead(List.of(entry)).get(1);
 
-        assertTrue(fixLine.contains("\"obj\":null"), fixLine);
-        assertTrue(fixLine.contains("\"pg\":null"), fixLine);
+        assertTrue(fixLine.contains("\"object\":null"), fixLine);
+        assertTrue(fixLine.contains("\"page\":null"), fixLine);
         assertTrue(fixLine.contains("\"role\":null"), fixLine);
     }
 
