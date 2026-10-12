@@ -98,10 +98,13 @@ net.boyechko.pdf.autoa11y/
 
 ### Package Dependencies
 
-UI depends on core; core depends on validation, fixes, issue; validation
-depends on checks, fixes, issue; fixes/checks depend on issue and document.
-IssueFix lives in `issue/` to prevent circular dependencies since Issue
-references IssueFix.
+UI sits on top and may depend on any package. Core depends on checks,
+validation, issue, and document. Checks depend on validation (the `Check` and
+`StructTreeCheck` bases), fixes, issue, and document. Fixes depend on issue and
+document; validation depends on issue and document; issue and tools depend only
+on document. `document` is the shared bottom layer: a type needed by checks,
+fixes, and issue alike belongs there. IssueFix lives in `issue/` to prevent
+circular dependencies since Issue references IssueFix.
 
 ## Code Style
 
