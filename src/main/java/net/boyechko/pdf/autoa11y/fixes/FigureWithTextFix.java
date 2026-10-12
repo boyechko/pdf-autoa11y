@@ -5,8 +5,8 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Changes the role of a Figure element to a specified role. */
@@ -40,7 +40,7 @@ public class FigureWithTextFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.atElem(ctx, figure));
+        return new IssueMsg(describe(ctx), Locus.atElem(ctx, figure));
     }
 
     @Override

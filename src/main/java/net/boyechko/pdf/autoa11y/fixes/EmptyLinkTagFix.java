@@ -15,9 +15,9 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,16 +133,14 @@ public class EmptyLinkTagFix implements IssueFix {
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
         if (pageNum > 0 && mcid >= 0) {
-            return new IssueMsg(describe(ctx), IssueLoc.atMcid(pageNum, mcid, linkObjNum, "Link"));
+            return new IssueMsg(describe(ctx), Locus.atMcid(pageNum, mcid, linkObjNum, "Link"));
         }
         if (linkObjNum > 0) {
             return new IssueMsg(
                     describe(ctx),
-                    IssueLoc.atObj(
-                            linkObjNum,
-                            pageNum > 0 ? pageNum : null,
-                            IssueLoc.ObjKind.STRUCT_ELEM));
+                    Locus.atObj(
+                            linkObjNum, pageNum > 0 ? pageNum : null, Locus.ObjKind.STRUCT_ELEM));
         }
-        return new IssueMsg(describe(ctx), IssueLoc.none());
+        return new IssueMsg(describe(ctx), Locus.none());
     }
 }

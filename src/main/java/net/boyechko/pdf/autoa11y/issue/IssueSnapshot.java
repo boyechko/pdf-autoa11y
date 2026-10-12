@@ -3,6 +3,7 @@
 package net.boyechko.pdf.autoa11y.issue;
 
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 
 /**
  * Immutable snapshot of an issue's location, fix identity, and resolution message.
@@ -36,7 +37,7 @@ public record IssueSnapshot(
      * issue must have a non-null fix; callers capture it immediately after successful application.
      */
     public static IssueSnapshot capture(Issue issue, DocContext ctx) {
-        IssueLoc where = issue.where();
+        Locus where = issue.where();
         Integer objNum = where.objNum();
         return new IssueSnapshot(
                 objNum,
@@ -63,7 +64,7 @@ public record IssueSnapshot(
     }
 
     /** Falls back to the object-to-page mapping when the location carries no page of its own. */
-    private static Integer resolvePage(IssueLoc where, Integer objNum, DocContext ctx) {
+    private static Integer resolvePage(Locus where, Integer objNum, DocContext ctx) {
         Integer pageNum = where.page();
         if (pageNum != null || objNum == null) {
             return pageNum;

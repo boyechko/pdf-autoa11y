@@ -11,9 +11,9 @@ import java.util.Map;
 import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck;
 import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck.ReadingPosition;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +94,7 @@ public class StructTreeOrderFix implements IssueFix {
 
     @Override
     public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(), IssueLoc.atElem(ctx, element));
+        return new IssueMsg(describe(), Locus.atElem(ctx, element));
     }
 
     @Override

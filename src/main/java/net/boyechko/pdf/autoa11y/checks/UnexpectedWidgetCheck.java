@@ -7,6 +7,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.fixes.UnexpectedWidgetFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
@@ -56,10 +57,10 @@ public class UnexpectedWidgetCheck extends DocumentCheck {
                             annotDict.getIndirectReference() != null
                                     ? annotDict.getIndirectReference().getObjNumber()
                                     : -1;
-                    IssueLoc loc =
+                    Locus loc =
                             objNum >= 0
-                                    ? IssueLoc.atObj(objNum, pageNum, IssueLoc.ObjKind.ANNOT)
-                                    : IssueLoc.atPage(pageNum);
+                                    ? Locus.atObj(objNum, pageNum, Locus.ObjKind.ANNOT)
+                                    : Locus.atPage(pageNum);
                     Issue issue =
                             new Issue(
                                     IssueType.UNEXPECTED_WIDGET,

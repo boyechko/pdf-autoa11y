@@ -47,7 +47,7 @@ public class FigureWithTextCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.FIGURE_WITH_TEXT,
                             IssueSev.WARNING,
-                            ctx.loc(),
+                            ctx.locus(),
                             "Figure contains text: \"" + Format.truncate(textContent) + "\"",
                             fix);
             issues.add(issue);

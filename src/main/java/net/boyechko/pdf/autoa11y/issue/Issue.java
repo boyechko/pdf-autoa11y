@@ -3,12 +3,13 @@
 package net.boyechko.pdf.autoa11y.issue;
 
 import java.util.Objects;
+import net.boyechko.pdf.autoa11y.document.Locus;
 
 /** Represents an accessibility issue found in a PDF document. */
 public final class Issue {
     private final IssueType type;
     private final IssueSev severity;
-    private final IssueLoc where;
+    private final Locus where;
     private final String message;
     private final IssueFix fix; // may be null if no automatic fix exists
 
@@ -16,18 +17,18 @@ public final class Issue {
     private IssueMsg resolution;
 
     public Issue(IssueType type, IssueSev sev, String message) {
-        this(type, sev, IssueLoc.none(), message, null);
+        this(type, sev, Locus.none(), message, null);
     }
 
     public Issue(IssueType type, IssueSev sev, String message, IssueFix fix) {
-        this(type, sev, IssueLoc.none(), message, fix);
+        this(type, sev, Locus.none(), message, fix);
     }
 
-    public Issue(IssueType type, IssueSev sev, IssueLoc where, String message) {
+    public Issue(IssueType type, IssueSev sev, Locus where, String message) {
         this(type, sev, where, message, null);
     }
 
-    public Issue(IssueType type, IssueSev sev, IssueLoc where, String message, IssueFix fix) {
+    public Issue(IssueType type, IssueSev sev, Locus where, String message, IssueFix fix) {
         this.type = type;
         this.severity = sev;
         this.where = where;
@@ -43,7 +44,7 @@ public final class Issue {
         return severity;
     }
 
-    public IssueLoc where() {
+    public Locus where() {
         return where;
     }
 

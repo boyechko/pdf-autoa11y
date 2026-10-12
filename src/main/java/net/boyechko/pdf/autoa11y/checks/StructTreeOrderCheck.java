@@ -77,7 +77,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,
                             IssueSev.WARNING,
-                            ctx.loc(),
+                            ctx.locus(),
                             "Children are out of reading order",
                             fix));
         }

@@ -4,31 +4,31 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import java.util.StringJoiner;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
+import net.boyechko.pdf.autoa11y.document.Locus;
 
 /** Renders Issues with debugging-oriented detail for logs. */
 public final class LogIssueFormatter implements IssueFormatter {
 
     @Override
-    public String format(IssueLoc where) {
+    public String format(Locus where) {
         return switch (where) {
             case null -> "";
-            case IssueLoc.None n -> "";
-            case IssueLoc.AtPage(var pageNum) -> " (" + Format.page(pageNum) + ")";
-            case IssueLoc.AtObj(var objNum, var pageNum, var kind) ->
+            case Locus.None n -> "";
+            case Locus.AtPage(var pageNum) -> " (" + Format.page(pageNum) + ")";
+            case Locus.AtObj(var objNum, var pageNum, var kind) ->
                     " (" + objLabel(kind, objNum) + withPage(pageNum) + ")";
-            case IssueLoc.AtElem(var element, var pageNum, var role) ->
+            case Locus.AtElem(var element, var pageNum, var role) ->
                     " (" + joinElem(where.objNum(), pageNum, role) + ")";
-            case IssueLoc.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) ->
+            case Locus.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) ->
                     " (" + joinMcid(pageNum, mcid, ownerObjNum, role) + ")";
         };
     }
 
-    private static String objLabel(IssueLoc.ObjKind kind, Integer objNum) {
+    private static String objLabel(Locus.ObjKind kind, Integer objNum) {
         if (objNum == null) {
             return "obj. ?";
         }
-        IssueLoc.ObjKind resolvedKind = kind != null ? kind : IssueLoc.ObjKind.GENERIC;
+        Locus.ObjKind resolvedKind = kind != null ? kind : Locus.ObjKind.GENERIC;
         return switch (resolvedKind) {
             case ANNOT -> "annot " + Format.objNum(objNum);
             case STRUCT_ELEM -> "struct " + Format.objNum(objNum);

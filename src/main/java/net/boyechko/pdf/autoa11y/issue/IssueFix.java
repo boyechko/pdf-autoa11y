@@ -3,6 +3,7 @@
 package net.boyechko.pdf.autoa11y.issue;
 
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Locus;
 
 /** Represents a fix for an accessibility issue found in a PDF document. */
 public interface IssueFix {
@@ -31,7 +32,7 @@ public interface IssueFix {
 
     /** Description plus location; becomes the issue's resolution (or failure) message. */
     default IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(ctx), IssueLoc.none());
+        return new IssueMsg(describe(ctx), Locus.none());
     }
 
     /** Headline for report groups when several fixes of this kind are batched together. */

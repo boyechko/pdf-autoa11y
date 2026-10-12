@@ -22,11 +22,11 @@ import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.StructTree.Node;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -739,7 +739,7 @@ public class ScribbledInstructionFix implements IssueFix {
 
     @Override
     public String describe(DocContext ctx) {
-        return describe() + Format.loc(IssueLoc.atElem(ctx, element));
+        return describe() + Format.loc(Locus.atElem(ctx, element));
     }
 
     @Override

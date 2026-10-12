@@ -7,9 +7,9 @@ import java.io.PrintStream;
 import net.boyechko.pdf.autoa11y.checks.LanguageSetCheck;
 import net.boyechko.pdf.autoa11y.checks.NeedlessNestingCheck;
 import net.boyechko.pdf.autoa11y.checks.SchemaValidationCheck;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -113,7 +113,7 @@ public class FormattedListenerTest {
     }
 
     private Issue issue(IssueType type, IssueSev severity, Integer page, String message) {
-        return new Issue(type, severity, IssueLoc.atPage(page), message);
+        return new Issue(type, severity, Locus.atPage(page), message);
     }
 
     private String normalize(ByteArrayOutputStream buffer) {

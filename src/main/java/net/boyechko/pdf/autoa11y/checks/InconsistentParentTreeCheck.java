@@ -58,7 +58,7 @@ public class InconsistentParentTreeCheck extends StructTreeCheck {
                 new Issue(
                         IssueType.INCONSISTENT_PARENT_TREE,
                         IssueSev.WARNING,
-                        ctx.loc(),
+                        ctx.locus(),
                         broken
                                 + " marked-content reference(s) missing from ParentTree in "
                                 + ctx.role(),

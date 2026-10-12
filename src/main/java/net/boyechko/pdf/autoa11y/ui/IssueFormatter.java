@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.ui;
 
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.Issue;
-import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /** Strategy interface for rendering Issues in different output surfaces. */
 public interface IssueFormatter {
-    String format(IssueLoc where);
+    String format(Locus where);
 
     default String format(IssueMsg msg) {
         return msg.message() + format(msg.where());
