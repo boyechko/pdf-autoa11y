@@ -19,7 +19,7 @@ import net.boyechko.pdf.autoa11y.core.VersionInfo;
  *
  * <p>The log accumulates across runs in {@code <base>.autoa11y.log}, one JSON object per line: a
  * {@code run} record naming the tool version and the files involved, followed by a {@code fix}
- * record per changed element referencing that run's id.
+ * record per changed element referencing that run's identifier.
  *
  * <p>Elements are anchored by PDF object number, which survives the remediation pipeline (see
  * docs/decisions/0007-keep-remediation-history-in-a-sidecar-log.md). Because the log is append-only
@@ -62,22 +62,22 @@ public final class RemediationLog {
     // == Record formatting ================================================
 
     private static String runRecord(String runId, Path inputPath, Path outputPath) {
-        return "{\"t\":\"run\""
+        return "{\"type\":\"run\""
                 + field("id", runId)
-                + field("tool", VersionInfo.current().version())
-                + field("in", fileNameOf(inputPath))
-                + field("out", fileNameOf(outputPath))
+                + field("version", VersionInfo.current().version())
+                + field("input", fileNameOf(inputPath))
+                + field("output", fileNameOf(outputPath))
                 + "}";
     }
 
     private static String fixRecord(String runId, RemediationEntry entry) {
-        return "{\"t\":\"fix\""
+        return "{\"type\":\"fix\""
                 + field("run", runId)
-                + field("obj", entry.objNum())
-                + field("pg", entry.pageNum())
+                + field("object", entry.objNum())
+                + field("page", entry.pageNum())
                 + field("role", entry.role())
                 + field("fix", entry.fixClass())
-                + field("msg", entry.message())
+                + field("message", entry.message())
                 + "}";
     }
 

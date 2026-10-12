@@ -28,36 +28,62 @@ Nothing is written when no output PDF is saved, so `--analyze` and the
 
 One JSON object per line. Each run writes a `run` record naming the tool
 version and the files involved, followed by a `fix` record per changed
-element referencing that run's `id`:
+element referencing that run's `id`. These examples are expanded
+for readability; each record occupies one line in the log:
 
 ```json
-{"t":"run","id":"2026-09-11T19:05:41Z","tool":"0.5.0","in":"catalog.pdf","out":"catalog_autoa11y.pdf"}
-{"t":"fix","run":"2026-09-11T19:05:41Z","obj":97,"pg":1,"role":"Figure","fix":"FigureWithTextFix","msg":"Changed Figure to P"}
-{"t":"fix","run":"2026-09-11T19:05:41Z","obj":97,"pg":1,"role":"P","fix":"MistaggedHeadingFix","msg":"Marked for retagging as H1"}
+{
+  "type": "run",
+  "id": "2026-09-11T19:05:41Z",
+  "version": "0.5.0",
+  "input": "catalog.pdf",
+  "output": "catalog_autoa11y.pdf"
+}
+
+{
+  "type": "fix",
+  "run": "2026-09-11T19:05:41Z",
+  "object": 97,
+  "page": 1,
+  "role": "Figure",
+  "fix": "FigureWithTextFix",
+  "message": "Changed Figure to P"
+}
+
+{
+  "type": "fix",
+  "run": "2026-09-11T19:05:41Z",
+  "object": 97,
+  "page": 1,
+  "role": "P",
+  "fix": "MistaggedHeadingFix",
+  "message": "Marked for retagging as H1"
+}
 ```
 
 | Field | Meaning |
 |-------|---------|
-| `obj` | PDF object number of the element; `null` for document-wide fixes |
-| `pg`  | 1-based page number, or `null` |
+| `version` | Tool version that produced the run |
+| `object` | PDF object number of the element; `null` for document-wide fixes |
+| `page`  | 1-based page number, or `null` |
 | `role` | the element's role *at the time the fix ran* |
-| `fix` | the fix class, or the enclosing check for checks that declare their fix anonymously |
-| `msg` | the fix's own description of what it did |
+| `fix` | Fix class; enclosing check name for anonymous fixes |
+| `message` | the fix's own description of what it did |
 
 A run record is written even when no fixes applied, so the log shows
 that the tool ran and changed nothing.
 
 ## Reading It
 
-`obj` matches the object numbers `--dump-tree` prints, so a log entry and
+`object` matches the object numbers `--dump-tree` prints, so a log entry and
 a tree dump can be read side by side:
 
 ```bash
-# everything that ever touched object 97
-grep '"obj":97' catalog.autoa11y.log
+# everything that ever touched object 97 (including older entries)
+jq 'select((.object // .obj) == 97)' catalog.autoa11y.log
 
 # just the most recent run
-tail -r catalog.autoa11y.log | awk '/"t":"run"/{exit} {print}'
+tail -r catalog.autoa11y.log | awk '/"type":"run"/{exit} {print}'
 ```
 
 Two properties are worth knowing:
@@ -73,5 +99,5 @@ entries pointing at objects that are no longer in the document. The log
 is a history, not an index.
 
 Object numbers are stable across this tool's own pipeline but not across other
-editors --- Acrobat might renumber objects on save. See
+editors. See
 `docs/decisions/0007-keep-remediation-history-in-a-sidecar-log.md`.
