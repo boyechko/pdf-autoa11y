@@ -127,7 +127,7 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     @Override
     public void afterTraversal(DocContext docCtx) {
-        MisshapenLists.find(laidOut).forEach(issues::add);
+        MisshapenLists.find(docCtx, laidOut).forEach(issues::add);
     }
 
     @Override
@@ -572,24 +572,27 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     /**
      * Reads every list off the laid-out lines into the outline its bullets' indents set, and
-     * reports each list tagged against that outline. It works on the lines alone, never the page.
+     * reports each list tagged against that outline. It works on the lines it is given, never
+     * reading page content.
      */
     static final class MisshapenLists {
 
         /** A text line read off the page, with the element whose own line it is. */
         record OwnedLine(BulletLine line, PdfStructElem owner) {}
 
+        private final DocContext docCtx;
         private final List<OwnedLine> laidOut;
 
-        private MisshapenLists(List<OwnedLine> laidOut) {
+        private MisshapenLists(DocContext docCtx, List<OwnedLine> laidOut) {
+            this.docCtx = docCtx;
             this.laidOut = laidOut;
         }
 
         /**
          * Returns an issue for each list among the lines whose tagging disagrees with its outline.
          */
-        static List<Issue> find(List<OwnedLine> laidOut) {
-            return new MisshapenLists(laidOut).detectMisshapenLists();
+        static List<Issue> find(DocContext docCtx, List<OwnedLine> laidOut) {
+            return new MisshapenLists(docCtx, laidOut).detectMisshapenLists();
         }
 
         /** A bullet placed in the outline, under the bullet whose item it is nested in, if any. */
@@ -623,11 +626,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                         new Issue(
                                 IssueType.LIST_MISSHAPEN,
                                 IssueSev.WARNING,
-                                IssueLoc.atElem(
-                                        host,
-                                        bullets.get(0).line().page(),
-                                        StructTree.mappedRole(host),
-                                        null),
+                                IssueLoc.atElem(docCtx, host),
                                 misshapenMessage(bullets.size(), breaches),
                                 pieces != null ? new RebuildListFix(pieces) : null));
                 logger.debug(

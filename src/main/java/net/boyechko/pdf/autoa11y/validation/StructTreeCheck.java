@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueLoc;
 import org.slf4j.Logger;
@@ -76,13 +75,12 @@ public abstract class StructTreeCheck implements Check {
 
     /** Returns an {@link IssueLoc} for {@link StructTreeContext#node()} in {@code ctx}. */
     public static IssueLoc locAtElem(StructTreeContext ctx) {
-        return IssueLoc.atElem(ctx.node(), ctx.getPageNumber(), ctx.role(), ctx.path());
+        return IssueLoc.atElem(ctx.docCtx(), ctx.node());
     }
 
     /** Returns an {@link IssueLoc} for {@code element} in the document of {@code ctx}. */
     public static IssueLoc locAtElem(StructTreeContext ctx, PdfStructElem element) {
-        return IssueLoc.atElem(
-                element, ctx.getPageNumber(), StructTree.mappedRole(element), ctx.path());
+        return IssueLoc.atElem(ctx.docCtx(), element);
     }
 
     @Override

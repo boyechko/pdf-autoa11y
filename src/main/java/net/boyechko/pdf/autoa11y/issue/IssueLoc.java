@@ -17,12 +17,11 @@ public sealed interface IssueLoc {
     /** An indirect object such as an annotation or font; pageNum is an optional context. */
     record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements IssueLoc {}
 
-    /** A structure element; pageNum, role, and structPath are optional reporting context. */
-    record AtElem(PdfStructElem element, Integer pageNum, String roleName, String structPath)
-            implements IssueLoc {}
+    /** A structure element; pageNum and role are optional reporting context. */
+    record AtElem(PdfStructElem element, Integer pageNum, String roleName) implements IssueLoc {}
 
     /** A marked-content sequence on a page; ownerObjNum is the owning structure element. */
-    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName, String structPath)
+    record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName)
             implements IssueLoc {}
 
     /** What kind of indirect object an {@link AtObj} points at. */
@@ -48,14 +47,6 @@ public sealed interface IssueLoc {
         return new AtObj(objNum, pageNum, kind != null ? kind : ObjKind.GENERIC);
     }
 
-    static IssueLoc atElem(PdfStructElem element) {
-        return new AtElem(element, null, null, null);
-    }
-
-    static IssueLoc atElem(PdfStructElem element, Integer pageNum, String role, String structPath) {
-        return new AtElem(element, pageNum, role, structPath);
-    }
-
     /** Element location with page and role resolved from the document; none() on null input. */
     static IssueLoc atElem(DocContext ctx, PdfStructElem element) {
         if (ctx == null || element == null) {
@@ -63,13 +54,12 @@ public sealed interface IssueLoc {
         }
         int pageNum = StructTree.pageOf(element, ctx);
         Integer maybePage = pageNum > 0 ? pageNum : null;
-        String role = element.getRole() != null ? element.getRole().getValue() : null;
-        return new AtElem(element, maybePage, role, null);
+        String role = element.getRole() != null ? StructTree.mappedRole(element) : null;
+        return new AtElem(element, maybePage, role);
     }
 
-    static IssueLoc atMcid(
-            int pageNum, int mcid, Integer ownerObjNum, String role, String structPath) {
-        return new AtMcid(pageNum, mcid, ownerObjNum, role, structPath);
+    static IssueLoc atMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {
+        return new AtMcid(pageNum, mcid, ownerObjNum, role);
     }
 
     // --- Default Methods ---
@@ -79,10 +69,8 @@ public sealed interface IssueLoc {
         return switch (this) {
             case AtPage(var pageNum) -> pageNum;
             case AtObj(var objNum, var pageNum, var kind) -> pageNum;
-            case AtElem(var element, var pageNum, var role, var structPath) ->
-                    pageNum != null ? pageNum : null;
-            case AtMcid(var pageNum, var mcid, var ownerObjNum, var role, var structPath) ->
-                    pageNum;
+            case AtElem(var element, var pageNum, var role) -> pageNum != null ? pageNum : null;
+            case AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> pageNum;
             default -> null;
         };
     }
@@ -90,7 +78,7 @@ public sealed interface IssueLoc {
     /** Returns the structure role if available, null otherwise. */
     default String role() {
         return switch (this) {
-            case AtElem(var element, var pageNum, var roleName, var structPath) -> {
+            case AtElem(var element, var pageNum, var roleName) -> {
                 if (roleName != null) {
                     yield roleName;
                 }
@@ -98,8 +86,7 @@ public sealed interface IssueLoc {
                         ? element.getRole().getValue()
                         : null;
             }
-            case AtMcid(var pageNum, var mcid, var ownerObjNum, var roleName, var structPath) ->
-                    roleName;
+            case AtMcid(var pageNum, var mcid, var ownerObjNum, var roleName) -> roleName;
             default -> null;
         };
     }
@@ -108,12 +95,11 @@ public sealed interface IssueLoc {
     default Integer objNum() {
         return switch (this) {
             case AtObj(var objNum, var pageNum, var kind) -> objNum;
-            case AtElem(var element, var pageNum, var role, var structPath) -> {
+            case AtElem(var element, var pageNum, var role) -> {
                 int resolvedObjNum = StructTree.objNum(element);
                 yield resolvedObjNum >= 0 ? resolvedObjNum : null;
             }
-            case AtMcid(var pageNum, var mcid, var ownerObjNum, var role, var structPath) ->
-                    ownerObjNum;
+            case AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> ownerObjNum;
             default -> null;
         };
     }

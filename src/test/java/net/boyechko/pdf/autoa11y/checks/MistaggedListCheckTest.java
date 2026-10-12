@@ -390,6 +390,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             List<Issue> issues =
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72)));
 
             assertEquals(1, issues.size(), "one misshapen list: " + issues);
@@ -412,6 +413,7 @@ class MistaggedListCheckTest extends PdfTestBase {
             assertEquals(
                     List.of(),
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
         }
     }
@@ -436,14 +438,17 @@ class MistaggedListCheckTest extends PdfTestBase {
                             bulletLine(child1, 2, 90),
                             bulletLine(child2, 3, 90));
 
-            for (Issue issue : MisshapenLists.find(lines)) {
+            for (Issue issue : MisshapenLists.find(new DocContext(pdfDoc), lines)) {
                 issue.fix().apply(new DocContext(pdfDoc));
             }
 
             assertEquals(
                     "Document[L[LI[LBody[P[]]],LI[LBody[P[],L[LI[LBody[P[]]],LI[LBody[P[]]]]]]]]",
                     StructTree.toRoleTreeString(document));
-            assertEquals(List.of(), MisshapenLists.find(lines), "the rebuilt list matches");
+            assertEquals(
+                    List.of(),
+                    MisshapenLists.find(new DocContext(pdfDoc), lines),
+                    "the rebuilt list matches");
         }
     }
 
@@ -461,6 +466,7 @@ class MistaggedListCheckTest extends PdfTestBase {
             // list
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(
                                     bulletLine(first, 0, 72),
                                     bulletLine(second, 1, 72),
@@ -482,6 +488,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
         }
     }
@@ -499,6 +506,7 @@ class MistaggedListCheckTest extends PdfTestBase {
             // The second element finishes the first item before opening its own
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(
                                     bulletLine(first, 0, 72),
                                     textLine(second, 1, 84),
@@ -519,6 +527,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(bulletLine(lumped, 0, 72), bulletLine(lumped, 1, 72))));
         }
     }
@@ -543,6 +552,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72))));
         }
     }
@@ -564,6 +574,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             assertReportedWithoutFix(
                     MisshapenLists.find(
+                            new DocContext(pdfDoc),
                             List.of(
                                     bulletLine(opener, 0, 72),
                                     bulletLine(stray, 1, 72),
