@@ -8,7 +8,6 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 public class DocContext {
     private final PdfDocument doc;
     private final PageContent pages;
-    private final int scopeObjNum;
     private boolean dirty = false;
 
     /**
@@ -25,16 +24,6 @@ public class DocContext {
     }
 
     public DocContext(PdfDocument doc) {
-        this(doc, 0);
-    }
-
-    /**
-     * Creates a context whose tree traversals are confined to the subtree rooted at {@code
-     * scopeObjNum} (0 for the whole document). Only structure-tree checks honor the scope;
-     * document-level checks see the whole file regardless.
-     */
-    public DocContext(PdfDocument doc, int scopeObjNum) {
-        this.scopeObjNum = scopeObjNum;
         this.doc = doc;
         this.pages = new PageContent(doc);
     }
@@ -46,10 +35,5 @@ public class DocContext {
     /** Per-page marked-content facts, extracted lazily and shared across checks and fixes. */
     public PageContent pages() {
         return pages;
-    }
-
-    /** Object number of the element traversals are confined to, or 0 for the whole tree. */
-    public int scopeObjNum() {
-        return scopeObjNum;
     }
 }

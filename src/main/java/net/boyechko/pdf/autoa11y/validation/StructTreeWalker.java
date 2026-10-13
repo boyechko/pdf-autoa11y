@@ -27,9 +27,16 @@ public class StructTreeWalker {
     private PdfStructTreeRoot root;
     private DocContext docCtx;
     private int globalIndex;
+    private int scopeObjNum;
 
     public StructTreeWalker addVisitor(StructTreeCheck visitor) {
         visitors.add(visitor);
+        return this;
+    }
+
+    /** Confines the walk to the subtree rooted at {@code objNum} (0 for the whole tree). */
+    public StructTreeWalker scopeTo(int objNum) {
+        this.scopeObjNum = objNum;
         return this;
     }
 
@@ -54,7 +61,6 @@ public class StructTreeWalker {
     }
 
     private void walkRoot() {
-        int scopeObjNum = docCtx.scopeObjNum();
         if (scopeObjNum > 0) {
             PdfStructElem scope = StructTree.findByObjNumber(root, scopeObjNum);
             if (scope == null) {

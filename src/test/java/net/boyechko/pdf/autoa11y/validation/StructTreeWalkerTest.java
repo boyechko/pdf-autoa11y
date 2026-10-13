@@ -314,8 +314,8 @@ class StructTreeWalkerTest extends PdfTestBase {
             document.addKid(siblingP);
 
             StructTreeWalker walker = new StructTreeWalker();
-            walker.addVisitor(tracker);
-            walker.walk(root, new DocContext(pdfDoc, StructTree.objNum(scopedArt)));
+            walker.addVisitor(tracker).scopeTo(StructTree.objNum(scopedArt));
+            walker.walk(root, new DocContext(pdfDoc));
         }
 
         assertEquals(
@@ -323,6 +323,27 @@ class StructTreeWalkerTest extends PdfTestBase {
                 tracker.entered,
                 "only the scoped Art and its descendants must be visited");
         assertEquals(List.of("P", "Art"), tracker.left, "leaveElement must also stay in scope");
+    }
+
+    @Test
+    void scopedCheckConfinesItsOwnWalk() throws Exception {
+        RoleTracker tracker = new RoleTracker();
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            var root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem scopedArt = new PdfStructElem(pdfDoc, PdfName.Art);
+            document.addKid(scopedArt);
+            document.addKid(new PdfStructElem(pdfDoc, PdfName.P));
+
+            tracker.scopeTo(StructTree.objNum(scopedArt));
+            tracker.findIssues(new DocContext(pdfDoc));
+        }
+
+        assertEquals(List.of("Art"), tracker.entered, "the check must hand its scope to the walk");
     }
 
     @Test
@@ -338,8 +359,8 @@ class StructTreeWalkerTest extends PdfTestBase {
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
             StructTreeWalker walker = new StructTreeWalker();
-            walker.addVisitor(tracker);
-            walker.walk(root, new DocContext(pdfDoc, 999999));
+            walker.addVisitor(tracker).scopeTo(999999);
+            walker.walk(root, new DocContext(pdfDoc));
         }
 
         assertTrue(tracker.entered.isEmpty(), "an unresolvable scope must visit nothing");
@@ -364,8 +385,8 @@ class StructTreeWalkerTest extends PdfTestBase {
             StructTree.setScribble(verifiedSect, StructTree.SCRIBBLE_VERIFIED_TOKEN);
 
             StructTreeWalker walker = new StructTreeWalker();
-            walker.addVisitor(tracker);
-            walker.walk(root, new DocContext(pdfDoc, StructTree.objNum(scopedArt)));
+            walker.addVisitor(tracker).scopeTo(StructTree.objNum(scopedArt));
+            walker.walk(root, new DocContext(pdfDoc));
         }
 
         assertEquals(List.of("Art"), tracker.entered, "verified subtree must be skipped in scope");
