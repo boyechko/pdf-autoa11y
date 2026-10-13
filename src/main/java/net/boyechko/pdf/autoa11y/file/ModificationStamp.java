@@ -11,7 +11,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import net.boyechko.pdf.autoa11y.core.VersionInfo;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
