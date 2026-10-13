@@ -9,7 +9,9 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.ReaderProperties;
 import com.itextpdf.kernel.pdf.WriterProperties;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,16 +112,23 @@ public final class PdfCustodian {
     }
 
     /**
-     * Copies an unencrypted temp file to the final output with the original encryption settings.
+     * Publishes an unencrypted temp file to the final output, restoring the original encryption and
+     * applying the modification stamp if {@code stamp} is set. Otherwise copies it as is.
      */
-    public void reencrypt(Path inputPath, Path outputPath) throws IOException {
-        analyzeEncryptionIfNeeded();
+    public void publish(Path tempPath, Path outputPath, boolean stamp) throws IOException {
+        boolean encrypted = isEncrypted();
+        if (!encrypted && !stamp) {
+            Files.copy(tempPath, outputPath, StandardCopyOption.REPLACE_EXISTING);
+            return;
+        }
 
-        try (PdfReader pdfReader = new PdfReader(inputPath.toString());
-                PdfWriter pdfWriter =
-                        new PdfWriter(outputPath.toString(), buildWriterProperties());
+        WriterProperties writerProps = encrypted ? buildWriterProperties() : new WriterProperties();
+        try (PdfReader pdfReader = new PdfReader(tempPath.toString());
+                PdfWriter pdfWriter = new PdfWriter(outputPath.toString(), writerProps);
                 PdfDocument doc = new PdfDocument(pdfReader, pdfWriter)) {
-            // Document is saved on close — no modifications needed.
+            if (stamp) {
+                ModificationStamp.apply(doc);
+            }
         }
     }
 

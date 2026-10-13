@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.file.ModificationStamp;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -319,28 +318,11 @@ public class ProcessingService {
                 current = output;
             }
 
-            // Record the modification on the Document element as the last pipeline step. A run
-            // that changed nothing has nothing to record, and its output is normally discarded
-            // by the caller, so skip the step rather than rewrite the document to no purpose.
-            if (isDirty || !allFixes.isEmpty()) {
-                Path stamped = pipelineDir.resolve(String.format("step%02d_stamp.pdf", stepNum++));
-                tempFiles.add(stamped);
-                try (PdfDocument doc = PdfCustodian.openTempForModification(current, stamped)) {
-                    ModificationStamp.apply(doc);
-                }
-                if (!KEEP_PIPELINE_TEMPS) {
-                    Files.deleteIfExists(current);
-                }
-                current = stamped;
-            }
-
-            // Finalize: copy the result out of the pipeline directory
+            // Finalize: publish the result out of the pipeline directory. A run that changed
+            // nothing has nothing to record, and its output is normally discarded by the caller,
+            // so it goes out unstamped rather than rewritten to no purpose.
             Path finalOutput = pipelineDir.resolve("output.pdf");
-            if (custodian.isEncrypted()) {
-                custodian.reencrypt(current, finalOutput);
-            } else {
-                Files.copy(current, finalOutput, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
+            custodian.publish(current, finalOutput, isDirty || !allFixes.isEmpty());
 
             listener.onSummary(allIssues);
             cleanupPipelineTempDir();
