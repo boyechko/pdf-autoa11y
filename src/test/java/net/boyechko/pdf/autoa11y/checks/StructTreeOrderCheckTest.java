@@ -21,7 +21,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -245,7 +244,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
 
             // Directly apply a fix to an already-ordered element
             DocContext ctx = new DocContext(doc);
-            new StructTreeOrderFix(document, new HashMap<>()).apply(ctx);
+            new StructTreeOrderFix(document).apply(ctx);
 
             // Order should be unchanged
             List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);

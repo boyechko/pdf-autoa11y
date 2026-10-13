@@ -2,15 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.checks;
 
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.ReadingOrder;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.*;
@@ -21,38 +16,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Detects structure tree siblings that are out of reading order, which is taken from where content
- * is painted on the page rather than from MCID order. Splitting fixes mint new MCIDs at the end of
- * a page's numbering, so in an already remediated document an element's MCID says nothing about
- * where on the page it sits.
+ * is painted on the page rather than from MCID order (see {@link ReadingOrder}).
  */
 public class StructTreeOrderCheck extends StructTreeCheck {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeOrderCheck.class);
 
-    /** Content whose tops fall within this many points shares a line, read left to right. */
-    private static final float LINE_BAND = 4.0f;
-
-    /**
-     * Position of an element's earliest content in the document's reading flow: page first, then a
-     * band counted down the page, then distance from the left edge. Bands are quantized rather than
-     * compared within a tolerance, because a tolerance makes the ordering intransitive and {@code
-     * List.sort} rejects such a comparator.
-     */
-    public record ReadingPosition(int page, int band, float left)
-            implements Comparable<ReadingPosition> {
-        static final ReadingPosition MAX =
-                new ReadingPosition(Integer.MAX_VALUE, Integer.MAX_VALUE, Float.MAX_VALUE);
-
-        @Override
-        public int compareTo(ReadingPosition other) {
-            int cmp = Integer.compare(page, other.page);
-            if (cmp != 0) return cmp;
-            cmp = Integer.compare(band, other.band);
-            return cmp != 0 ? cmp : Float.compare(left, other.left);
-        }
-    }
-
     private final IssueList issues = new IssueList();
-    private final Map<Integer, ReadingPosition> cache = new HashMap<>();
 
     @Override
     public String name() {
@@ -67,11 +36,11 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     @Override
     public void leaveElement(Visit visit) {
         List<PdfStructElem> children = visit.children();
-        DocContext doc = visit.docCtx();
+        ReadingOrder order = visit.docCtx().readingOrder();
         if (children.size() >= 2
-                && allChildrenLocatable(visit, children, doc)
-                && !isInOrder(visit.node(), children, doc)) {
-            IssueFix fix = new StructTreeOrderFix(visit.node(), cache);
+                && allChildrenLocatable(visit, children, order)
+                && !isInOrder(visit.node(), children, order)) {
+            IssueFix fix = new StructTreeOrderFix(visit.node());
             issues.add(
                     new Issue(
                             IssueType.STRUCT_TREE_OUT_OF_ORDER,
@@ -80,8 +49,6 @@ public class StructTreeOrderCheck extends StructTreeCheck {
                             "Children are out of reading order",
                             fix));
         }
-        // Cache this element's reading position now that all descendants have been visited
-        readingPositionOf(visit.node(), doc, cache);
     }
 
     @Override
@@ -91,9 +58,9 @@ public class StructTreeOrderCheck extends StructTreeCheck {
 
     /** Whether every child paints something findable, without which reordering would guess. */
     private boolean allChildrenLocatable(
-            Visit visit, List<PdfStructElem> children, DocContext doc) {
+            Visit visit, List<PdfStructElem> children, ReadingOrder order) {
         for (PdfStructElem child : children) {
-            if (readingPositionOf(child, doc, cache).equals(ReadingPosition.MAX)) {
+            if (!order.isLocatable(child)) {
                 logger.debug(
                         "Not judging the order of #{}: child #{} paints nothing locatable",
                         StructTree.objNum(visit.node()),
@@ -105,74 +72,14 @@ public class StructTreeOrderCheck extends StructTreeCheck {
     }
 
     /** Checks whether children already stand in the order their content is read. */
-    private boolean isInOrder(PdfStructElem parent, List<PdfStructElem> children, DocContext doc) {
-        Comparator<PdfStructElem> order = readingOrderWithin(parent, doc, cache);
+    private boolean isInOrder(
+            PdfStructElem parent, List<PdfStructElem> children, ReadingOrder order) {
+        Comparator<PdfStructElem> within = order.within(parent);
         for (int i = 1; i < children.size(); i++) {
-            if (order.compare(children.get(i), children.get(i - 1)) < 0) {
+            if (within.compare(children.get(i), children.get(i - 1)) < 0) {
                 return false;
             }
         }
         return true;
-    }
-
-    /**
-     * Returns the comparator that puts a parent's children in reading order. A table row is read
-     * left to right, so its cells are ordered by their distance from the left edge alone: cells in
-     * one row are staggered vertically, a short cell sitting centred beside a tall one, and
-     * ordering those down the page would scramble the row.
-     */
-    public static Comparator<PdfStructElem> readingOrderWithin(
-            PdfStructElem parent, DocContext doc, Map<Integer, ReadingPosition> cache) {
-        Comparator<ReadingPosition> order =
-                "TR".equals(StructTree.mappedRole(parent))
-                        ? Comparator.comparingInt(ReadingPosition::page)
-                                .thenComparing(ReadingPosition::left)
-                        : Comparator.naturalOrder();
-        return Comparator.comparing(elem -> readingPositionOf(elem, doc, cache), order);
-    }
-
-    /** Returns the reading position of an element, computing and caching if needed. */
-    private static ReadingPosition readingPositionOf(
-            PdfStructElem elem, DocContext doc, Map<Integer, ReadingPosition> cache) {
-        int objNum = StructTree.objNum(elem);
-        if (objNum >= 0) {
-            ReadingPosition cached = cache.get(objNum);
-            if (cached != null) return cached;
-        }
-
-        ReadingPosition key =
-                StructTree.descendantsOf(elem, PdfMcr.class).stream()
-                        .map(mcr -> positionOf(mcr, doc))
-                        .filter(Objects::nonNull)
-                        .min(Comparator.naturalOrder())
-                        .orElse(ReadingPosition.MAX);
-
-        if (objNum >= 0) {
-            cache.put(objNum, key);
-        }
-        return key;
-    }
-
-    /** Returns where an MCR's content is painted, or null when it paints nothing locatable. */
-    private static ReadingPosition positionOf(PdfMcr mcr, DocContext doc) {
-        int page = StructTree.pageOf(mcr);
-        if (page < 1 || page > doc.doc().getNumberOfPages()) {
-            return null;
-        }
-
-        Map<Integer, Rectangle> bounds = doc.pages().bounds(page);
-        if (bounds.isEmpty()) {
-            // Nothing is painted on this page, so MCID order is the only evidence available. The
-            // page is compared before the band, so no element ever compares its band against one
-            // derived this way on another page.
-            return new ReadingPosition(page, mcr.getMcid(), 0f);
-        }
-
-        Rectangle rect = bounds.get(mcr.getMcid());
-        if (rect == null) {
-            return null;
-        }
-        // PDF user space counts y upward, so negating the top makes higher content sort earlier.
-        return new ReadingPosition(page, -Math.round(rect.getTop() / LINE_BAND), rect.getLeft());
     }
 }
