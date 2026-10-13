@@ -24,6 +24,14 @@ public interface Check {
      */
     default void scopeTo(int objNum) {}
 
+    /**
+     * Returns true if the check wrote to the document as a side effect of finding issues (e.g.
+     * scribble clearing), so the save gate knows the output differs from the input.
+     */
+    default boolean hasChangedDoc() {
+        return false;
+    }
+
     /** Returns checker classes that must run before this checker. */
     default Set<Class<? extends Check>> prerequisites() {
         return Set.of();

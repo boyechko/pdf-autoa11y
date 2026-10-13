@@ -3,6 +3,7 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,6 +22,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -122,6 +124,43 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
 
             assertEquals(0, issues.size(), "Internal-destination Links should not be flagged");
+        }
+    }
+
+    @Test
+    void scribblingAnInvalidUriChangesDoc() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            buildLinkWithUri(pdfDoc, "https://practice.10");
+            InvalidLinkUriCheck check = new InvalidLinkUriCheck();
+
+            check.findIssues(new DocContext(pdfDoc));
+
+            assertTrue(check.hasChangedDoc());
+        }
+    }
+
+    @Test
+    void clearingStaleScribbleChangesDoc() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructElem link = buildLinkWithUri(pdfDoc, "https://example.com/page");
+            StructTree.addToolScribble(link, InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX + " stale");
+            InvalidLinkUriCheck check = new InvalidLinkUriCheck();
+
+            check.findIssues(new DocContext(pdfDoc));
+
+            assertTrue(check.hasChangedDoc());
+        }
+    }
+
+    @Test
+    void validUriLeavesDocUnchanged() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            buildLinkWithUri(pdfDoc, "https://example.com/page");
+            InvalidLinkUriCheck check = new InvalidLinkUriCheck();
+
+            check.findIssues(new DocContext(pdfDoc));
+
+            assertFalse(check.hasChangedDoc());
         }
     }
 

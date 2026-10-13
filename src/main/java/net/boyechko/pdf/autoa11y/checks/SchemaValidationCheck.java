@@ -50,7 +50,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     public void beforeTraversal(DocContext docCtx) {
         PdfStructTreeRoot root = docCtx.doc().getStructTreeRoot();
         if (root != null && StructTree.clearScribbleSegmentsInTree(root, CHECK_SCRIBBLE_PREFIX)) {
-            docCtx.markDirty();
+            markDocChanged();
         }
     }
 
@@ -58,7 +58,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     public void afterTraversal(DocContext docCtx) {
         // Any issue implies a scribble was written by the validators during traversal.
         if (!issues.isEmpty()) {
-            docCtx.markDirty();
+            markDocChanged();
         }
     }
 

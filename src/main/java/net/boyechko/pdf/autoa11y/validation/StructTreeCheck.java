@@ -23,6 +23,7 @@ public abstract class StructTreeCheck implements Check {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeCheck.class);
 
     private int scopeObjNum;
+    private boolean docChanged;
 
     public abstract String name();
 
@@ -41,6 +42,16 @@ public abstract class StructTreeCheck implements Check {
     @Override
     public void scopeTo(int objNum) {
         this.scopeObjNum = objNum;
+    }
+
+    @Override
+    public boolean hasChangedDoc() {
+        return docChanged;
+    }
+
+    /** Records a write to the document made outside the Issue/Fix accounting. */
+    protected void markDocChanged() {
+        this.docChanged = true;
     }
 
     @Override

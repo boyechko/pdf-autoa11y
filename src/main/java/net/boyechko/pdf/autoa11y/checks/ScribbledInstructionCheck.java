@@ -36,7 +36,7 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
         if (root != null
                 && StructTree.clearScribbleSegmentsInTree(
                         root, ScribbledInstructionFix.INSTRUCTION_TAG)) {
-            docCtx.markDirty();
+            markDocChanged();
         }
     }
 

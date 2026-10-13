@@ -310,7 +310,7 @@ public class ProcessingService {
                     } else {
                         listener.onSuccess(check.passedMessage());
                     }
-                    isDirty |= ctx.isDirty();
+                    isDirty |= check.hasChangedDoc();
                 }
 
                 if (!KEEP_PIPELINE_TEMPS) {
