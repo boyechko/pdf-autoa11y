@@ -7,9 +7,6 @@ import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck;
-import net.boyechko.pdf.autoa11y.checks.StructTreeOrderCheck.ReadingPosition;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -23,13 +20,11 @@ public class StructTreeOrderFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeOrderFix.class);
 
     private final PdfStructElem element;
-    private final Map<Integer, ReadingPosition> cache;
     private int reorderedCount;
     private int totalChildren;
 
-    public StructTreeOrderFix(PdfStructElem element, Map<Integer, ReadingPosition> cache) {
+    public StructTreeOrderFix(PdfStructElem element) {
         this.element = element;
-        this.cache = cache;
         this.reorderedCount = 0;
     }
 
@@ -50,7 +45,7 @@ public class StructTreeOrderFix implements IssueFix {
 
         // Sort children by reading position
         List<PdfStructElem> sorted = new ArrayList<>(children);
-        sorted.sort(StructTreeOrderCheck.readingOrderWithin(parent, ctx, cache));
+        sorted.sort(ctx.readingOrder().within(parent));
 
         // Find positions of struct elem refs in the K array
         List<Integer> structIndices = new ArrayList<>();
