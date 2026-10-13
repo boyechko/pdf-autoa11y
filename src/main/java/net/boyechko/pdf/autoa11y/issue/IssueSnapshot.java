@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.issue;
 
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
  * Immutable snapshot of an issue's location, fix identity, and resolution message.
@@ -63,13 +66,17 @@ public record IssueSnapshot(
         return enclosing != null ? enclosing.getSimpleName() : fixClass.getName();
     }
 
-    /** Falls back to the object-to-page mapping when the location carries no page of its own. */
+    /** Falls back to the structure element's page when the location carries none of its own. */
     private static Integer resolvePage(Locus where, Integer objNum, DocContext ctx) {
         Integer pageNum = where.page();
         if (pageNum != null || objNum == null) {
             return pageNum;
         }
-        int mapped = ctx.getPageNumber(objNum);
-        return mapped > 0 ? mapped : null;
+        if (ctx.doc().getPdfObject(objNum) instanceof PdfDictionary dict
+                && PdfStructElem.isStructElem(dict)) {
+            int found = StructTree.pageOf(new PdfStructElem(dict), ctx);
+            return found > 0 ? found : null;
+        }
+        return null;
     }
 }

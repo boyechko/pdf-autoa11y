@@ -73,18 +73,11 @@ public final class StructTree {
         return false;
     }
 
-    /** Finds the page via /Pg, then context cache, then recursion into kids. */
+    /** Finds the page via /Pg, then recursion into kids. */
     public static int pageOf(PdfStructElem elem, DocContext ctx) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
             int pageNum = ctx.doc().getPageNumber(pg);
-            if (pageNum > 0) return pageNum;
-        }
-
-        // Check via indirect reference in the context cache
-        int objNum = objNum(elem);
-        if (objNum >= 0) {
-            int pageNum = ctx.getPageNumber(objNum);
             if (pageNum > 0) return pageNum;
         }
 
