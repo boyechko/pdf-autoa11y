@@ -4,9 +4,32 @@ package net.boyechko.pdf.autoa11y.document;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.Test;
 
-class FormatTest {
+class FormatTest extends PdfTestBase {
+
+    @Test
+    void elemLabelFindsPageOfElementCreatedAfterContext() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            pdfDoc.getStructTreeRoot().addKid(document);
+            DocContext ctx = new DocContext(pdfDoc);
+
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
+            document.addKid(div);
+            div.addKid(new PdfStructElem(pdfDoc, PdfName.P, page));
+
+            assertEquals(Format.elem(div, 1), Format.elem(div, ctx));
+        }
+    }
 
     @Test
     void truncateReturnsNullForNull() {
