@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.document;
+package net.boyechko.pdf.autoa11y.file;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.core.VersionInfo;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
  * Records that this tool modified a document, in two places: a tool-authored timestamp scribbled on

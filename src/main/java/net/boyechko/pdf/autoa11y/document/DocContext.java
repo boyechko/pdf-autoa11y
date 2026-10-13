@@ -4,7 +4,7 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 
-/** Provides access to the document and its structure. */
+/** Provides access to the opened PDF document and its content. */
 public class DocContext {
     private final PdfDocument doc;
     private final PageContent pages;

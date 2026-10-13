@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.document;
+package net.boyechko.pdf.autoa11y.file;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
 
 /** Test suite for ModificationStamp. */

@@ -13,8 +13,8 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
-import net.boyechko.pdf.autoa11y.document.PdfCustodian;
-import net.boyechko.pdf.autoa11y.document.SafeOutput;
+import net.boyechko.pdf.autoa11y.file.PdfCustodian;
+import net.boyechko.pdf.autoa11y.file.SafeOutput;
 
 public class Gui extends JFrame {
     private JLabel dropLabel;
