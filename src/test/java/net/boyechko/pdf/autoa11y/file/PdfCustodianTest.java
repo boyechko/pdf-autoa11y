@@ -98,6 +98,46 @@ public class PdfCustodianTest extends PdfTestBase {
         }
     }
 
+    // ── publish ────────────────────────────────────────────────────
+
+    @Test
+    void publishStampsWhenAsked() throws Exception {
+        PdfCustodian custodian = new PdfCustodian(clearPdf);
+        Path output = testOutputPath("published_stamped.pdf");
+
+        custodian.publish(clearPdf, output, true);
+
+        try (PdfDocument doc = new PdfDocument(new PdfReader(output.toString()))) {
+            assertTrue(doc.getDocumentInfo().getCreator().contains("modified using PDF-AutoA11y"));
+        }
+    }
+
+    @Test
+    void publishLeavesDocumentUnstampedWhenNotAsked() throws Exception {
+        PdfCustodian custodian = new PdfCustodian(clearPdf);
+        Path output = testOutputPath("published_unstamped.pdf");
+
+        custodian.publish(clearPdf, output, false);
+
+        assertEquals(-1, Files.mismatch(clearPdf, output), "Output should be a byte-for-byte copy");
+    }
+
+    @Test
+    void publishRestoresOriginalEncryption() throws Exception {
+        PdfCustodian custodian = new PdfCustodian(encryptedPdf, PASSWORD);
+        Path decrypted = testOutputPath("decrypted_temp.pdf");
+        custodian.decryptToTemp(decrypted).close();
+        Path output = testOutputPath("published_encrypted.pdf");
+
+        custodian.publish(decrypted, output, true);
+
+        try (PdfReader reader = new PdfReader(output.toString());
+                PdfDocument doc = new PdfDocument(reader)) {
+            assertTrue(reader.isEncrypted());
+            assertTrue(doc.getDocumentInfo().getCreator().contains("modified using PDF-AutoA11y"));
+        }
+    }
+
     // ── modifyAndSave ──────────────────────────────────────────────
 
     @Test
