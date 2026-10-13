@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.core;
+package net.boyechko.pdf.autoa11y.file;
 
 import java.io.IOException;
 import java.io.InputStream;

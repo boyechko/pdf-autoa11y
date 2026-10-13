@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.core.VersionInfo;
+import net.boyechko.pdf.autoa11y.file.VersionInfo;
 import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 import net.boyechko.pdf.autoa11y.issue.IssueStatus;
 import org.junit.jupiter.api.Test;
