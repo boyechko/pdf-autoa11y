@@ -156,7 +156,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (pageNum <= 0) {
                 continue;
             }
-            Content.McidContent mc = visit.docCtx().getMcidContent(pageNum).get(mcid);
+            Content.McidContent mc = visit.docCtx().pages().content(pageNum).get(mcid);
             if (mc != null && !mc.kinds().isEmpty()) {
                 return false;
             }
@@ -206,12 +206,12 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            String mcidText = visit.docCtx().getMcidText(pageNum, mcid);
+            String mcidText = visit.docCtx().pages().text(pageNum, mcid);
             if (mcidText != null && !mcidText.isBlank()) {
                 continue;
             }
 
-            Content.McidContent mc = visit.docCtx().getMcidContent(pageNum).get(mcid);
+            Content.McidContent mc = visit.docCtx().pages().content(pageNum).get(mcid);
             if (mc == null
                     || mc.kinds().contains(Content.ContentKind.TEXT)
                     || (!mc.kinds().contains(Content.ContentKind.IMAGE)
@@ -219,13 +219,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            Map<Integer, Rectangle> boundsByMcid =
-                    visit.docCtx()
-                            .getOrComputeMcidBounds(
-                                    pageNum,
-                                    () ->
-                                            Content.extractBoundsForPage(
-                                                    visit.doc().getPage(pageNum)));
+            Map<Integer, Rectangle> boundsByMcid = visit.docCtx().pages().bounds(pageNum);
             Rectangle bounds = boundsByMcid.get(mcid);
             if (bounds != null && isMeaningfulSize(bounds)) {
                 continue;

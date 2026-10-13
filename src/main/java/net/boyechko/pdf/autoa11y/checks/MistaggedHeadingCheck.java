@@ -312,7 +312,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         Map<Float, Long> charCountBySize = new HashMap<>();
         int totalPages = ctx.doc().getNumberOfPages();
         for (int p = 1; p <= totalPages; p++) {
-            for (Content.McidContent mc : ctx.getMcidContent(p).values()) {
+            for (Content.McidContent mc : ctx.pages().content(p).values()) {
                 accumulate(charCountBySize, mc);
             }
         }
@@ -338,7 +338,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             if (pageNum <= 0) {
                 continue;
             }
-            Content.McidContent mc = ctx.getMcidContent(pageNum).get(mcid);
+            Content.McidContent mc = ctx.pages().content(pageNum).get(mcid);
             if (mc != null) {
                 accumulate(charCountBySize, mc);
             }

@@ -606,7 +606,7 @@ class StructTreeOrderCheckTest extends PdfTestBase {
         for (PdfStructElem child : StructTree.childrenOf(parent, PdfStructElem.class)) {
             StringBuilder text = new StringBuilder();
             for (PdfMcr mcr : StructTree.descendantsOf(child, PdfMcr.class)) {
-                text.append(ctx.getMcidText(StructTree.pageOf(mcr), mcr.getMcid()));
+                text.append(ctx.pages().text(StructTree.pageOf(mcr), mcr.getMcid()));
             }
             // Normalized, since how the extractor separates an element's lines is beside the point
             texts.add(text.toString().replaceAll("\\s+", " ").trim());

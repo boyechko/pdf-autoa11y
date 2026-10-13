@@ -2,25 +2,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.document;
 
-import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /** Provides access to the document and its structure. */
 public class DocContext {
     private final PdfDocument doc;
     private final Map<Integer, Integer> objectToPageMapping;
-    private final Map<Integer, Map<Integer, Rectangle>> mcidBoundsCache;
-    private final Map<Integer, Map<Integer, List<Rectangle>>> mcidLineBoundsCache;
-    private final Map<Integer, Map<Integer, Content.McidContent>> mcidContentCache;
-    private final Map<Integer, Map<Integer, String>> mcidTextCache;
-    private final Map<Integer, List<Content.BulletPosition>> bulletPositionCache;
+    private final PageContent pages;
     private final int scopeObjNum;
     private boolean dirty = false;
 
@@ -50,15 +43,16 @@ public class DocContext {
         this.scopeObjNum = scopeObjNum;
         this.doc = doc;
         this.objectToPageMapping = buildObjectToPageMapping(doc);
-        this.mcidBoundsCache = new HashMap<>();
-        this.mcidLineBoundsCache = new HashMap<>();
-        this.mcidContentCache = new HashMap<>();
-        this.mcidTextCache = new HashMap<>();
-        this.bulletPositionCache = new HashMap<>();
+        this.pages = new PageContent(doc);
     }
 
     public PdfDocument doc() {
         return doc;
+    }
+
+    /** Per-page marked-content facts, extracted lazily and shared across checks and fixes. */
+    public PageContent pages() {
+        return pages;
     }
 
     /** Object number of the element traversals are confined to, or 0 for the whole tree. */
@@ -69,47 +63,6 @@ public class DocContext {
     /** Returns the page number for a given object number based on the object-to-page mapping. */
     public int getPageNumber(int objectNumber) {
         return objectToPageMapping.getOrDefault(objectNumber, 0);
-    }
-
-    /** Returns the bounding box for a given MCID, extracting on first access. */
-    public Map<Integer, Rectangle> getOrComputeMcidBounds(
-            int pageNum, Supplier<Map<Integer, Rectangle>> supplier) {
-        return mcidBoundsCache.computeIfAbsent(pageNum, k -> supplier.get());
-    }
-
-    /** Returns each MCID's text lines on a page, top to bottom, extracting on first access. */
-    public Map<Integer, List<Rectangle>> getMcidLineBounds(int pageNum) {
-        return mcidLineBoundsCache.computeIfAbsent(
-                pageNum, k -> Content.extractLineBoundsForPage(doc.getPage(pageNum)));
-    }
-
-    /** Returns bullet positions for a page, extracting on first access. */
-    public List<Content.BulletPosition> getOrComputeBulletPositions(
-            int pageNum, Supplier<List<Content.BulletPosition>> supplier) {
-        return bulletPositionCache.computeIfAbsent(pageNum, k -> supplier.get());
-    }
-
-    /** Returns text with font information for all MCIDs on a page, extracting on first access. */
-    public Map<Integer, Content.McidContent> getMcidContent(int pageNum) {
-        return mcidContentCache.computeIfAbsent(
-                pageNum, k -> Content.extractContentForPage(doc.getPage(pageNum)));
-    }
-
-    /** Returns all MCID text for a page, extracting on first access. */
-    public Map<Integer, String> getMcidText(int pageNum) {
-        return mcidTextCache.computeIfAbsent(
-                pageNum,
-                k -> {
-                    Map<Integer, Content.McidContent> content = getMcidContent(pageNum);
-                    Map<Integer, String> text = new HashMap<>();
-                    content.forEach((mcid, mc) -> text.put(mcid, mc.text()));
-                    return text;
-                });
-    }
-
-    /** Returns the text for a specific MCID, extracting the page on first access. */
-    public String getMcidText(int pageNum, int mcid) {
-        return getMcidText(pageNum).getOrDefault(mcid, "");
     }
 
     private Map<Integer, Integer> buildObjectToPageMapping(PdfDocument document) {
