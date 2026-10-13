@@ -11,7 +11,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
@@ -90,10 +89,7 @@ public class EmptyLinkTagFix implements IssueFix {
             return;
         }
 
-        Map<Integer, Rectangle> mcidBounds =
-                ctx.getOrComputeMcidBounds(
-                        resolvedPageNum,
-                        () -> Content.extractBoundsForPage(ctx.doc().getPage(resolvedPageNum)));
+        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(resolvedPageNum);
         Rectangle mcrRect = mcidBounds.get(mcid);
         Rectangle annotRect = Geometry.getAnnotationBounds(annotDict);
         if (!Geometry.boundsSimilar(mcrRect, annotRect)) {
@@ -123,7 +119,7 @@ public class EmptyLinkTagFix implements IssueFix {
 
     @Override
     public String describe(DocContext ctx) {
-        String text = ctx.getMcidText(pageNum, mcid);
+        String text = ctx.pages().text(pageNum, mcid);
         if (text.isEmpty()) {
             return describe();
         }

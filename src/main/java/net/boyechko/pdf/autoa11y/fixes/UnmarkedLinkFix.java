@@ -15,7 +15,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
@@ -101,8 +100,7 @@ public class UnmarkedLinkFix implements IssueFix {
             return null;
         }
 
-        Map<Integer, Rectangle> mcidBounds =
-                ctx.getOrComputeMcidBounds(pageNum, () -> Content.extractBoundsForPage(page));
+        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
         if (mcidBounds.isEmpty()) {
             return null;
         }

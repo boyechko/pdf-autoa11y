@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
@@ -161,9 +160,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
             return null;
         }
 
-        Map<Integer, Rectangle> bounds =
-                doc.getOrComputeMcidBounds(
-                        page, () -> Content.extractBoundsForPage(doc.doc().getPage(page)));
+        Map<Integer, Rectangle> bounds = doc.pages().bounds(page);
         if (bounds.isEmpty()) {
             // Nothing is painted on this page, so MCID order is the only evidence available. The
             // page is compared before the band, so no element ever compares its band against one

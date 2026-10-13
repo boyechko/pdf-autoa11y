@@ -87,7 +87,7 @@ public final class Content {
                 continue;
             }
 
-            McidContent mc = ctx.getMcidContent(pageNum).get(mcid);
+            McidContent mc = ctx.pages().content(pageNum).get(mcid);
             if (mc != null && !mc.kinds().isEmpty()) {
                 results.put(new PageMcid(pageNum, mcid), mc);
             }
@@ -291,7 +291,7 @@ public final class Content {
 
     /** Gets the text content for all MCRs within a structure element. */
     public static String getTextForElement(PdfStructElem node, DocContext ctx, int pageNum) {
-        return getTextForElement(node, ctx.getMcidText(pageNum));
+        return getTextForElement(node, ctx.pages().text(pageNum));
     }
 
     /** Gets the text content for all MCRs within a structure element, recursing into children. */
@@ -483,9 +483,7 @@ public final class Content {
 
     /** Gets the bounding box for a single MCR by its MCID. */
     public static Rectangle getBoundsForMcid(DocContext ctx, int pageNum, int mcid) {
-        Map<Integer, Rectangle> mcidBounds =
-                ctx.getOrComputeMcidBounds(
-                        pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
+        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
         return mcidBounds.get(mcid);
     }
 
@@ -495,7 +493,7 @@ public final class Content {
      */
     public static List<Rectangle> getLineBoundsForElement(
             PdfStructElem node, DocContext ctx, int pageNum) {
-        Map<Integer, List<Rectangle>> lineBounds = ctx.getMcidLineBounds(pageNum);
+        Map<Integer, List<Rectangle>> lineBounds = ctx.pages().lineBounds(pageNum);
 
         List<Rectangle> lines = new ArrayList<>();
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
@@ -528,9 +526,7 @@ public final class Content {
 
     /** Gets the union bounding box for all MCRs within a structure element. */
     public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
-        Map<Integer, Rectangle> mcidBounds =
-                ctx.getOrComputeMcidBounds(
-                        pageNum, () -> extractBoundsForPage(ctx.doc().getPage(pageNum)));
+        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
 
         Rectangle result = null;
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {

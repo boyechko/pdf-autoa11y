@@ -5,18 +5,20 @@ package net.boyechko.pdf.autoa11y.checks;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -43,6 +45,13 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
             p.addKid(mcr);
 
             Rectangle mcrRect = new Rectangle(100, 700, 60, 14);
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfCanvas canvas = new PdfCanvas(page);
+            canvas.beginMarkedContent(PdfName.P, props);
+            canvas.rectangle(mcrRect);
+            canvas.fill();
+            canvas.endMarkedContent();
 
             PdfLinkAnnotation linkAnnot =
                     new PdfLinkAnnotation(new Rectangle(mcrRect))
@@ -56,7 +65,6 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
             linkElem.addKid(objRef);
 
             DocContext ctx = new DocContext(pdfDoc);
-            ctx.getOrComputeMcidBounds(1, () -> Map.of(mcr.getMcid(), mcrRect));
             StructTreeWalker walker = new StructTreeWalker();
             walker.addVisitor(new EmptyLinkTagCheck());
             IssueList issues = walker.walk(root, ctx);

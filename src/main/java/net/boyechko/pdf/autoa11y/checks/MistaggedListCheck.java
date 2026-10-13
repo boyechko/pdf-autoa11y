@@ -937,13 +937,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     private List<BulletLine> bulletLinesOf(Visit visit, PdfStructElem element) {
         List<BulletLine> perLine = new ArrayList<>();
         for (int pageNum : pagesTouchedBy(element)) {
-            List<Content.BulletPosition> bullets =
-                    visit.docCtx()
-                            .getOrComputeBulletPositions(
-                                    pageNum,
-                                    () ->
-                                            Content.extractBulletPositionsForPage(
-                                                    visit.doc().getPage(pageNum)));
+            List<Content.BulletPosition> bullets = visit.docCtx().pages().bullets(pageNum);
             for (Rectangle line :
                     Content.getLineBoundsForElement(element, visit.docCtx(), pageNum)) {
                 perLine.add(new BulletLine(pageNum, line, bulletOnLine(bullets, line)));

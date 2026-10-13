@@ -11,7 +11,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -78,13 +77,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                 continue;
             }
 
-            Map<Integer, Rectangle> mcidBounds =
-                    visit.docCtx()
-                            .getOrComputeMcidBounds(
-                                    pageNum,
-                                    () ->
-                                            Content.extractBoundsForPage(
-                                                    visit.doc().getPage(pageNum)));
+            Map<Integer, Rectangle> mcidBounds = visit.docCtx().pages().bounds(pageNum);
             Rectangle mcrRect = mcidBounds.get(mcr.getMcid());
             Rectangle annotRect = Geometry.getAnnotationBounds(annotDict);
             if (!Geometry.boundsSimilar(mcrRect, annotRect)) {
