@@ -18,6 +18,12 @@ public interface Check {
 
     IssueList findIssues(DocContext ctx);
 
+    /**
+     * Confines the check to the subtree rooted at {@code objNum}. Only structure-tree checks honor
+     * the scope; document-level checks see the whole file regardless.
+     */
+    default void scopeTo(int objNum) {}
+
     /** Returns checker classes that must run before this checker. */
     default Set<Class<? extends Check>> prerequisites() {
         return Set.of();

@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 public abstract class StructTreeCheck implements Check {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeCheck.class);
 
+    private int scopeObjNum;
+
     public abstract String name();
 
     public abstract String description();
@@ -37,6 +39,11 @@ public abstract class StructTreeCheck implements Check {
     }
 
     @Override
+    public void scopeTo(int objNum) {
+        this.scopeObjNum = objNum;
+    }
+
+    @Override
     public IssueList findIssues(DocContext ctx) {
         PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
         if (root == null || root.getKids() == null) {
@@ -44,8 +51,7 @@ public abstract class StructTreeCheck implements Check {
             return new IssueList();
         }
 
-        StructTreeWalker walker = new StructTreeWalker();
-        walker.addVisitor(this);
+        StructTreeWalker walker = new StructTreeWalker().addVisitor(this).scopeTo(scopeObjNum);
         return walker.walk(root, ctx);
     }
 

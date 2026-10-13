@@ -283,6 +283,7 @@ public class ProcessingService {
 
             for (Supplier<Check> supplier : checks) {
                 Check check = supplier.get();
+                check.scopeTo(scopeObjNum);
                 String stepName = sanitizeForFilename(check.name());
                 Path output =
                         pipelineDir.resolve(String.format("step%02d_%s.pdf", stepNum++, stepName));
@@ -290,7 +291,7 @@ public class ProcessingService {
 
                 listener.onCheckStart(check);
                 try (PdfDocument doc = PdfCustodian.openTempForModification(current, output)) {
-                    DocContext ctx = new DocContext(doc, scopeObjNum);
+                    DocContext ctx = new DocContext(doc);
                     IssueList issues = check.findIssues(ctx);
                     allIssues.addAll(issues);
 
@@ -359,11 +360,12 @@ public class ProcessingService {
 
     public IssueList analyze() throws Exception {
         try (PdfDocument pdfDoc = custodian.openForReading()) {
-            DocContext context = new DocContext(pdfDoc, scopeObjNum);
+            DocContext context = new DocContext(pdfDoc);
             IssueList allIssues = new IssueList();
 
             for (Supplier<Check> supplier : checks) {
                 Check check = supplier.get();
+                check.scopeTo(scopeObjNum);
                 listener.onCheckStart(check);
                 IssueList issues = check.findIssues(context);
                 allIssues.addAll(issues);
