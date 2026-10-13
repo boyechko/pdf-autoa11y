@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Richard Boyechko <code@boyechko.net>
 // SPDX-License-Identifier: AGPL-3.0-or-later
-package net.boyechko.pdf.autoa11y.document;
+package net.boyechko.pdf.autoa11y.file;
 
 import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -14,7 +14,12 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Factory for opening PDF documents with appropriate encryption and metadata settings. */
+/**
+ * Factory for opening PDF documents with appropriate encryption and metadata settings.
+ *
+ * <p>The role of the custodian is to safeguard the access to the PDF document, and to ensure that
+ * the output file retains the same permissions as the original.
+ */
 public final class PdfCustodian {
     private static final Logger logger = LoggerFactory.getLogger(PdfCustodian.class);
 
