@@ -40,14 +40,14 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
     public void beforeTraversal(DocContext docCtx) {
         PdfStructTreeRoot root = docCtx.doc().getStructTreeRoot();
         if (root != null && StructTree.clearScribbleSegmentsInTree(root, CHECK_SCRIBBLE_PREFIX)) {
-            docCtx.markDirty();
+            markDocChanged();
         }
     }
 
     @Override
     public void afterTraversal(DocContext docCtx) {
         if (!issues.isEmpty()) {
-            docCtx.markDirty();
+            markDocChanged();
         }
     }
 
