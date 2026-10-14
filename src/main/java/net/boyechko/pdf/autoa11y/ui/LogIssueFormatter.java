@@ -17,17 +17,14 @@ public final class LogIssueFormatter implements IssueFormatter {
             case Locus.AtPage(var pageNum) -> " (" + Format.page(pageNum) + ")";
             case Locus.AtObj(var objNum, var pageNum, var kind) ->
                     " (" + objLabel(kind, objNum) + withPage(pageNum) + ")";
-            case Locus.AtElem(var element, var pageNum, var role) ->
-                    " (" + joinElem(where.objNum(), pageNum, role) + ")";
+            case Locus.AtElem(var objNum, var pageNum, var role) ->
+                    " (" + joinElem(objNum, pageNum, role) + ")";
             case Locus.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) ->
                     " (" + joinMcid(pageNum, mcid, ownerObjNum, role) + ")";
         };
     }
 
-    private static String objLabel(Locus.ObjKind kind, Integer objNum) {
-        if (objNum == null) {
-            return "obj. ?";
-        }
+    private static String objLabel(Locus.ObjKind kind, int objNum) {
         Locus.ObjKind resolvedKind = kind != null ? kind : Locus.ObjKind.GENERIC;
         return switch (resolvedKind) {
             case ANNOT -> "annot " + Format.objNum(objNum);
@@ -42,18 +39,16 @@ public final class LogIssueFormatter implements IssueFormatter {
         return pageNum != null ? ", " + Format.page(pageNum) : "";
     }
 
-    private static String joinElem(Integer objNum, Integer pageNum, String role) {
+    private static String joinElem(int objNum, Integer pageNum, String role) {
         StringJoiner joiner = new StringJoiner(", ");
-        if (objNum != null) {
-            joiner.add(Format.objNum(objNum));
-        }
+        joiner.add(Format.objNum(objNum));
         if (pageNum != null) {
             joiner.add(Format.page(pageNum));
         }
         if (role != null && !role.isBlank()) {
             joiner.add("role=" + role);
         }
-        return joiner.length() > 0 ? joiner.toString() : "elem";
+        return joiner.toString();
     }
 
     private static String joinMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {

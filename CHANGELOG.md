@@ -19,6 +19,11 @@ Versioning](https://semver.org/).
   `input`, `output`, `object`, `page`, and `message` replace `t`, `tool`, `in`,
   `out`, `obj`, `pg`, and `msg`.
 
+### Fixed
+- Checks no longer crash on structure elements stored inline rather than as
+  indirect objects. Issues found on such elements are reported at their page
+  instead.
+
 ## [0.6.0] - 2026-09-17
 
 ### Added

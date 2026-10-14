@@ -106,18 +106,9 @@ public final class Format {
                 if (pageNum != null) s += ", " + page(pageNum);
                 yield s + ")";
             }
-            case Locus.AtElem(var element, var pageNum, var role) -> {
-                DocValue.ObjNum obj = DocValue.ObjNum.of(element);
-                if (obj == null && pageNum == null) {
-                    yield (role != null && !role.isBlank()) ? " (" + role + ")" : "";
-                }
-                String s = " (";
-                if (obj != null) {
-                    s += objNum(obj.value());
-                    if (pageNum != null) s += ", " + page(pageNum);
-                } else {
-                    s += page(pageNum);
-                }
+            case Locus.AtElem(var obj, var pageNum, var role) -> {
+                String s = " (" + objNum(obj);
+                if (pageNum != null) s += ", " + page(pageNum);
                 yield s + ")";
             }
             case Locus.AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> {

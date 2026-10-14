@@ -211,7 +211,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     @Test
-    void remediationLogPreservesExecutionOrderAndRolesBeforeLaterFixesRun() throws Exception {
+    void remediationLogPreservesExecutionOrderAndDetectedRoles() throws Exception {
         Path inputPath = createFigureWithTextPdf();
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
@@ -225,6 +225,9 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         assertEquals(
                 List.of("P", "H1"),
+                result.remediationLog().stream().map(IssueSnapshot::resolution).toList());
+        assertEquals(
+                List.of("Figure", "Figure"),
                 result.remediationLog().stream().map(IssueSnapshot::role).toList());
         assertNotNull(result.remediationLog().getFirst().objNum());
         assertEquals(
@@ -250,7 +253,7 @@ public class ProcessingServiceTest extends PdfTestBase {
         @Override
         public boolean enterElement(Visit visit) {
             if (PdfName.Figure.equals(visit.node().getRole())) {
-                Locus where = new Locus.AtElem(visit.node(), visit.page(), null);
+                Locus where = visit.locus();
                 issues.add(
                         new Issue(
                                 IssueType.FIGURE_WITH_TEXT,

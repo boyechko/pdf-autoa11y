@@ -3,6 +3,7 @@
 package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.Objects;
 
 /** Represents the location of an accessibility issue found in a PDF document. */
 public sealed interface Locus {
@@ -13,10 +14,18 @@ public sealed interface Locus {
     record AtPage(int pageNum) implements Locus {}
 
     /** An indirect object such as an annotation or font; pageNum is an optional context. */
-    record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements Locus {}
+    record AtObj(Integer objNum, Integer pageNum, ObjKind kind) implements Locus {
+        public AtObj {
+            Objects.requireNonNull(objNum, "objNum");
+        }
+    }
 
     /** A structure element; pageNum and role are optional reporting context. */
-    record AtElem(PdfStructElem element, Integer pageNum, String roleName) implements Locus {}
+    record AtElem(Integer objNum, Integer pageNum, String roleName) implements Locus {
+        public AtElem {
+            Objects.requireNonNull(objNum, "objNum");
+        }
+    }
 
     /** A marked-content sequence on a page; ownerObjNum is the owning structure element. */
     record AtMcid(int pageNum, int mcid, Integer ownerObjNum, String roleName) implements Locus {}
@@ -44,15 +53,22 @@ public sealed interface Locus {
         return new AtObj(objNum, pageNum, kind != null ? kind : ObjKind.GENERIC);
     }
 
-    /** Element location with page and role resolved from the document; none() on null input. */
+    /**
+     * Element location with page and role resolved from the document; none() on null input. An
+     * element stored as a direct object has no object number, so it falls back to its page, if any.
+     */
     static Locus atElem(DocContext ctx, PdfStructElem element) {
         if (ctx == null || element == null) {
             return none();
         }
+        int objNum = StructTree.objNum(element);
         int pageNum = StructTree.pageOf(element, ctx);
+        if (objNum < 0) {
+            return pageNum > 0 ? atPage(pageNum) : none();
+        }
         Integer maybePage = pageNum > 0 ? pageNum : null;
         String role = element.getRole() != null ? StructTree.mappedRole(element) : null;
-        return new AtElem(element, maybePage, role);
+        return new AtElem(objNum, maybePage, role);
     }
 
     static Locus atMcid(int pageNum, int mcid, Integer ownerObjNum, String role) {
@@ -66,7 +82,7 @@ public sealed interface Locus {
         return switch (this) {
             case AtPage(var pageNum) -> pageNum;
             case AtObj(var objNum, var pageNum, var kind) -> pageNum;
-            case AtElem(var element, var pageNum, var role) -> pageNum;
+            case AtElem(var objNum, var pageNum, var role) -> pageNum;
             case AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> pageNum;
             default -> null;
         };
@@ -75,14 +91,7 @@ public sealed interface Locus {
     /** Returns the structure role if available, null otherwise. */
     default String role() {
         return switch (this) {
-            case AtElem(var element, var pageNum, var roleName) -> {
-                if (roleName != null) {
-                    yield roleName;
-                }
-                yield element != null && element.getRole() != null
-                        ? element.getRole().getValue()
-                        : null;
-            }
+            case AtElem(var objNum, var pageNum, var roleName) -> roleName;
             case AtMcid(var pageNum, var mcid, var ownerObjNum, var roleName) -> roleName;
             default -> null;
         };
@@ -92,10 +101,7 @@ public sealed interface Locus {
     default Integer objNum() {
         return switch (this) {
             case AtObj(var objNum, var pageNum, var kind) -> objNum;
-            case AtElem(var element, var pageNum, var role) -> {
-                int resolvedObjNum = StructTree.objNum(element);
-                yield resolvedObjNum >= 0 ? resolvedObjNum : null;
-            }
+            case AtElem(var objNum, var pageNum, var role) -> objNum;
             case AtMcid(var pageNum, var mcid, var ownerObjNum, var role) -> ownerObjNum;
             default -> null;
         };
