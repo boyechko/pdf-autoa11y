@@ -9,24 +9,22 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+import net.boyechko.pdf.autoa11y.core.CheckOutcome;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.file.VersionInfo;
-import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
+import net.boyechko.pdf.autoa11y.issue.Issue;
+import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /**
- * Append-only per-document history of successfully applied fixes and their reported resolutions.
+ * Append-only per-document history, with one JSON object per run containing checks and issues.
  *
- * <p>The log accumulates across runs in {@code <base>.autoa11y.log}, one JSON object per line: a
- * {@code run} record naming the tool version and the files involved, followed by a {@code fix}
- * record per issue snapshot referencing that run's identifier. Each snapshot carries the issue's
- * location and the fix's reported resolution; it does not enumerate every object changed by the
- * fix. Skipped, failed, and unresolved issues are not currently logged.
- *
- * <p>Elements are anchored by PDF object number, which survives the remediation pipeline (see
- * docs/decisions/0007-keep-remediation-history-in-a-sidecar-log.md). Because the log is append-only
- * and fixes may delete elements, it is a history rather than an index: entries can point at objects
- * no longer present in the current output.
+ * <p>Each issue carries its detection details, location, and outcome, including skipped, failed,
+ * and unresolved issues. Object numbers anchor the history to the PDF (see
+ * docs/decisions/0007-keep-remediation-history-in-a-sidecar-log.md). Entries may refer to objects
+ * deleted by remediation; the log is a history rather than an index.
  */
 public final class RemediationLog {
     private static final String LOG_EXTENSION = ".autoa11y.log";
@@ -38,25 +36,14 @@ public final class RemediationLog {
         return SidecarPaths.forPdf(pdfPath, LOG_EXTENSION);
     }
 
-    /**
-     * Appends one run's issue snapshots to {@code logPath}, creating the file if needed. Callers
-     * supply snapshots of successful fix applications. The run record is written even when the
-     * snapshot list is empty, so the log shows that the tool ran.
-     */
+    /** Appends one complete run, including checks with no issues, creating the file if needed. */
     public static void append(
-            Path logPath, List<IssueSnapshot> entries, Path inputPath, Path outputPath)
+            Path logPath, List<CheckOutcome> checks, Path inputPath, Path outputPath)
             throws IOException {
         String runId = Instant.now().truncatedTo(ChronoUnit.SECONDS).toString();
-
-        List<String> lines = new ArrayList<>(entries.size() + 1);
-        lines.add(runRecord(runId, inputPath, outputPath));
-        for (IssueSnapshot entry : entries) {
-            lines.add(fixRecord(runId, entry));
-        }
-
         Files.write(
                 logPath,
-                lines,
+                List.of(runRecord(runId, checks, inputPath, outputPath)),
                 StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.APPEND);
@@ -64,24 +51,62 @@ public final class RemediationLog {
 
     // == Record formatting ================================================
 
-    private static String runRecord(String runId, Path inputPath, Path outputPath) {
+    private static String runRecord(
+            String runId, List<CheckOutcome> checks, Path inputPath, Path outputPath) {
         return "{\"type\":\"run\""
                 + field("id", runId)
                 + field("version", VersionInfo.current().version())
                 + field("input", fileNameOf(inputPath))
                 + field("output", fileNameOf(outputPath))
+                + ",\"checks\":"
+                + checks.stream()
+                        .map(RemediationLog::checkRecord)
+                        .collect(Collectors.joining(",", "[", "]"))
                 + "}";
     }
 
-    private static String fixRecord(String runId, IssueSnapshot entry) {
-        return "{\"type\":\"fix\""
-                + field("run", runId)
-                + field("object", entry.objNum())
-                + field("page", entry.pageNum())
-                + field("role", entry.role())
-                + field("fix", entry.fixClass())
-                + field("message", entry.message())
+    private static String checkRecord(CheckOutcome check) {
+        return "{\"check\":"
+                + quote(check.check())
+                + ",\"issues\":"
+                + check.issues().stream()
+                        .map(RemediationLog::issueRecord)
+                        .collect(Collectors.joining(",", "[", "]"))
                 + "}";
+    }
+
+    private static String issueRecord(Issue issue) {
+        Locus where = issue.where();
+        return "{\"type\":"
+                + quote(issue.type().name())
+                + field("message", issue.message())
+                + field("severity", issue.severity().name())
+                + field("object", where.objNum())
+                + field("page", where.page())
+                + field("role", where.role())
+                + field("status", issue.status().name().toLowerCase(Locale.ROOT))
+                + field("fix", fixNameOf(issue.fix()))
+                + field(
+                        "resolution",
+                        issue.resolution() != null ? issue.resolution().message() : null)
+                + "}";
+    }
+
+    /**
+     * Names the fix class. Several checks declare their fix anonymously, and an anonymous class has
+     * a blank simple name, so those fall back to the enclosing check's name.
+     */
+    private static String fixNameOf(IssueFix fix) {
+        if (fix == null) {
+            return null;
+        }
+        Class<?> fixClass = fix.getClass();
+        String name = fixClass.getSimpleName();
+        if (!name.isEmpty()) {
+            return name;
+        }
+        Class<?> enclosing = fixClass.getEnclosingClass();
+        return enclosing != null ? enclosing.getSimpleName() : fixClass.getName();
     }
 
     private static String fileNameOf(Path path) {

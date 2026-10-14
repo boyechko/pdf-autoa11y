@@ -3,7 +3,6 @@ package net.boyechko.pdf.autoa11y.core;
 import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 
 /**
  * Summary of the processing of a PDF document.
@@ -13,8 +12,8 @@ import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
  * @param appliedFixes Resolved issues, including those skipped as covered by another fix.
  * @param remainingIssues Issues that could not be resolved automatically.
  * @param tempOutputFile The path to the temporary output file.
- * @param remediationLog Issue snapshots captured after successful fix applications, in execution
- *     order; excludes skipped, failed, and unresolved issues.
+ * @param checkOutcomes Per-check outcomes in pipeline order, including checks that found no issues;
+ *     each check's issues remain in detection order.
  */
 public record ProcessingResult(
         IssueList detectedIssues,
@@ -22,7 +21,7 @@ public record ProcessingResult(
         IssueList remainingIssues,
         Path tempOutputFile,
         boolean dirty,
-        List<IssueSnapshot> remediationLog) {
+        List<CheckOutcome> checkOutcomes) {
 
     /** Returns an aborted result with no output file and the given fatal issues. */
     public static ProcessingResult aborted(IssueList fatalIssues) {

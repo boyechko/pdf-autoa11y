@@ -4,7 +4,6 @@ package net.boyechko.pdf.autoa11y.issue;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
@@ -61,11 +60,9 @@ class IssueListTest {
         issues.add(kept);
         issues.add(skipped);
 
-        List<Issue> notified = new ArrayList<>();
-        IssueList resolved = issues.applyFixes(null, notified::add);
+        IssueList resolved = issues.applyFixes(null);
 
         assertEquals(2, resolved.size());
-        assertEquals(List.of(kept), notified);
         assertTrue(kept.isResolved());
         assertTrue(skipped.isResolved());
         assertTrue(
@@ -74,30 +71,7 @@ class IssueListTest {
     }
 
     @Test
-    void callbackRunsAfterResolutionInExecutionOrder() {
-        Issue later =
-                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.WARNING, "later", new StubFix(20));
-        Issue earlier =
-                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.WARNING, "earlier", new StubFix(10));
-        IssueList issues = new IssueList(List.of(later, earlier));
-        List<Issue> notified = new ArrayList<>();
-
-        issues.applyFixes(
-                null,
-                issue -> {
-                    assertTrue(issue.isResolved());
-                    assertNotNull(issue.resolution());
-                    if (issue == earlier) {
-                        assertFalse(later.isResolved());
-                    }
-                    notified.add(issue);
-                });
-
-        assertEquals(List.of(earlier, later), notified);
-    }
-
-    @Test
-    void callbackExcludesFailedAndUnfixableIssuesAndContinuesAfterFailure() {
+    void applyFixesContinuesAfterFailedFix() {
         Issue failed =
                 new Issue(
                         IssueType.LANGUAGE_NOT_SET,
@@ -114,35 +88,12 @@ class IssueListTest {
                         "successful",
                         new StubFix(10));
         IssueList issues = new IssueList(List.of(failed, unfixable, successful));
-        List<Issue> notified = new ArrayList<>();
-
-        issues.applyFixes(null, notified::add);
+        issues.applyFixes(null);
 
         assertTrue(failed.hasFailed());
         assertFalse(failed.isResolved());
-        assertEquals(List.of(successful), notified);
-    }
-
-    @Test
-    void callbackFailureDoesNotMarkSuccessfulFixAsFailed() {
-        Issue issue =
-                new Issue(IssueType.LANGUAGE_NOT_SET, IssueSev.WARNING, "fixable", new StubFix(0));
-        IssueList issues = new IssueList(issue);
-        RuntimeException callbackFailure = new IllegalStateException();
-
-        RuntimeException thrown =
-                assertThrows(
-                        RuntimeException.class,
-                        () ->
-                                issues.applyFixes(
-                                        null,
-                                        applied -> {
-                                            throw callbackFailure;
-                                        }));
-
-        assertSame(callbackFailure, thrown);
-        assertTrue(issue.isResolved());
-        assertFalse(issue.hasFailed());
+        assertFalse(unfixable.isResolved());
+        assertTrue(successful.isResolved());
     }
 
     // --- Stub fixes for testing ---

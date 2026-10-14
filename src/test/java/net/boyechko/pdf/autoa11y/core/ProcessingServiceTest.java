@@ -23,6 +23,7 @@ import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -211,7 +212,7 @@ public class ProcessingServiceTest extends PdfTestBase {
     }
 
     @Test
-    void remediationLogPreservesExecutionOrderAndDetectedRoles() throws Exception {
+    void checkOutcomesKeepDetectionOrderAndRolesAtDetection() throws Exception {
         Path inputPath = createFigureWithTextPdf();
         ProcessingService service =
                 new ProcessingService.ProcessingServiceBuilder()
@@ -223,19 +224,124 @@ public class ProcessingServiceTest extends PdfTestBase {
 
         ProcessingResult result = service.remediate();
 
+        assertEquals(1, result.checkOutcomes().size());
+        CheckOutcome check = result.checkOutcomes().getFirst();
+        assertEquals("RetaggingCheck", check.check());
+        List<Issue> issues = check.issues();
+        assertEquals(List.of("later", "earlier"), issues.stream().map(Issue::message).toList());
         assertEquals(
-                List.of("P", "H1"),
-                result.remediationLog().stream().map(IssueSnapshot::resolution).toList());
+                List.of("Figure", "Figure"), issues.stream().map(i -> i.where().role()).toList());
         assertEquals(
-                List.of("Figure", "Figure"),
-                result.remediationLog().stream().map(IssueSnapshot::role).toList());
-        assertNotNull(result.remediationLog().getFirst().objNum());
+                List.of("H1", "P"), issues.stream().map(i -> i.resolution().message()).toList());
+        assertNotNull(issues.getFirst().where().objNum());
+        assertEquals(issues.getFirst().where().objNum(), issues.getLast().where().objNum());
+    }
+
+    @Test
+    void checkOutcomesIncludeAllOutcomesAndChecksWithNoIssues() throws Exception {
+        ProcessingService service =
+                new ProcessingService.ProcessingServiceBuilder()
+                        .withPdfCustodian(new PdfCustodian(createFigureWithTextPdf(), null))
+                        .withListener(new NoOpProcessingListener())
+                        .withChecks(List.of())
+                        .injectCheck(OutcomeCheck::new)
+                        .injectCheck(EmptyCheck::new)
+                        .build();
+
+        ProcessingResult result = service.remediate();
+
+        assertEquals(2, result.checkOutcomes().size());
+        List<Issue> issues = result.checkOutcomes().getFirst().issues();
         assertEquals(
-                result.remediationLog().getFirst().objNum(),
-                result.remediationLog().getLast().objNum());
+                List.of(
+                        IssueStatus.RESOLVED,
+                        IssueStatus.SKIPPED,
+                        IssueStatus.FAILED,
+                        IssueStatus.UNRESOLVED),
+                issues.stream().map(Issue::status).toList());
+        assertTrue(result.checkOutcomes().getLast().issues().isEmpty());
     }
 
     // ── Helpers ──────────────────────────────────────────────────────
+
+    private static class EmptyCheck extends StructTreeCheck {
+        @Override
+        public String name() {
+            return "Empty";
+        }
+
+        @Override
+        public String description() {
+            return "Finds no issues";
+        }
+
+        @Override
+        public IssueList getIssues() {
+            return new IssueList();
+        }
+    }
+
+    /** Emits one issue per remediation outcome on the first Figure. */
+    private static class OutcomeCheck extends StructTreeCheck {
+        private final IssueList issues = new IssueList();
+
+        @Override
+        public String name() {
+            return "Outcomes";
+        }
+
+        @Override
+        public String description() {
+            return "Exercises remediation outcomes";
+        }
+
+        @Override
+        public IssueList getIssues() {
+            return issues;
+        }
+
+        @Override
+        public boolean enterElement(Visit visit) {
+            if (!PdfName.Figure.equals(visit.node().getRole())) {
+                return true;
+            }
+            IssueFix skipped = new RetaggingFix(visit.node(), PdfName.H2, 10);
+            IssueFix successful =
+                    new IssueFix() {
+                        @Override
+                        public void apply(DocContext ctx) {
+                            visit.node().setRole(PdfName.P);
+                        }
+
+                        @Override
+                        public boolean invalidates(IssueFix other) {
+                            return other == skipped;
+                        }
+                    };
+            IssueFix failed =
+                    new IssueFix() {
+                        @Override
+                        public int priority() {
+                            return 20;
+                        }
+
+                        @Override
+                        public void apply(DocContext ctx) {
+                            throw new IllegalStateException("Cannot apply");
+                        }
+                    };
+            for (IssueFix fix : Arrays.asList(successful, skipped, failed, null)) {
+                issues.add(
+                        new Issue(
+                                IssueType.FIGURE_WITH_TEXT,
+                                IssueSev.WARNING,
+                                visit.locus(),
+                                "Detected figure issue",
+                                fix));
+            }
+            return true;
+        }
+    }
 
     private static class RetaggingCheck extends StructTreeCheck {
         private final IssueList issues = new IssueList();

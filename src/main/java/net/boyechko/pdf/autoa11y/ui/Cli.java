@@ -297,7 +297,7 @@ public class Cli {
         try {
             RemediationLog.append(
                     config.remediationLogPath(),
-                    result.remediationLog(),
+                    result.checkOutcomes(),
                     config.inputPath(),
                     config.outputPath());
             listener.onInfo("Remediation log appended to " + config.remediationLogPath());

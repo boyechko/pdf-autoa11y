@@ -15,9 +15,11 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
-- Remediation logs now use descriptive JSON field names: `type`, `version`,
-  `input`, `output`, `object`, `page`, and `message` replace `t`, `tool`, `in`,
-  `out`, `obj`, `pg`, and `msg`.
+- Remediation logs now append one JSON record per run, nesting each check's
+  detected issues with their outcomes (resolved, skipped, failed, or
+  unresolved) in place of separate `run` and `fix` records. Fields use
+  descriptive names such as `input`, `object`, and `page` instead of
+  abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
 - Checks no longer crash on structure elements stored inline rather than as

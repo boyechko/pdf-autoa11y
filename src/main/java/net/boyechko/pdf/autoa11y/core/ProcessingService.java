@@ -20,7 +20,6 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
-import net.boyechko.pdf.autoa11y.issue.IssueSnapshot;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
@@ -269,7 +268,7 @@ public class ProcessingService {
 
         IssueList allIssues = new IssueList();
         IssueList allFixes = new IssueList();
-        List<IssueSnapshot> remediationLog = new ArrayList<>();
+        List<CheckOutcome> checkOutcomes = new ArrayList<>();
         boolean isDirty = false;
 
         try {
@@ -303,12 +302,13 @@ public class ProcessingService {
                     if (!issues.isEmpty()) {
                         listener.onDetectedSectionStart();
                         reportIssuesGrouped(issues);
-                        IssueList applied = applyAndReportFixes(ctx, issues, remediationLog);
+                        IssueList applied = applyAndReportFixes(ctx, issues);
                         allFixes.addAll(applied);
                         reportRemainingIssues(issues);
                     } else {
                         listener.onSuccess(check.passedMessage());
                     }
+                    checkOutcomes.add(new CheckOutcome(check.getClass().getSimpleName(), issues));
                     isDirty |= check.hasChangedDoc();
                 }
 
@@ -333,7 +333,7 @@ public class ProcessingService {
                     allIssues.getRemainingIssues(),
                     finalOutput,
                     isDirty,
-                    List.copyOf(remediationLog));
+                    List.copyOf(checkOutcomes));
         } catch (Exception e) {
             cleanupPipelineTempDir();
             throw e;
@@ -430,32 +430,14 @@ public class ProcessingService {
 
     private static final int MIN_GROUP_SIZE_FOR_GROUPING = 3;
 
-    /**
-     * Applies fixes, captures successful applications, and reports results; returns resolved
-     * issues.
-     */
-    private IssueList applyAndReportFixes(
-            DocContext ctx, IssueList issues, List<IssueSnapshot> remediationLog) {
-        IssueList applied =
-                issues.applyFixes(ctx, issue -> logRemediation(remediationLog, issue, ctx));
+    /** Applies fixes and reports results; returns resolved issues. */
+    private IssueList applyAndReportFixes(DocContext ctx, IssueList issues) {
+        IssueList applied = issues.applyFixes(ctx);
         if (!applied.isEmpty()) {
             listener.onFixesSectionStart();
         }
         reportFixesGrouped(applied);
         return applied;
-    }
-
-    /**
-     * Snapshots one issue immediately after its fix succeeds, before the next fix runs. Bookkeeping
-     * must never abort a remediation in progress, so a capture failure costs its log entry and
-     * nothing else.
-     */
-    private void logRemediation(List<IssueSnapshot> remediationLog, Issue issue, DocContext ctx) {
-        try {
-            remediationLog.add(IssueSnapshot.capture(issue, ctx));
-        } catch (Exception e) {
-            listener.onError("Could not log " + issue.type() + " fix: " + e.getMessage());
-        }
     }
 
     private void reportRemainingIssues(IssueList issues) {
