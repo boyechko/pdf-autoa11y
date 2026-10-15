@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `!UNLIST` scribbled instruction: takes a stray item out of its list,
+  moving its content up beside the list and splitting the list around it, so
+  a list that swallowed the headings and prose after it can be taken apart.
 - `MistaggedListCheck` now reads each bulleted list's outline from the
   placement of its bullet glyphs and reports lists whose tagging disagrees
   with it: lumped or loose items, one list split across several, or a sublist

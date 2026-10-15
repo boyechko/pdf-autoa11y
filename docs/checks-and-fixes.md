@@ -335,6 +335,38 @@ offenders as `!UNLINK`, then rerun the tool.
 |---|---|---|
 | `!UNLINK` | `P[Link[Span[MCR₁], OBJR]]` | `P[Span[MCR₁]]` *(annotation also removed from page)* |
 
+### !UNLIST
+
+Takes a stray item back out of its list. The content of the item's
+`LBody` moves up beside the list, and the list is split around it so
+reading order holds: items before it stay in the original list, items
+after it move to a new list placed after the content, and a list left
+empty is removed. To take out a run, mark every stray item; each one
+splits whichever list holds it by then, so no empty lists are left
+between them.
+
+The item is destroyed, so the receipt `INST UNLIST` goes on the
+surviving lists, followed by their refreshed `ITEMS` count. Only valid
+on `LI` elements inside a list. An item holding anything other than
+`LBody` (such as a `Lbl`), or an `LBody` holding marked content
+directly, is refused without changing the tree.
+
+```text
+Instruction := "!UNLIST"
+```
+
+Typical use: undoing a list that ran past its end and swallowed the
+headings and prose after it, often along with the items of the next
+list.
+
+**Examples:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!UNLIST` on LI₂ | `Div[L[LI₁, LI₂[LBody[H3, P]], LI₃]]` | `Div[L[LI₁], H3, P, L[LI₃]]` |
+| `!UNLIST` on LI₁ | `Div[L[LI₁[LBody[P]], LI₂]]` | `Div[P, L[LI₂]]` |
+| `!UNLIST` on LI₁ | `L[LI₁[Lbl, LBody[P]]]` | *(refused: item holds a `Lbl`)* |
+
 ## RoleMap Checks
 
 `ClearRoleMapCheck` and `ReplaceRoleMapCheck` are not part of the default
