@@ -23,6 +23,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstructionFix;
 import org.junit.jupiter.api.Test;
 
 class SplitIntoListItemsFixTest extends PdfTestBase {

@@ -15,7 +15,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
  * replaced each time, so it always reflects the list as it stands and is stamped last so it reads
  * as the outcome of the events before it.
  */
-final class ListItemScribble {
+public final class ListItemScribble {
 
     /** Segment tag naming the item count, so it can be replaced without matching its text. */
     private static final String COUNT_TAG = "ITEMS";
@@ -28,7 +28,7 @@ final class ListItemScribble {
      * @param list the list element whose scribble is being stamped
      * @param event a tagged event segment naming the calling fix
      */
-    static void update(PdfStructElem list, String event) {
+    public static void update(PdfStructElem list, String event) {
         StructTree.addToolScribble(list, event);
         refreshCount(list);
     }
@@ -47,7 +47,7 @@ final class ListItemScribble {
         StructTree.addToolScribble(list, countSegment(count));
     }
 
-    static String countSegment(long count) {
+    public static String countSegment(long count) {
         return COUNT_TAG + " " + count;
     }
 }
