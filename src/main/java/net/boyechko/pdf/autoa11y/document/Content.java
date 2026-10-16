@@ -518,7 +518,7 @@ public final class Content {
     }
 
     /** Whether two fragments share a text line, judged by how far their vertical centres differ. */
-    private static boolean onSameLine(Rectangle one, Rectangle other) {
+    public static boolean onSameLine(Rectangle one, Rectangle other) {
         float centre = one.getBottom() + one.getHeight() / 2;
         float otherCentre = other.getBottom() + other.getHeight() / 2;
         return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;

@@ -40,6 +40,12 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
      */
     private static final Path STRADDLING_PDF = Path.of("src/test/resources/catalog_199-200.pdf");
 
+    /**
+     * Catalog page whose eight-line paragraph ends in mid-line MCRs left behind by a dissolved
+     * span: a hyphen trailing line 7, then "400)" and "level." sharing line 8.
+     */
+    private static final Path MIDLINE_MCRS_PDF = Path.of("src/test/resources/catalog_131.pdf");
+
     @Test
     void splitsAnItemWhoseLinesStraddleTwoTextObjects() throws Exception {
         // Each text object must open and close its own marked content, so an item spanning two
@@ -203,6 +209,27 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertTrue(lastText.startsWith("B BUS 497"), lastText);
             assertTrue(lastText.contains("Undergraduate Research"), lastText);
             assertTrue(itemText(items.get(3), content).startsWith("B BUS 486"));
+        }
+    }
+
+    @Test
+    void mcrContinuingPreviousLineDoesNotCountAsNewLine() throws Exception {
+        try (PdfDocument doc = openForStamping(MIDLINE_MCRS_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 1, 1);
+            PdfStructElem list = grandListOf(p);
+
+            new SplitIntoListItemsFix(p, "1,1,3,3").apply(ctx);
+
+            List<PdfStructElem> items = listItems(list);
+            assertEquals(4, items.size(), "3 new LIs joined the original 1");
+
+            Map<Integer, Content.McidContent> content =
+                    Content.extractContentForPage(doc.getPage(1));
+            String lastText = itemText(items.get(3), content);
+            assertTrue(lastText.startsWith("Upper Division Credit Policy"), lastText);
+            assertTrue(lastText.endsWith("level."), lastText);
+            assertProperlyNestedOperators(doc.getPage(1).getContentBytes());
         }
     }
 

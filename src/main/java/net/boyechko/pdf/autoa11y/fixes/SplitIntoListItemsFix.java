@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
@@ -113,11 +115,14 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
         List<McrPlan> plans = new ArrayList<>();
         int lineCount = 0;
+        PdfMcr previous = null;
         for (PdfMcr mcr : mcrs) {
             PdfPage page = pageOf(ctx, mcr);
             SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
-            plans.add(new McrPlan(mcr, page, plan));
-            lineCount += plan.splitOffsets().size() + 1;
+            McrPlan mcrPlan = new McrPlan(mcr, page, plan, continuesLineOf(ctx, previous, mcr));
+            plans.add(mcrPlan);
+            lineCount += mcrPlan.countedLines();
+            previous = mcr;
         }
         String pages = pageLabelOf(ctx, plans);
         List<Integer> sizes = resolveItemSizes(lineCount, pages);
@@ -191,7 +196,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
             List<Integer> offsets = new ArrayList<>();
             result.add(offsets);
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
-            for (int line = 0; line < mcrLines; line++) {
+            for (int line = mcrPlan.continuesLine() ? 1 : 0; line < mcrLines; line++) {
                 if (linesLeftInItem == 0) {
                     linesLeftInItem = sizes.get(++itemIndex);
                     if (line > 0) {
@@ -295,7 +300,12 @@ public final class SplitIntoListItemsFix implements IssueFix {
             List<Integer> splices = new ArrayList<>();
             List<PdfStructElem> bodyPerSegment = new ArrayList<>();
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
-            for (int line = 0; line < mcrLines; line++) {
+            if (mcrPlan.continuesLine()) {
+                // The block's first line is the tail of the previous line, already counted.
+                moveMcr(mcrPlan.mcr(), page, itemBody);
+                bodyPerSegment.add(itemBody);
+            }
+            for (int line = mcrPlan.continuesLine() ? 1 : 0; line < mcrLines; line++) {
                 boolean startsItem = linesLeftInItem == 0;
                 if (startsItem) {
                     linesLeftInItem = sizes.get(++itemIndex);
@@ -379,8 +389,31 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     // == Split planning ==================================================
 
-    /** A block plan paired with the MCR it belongs to and the page holding its block. */
-    private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan) {}
+    /**
+     * A block plan paired with the MCR it belongs to and the page holding its block, noting whether
+     * the block's first line continues the previous MCR's last line.
+     */
+    private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan, boolean continuesLine) {
+        int countedLines() {
+            return plan.splitOffsets().size() + (continuesLine ? 0 : 1);
+        }
+    }
+
+    /**
+     * Checks whether the MCR's first line sits on the previous MCR's last line, as when a dissolved
+     * inline span leaves a line's tail in a block of its own.
+     */
+    private static boolean continuesLineOf(DocContext ctx, PdfMcr previous, PdfMcr mcr) {
+        if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
+            return false;
+        }
+        Map<Integer, List<Rectangle>> lineBounds = ctx.pages().lineBounds(StructTree.pageOf(mcr));
+        List<Rectangle> prevLines = lineBounds.getOrDefault(previous.getMcid(), List.of());
+        List<Rectangle> lines = lineBounds.getOrDefault(mcr.getMcid(), List.of());
+        return !prevLines.isEmpty()
+                && !lines.isEmpty()
+                && Content.onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
+    }
 
     /**
      * Gives an item's content element a further marked-content kid and returns its MCID. Called

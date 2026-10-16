@@ -25,6 +25,9 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- `!SPLIT_LINES` no longer counts a marked-content fragment that continues a
+  line (such as text left behind by a dissolved span) as a line of its own,
+  so item sizes match the lines visible on the page.
 - Checks no longer crash on structure elements stored inline rather than as
   indirect objects. Issues found on such elements are reported at their page
   instead.
