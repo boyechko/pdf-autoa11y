@@ -17,7 +17,7 @@ the tool on the next run.
 | `!ARTIFACT` | Converts the element's subtree to artifacts |
 | `!FLATTEN` | Hoists the subtree's leaf elements up to the element |
 | `!MERGE` | Merges the element into its preceding sibling |
-| `!REORDER_KIDS` | Reorders kids by their `!REORDER N` scribbles |
+| `!REORDER_KIDS` | Reorders kids by their `REORDER N` scribbles |
 | `!SET_ROLE <role>` | Changes the element's role |
 | `!SPLIT_LINES [<N>]` | Splits lumped one-line items into a list item per line |
 | `!UNLINK` | Unwraps a `Link`, removing its annotation |
@@ -164,22 +164,24 @@ Instruction := "!MERGE"
 
 ## !REORDER_KIDS
 
-Reorders the scribbled element's kids by the `!REORDER N` segment on
-each kid, where `N` is its new 1-based position. Kids without one
-follow the reordered kids, in their original order. The `!REORDER`
-segments are consumed, and each kid that moved receives
-`INST REORDER old -> new`; the parent gets no receipt.
+Reorders the scribbled element's kids by the `REORDER N` segment on
+each kid, where `N` is its new 1-based position. The kid's segment has
+no `!`, because it is a position read by the parent's instruction, not
+an instruction of its own. Kids without one follow the reordered kids,
+in their original order. The `REORDER` segments are consumed, and each
+kid that moved receives `INST REORDER old -> new`; the parent gets no
+receipt.
 
 ```text
 Instruction := "!REORDER_KIDS"            (* on the parent *)
-Position    := "!REORDER" N               (* on each kid to place *)
+Position    := "REORDER" N                (* on each kid to place *)
 ```
 
 **Example:**
 
 | Scribble | Before | After |
 |---|---|---|
-| `!REORDER_KIDS` on Sect; `!REORDER 1` on P₃ | `Sect[P₁, P₂, P₃]` | `Sect[P₃, P₁, P₂]` |
+| `!REORDER_KIDS` on Sect; `REORDER 1` on P₃ | `Sect[P₁, P₂, P₃]` | `Sect[P₃, P₁, P₂]` |
 
 ## !SET_ROLE \<role\>
 

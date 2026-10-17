@@ -26,16 +26,16 @@ class ReorderKidsInstructionTest extends PdfTestBase {
 
             PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.H1);
             document.addKid(first);
-            StructTree.setScribble(first, "first" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 002");
+            StructTree.setScribble(first, "first" + StructTree.SCRIBBLE_SEPARATOR + "REORDER 002");
 
             PdfStructElem second = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(second);
             StructTree.setScribble(
-                    second, "second" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
+                    second, "second" + StructTree.SCRIBBLE_SEPARATOR + "REORDER 001");
 
             PdfStructElem third = new PdfStructElem(pdfDoc, PdfName.H2);
             document.addKid(third);
-            StructTree.setScribble(third, "third" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 003");
+            StructTree.setScribble(third, "third" + StructTree.SCRIBBLE_SEPARATOR + "REORDER 003");
 
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);
@@ -59,12 +59,12 @@ class ReorderKidsInstructionTest extends PdfTestBase {
 
             PdfStructElem kid = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(kid);
-            StructTree.setScribble(kid, "alpha" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
+            StructTree.setScribble(kid, "alpha" + StructTree.SCRIBBLE_SEPARATOR + "REORDER 001");
 
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);
 
-            // Identity scribble preserved on kid; !REORDER NNN cleared
+            // Identity scribble preserved on kid; REORDER NNN cleared
             var kidScribble = StructTree.getScribble(kid);
             assertNotNull(kidScribble, "Kid's identity scribble should survive");
             assertEquals("alpha", kidScribble.value());
@@ -90,7 +90,7 @@ class ReorderKidsInstructionTest extends PdfTestBase {
             PdfStructElem ann = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(ann);
             StructTree.setScribble(
-                    ann, "annotated" + StructTree.SCRIBBLE_SEPARATOR + "!REORDER 001");
+                    ann, "annotated" + StructTree.SCRIBBLE_SEPARATOR + "REORDER 001");
 
             PdfStructElem unann2 = new PdfStructElem(pdfDoc, PdfName.H2);
             document.addKid(unann2);
@@ -116,11 +116,11 @@ class ReorderKidsInstructionTest extends PdfTestBase {
 
             PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.H1);
             document.addKid(first);
-            StructTree.setScribble(first, "!REORDER 002");
+            StructTree.setScribble(first, "REORDER 002");
 
             PdfStructElem second = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(second);
-            StructTree.setScribble(second, "!REORDER 001");
+            StructTree.setScribble(second, "REORDER 001");
 
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(document, "!REORDER_KIDS").apply(ctx);

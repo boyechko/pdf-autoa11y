@@ -16,15 +16,21 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 
 /**
- * {@code !REORDER_KIDS}: reorders the element's kids based on each kid's {@code !REORDER NNN}
- * scribble segment. Kids with no {@code !REORDER NNN} are appended at the end in their original
- * relative order. After reordering, the {@code !REORDER NNN} segments on kids and the {@code
- * !REORDER_KIDS} segment on the parent are cleared (identity scribbles, if any, are preserved).
+ * {@code !REORDER_KIDS}: reorders the element's kids based on each kid's {@code REORDER NNN}
+ * scribble segment. The kid's marker carries no {@code !}, since it is data read by this
+ * instruction rather than an instruction of its own. Kids with no {@code REORDER NNN} are appended
+ * at the end in their original relative order. After reordering, the {@code REORDER NNN} segments
+ * on kids and the {@code !REORDER_KIDS} segment on the parent are cleared (identity scribbles, if
+ * any, are preserved).
  */
 record ReorderKidsInstruction() implements ScribbledInstruction {
 
-    /** Pattern for extracting a 1-based position from a kid's {@code !REORDER NNN} segment. */
-    private static final Pattern REORDER_POSITION_PATTERN = Pattern.compile("!REORDER\\s+(\\d+)");
+    /** Head of the position marker segment on each kid. */
+    private static final String POSITION_MARKER = "REORDER";
+
+    /** Pattern for extracting a 1-based position from a kid's {@code REORDER NNN} segment. */
+    private static final Pattern REORDER_POSITION_PATTERN =
+            Pattern.compile(POSITION_MARKER + "\\s+(\\d+)");
 
     @Override
     public String apply(DocContext ctx, PdfStructElem element) {
@@ -56,7 +62,7 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
         for (int newIdx = 0; newIdx < annotated.size(); newIdx++) {
             AnnotatedKid a = annotated.get(newIdx);
             if (a.kid() instanceof PdfStructElem se) {
-                StructTree.clearScribbleSegments(se, "!REORDER");
+                StructTree.clearScribbleSegments(se, POSITION_MARKER);
                 int oldPos = a.originalIndex();
                 int newPos = newIdx + 1;
                 if (oldPos != newPos) {
@@ -70,13 +76,16 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
 
     private record AnnotatedKid(IStructureNode kid, int position, int originalIndex) {}
 
-    /** Extracts the {@code NNN} from a kid's {@code !REORDER NNN} scribble segment, or null. */
+    /** Extracts the {@code NNN} from a kid's {@code REORDER NNN} scribble segment, or null. */
     private static Integer reorderPositionOf(IStructureNode kid) {
         if (!(kid instanceof PdfStructElem se)) return null;
         var scribble = StructTree.getScribble(se);
         if (scribble == null) return null;
-        Matcher m = REORDER_POSITION_PATTERN.matcher(scribble.value());
-        return m.find() ? Integer.parseInt(m.group(1)) : null;
+        for (String segment : scribble.segments()) {
+            Matcher m = REORDER_POSITION_PATTERN.matcher(segment);
+            if (m.matches()) return Integer.parseInt(m.group(1));
+        }
+        return null;
     }
 
     /** Type-switch dispatcher for addKid (which is typed on PdfStructElem vs. PdfMcr). */

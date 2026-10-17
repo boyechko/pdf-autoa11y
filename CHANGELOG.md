@@ -25,6 +25,10 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- Kids placed by `!REORDER_KIDS` are now marked `REORDER N` instead of
+  `!REORDER N`, so the marker is no longer mistaken for an instruction of its
+  own and reported as a failed fix. Old `!REORDER N` markers are reported as
+  unsupported; drop the `!` to use them.
 - `!SPLIT_LINES` no longer counts a marked-content fragment that continues a
   line (such as text left behind by a dissolved span) as a line of its own,
   so item sizes match the lines visible on the page.

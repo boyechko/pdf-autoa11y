@@ -244,6 +244,35 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
     }
 
     @Test
+    void reorderPositionMarkersFeedTheParentInstructionOnly() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage firstPage = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+            StructTree.setScribble(document, "!REORDER_KIDS");
+
+            PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
+            document.addKid(h1);
+            StructTree.setScribble(h1, "REORDER 2");
+
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
+            document.addKid(p);
+            StructTree.setScribble(p, "REORDER 1");
+
+            DocContext ctx = new DocContext(pdfDoc);
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(1, issues.size(), "Only the parent's !REORDER_KIDS is an instruction");
+            issues.get(0).fix().apply(ctx);
+
+            var kids = document.getKids();
+            assertEquals("P", ((PdfStructElem) kids.get(0)).getRole().getValue());
+            assertEquals("H1", ((PdfStructElem) kids.get(1)).getRole().getValue());
+        }
+    }
+
+    @Test
     void ignoresRegularTitle() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
