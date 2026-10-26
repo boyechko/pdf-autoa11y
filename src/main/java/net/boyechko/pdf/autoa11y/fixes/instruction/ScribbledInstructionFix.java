@@ -30,6 +30,7 @@ public class ScribbledInstructionFix implements IssueFix {
                             "!ADD_CHILD(?:REN)?\\s+(.+)", m -> new AddChildInstruction(m.group(1))),
                     new Syntax("!ADD_PARENTS?\\s+(.+)", m -> new AddParentInstruction(m.group(1))),
                     new Syntax("!ARTIFACT", m -> new ArtifactInstruction()),
+                    new Syntax("!BREAK_OUT", m -> new BreakOutInstruction()),
                     new Syntax("!FLATTEN", m -> new FlattenInstruction()),
                     new Syntax("!MERGE", m -> new MergeInstruction()),
                     new Syntax("!REORDER_KIDS", m -> new ReorderKidsInstruction()),
@@ -37,8 +38,7 @@ public class ScribbledInstructionFix implements IssueFix {
                     new Syntax(
                             "!SPLIT_LINES(?:\\s+([\\d,]+))?",
                             m -> new SplitLinesInstruction(m.group(1))),
-                    new Syntax("!UNLINK", m -> new UnlinkInstruction()),
-                    new Syntax("!UNLIST", m -> new UnlistInstruction()));
+                    new Syntax("!UNLINK", m -> new UnlinkInstruction()));
 
     private final String instruction;
     private final PdfStructElem element;

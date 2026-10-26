@@ -13,13 +13,13 @@ sealed interface ScribbledInstruction
         permits AddChildInstruction,
                 AddParentInstruction,
                 ArtifactInstruction,
+                BreakOutInstruction,
                 FlattenInstruction,
                 MergeInstruction,
                 ReorderKidsInstruction,
                 SetRoleInstruction,
                 SplitLinesInstruction,
-                UnlinkInstruction,
-                UnlistInstruction {
+                UnlinkInstruction {
 
     /**
      * Carries out the instruction on the element. Returns the receipt to stamp onto /T (e.g. "INST

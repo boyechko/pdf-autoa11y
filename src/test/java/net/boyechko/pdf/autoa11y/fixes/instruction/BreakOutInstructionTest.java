@@ -18,10 +18,10 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
 import org.junit.jupiter.api.Test;
 
-class UnlistInstructionTest extends PdfTestBase {
+class BreakOutInstructionTest extends PdfTestBase {
 
     @Test
-    void unlistHoistsItemContentAndSplitsListAroundIt() throws Exception {
+    void breakOutHoistsItemContentAndSplitsListAroundIt() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -46,7 +46,7 @@ class UnlistInstructionTest extends PdfTestBase {
             bodies[2].addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(items[1], "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
 
             var kids = div.getKids();
             assertEquals(4, kids.size(), "Div should hold L, H3, P, and a new L");
@@ -72,7 +72,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistOnConsecutiveItemsLeavesNoEmptyList() throws Exception {
+    void breakOutOnConsecutiveItemsLeavesNoEmptyList() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -92,8 +92,8 @@ class UnlistInstructionTest extends PdfTestBase {
 
             // Fixes run in traversal order; the second resolves its list after the first split.
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(items[1], "!UNLIST").apply(ctx);
-            new ScribbledInstructionFix(items[2], "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
+            new ScribbledInstructionFix(items[2], "!BREAK_OUT").apply(ctx);
 
             var roles = div.getKids().stream().map(k -> ((PdfStructElem) k).getRole()).toList();
             assertEquals(List.of(PdfName.L, PdfName.P, PdfName.P, PdfName.L), roles);
@@ -101,7 +101,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistOnFirstItemKeepsOriginalListAfterHoistedContent() throws Exception {
+    void breakOutOnFirstItemKeepsOriginalListAfterHoistedContent() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
@@ -119,7 +119,7 @@ class UnlistInstructionTest extends PdfTestBase {
             }
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(items[0], "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(items[0], "!BREAK_OUT").apply(ctx);
 
             var kids = div.getKids();
             assertEquals(2, kids.size(), "Div should hold P then the original L");
@@ -130,7 +130,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistOnSoleItemRemovesList() throws Exception {
+    void breakOutOnSoleItemRemovesList() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
@@ -145,7 +145,7 @@ class UnlistInstructionTest extends PdfTestBase {
             lBody.addKid(heading);
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(li, "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx);
 
             assertEquals(1, div.getKids().size(), "Emptied list should be gone");
             assertEquals(
@@ -154,7 +154,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistRefreshesItemCountOnBothLists() throws Exception {
+    void breakOutRefreshesItemCountOnBothLists() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
@@ -173,7 +173,7 @@ class UnlistInstructionTest extends PdfTestBase {
             }
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(items[1], "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
 
             PdfStructElem tail = (PdfStructElem) div.getKids().get(2);
             assertTrue(
@@ -184,7 +184,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistPinsPageOnHoistedElementLackingPg() throws Exception {
+    void breakOutPinsPageOnHoistedElementLackingPg() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -204,14 +204,14 @@ class UnlistInstructionTest extends PdfTestBase {
             p.addKid(new PdfMcrNumber(page, p));
 
             DocContext ctx = new DocContext(pdfDoc);
-            new ScribbledInstructionFix(li, "!UNLIST").apply(ctx);
+            new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx);
 
             assertEquals(page.getPdfObject(), p.getPdfObject().get(PdfName.Pg));
         }
     }
 
     @Test
-    void unlistRefusesElementThatIsNotListItem() throws Exception {
+    void breakOutRefusesElementThatIsNotListItem() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
@@ -222,12 +222,12 @@ class UnlistInstructionTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(p, "!UNLIST").apply(ctx));
+                    () -> new ScribbledInstructionFix(p, "!BREAK_OUT").apply(ctx));
         }
     }
 
     @Test
-    void unlistRefusesItemWithLabelLeavingTreeUntouched() throws Exception {
+    void breakOutRefusesItemWithLabelLeavingTreeUntouched() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
@@ -244,7 +244,7 @@ class UnlistInstructionTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(li, "!UNLIST").apply(ctx));
+                    () -> new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx));
 
             assertEquals(1, div.getKids().size(), "List should remain in place");
             assertEquals(2, li.getKids().size(), "Item should keep its Lbl and LBody");
@@ -252,7 +252,7 @@ class UnlistInstructionTest extends PdfTestBase {
     }
 
     @Test
-    void unlistRefusesBodyHoldingMarkedContentLeavingTreeUntouched() throws Exception {
+    void breakOutRefusesBodyHoldingMarkedContentLeavingTreeUntouched() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfPage page = pdfDoc.addNewPage();
@@ -270,7 +270,7 @@ class UnlistInstructionTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> new ScribbledInstructionFix(li, "!UNLIST").apply(ctx));
+                    () -> new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx));
 
             assertEquals(1, list.getKids().size(), "Item should remain in its list");
             assertEquals(1, lBody.getKids().size(), "LBody should keep its marked content");

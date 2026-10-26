@@ -15,13 +15,13 @@ the tool on the next run.
 | `!ADD_CHILD <template>` | Adds child elements, optionally redistributing existing kids |
 | `!ADD_PARENT <chain>` | Wraps the element in a chain of new parents |
 | `!ARTIFACT` | Converts the element's subtree to artifacts |
+| `!BREAK_OUT` | Takes a stray item out of its list |
 | `!FLATTEN` | Hoists the subtree's leaf elements up to the element |
 | `!MERGE` | Merges the element into its preceding sibling |
 | `!REORDER_KIDS` | Reorders kids by their `REORDER N` scribbles |
 | `!SET_ROLE <role>` | Changes the element's role |
 | `!SPLIT_LINES [<N>]` | Splits lumped one-line items into a list item per line |
 | `!UNLINK` | Unwraps a `Link`, removing its annotation |
-| `!UNLIST` | Takes a stray item out of its list |
 
 Each instruction is its own class in the `fixes.instruction` package,
 named after it (e.g. `MergeInstruction`); `ScribbledInstructionFix`
@@ -91,6 +91,38 @@ Instruction := "!ARTIFACT"
 | Scribble | Before | After |
 |---|---|---|
 | `!ARTIFACT` | `P[Span[MCR₁]]` | *(element and MCRs removed; content marked as artifact)* |
+
+## !BREAK_OUT
+
+Takes a stray item back out of its list. The content of the item's
+`LBody` moves up beside the list, and the list is split around it so
+reading order holds: items before it stay in the original list, items
+after it move to a new list placed after the content, and a list left
+empty is removed. To take out a run, mark every stray item; each one
+splits whichever list holds it by then, so no empty lists are left
+between them.
+
+The item is destroyed, so the receipt `INST BREAK_OUT` goes on the
+surviving lists, followed by their refreshed `ITEMS` count. Only valid
+on `LI` elements inside a list. An item holding anything other than
+`LBody` (such as a `Lbl`), or an `LBody` holding marked content
+directly, is refused without changing the tree.
+
+```text
+Instruction := "!BREAK_OUT"
+```
+
+Typical use: undoing a list that ran past its end and swallowed the
+headings and prose after it, often along with the items of the next
+list.
+
+**Examples:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!BREAK_OUT` on LI₂ | `Div[L[LI₁, LI₂[LBody[H3, P]], LI₃]]` | `Div[L[LI₁], H3, P, L[LI₃]]` |
+| `!BREAK_OUT` on LI₁ | `Div[L[LI₁[LBody[P]], LI₂]]` | `Div[P, L[LI₂]]` |
+| `!BREAK_OUT` on LI₁ | `L[LI₁[Lbl, LBody[P]]]` | *(refused: item holds a `Lbl`)* |
 
 ## !FLATTEN
 
@@ -274,35 +306,3 @@ offenders as `!UNLINK`, then rerun the tool.
 | Scribble | Before | After |
 |---|---|---|
 | `!UNLINK` | `P[Link[Span[MCR₁], OBJR]]` | `P[Span[MCR₁]]` *(annotation also removed from page)* |
-
-## !UNLIST
-
-Takes a stray item back out of its list. The content of the item's
-`LBody` moves up beside the list, and the list is split around it so
-reading order holds: items before it stay in the original list, items
-after it move to a new list placed after the content, and a list left
-empty is removed. To take out a run, mark every stray item; each one
-splits whichever list holds it by then, so no empty lists are left
-between them.
-
-The item is destroyed, so the receipt `INST UNLIST` goes on the
-surviving lists, followed by their refreshed `ITEMS` count. Only valid
-on `LI` elements inside a list. An item holding anything other than
-`LBody` (such as a `Lbl`), or an `LBody` holding marked content
-directly, is refused without changing the tree.
-
-```text
-Instruction := "!UNLIST"
-```
-
-Typical use: undoing a list that ran past its end and swallowed the
-headings and prose after it, often along with the items of the next
-list.
-
-**Examples:**
-
-| Scribble | Before | After |
-|---|---|---|
-| `!UNLIST` on LI₂ | `Div[L[LI₁, LI₂[LBody[H3, P]], LI₃]]` | `Div[L[LI₁], H3, P, L[LI₃]]` |
-| `!UNLIST` on LI₁ | `Div[L[LI₁[LBody[P]], LI₂]]` | `Div[P, L[LI₂]]` |
-| `!UNLIST` on LI₁ | `L[LI₁[Lbl, LBody[P]]]` | *(refused: item holds a `Lbl`)* |
