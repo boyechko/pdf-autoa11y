@@ -8,6 +8,8 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `!SPLIT_LINES` item sizes accept an `NxK` shorthand for K consecutive
+  N-line items, so `1,1,2,1x5` stands for `1,1,2,1,1,1,1,1`.
 - New `!BREAK_OUT` scribbled instruction: takes a stray item out of its list,
   moving its content up beside the list and splitting the list around it, so
   a list that swallowed the headings and prose after it can be taken apart.

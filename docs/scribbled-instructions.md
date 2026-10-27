@@ -275,7 +275,9 @@ count, or the instruction refuses.
 ```text
 Instruction := "!SPLIT_LINES" [ Spec ]
 Spec        := N                          (* expected total lines, one item each, ≥ 2 *)
-             | N { "," N }                (* per-item line counts, in reading order *)
+             | Group { "," Group }        (* per-item line counts, in reading order *)
+Group       := N                          (* one N-line item *)
+             | N "x" K                    (* K consecutive N-line items *)
 ```
 
 **Example:**
@@ -285,6 +287,7 @@ Spec        := N                          (* expected total lines, one item each
 | `!SPLIT_LINES 3` | `L[LI[LBody[P[MCR₁₋₃]]]]` | `L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]` |
 | `!SPLIT_LINES 3` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]]` |
 | `!SPLIT_LINES 1,2` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂₋₃]]]]]` — lines 2-3 stay one block |
+| `!SPLIT_LINES 2,1x2` | `Sect[P[MCR₁₋₄]]` | `Sect[L[LI[LBody[P[MCR₁₋₂]]], LI[LBody[P[MCR₃]]], LI[LBody[P[MCR₄]]]]]` — `1x2` is short for `1,1` |
 | `!SPLIT_LINES 2,1` | `Sect[P[MCR₁₋₂, MCR₃]]` | `Sect[L[LI[LBody[P[MCR₁₋₂]]], LI[LBody[P[MCR₃]]]]]` |
 
 ## !UNLINK

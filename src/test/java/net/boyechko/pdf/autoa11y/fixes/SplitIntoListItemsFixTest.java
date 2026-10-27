@@ -296,6 +296,24 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
         }
     }
 
+    @Test
+    void repeatedItemSizeShorthandExpandsToRun() throws Exception {
+        try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 2, 16);
+            PdfStructElem list = grandListOf(p);
+
+            new ScribbledInstructionFix(p, "!SPLIT_LINES 1,1,2,1x5").apply(ctx);
+
+            List<PdfStructElem> items = listItems(list);
+            assertEquals(8, items.size(), "1x5 stands for five one-line items");
+            assertEquals(
+                    1,
+                    StructTree.descendantsOf(items.get(2), PdfMcr.class).size(),
+                    "the 2 still groups two lines into one item");
+        }
+    }
+
     /**
      * Asserts that BT/ET and BDC/BMC/EMC pairs are balanced and properly nested — a marked-content
      * block must open and close on the same side of a text-object boundary.

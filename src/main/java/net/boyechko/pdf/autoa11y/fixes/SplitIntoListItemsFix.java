@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
@@ -77,7 +78,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
      * Splits per the instruction's spec: null/blank derives everything, a plain number is the
      * expected total line count (one item per line), and a comma-separated list gives the line
      * count of each item in order (e.g. {@code 1,1,2} for two one-line items followed by a two-line
-     * item), counting lines across all the element's MCRs.
+     * item; {@code 1x3} is short for {@code 1,1,1}), counting lines across all the element's MCRs.
      */
     public SplitIntoListItemsFix(PdfStructElem element, String spec) {
         this.element = element;
@@ -87,17 +88,25 @@ public final class SplitIntoListItemsFix implements IssueFix {
         } else if (spec.matches("\\d+")) {
             this.expectedLines = Integer.valueOf(spec);
             this.itemSizes = null;
-        } else if (spec.matches("\\d+(\\s*,\\s*\\d+)+")) {
+        } else if (spec.matches("\\d+(x\\d+)?(\\s*,\\s*\\d+(x\\d+)?)*")) {
             this.expectedLines = null;
             this.itemSizes =
                     Arrays.stream(spec.split(","))
                             .map(String::strip)
-                            .map(Integer::valueOf)
+                            .flatMap(SplitIntoListItemsFix::expandItemSizes)
                             .toList();
         } else {
             throw new IllegalArgumentException(
-                    "Bad !SPLIT_LINES spec '" + spec + "'; expected N or N,N,...");
+                    "Bad !SPLIT_LINES spec '" + spec + "'; expected N or N,N,... (NxK repeats N)");
         }
+    }
+
+    /** Expands one spec group: {@code N} is one N-line item, {@code NxK} is K such items. */
+    private static Stream<Integer> expandItemSizes(String group) {
+        String[] parts = group.split("x");
+        int size = Integer.parseInt(parts[0]);
+        int repeat = parts.length == 2 ? Integer.parseInt(parts[1]) : 1;
+        return Collections.nCopies(repeat, size).stream();
     }
 
     @Override

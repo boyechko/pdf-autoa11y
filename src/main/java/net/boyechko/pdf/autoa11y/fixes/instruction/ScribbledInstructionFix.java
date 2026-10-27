@@ -36,7 +36,7 @@ public class ScribbledInstructionFix implements IssueFix {
                     new Syntax("!REORDER_KIDS", m -> new ReorderKidsInstruction()),
                     new Syntax("!SET_ROLE\\s+(\\S+)", m -> new SetRoleInstruction(m.group(1))),
                     new Syntax(
-                            "!SPLIT_LINES(?:\\s+([\\d,]+))?",
+                            "!SPLIT_LINES(?:\\s+([\\d,x]+))?",
                             m -> new SplitLinesInstruction(m.group(1))),
                     new Syntax("!UNLINK", m -> new UnlinkInstruction()));
 
