@@ -15,6 +15,7 @@ sealed interface ScribbledInstruction
                 ArtifactInstruction,
                 BreakOutInstruction,
                 FlattenInstruction,
+                HoistInstruction,
                 MergeInstruction,
                 ReorderKidsInstruction,
                 SetRoleInstruction,

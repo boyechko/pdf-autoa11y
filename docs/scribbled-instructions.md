@@ -17,6 +17,7 @@ the tool on the next run.
 | `!ARTIFACT` | Converts the element's subtree to artifacts |
 | `!BREAK_OUT` | Takes a stray item out of its list |
 | `!FLATTEN` | Hoists the subtree's leaf elements up to the element |
+| `!HOIST` | Lifts the element out of the single-kid wrappers above it |
 | `!MERGE` | Merges the element into its preceding sibling |
 | `!REORDER_KIDS` | Reorders kids by their `REORDER N` scribbles |
 | `!SET_ROLE <role>` | Changes the element's role |
@@ -167,6 +168,33 @@ document once its output has been triaged.
 | `!FLATTEN` on `Sect` | `Sect[L[LI[LBody[P₁]], LI[LBody[P₂]]]]` | `Sect[P₁, P₂]` |
 | `!FLATTEN` on `Sect` | `Sect[H1[MCR₁], Div[P₁[MCR₂], Div[P₂[MCR₃]]]]` | `Sect[H1[MCR₁], P₁[MCR₂], P₂[MCR₃]]` |
 | `!FLATTEN` on `Div` | `Div[MCR₁, Span[Span[MCR₂]]]` | *(refused: `Span` mixes marked content with nested elements)* |
+
+## !HOIST
+
+Lifts the element out of the chain of wrappers above it, each holding
+nothing but the one below it, so the element takes the topmost
+wrapper's place. The chain stops below the first ancestor that has
+other kids, so the element lands exactly where its wrappers were and
+reading order holds without any splitting. A top-level element such as
+`Document` is never consumed. If the element's own parent holds
+anything else, marked content included, the instruction is refused
+without changing the tree. The receipt names how many wrappers were
+removed (`INST HOIST past 4`).
+
+```text
+Instruction := "!HOIST"
+```
+
+Typical use: an inner list tagged inside a lone `L > LI > LBody > P`
+of an outer list; `!HOIST` on the inner `L` drops the outer layers.
+
+**Examples:**
+
+| Scribble | Before | After |
+|---|---|---|
+| `!HOIST` on L₂ | `Art[H1, L₁[LI[LBody[P[L₂]]]]]` | `Art[H1, L₂]` |
+| `!HOIST` on P₁ | `Sect[Div₁[Div₂[P₁], P₂]]` | `Sect[Div₁[P₁, P₂]]` |
+| `!HOIST` on P₁ | `Div[MCR₁, P₁]` | *(refused: `Div` holds other kids)* |
 
 ## !MERGE
 

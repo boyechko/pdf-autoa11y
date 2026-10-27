@@ -32,6 +32,7 @@ public class ScribbledInstructionFix implements IssueFix {
                     new Syntax("!ARTIFACT", m -> new ArtifactInstruction()),
                     new Syntax("!BREAK_OUT", m -> new BreakOutInstruction()),
                     new Syntax("!FLATTEN", m -> new FlattenInstruction()),
+                    new Syntax("!HOIST", m -> new HoistInstruction()),
                     new Syntax("!MERGE", m -> new MergeInstruction()),
                     new Syntax("!REORDER_KIDS", m -> new ReorderKidsInstruction()),
                     new Syntax("!SET_ROLE\\s+(\\S+)", m -> new SetRoleInstruction(m.group(1))),

@@ -8,6 +8,8 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `!HOIST` scribbled instruction: lifts an element out of the chain of
+  single-kid wrappers above it, so it takes the outermost wrapper's place.
 - `!SPLIT_LINES` item sizes accept an `NxK` shorthand for K consecutive
   N-line items, so `1,1,2,1x5` stands for `1,1,2,1,1,1,1,1`.
 - New `!BREAK_OUT` scribbled instruction: takes a stray item out of its list,
