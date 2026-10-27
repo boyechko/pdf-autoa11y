@@ -273,6 +273,45 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
     }
 
     @Test
+    void ancestorInstructionsApplyBeforeDescendantOnes() throws Exception {
+        // A paragraph tagged one line per item: each LI breaks out before the !MERGE on its P
+        // runs, so every P finds the previously hoisted one as its preceding sibling.
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
+            root.addKid(div);
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            div.addKid(list);
+
+            PdfStructElem[] paragraphs = new PdfStructElem[3];
+            for (int i = 0; i < paragraphs.length; i++) {
+                PdfStructElem item = new PdfStructElem(pdfDoc, PdfName.LI);
+                list.addKid(item);
+                StructTree.setScribble(item, "!BREAK_OUT");
+                PdfStructElem body = new PdfStructElem(pdfDoc, PdfName.LBody);
+                item.addKid(body);
+                paragraphs[i] = new PdfStructElem(pdfDoc, PdfName.P);
+                body.addKid(paragraphs[i]);
+                paragraphs[i].addKid(new PdfStructElem(pdfDoc, PdfName.Span));
+                if (i > 0) {
+                    StructTree.setScribble(paragraphs[i], "!MERGE");
+                }
+            }
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(5, issues.size());
+            IssueList resolved = issues.applyFixes(new DocContext(pdfDoc));
+
+            assertEquals(5, resolved.size(), "Every instruction should succeed");
+            assertEquals(1, div.getKids().size(), "Div should hold only the merged paragraph");
+            PdfStructElem survivor = (PdfStructElem) div.getKids().get(0);
+            assertEquals(paragraphs[0].getPdfObject(), survivor.getPdfObject());
+            assertEquals(3, survivor.getKids().size(), "Survivor should hold every line's kid");
+        }
+    }
+
+    @Test
     void ignoresRegularTitle() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
