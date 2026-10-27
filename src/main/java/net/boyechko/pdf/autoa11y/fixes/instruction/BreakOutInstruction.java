@@ -19,8 +19,9 @@ import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
  * beside the list, which is split around it so reading order holds. Items before it stay in the
  * original list, items after it move to a new list placed after the content, and a list left empty
  * is removed. Marked as {@code !BREAK_OUT} on each stray item, a run comes out in one pass: every
- * fix splits whichever list holds its item by then. The item is destroyed, so the receipt is the
- * event stamped on the surviving lists instead.
+ * fix splits whichever list holds its item by then. The item is destroyed, so the receipt goes on
+ * each hoisted element instead, numbered "(i of n)" when there are several; the surviving lists
+ * only have their item count refreshed.
  */
 record BreakOutInstruction() implements ScribbledInstruction {
 
@@ -69,12 +70,22 @@ record BreakOutInstruction() implements ScribbledInstruction {
         if (StructTree.kidsOf(list).isEmpty()) {
             container.removeKid(list);
         } else {
-            ListItemScribble.update(list, receipt("BREAK_OUT"));
+            ListItemScribble.refreshCount(list);
         }
         if (tail != null) {
-            ListItemScribble.update(tail, receipt("BREAK_OUT"));
+            ListItemScribble.refreshCount(tail);
         }
+        stampReceipts(content);
         return null;
+    }
+
+    /** Stamps the receipt on each hoisted element, numbered "(i of n)" when there are several. */
+    private static void stampReceipts(List<PdfStructElem> hoisted) {
+        int total = hoisted.size();
+        for (int i = 0; i < total; i++) {
+            String ordinal = total > 1 ? " (" + (i + 1) + " of " + total + ")" : "";
+            StructTree.addToolScribble(hoisted.get(i), receipt("BREAK_OUT" + ordinal));
+        }
     }
 
     /**

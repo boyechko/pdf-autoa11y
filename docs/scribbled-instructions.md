@@ -102,8 +102,11 @@ empty is removed. To take out a run, mark every stray item; each one
 splits whichever list holds it by then, so no empty lists are left
 between them.
 
-The item is destroyed, so the receipt `INST BREAK_OUT` goes on the
-surviving lists, followed by their refreshed `ITEMS` count. Only valid
+The item is destroyed, so the receipt goes on each hoisted element
+instead, numbered when there are several (`INST BREAK_OUT (1 of 3)`,
+`INST BREAK_OUT (2 of 3)`, ...) so that the boundary between items
+broken out side by side stays visible. The surviving lists get only
+their refreshed `ITEMS` count. Only valid
 on `LI` elements inside a list. An item holding anything other than
 `LBody` (such as a `Lbl`), or an `LBody` holding marked content
 directly, is refused without changing the tree.

@@ -184,6 +184,74 @@ class BreakOutInstructionTest extends PdfTestBase {
     }
 
     @Test
+    void breakOutStampsNumberedReceiptOnEachHoistedElement() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
+            root.addKid(div);
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            div.addKid(list);
+
+            PdfStructElem[] items = new PdfStructElem[3];
+            PdfStructElem[] bodies = new PdfStructElem[3];
+            for (int i = 0; i < items.length; i++) {
+                items[i] = new PdfStructElem(pdfDoc, PdfName.LI);
+                list.addKid(items[i]);
+                bodies[i] = new PdfStructElem(pdfDoc, PdfName.LBody);
+                items[i].addKid(bodies[i]);
+            }
+            bodies[0].addKid(new PdfStructElem(pdfDoc, PdfName.P));
+            PdfStructElem heading = new PdfStructElem(pdfDoc, PdfName.H3);
+            bodies[1].addKid(heading);
+            PdfStructElem prose = new PdfStructElem(pdfDoc, PdfName.P);
+            bodies[1].addKid(prose);
+            bodies[2].addKid(new PdfStructElem(pdfDoc, PdfName.P));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
+
+            PdfStructElem tail = (PdfStructElem) div.getKids().get(3);
+            assertTrue(
+                    StructTree.getScribble(heading)
+                            .body()
+                            .contains(ScribbledInstruction.receipt("BREAK_OUT (1 of 2)")));
+            assertTrue(
+                    StructTree.getScribble(prose)
+                            .body()
+                            .contains(ScribbledInstruction.receipt("BREAK_OUT (2 of 2)")));
+            assertFalse(
+                    StructTree.getScribble(list).body().contains("BREAK_OUT"),
+                    "Surviving list carries only its count, not the event");
+            assertFalse(StructTree.getScribble(tail).body().contains("BREAK_OUT"));
+        }
+    }
+
+    @Test
+    void breakOutStampsUnnumberedReceiptOnSoleHoistedElement() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div);
+            root.addKid(div);
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            div.addKid(list);
+            PdfStructElem li = new PdfStructElem(pdfDoc, PdfName.LI);
+            list.addKid(li);
+            PdfStructElem lBody = new PdfStructElem(pdfDoc, PdfName.LBody);
+            li.addKid(lBody);
+            PdfStructElem heading = new PdfStructElem(pdfDoc, PdfName.H4);
+            lBody.addKid(heading);
+
+            DocContext ctx = new DocContext(pdfDoc);
+            new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx);
+
+            String scribble = StructTree.getScribble(heading).body();
+            assertTrue(scribble.contains(ScribbledInstruction.receipt("BREAK_OUT")));
+            assertFalse(scribble.contains(" of "), "A lone hoisted element needs no ordinal");
+        }
+    }
+
+    @Test
     void breakOutPinsPageOnHoistedElementLackingPg() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();

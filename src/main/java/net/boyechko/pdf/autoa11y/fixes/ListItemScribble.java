@@ -38,7 +38,7 @@ public final class ListItemScribble {
      * rather than on the list: the count still has to follow, but an event stamped here would read
      * as having been done to the list itself.
      */
-    static void refreshCount(PdfStructElem list) {
+    public static void refreshCount(PdfStructElem list) {
         long count =
                 StructTree.childrenOf(list, PdfStructElem.class).stream()
                         .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
