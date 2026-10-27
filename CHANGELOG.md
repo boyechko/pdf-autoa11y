@@ -27,6 +27,8 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- Lists built by `!SPLIT_LINES` no longer carry a `BULLETS N` scribble, which
+  claimed bullets that were never there; they carry just the item count.
 - Kids placed by `!REORDER_KIDS` are now marked `REORDER N` instead of
   `!REORDER N`, so the marker is no longer mistaken for an instruction of its
   own and reported as a failed fix. Old `!REORDER N` markers are reported as

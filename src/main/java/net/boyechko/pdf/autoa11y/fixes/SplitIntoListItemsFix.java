@@ -144,7 +144,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         PdfStructElem li = ensureListItemChain(ctx, plans.get(0).page());
         PdfStructElem list = (PdfStructElem) li.getParent();
         List<Integer> newMcids = buildItems(ctx, list, li, plans, sizes);
-        ListItemScribble.update(list, "BULLETS " + sizes.size());
+        ListItemScribble.refreshCount(list);
 
         logger.debug(
                 "Split {} MCR(s) on {} into {} items (new MCIDs {})",
