@@ -86,4 +86,106 @@ class EmptyLinkTagCheckTest extends PdfTestBase {
                     "Second Link child should be OBJR");
         }
     }
+
+    @Test
+    void reunitesAnnotationWithTextOnlyLinkElsewhereOnPage() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem textP = new PdfStructElem(pdfDoc, PdfName.P, page);
+            document.addKid(textP);
+            PdfStructElem textLink = new PdfStructElem(pdfDoc, PdfName.Link, page);
+            textP.addKid(textLink);
+            PdfMcr mcr = new PdfMcrDictionary(page, textLink);
+            textLink.addKid(mcr);
+
+            Rectangle mcrRect = new Rectangle(100, 700, 60, 14);
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfCanvas canvas = new PdfCanvas(page);
+            canvas.beginMarkedContent(PdfName.Link, props);
+            canvas.rectangle(mcrRect);
+            canvas.fill();
+            canvas.endMarkedContent();
+
+            PdfStructElem misplacedP = new PdfStructElem(pdfDoc, PdfName.P, page);
+            document.addKid(misplacedP);
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, page);
+            misplacedP.addKid(span);
+            PdfStructElem annotLink = new PdfStructElem(pdfDoc, PdfName.Link, page);
+            span.addKid(annotLink);
+
+            PdfLinkAnnotation linkAnnot =
+                    new PdfLinkAnnotation(new Rectangle(mcrRect))
+                            .setAction(PdfAction.createURI("https://example.com"));
+            page.addAnnotation(-1, linkAnnot, false);
+            annotLink.addKid(
+                    new PdfObjRef(linkAnnot, annotLink, pdfDoc.getNextStructParentIndex()));
+
+            DocContext ctx = new DocContext(pdfDoc);
+            IssueList issues = new EmptyLinkTagCheck().findIssues(ctx);
+
+            assertEquals(1, issues.size(), "Expected one missing-description Link issue");
+            Issue issue = issues.get(0);
+            assertEquals(IssueType.EMPTY_LINK_TAG, issue.type());
+
+            issue.fix().apply(ctx);
+
+            assertEquals(1, document.getKids().size(), "Emptied P/Span/Link should be pruned");
+            assertEquals(2, textLink.getKids().size(), "Link should contain MCR and OBJR");
+            assertTrue(textLink.getKids().get(0) instanceof PdfMcr, "First kid should be MCR");
+            assertTrue(textLink.getKids().get(1) instanceof PdfObjRef, "Second kid should be OBJR");
+            assertTrue(
+                    new EmptyLinkTagCheck().findIssues(ctx).isEmpty(),
+                    "Reunited Link should not be reported again");
+        }
+    }
+
+    @Test
+    void leavesAnnotationAloneWhenNoTextOnlyLinkUnderIt() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem textP = new PdfStructElem(pdfDoc, PdfName.P, page);
+            document.addKid(textP);
+            PdfStructElem textLink = new PdfStructElem(pdfDoc, PdfName.Link, page);
+            textP.addKid(textLink);
+            PdfMcr mcr = new PdfMcrDictionary(page, textLink);
+            textLink.addKid(mcr);
+
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
+            PdfCanvas canvas = new PdfCanvas(page);
+            canvas.beginMarkedContent(PdfName.Link, props);
+            canvas.rectangle(new Rectangle(100, 700, 60, 14));
+            canvas.fill();
+            canvas.endMarkedContent();
+
+            PdfStructElem misplacedP = new PdfStructElem(pdfDoc, PdfName.P, page);
+            document.addKid(misplacedP);
+            PdfStructElem annotLink = new PdfStructElem(pdfDoc, PdfName.Link, page);
+            misplacedP.addKid(annotLink);
+
+            PdfLinkAnnotation linkAnnot =
+                    new PdfLinkAnnotation(new Rectangle(100, 300, 60, 14))
+                            .setAction(PdfAction.createURI("https://example.com"));
+            page.addAnnotation(-1, linkAnnot, false);
+            annotLink.addKid(
+                    new PdfObjRef(linkAnnot, annotLink, pdfDoc.getNextStructParentIndex()));
+
+            IssueList issues = new EmptyLinkTagCheck().findIssues(new DocContext(pdfDoc));
+
+            assertTrue(issues.isEmpty(), "Annotation far from the text should not be paired");
+        }
+    }
 }

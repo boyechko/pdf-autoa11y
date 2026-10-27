@@ -22,6 +22,9 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `EmptyLinkTagCheck` also reunites a Link holding only its annotation with
+  a Link elsewhere on the page holding only its text, as when a tagger
+  dumps link annotations at the end of a section.
 - `!SPLIT_LINES` always builds its new list where the scribbled element is,
   instead of joining an enclosing list: a scribbled `P` is replaced by the
   list, and an element holding marked content directly (e.g. an `LBody`)

@@ -38,7 +38,7 @@ previous step in the execution order listed below.
 | MistaggedArtifactCheck | Detects decorative or noisy content that should be artifacts | Converts to artifacts |
 | FigureWithTextCheck | Detects Figure elements containing text content | Changes Figure role |
 | MissingAltTextCheck | Detects content images missing alt text | None (manual) |
-| EmptyLinkTagCheck | Detects Link elements without link description | Moves adjacent text into Link |
+| EmptyLinkTagCheck | Detects Link elements without link description | Moves adjacent text into Link, or moves the annotation into a text-only Link under it |
 | InvalidLinkUriCheck | Detects Link elements whose `/A /URI` is not a plausible http(s) web address | Writes `LINK_URI` scribble for manual review |
 | MistaggedListCheck | Detects bulleted, indented, or link-only content that should be lists | Wraps in (sub)list structure, merging split lists |
 | IrregularTocCheck | Detects TOC contents not nested into a TOCI hierarchy | Rebuilds entries as `TOCI`, nesting by indentation |
