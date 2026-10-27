@@ -10,13 +10,14 @@ import net.boyechko.pdf.autoa11y.fixes.SplitIntoListItemsFix;
 
 /**
  * {@code !SPLIT_LINES [spec]}: delegates to SplitIntoListItemsFix to split the element's lumped
- * blocks into one list item per line. The spec, when given, is a line count or per-item counts.
+ * blocks into one list item per line, in a new list built where the element is. The spec, when
+ * given, is a line count or per-item counts.
  */
 record SplitLinesInstruction(String spec) implements ScribbledInstruction {
 
     @Override
     public String apply(DocContext ctx, PdfStructElem element) throws Exception {
-        new SplitIntoListItemsFix(element, spec).apply(ctx);
+        SplitIntoListItemsFix.inPlace(element, spec).apply(ctx);
         return receipt(spec == null ? "SPLIT_LINES" : "SPLIT_LINES " + spec);
     }
 }

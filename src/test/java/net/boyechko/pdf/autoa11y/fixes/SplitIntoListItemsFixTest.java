@@ -9,8 +9,10 @@ import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
@@ -118,7 +120,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem p = elementOwningMcid(doc, 3, 10);
             PdfStructElem list = grandListOf(p);
 
-            new ScribbledInstructionFix(p, "!SPLIT_LINES").apply(ctx);
+            new SplitIntoListItemsFix(p).apply(ctx);
 
             assertEquals(2, listItems(list).size(), "1 new LI joined the original 1");
         }
@@ -303,7 +305,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem p = elementOwningMcid(doc, 2, 16);
             PdfStructElem list = grandListOf(p);
 
-            new ScribbledInstructionFix(p, "!SPLIT_LINES 1,1,2,1x5").apply(ctx);
+            new SplitIntoListItemsFix(p, "1,1,2,1x5").apply(ctx);
 
             List<PdfStructElem> items = listItems(list);
             assertEquals(8, items.size(), "1x5 stands for five one-line items");
@@ -311,6 +313,58 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
                     1,
                     StructTree.descendantsOf(items.get(2), PdfMcr.class).size(),
                     "the 2 still groups two lines into one item");
+        }
+    }
+
+    @Test
+    void scribbledParagraphInListItemBecomesNestedList() throws Exception {
+        try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem p = elementOwningMcid(doc, 2, 16);
+            PdfStructElem lBody = (PdfStructElem) p.getParent();
+            PdfStructElem outerList = grandListOf(p);
+            int origIndex = StructTree.findKidIndex(lBody, p);
+
+            new ScribbledInstructionFix(p, "!SPLIT_LINES 9").apply(ctx);
+
+            assertEquals(1, listItems(outerList).size(), "no items joined the enclosing list");
+            PdfStructElem sublist = (PdfStructElem) lBody.getKids().get(origIndex);
+            assertEquals("L", StructTree.mappedRole(sublist), "P replaced by a new L in place");
+            List<PdfStructElem> items = listItems(sublist);
+            assertEquals(9, items.size());
+
+            Map<Integer, Content.McidContent> content =
+                    Content.extractContentForPage(doc.getPage(2));
+            assertTrue(itemText(items.get(0), content).startsWith("ELCBUS 300"));
+            assertTrue(itemText(items.get(8), content).startsWith("ELCBUS 382"));
+        }
+    }
+
+    @Test
+    void scribbledContainerHoldingMcrsGetsListInside() throws Exception {
+        try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
+            DocContext ctx = new DocContext(doc);
+            PdfStructElem container = elementOwningMcid(doc, 2, 16);
+            container.setRole(PdfName.Div);
+
+            new ScribbledInstructionFix(container, "!SPLIT_LINES 9").apply(ctx);
+
+            List<IStructureNode> kids = container.getKids();
+            assertEquals(1, kids.size(), "the container's MCRs moved into the new list");
+            PdfStructElem list = (PdfStructElem) kids.get(0);
+            assertEquals("L", StructTree.mappedRole(list));
+            List<PdfStructElem> items = listItems(list);
+            assertEquals(9, items.size());
+            PdfStructElem firstBody =
+                    StructTree.childrenOf(items.get(0), PdfStructElem.class).get(0);
+            PdfStructElem firstP = StructTree.childrenOf(firstBody, PdfStructElem.class).get(0);
+            assertEquals("P", StructTree.mappedRole(firstP), "first line sits in a new P");
+
+            Map<Integer, Content.McidContent> content =
+                    Content.extractContentForPage(doc.getPage(2));
+            assertTrue(itemText(items.get(0), content).startsWith("ELCBUS 300"));
+            assertTrue(itemText(items.get(1), content).startsWith("ELCBUS 301"));
+            assertProperlyNestedOperators(doc.getPage(2).getContentBytes());
         }
     }
 

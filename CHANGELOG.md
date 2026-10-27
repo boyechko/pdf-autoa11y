@@ -20,6 +20,10 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `!SPLIT_LINES` always builds its new list where the scribbled element is,
+  instead of joining an enclosing list: a scribbled `P` is replaced by the
+  list, and an element holding marked content directly (e.g. an `LBody`)
+  receives the list inside it.
 - Remediation logs now append one JSON record per run, nesting each check's
   detected issues with their outcomes (resolved, skipped, failed, or
   unresolved) in place of separate `run` and `fix` records. Fields use

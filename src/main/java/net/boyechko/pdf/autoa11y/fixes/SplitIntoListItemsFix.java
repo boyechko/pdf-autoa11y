@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * legally (painted content between text objects, nested blocks, an item whose lines sit in separate
  * text objects). When the element already sits inside an LBody &gt; LI &gt; L chain the new items
  * join that list after the original item; a bare element is first wrapped in a new L at its own
- * position.
+ * position. The {@link #inPlace} variant never joins: a P is replaced by the new L, and any other
+ * element keeps its place and receives the L as its sole kid, the first line in a new P.
  *
  * <p>The spec is an optional safety catch and grouping control: a plain expected line count makes
  * the fix refuse when the actual total differs (e.g. an item wraps over two lines), and per-item
@@ -61,6 +62,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
     private final PdfStructElem element;
     private final Integer expectedLines;
     private final List<Integer> itemSizes;
+    private final boolean inPlace;
 
     /** Splits at every detected line, deriving the item count from the content stream. */
     public SplitIntoListItemsFix(PdfStructElem element) {
@@ -72,6 +74,12 @@ public final class SplitIntoListItemsFix implements IssueFix {
         this.element = element;
         this.expectedLines = expectedLines;
         this.itemSizes = null;
+        this.inPlace = false;
+    }
+
+    /** Splits per the spec, building the new list where the element is rather than joining one. */
+    public static SplitIntoListItemsFix inPlace(PdfStructElem element, String spec) {
+        return new SplitIntoListItemsFix(element, spec, true);
     }
 
     /**
@@ -81,7 +89,12 @@ public final class SplitIntoListItemsFix implements IssueFix {
      * item; {@code 1x3} is short for {@code 1,1,1}), counting lines across all the element's MCRs.
      */
     public SplitIntoListItemsFix(PdfStructElem element, String spec) {
+        this(element, spec, false);
+    }
+
+    private SplitIntoListItemsFix(PdfStructElem element, String spec, boolean inPlace) {
         this.element = element;
+        this.inPlace = inPlace;
         if (spec == null || spec.isBlank()) {
             this.expectedLines = null;
             this.itemSizes = null;
@@ -141,7 +154,10 @@ public final class SplitIntoListItemsFix implements IssueFix {
         }
         validateSplices(plans, sizes);
 
-        PdfStructElem li = ensureListItemChain(ctx, plans.get(0).page());
+        PdfStructElem li =
+                inPlace
+                        ? placeListInPlace(ctx, plans)
+                        : ensureListItemChain(ctx, plans.get(0).page());
         PdfStructElem list = (PdfStructElem) li.getParent();
         List<Integer> newMcids = buildItems(ctx, list, li, plans, sizes);
         ListItemScribble.refreshCount(list);
@@ -269,7 +285,31 @@ public final class SplitIntoListItemsFix implements IssueFix {
             }
             throw new IllegalStateException("Element's LBody parent is not inside an LI > L chain");
         }
+        return wrapInNewList(ctx, page);
+    }
 
+    /**
+     * Returns the first LI of a new list built where the element is: a P is wrapped in the list at
+     * its own position, and any other element gets the list as its sole kid, its MCRs moved into
+     * the first item's new P (updating the plans to the rebound MCRs).
+     */
+    private PdfStructElem placeListInPlace(DocContext ctx, List<McrPlan> plans) {
+        PdfPage page = plans.get(0).page();
+        if ("P".equals(StructTree.mappedRole(element))) {
+            return wrapInNewList(ctx, page);
+        }
+        ListAssembler assembler = new ListAssembler(ctx.doc());
+        PdfStructElem lBody = assembler.newItemBody(assembler.newListIn(element));
+        PdfStructElem p = assembler.newContentIn(lBody, PdfName.P, page);
+        for (int i = 0; i < plans.size(); i++) {
+            McrPlan plan = plans.get(i);
+            plans.set(i, plan.withMcr(moveMcr(plan.mcr(), plan.page(), p)));
+        }
+        return (PdfStructElem) lBody.getParent();
+    }
+
+    /** Wraps the element in a new L &gt; LI &gt; LBody chain at its own position. */
+    private PdfStructElem wrapInNewList(DocContext ctx, PdfPage page) {
         if (!(element.getParent() instanceof PdfStructElem container)) {
             throw new IllegalStateException("Element has no structure-element parent");
         }
@@ -300,7 +340,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
         List<Integer> newMcids = new ArrayList<>();
         Map<PdfStream, List<Edit>> editsByStream = new LinkedHashMap<>();
 
-        PdfStructElem itemBody = element; // item 1's P; the element keeps the first MCR
+        PdfStructElem firstBody = (PdfStructElem) plans.get(0).mcr().getParent();
+        PdfStructElem itemBody = firstBody; // item 1's P keeps the first MCR
         int itemIndex = 0;
         int linesLeftInItem = sizes.get(0);
 
@@ -318,7 +359,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
                 boolean startsItem = linesLeftInItem == 0;
                 if (startsItem) {
                     linesLeftInItem = sizes.get(++itemIndex);
-                    itemBody = newItemBody(ctx, list, liIndex + nextItem++, page);
+                    itemBody =
+                            newItemBody(ctx, list, liIndex + nextItem++, firstBody.getRole(), page);
                 }
                 if (line == 0) {
                     if (mcrPlan.mcr() != plans.get(0).mcr()) {
@@ -350,21 +392,25 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return newMcids;
     }
 
-    /** Creates an LI &gt; LBody &gt; P item at the given list position, returning the P. */
-    private PdfStructElem newItemBody(DocContext ctx, PdfStructElem list, int index, PdfPage page) {
+    /**
+     * Creates an LI &gt; LBody &gt; content item at the given list position, returning the content.
+     */
+    private PdfStructElem newItemBody(
+            DocContext ctx, PdfStructElem list, int index, PdfName role, PdfPage page) {
         ListAssembler assembler = new ListAssembler(ctx.doc());
         PdfStructElem lBody = assembler.newItemBody(list, index);
-        return assembler.newContentIn(lBody, element.getRole(), page);
+        return assembler.newContentIn(lBody, role, page);
     }
 
     /**
-     * Moves an MCR from the element into a new parent, re-registering it there. A bare-number MCR
-     * resolves its page through the parent's /Pg, so one landing under a parent pinned to a
-     * different page is upgraded to an MCR dictionary carrying its own /Pg.
+     * Moves an MCR from its current parent into a new one, re-registering it there and returning
+     * the rebound MCR. A bare-number MCR resolves its page through the parent's /Pg, so one landing
+     * under a parent pinned to a different page is upgraded to an MCR dictionary carrying its own
+     * /Pg.
      */
-    private void moveMcr(PdfMcr mcr, PdfPage page, PdfStructElem newParent) {
+    private static PdfMcr moveMcr(PdfMcr mcr, PdfPage page, PdfStructElem newParent) {
         PdfObject underlying = mcr.getPdfObject();
-        element.removeKid(mcr);
+        ((PdfStructElem) mcr.getParent()).removeKid(mcr);
         PdfMcr rebound;
         if (!(underlying instanceof PdfNumber num)) {
             rebound = new PdfMcrDictionary((PdfDictionary) underlying, newParent);
@@ -378,6 +424,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
             rebound = new PdfMcrDictionary(dict, newParent);
         }
         newParent.addKid(rebound);
+        return rebound;
     }
 
     /**
@@ -405,6 +452,10 @@ public final class SplitIntoListItemsFix implements IssueFix {
     private record McrPlan(PdfMcr mcr, PdfPage page, SplitPlan plan, boolean continuesLine) {
         int countedLines() {
             return plan.splitOffsets().size() + (continuesLine ? 0 : 1);
+        }
+
+        McrPlan withMcr(PdfMcr rebound) {
+            return new McrPlan(rebound, page, plan, continuesLine);
         }
     }
 

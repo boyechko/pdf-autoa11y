@@ -240,11 +240,14 @@ fresh MCID, and gives each line its own `LI > LBody > P`.
 The scribbled element's kids must all be MCRs (one or more, e.g. a
 `P` holding two MCRs that an artifact interrupts); each block is
 split at its line boundaries and every resulting line becomes an
-item, in reading order. If the element already
-sits inside an `LBody > LI > L` chain, the new items join that list
-right after the original item. A bare element (e.g. a `P` under a
-container) is first wrapped in a new `L > LI > LBody` at its own
-position.
+item, in reading order. The new list is always built where the
+scribbled element is, never joined to an enclosing list. A `P` is
+replaced by the list, becoming the first item's body. Any other
+element (e.g. an `LBody` or `Div` holding MCRs directly) stays put
+and receives the list as its sole kid, with the first line in a new
+`P`. A `P` inside a list item therefore becomes a sublist of that
+item; to make the lines items of the enclosing list instead, drag
+them out of the sublist in Acrobat.
 
 The element's MCRs may span pages (e.g. a lumped listing that runs
 over a page break); each block is located and split in its own page's
@@ -284,7 +287,8 @@ Group       := N                          (* one N-line item *)
 
 | Scribble | Before | After |
 |---|---|---|
-| `!SPLIT_LINES 3` | `L[LI[LBody[P[MCR₁₋₃]]]]` | `L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]` |
+| `!SPLIT_LINES 3` | `LI[LBody[P[MCR₁₋₃]]]` | `LI[LBody[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]]]` |
+| `!SPLIT_LINES 3` on LBody | `LI[LBody[MCR₁₋₃]]` | `LI[LBody[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]]]` |
 | `!SPLIT_LINES 3` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂]]], LI[LBody[P[MCR₃]]]]]` |
 | `!SPLIT_LINES 1,2` | `Sect[P[MCR₁₋₃]]` | `Sect[L[LI[LBody[P[MCR₁]]], LI[LBody[P[MCR₂₋₃]]]]]` — lines 2-3 stay one block |
 | `!SPLIT_LINES 2,1x2` | `Sect[P[MCR₁₋₄]]` | `Sect[L[LI[LBody[P[MCR₁₋₂]]], LI[LBody[P[MCR₃]]], LI[LBody[P[MCR₄]]]]]` — `1x2` is short for `1,1` |
