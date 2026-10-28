@@ -112,8 +112,8 @@ class BadlySplitLinkCheckTest extends PdfTestBase {
             layoutDoc.add(p);
 
             assertEquals(
-                    "P[Link[], Span[], Link[]]",
-                    StructTree.toRoleTree(paragraphOf(pdfDoc)).toString(),
+                    "P[Link[],Span[],Link[]]",
+                    StructTree.toRoleTreeString(paragraphOf(pdfDoc)),
                     "Expected the two Link tags to be separated by the intervening text");
 
             check(pdfDoc, check);

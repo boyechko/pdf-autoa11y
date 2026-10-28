@@ -9,8 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
+import net.boyechko.pdf.autoa11y.document.RoleTreeNotation;
 import net.boyechko.pdf.autoa11y.document.StructTree;
-import net.boyechko.pdf.autoa11y.document.StructTree.Node;
+import net.boyechko.pdf.autoa11y.document.TreeNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ record AddParentInstruction(String tagExpr) implements ScribbledInstruction {
             return null;
         }
 
-        List<Node<String>> nodes = Node.fromString(tagExpr);
+        List<TreeNode<String>> nodes = RoleTreeNotation.parse(tagExpr);
         if (nodes.size() != 1) {
             throw new IllegalArgumentException(
                     "!ADD_PARENT requires exactly one wrapper chain root, got: " + tagExpr);
@@ -64,12 +65,12 @@ record AddParentInstruction(String tagExpr) implements ScribbledInstruction {
      * Flattens a linear chain of single-child nodes into a list of role names, outermost first.
      * Rejects branching (more than one child at any level).
      */
-    private List<String> linearChain(Node<String> root) {
+    private List<String> linearChain(TreeNode<String> root) {
         List<String> names = new ArrayList<>();
-        Node<String> current = root;
+        TreeNode<String> current = root;
         while (true) {
             names.add(current.value());
-            List<Node<String>> kids = current.children();
+            List<TreeNode<String>> kids = current.children();
             if (kids.isEmpty()) {
                 return names;
             }

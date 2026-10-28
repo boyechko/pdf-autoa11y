@@ -32,15 +32,15 @@ class WrapBulletedRunInListTest extends PdfTestBase {
             document.addKid(p1);
             document.addKid(p2);
             document.addKid(p3);
-            assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
+            assertEquals("Document[P[],P[],P[]]", StructTree.toRoleTreeString(document));
 
             DocContext ctx = new DocContext(pdfDoc);
             WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(p1, p2, p3));
             fix.apply(ctx);
 
             assertEquals(
-                    "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 
@@ -73,8 +73,8 @@ class WrapBulletedRunInListTest extends PdfTestBase {
             fix.apply(ctx);
 
             assertEquals(
-                    "Document[L[LI[LBody[P[], L[LI[LBody[P[]]], LI[LBody[P[]]]]]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[P[],L[LI[LBody[P[]]],LI[LBody[P[]]]]]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 
@@ -97,8 +97,7 @@ class WrapBulletedRunInListTest extends PdfTestBase {
             WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(sub1), list);
             fix.apply(ctx);
 
-            assertEquals(
-                    "Document[L[], L[LI[LBody[P[]]]]]", StructTree.toRoleTree(document).toString());
+            assertEquals("Document[L[],L[LI[LBody[P[]]]]]", StructTree.toRoleTreeString(document));
         }
     }
 
@@ -117,15 +116,15 @@ class WrapBulletedRunInListTest extends PdfTestBase {
             document.addKid(p1);
             document.addKid(p2);
             document.addKid(p3);
-            assertEquals("Document[P[], P[], P[]]", StructTree.toRoleTree(document).toString());
+            assertEquals("Document[P[],P[],P[]]", StructTree.toRoleTreeString(document));
 
             DocContext ctx = new DocContext(pdfDoc);
             WrapBulletedRunInList fix = new WrapBulletedRunInList(document, List.of(p1, p2, p3));
             fix.apply(ctx);
 
             assertEquals(
-                    "Document[L[LI[LBody[P[]]], LI[LBody[P[]]], LI[LBody[P[]]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 }

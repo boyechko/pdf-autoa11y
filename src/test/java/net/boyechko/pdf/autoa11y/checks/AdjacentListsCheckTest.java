@@ -37,8 +37,8 @@ class AdjacentListsCheckTest extends PdfTestBase {
             check.getIssues().applyFixes(new DocContext(pdfDoc));
 
             assertEquals(
-                    "Document[L[LI[LBody[]], LI[LBody[]], LI[LBody[]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[]],LI[LBody[]],LI[LBody[]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 
@@ -57,8 +57,8 @@ class AdjacentListsCheckTest extends PdfTestBase {
             check.getIssues().applyFixes(new DocContext(pdfDoc));
 
             assertEquals(
-                    "Document[L[LI[LBody[]], LI[LBody[]], LI[LBody[]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[]],LI[LBody[]],LI[LBody[]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 

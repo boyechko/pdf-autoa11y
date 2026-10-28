@@ -44,8 +44,8 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
             new MergeAdjacentListsFix(first, second).apply(new DocContext(pdfDoc));
 
             assertEquals(
-                    "Document[L[LI[LBody[]], LI[LBody[]], LI[LBody[]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[]],LI[LBody[]],LI[LBody[]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 
@@ -66,8 +66,8 @@ class MergeAdjacentListsFixTest extends PdfTestBase {
             new MergeAdjacentListsFix(first, second).apply(new DocContext(pdfDoc));
 
             assertEquals(
-                    "Document[L[LI[LBody[]]], P[], L[LI[LBody[]]]]",
-                    StructTree.toRoleTree(document).toString());
+                    "Document[L[LI[LBody[]]],P[],L[LI[LBody[]]]]",
+                    StructTree.toRoleTreeString(document));
         }
     }
 }
