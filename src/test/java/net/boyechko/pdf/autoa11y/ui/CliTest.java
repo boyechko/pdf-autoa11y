@@ -26,6 +26,15 @@ class CliTest {
     }
 
     @Test
+    void xmlTreeExportIsReadOnly() throws Cli.CLIException {
+        CLIConfig config = Cli.parseArguments(new String[] {"--dump-tree=xml", input});
+
+        assertTrue(config.dumpTreeDetailed());
+        assertEquals(Cli.TreeFormat.XML, config.treeFormat());
+        assertNull(config.outputPath());
+    }
+
+    @Test
     void checkSuffixIsOptional() throws Cli.CLIException {
         CLIConfig config =
                 Cli.parseArguments(

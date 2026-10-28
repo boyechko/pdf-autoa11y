@@ -133,6 +133,16 @@ Examples:
 ./pdf-autoa11y --dump-tree document.pdf
 ```
 
+### Structure Tree Export
+
+Export a machine-readable tree with full text and element metadata:
+
+```bash
+./pdf-autoa11y --dump-tree=xml document.pdf > document.tree.xml
+```
+
+See [structure tree exports and queries](docs/tree-queries.md) for the format.
+
 ### GUI
 
 ```bash

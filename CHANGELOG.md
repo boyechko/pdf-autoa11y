@@ -8,6 +8,8 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `--dump-tree=xml` exports a machine-readable structure tree with full text,
+  element metadata, and ordered content references.
 - New `!HOIST` scribbled instruction: lifts an element out of the chain of
   single-kid wrappers above it, so it takes the outermost wrapper's place.
 - `!SPLIT_LINES` item sizes accept an `NxK` shorthand for K consecutive

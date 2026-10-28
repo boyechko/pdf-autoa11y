@@ -23,12 +23,14 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
 import net.boyechko.pdf.autoa11y.file.SafeOutput;
 import net.boyechko.pdf.autoa11y.file.VersionInfo;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
 import net.boyechko.pdf.autoa11y.tools.OutlineEditor;
 import net.boyechko.pdf.autoa11y.tools.TreeDiagram;
+import net.boyechko.pdf.autoa11y.tools.TreeXml;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,13 @@ public class Cli {
     private static final String DEFAULT_OUTPUT_SUFFIX = "_autoa11y";
 
     private static Logger logger;
+
+    /** Output formats for structure-tree inspection. */
+    public enum TreeFormat {
+        BOX,
+        PLAIN,
+        XML
+    }
 
     // Configuration record to hold parsed CLI arguments
     public record CLIConfig(
@@ -47,7 +56,7 @@ public class Cli {
             boolean analyzeOnly,
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
-            TreeDiagram.Style treeStyle,
+            TreeFormat treeFormat,
             boolean listDestinations,
             boolean dumpOutline,
             Path annotateTreePath,
@@ -354,14 +363,19 @@ public class Cli {
         }
     }
 
-    /** Prints the structure tree diagram to the console based on the CLI config. */
+    /** Prints the structure tree in the requested format. */
     private static void printTreeDiagram(CLIConfig config) {
         try {
             PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
             try (PdfDocument pdfDoc = custodian.openForReading()) {
-                System.out.print(
-                        TreeDiagram.dumpToString(
-                                pdfDoc, config.dumpTreeDetailed(), config.treeStyle()));
+                String output =
+                        config.treeFormat() == TreeFormat.XML
+                                ? TreeXml.toString(TreeSnapshot.capture(pdfDoc))
+                                : TreeDiagram.dumpToString(
+                                        pdfDoc,
+                                        config.dumpTreeDetailed(),
+                                        TreeDiagram.Style.valueOf(config.treeFormat().name()));
+                System.out.print(output);
             }
         } catch (Exception e) {
             System.err.println("✗ Failed to read PDF: " + e.getMessage());
@@ -440,7 +454,7 @@ public class Cli {
                 b.includeChecks = parseCheckNames(args[i].substring("--include-checks=".length()));
             } else if (args[i].startsWith("--dump-tree=")) {
                 b.dumpTreeDetailed = true;
-                b.treeStyle = parseTreeStyle(args[i].substring("--dump-tree=".length()));
+                b.treeFormat = parseTreeFormat(args[i].substring("--dump-tree=".length()));
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else if (args[i].startsWith("--apply-outline=")) {
@@ -568,7 +582,7 @@ public class Cli {
         boolean analyzeOnly;
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
-        TreeDiagram.Style treeStyle = TreeDiagram.Style.BOX;
+        TreeFormat treeFormat = TreeFormat.BOX;
         boolean listDestinations;
         boolean dumpOutline;
         Path annotateTreePath;
@@ -611,7 +625,7 @@ public class Cli {
                     analyzeOnly,
                     dumpTreeSimple,
                     dumpTreeDetailed,
-                    treeStyle,
+                    treeFormat,
                     listDestinations,
                     dumpOutline,
                     annotateTreePath,
@@ -670,13 +684,13 @@ public class Cli {
         }
     }
 
-    /** Maps a {@code --dump-tree=<style>} value onto {@link TreeDiagram.Style}. */
-    private static TreeDiagram.Style parseTreeStyle(String value) throws CLIException {
+    /** Parses the output format of {@code --dump-tree=<format>}. */
+    private static TreeFormat parseTreeFormat(String value) throws CLIException {
         try {
-            return TreeDiagram.Style.valueOf(value.toUpperCase(Locale.ROOT));
+            return TreeFormat.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new CLIException(
-                    "Unknown tree style '" + value + "' (expected 'box' or 'plain')");
+                    "Unknown tree format '" + value + "' (expected 'box', 'plain', or 'xml')");
         }
     }
 
@@ -776,9 +790,10 @@ public class Cli {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --no-log          Do not append to <basename>.autoa11y.log\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
-                + "                    Use --dump-tree=<box|plain> to choose the line style:\n"
+                + "                    Use --dump-tree=<box|plain|xml> to choose the format:\n"
                 + "                    box-drawing connectors (default) or plain 2-space\n"
                 + "                    indentation (stable format for goal snapshots and diffing)\n"
+                + "                    xml exports full text and metadata for machine use\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
                 + "  --dump-outline    Print the document outline (bookmarks) and exit\n"
