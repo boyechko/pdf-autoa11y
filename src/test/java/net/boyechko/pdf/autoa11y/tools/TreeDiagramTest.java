@@ -15,6 +15,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeNode;
+import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -24,6 +26,24 @@ class TreeDiagramTest {
             Path.of("src/test/resources/tagged_baseline.pdf");
 
     @TempDir Path tempDir;
+
+    @Test
+    void snapshotRendersTheSameDiagramAfterClosingThePdf() throws Exception {
+        TreeNode<TreeSnapshot.Value> snapshot;
+        String box;
+        String plain;
+        String roles;
+        try (PdfDocument doc = openForReading()) {
+            box = TreeDiagram.dumpToString(doc, true, TreeDiagram.Style.BOX);
+            plain = TreeDiagram.dumpToString(doc, true, TreeDiagram.Style.PLAIN);
+            roles = TreeDiagram.dumpToString(doc, false);
+            snapshot = TreeSnapshot.capture(doc);
+        }
+
+        assertEquals(box, TreeDiagram.toDetailedTreeString(snapshot, TreeDiagram.Style.BOX));
+        assertEquals(plain, TreeDiagram.toDetailedTreeString(snapshot, TreeDiagram.Style.PLAIN));
+        assertEquals(roles, TreeDiagram.toIndentedTreeString(snapshot));
+    }
 
     @Test
     void renderingFromStructTreeRootSkipsRootLabel() throws Exception {

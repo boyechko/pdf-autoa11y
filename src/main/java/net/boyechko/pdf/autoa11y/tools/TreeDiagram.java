@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.tools;
 
-import static net.boyechko.pdf.autoa11y.document.StructTree.childrenOf;
-import static net.boyechko.pdf.autoa11y.document.StructTree.pageOf;
-
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfString;
@@ -18,6 +15,8 @@ import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Label;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.TreeNode;
+import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,15 +33,8 @@ public final class TreeDiagram {
             Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
 
     /** Roles whose text is shown untruncated, since it identifies the element. */
-    private static final Set<PdfName> SHOWN_IN_FULL =
-            Set.of(
-                    PdfName.Link,
-                    PdfName.H1,
-                    PdfName.H2,
-                    PdfName.H3,
-                    PdfName.H4,
-                    PdfName.H5,
-                    PdfName.H6);
+    private static final Set<String> SHOWN_IN_FULL =
+            Set.of("Link", "H1", "H2", "H3", "H4", "H5", "H6");
 
     /**
      * Line-prefix style for detailed tree diagrams. {@link #BOX} is the human-facing default;
@@ -95,20 +87,9 @@ public final class TreeDiagram {
         PdfStructElem docElem = StructTree.findDocument(root);
         IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
-            return toDetailedTreeString(start, gatherMcidInfo(pdfDoc), style);
+            return toDetailedTreeString(TreeSnapshot.capture(pdfDoc), style);
         }
         return toIndentedTreeString(start);
-    }
-
-    /** Gathers content (text, spans, kinds) for every MCID on every page of a PDF document. */
-    private static Map<Content.PageMcid, Content.McidContent> gatherMcidInfo(PdfDocument pdfDoc) {
-        Map<Content.PageMcid, Content.McidContent> mcidInfo = new HashMap<>();
-        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
-            int pageNum = i;
-            Content.extractContentForPage(pdfDoc.getPage(i))
-                    .forEach((mcid, mc) -> mcidInfo.put(new Content.PageMcid(pageNum, mcid), mc));
-        }
-        return mcidInfo;
     }
 
     // === Indented tree diagram =============================================
@@ -119,25 +100,28 @@ public final class TreeDiagram {
      * below.
      */
     public static String toIndentedTreeString(IStructureNode node) {
+        return toIndentedTreeString(TreeSnapshot.capture(node, Map.of()));
+    }
+
+    /** Renders the original roles in a snapshot, omitting content children. */
+    public static String toIndentedTreeString(TreeNode<TreeSnapshot.Value> tree) {
         StringBuilder sb = new StringBuilder();
-        if (node instanceof PdfStructElem elem) {
-            appendIndentedTree(sb, elem, 0);
-        } else {
-            for (IStructureNode kid : node.getKids()) {
-                if (kid instanceof PdfStructElem childElem) {
-                    appendIndentedTree(sb, childElem, 0);
-                }
-            }
-        }
+        appendIndentedTree(sb, tree, 0);
         return sb.toString();
     }
 
-    private static void appendIndentedTree(StringBuilder sb, PdfStructElem elem, int depth) {
-        sb.repeat("  ", depth);
-        sb.append(elem.getRole().getValue());
-        sb.append('\n');
-        for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
-            appendIndentedTree(sb, kid, depth + 1);
+    private static void appendIndentedTree(
+            StringBuilder sb, TreeNode<TreeSnapshot.Value> node, int depth) {
+        int childDepth = depth;
+        if (node.value() instanceof TreeSnapshot.Element element) {
+            sb.repeat("  ", depth);
+            sb.append(element.role()).append('\n');
+            childDepth++;
+        }
+        for (var child : node.children()) {
+            if (child.value() instanceof TreeSnapshot.Element) {
+                appendIndentedTree(sb, child, childDepth);
+            }
         }
     }
 
@@ -163,22 +147,26 @@ public final class TreeDiagram {
      */
     public static String toDetailedTreeString(
             IStructureNode node, Map<Content.PageMcid, Content.McidContent> mcidInfo, Style style) {
+        return toDetailedTreeString(TreeSnapshot.capture(node, mcidInfo), style);
+    }
+
+    /** Renders a captured tree without accessing the source PDF. */
+    public static String toDetailedTreeString(TreeNode<TreeSnapshot.Value> tree, Style style) {
         StringBuilder sb = new StringBuilder();
         int[] currentPage = {0};
-        if (node instanceof PdfStructElem elem) {
-            appendDetailedTree(sb, elem, "", "", style, mcidInfo, currentPage);
+        if (tree.value() instanceof TreeSnapshot.Element) {
+            appendDetailedTree(sb, tree, "", "", style, currentPage);
         } else {
-            List<IStructureNode> kids = node.getKids();
+            var kids = tree.children();
             for (int i = 0; i < kids.size(); i++) {
-                if (!(kids.get(i) instanceof PdfStructElem childElem)) continue;
+                if (!(kids.get(i).value() instanceof TreeSnapshot.Element)) continue;
                 boolean hasMore = hasStructElemAfter(kids, i);
                 appendDetailedTree(
                         sb,
-                        childElem,
+                        kids.get(i),
                         style.selfPrefix(hasMore),
                         style.leafPrefix(hasMore),
                         style,
-                        mcidInfo,
                         currentPage);
             }
         }
@@ -187,97 +175,75 @@ public final class TreeDiagram {
 
     private static void appendDetailedTree(
             StringBuilder sb,
-            PdfStructElem elem,
+            TreeNode<TreeSnapshot.Value> node,
             String selfPrefix,
             String childrenPrefix,
             Style style,
-            Map<Content.PageMcid, Content.McidContent> mcidInfo,
             int[] currentPage) {
-        emitPageBreakIfNeeded(sb, firstLeafPage(elem), currentPage);
-        sb.append(selfPrefix).append(structElemLabel(elem)).append('\n');
+        var element = (TreeSnapshot.Element) node.value();
+        emitPageBreakIfNeeded(sb, element.page(), currentPage);
+        sb.append(selfPrefix).append(structElemLabel(element)).append('\n');
 
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return;
-
+        var kids = node.children();
         for (int i = 0; i < kids.size(); i++) {
             boolean hasMore = hasStructElemAfter(kids, i);
             String leafPrefix = style.leafPrefix(hasMore);
-
-            switch (kids.get(i)) {
-                case PdfStructElem childElem -> {
-                    appendDetailedTree(
-                            sb,
-                            childElem,
-                            childrenPrefix + style.selfPrefix(hasMore),
-                            childrenPrefix + leafPrefix,
-                            style,
-                            mcidInfo,
-                            currentPage);
-                }
-                case PdfObjRef objRef -> {
-                    emitPageBreakIfNeeded(sb, pageOf(objRef), currentPage);
+            var child = kids.get(i);
+            switch (child.value()) {
+                case TreeSnapshot.Element ignored ->
+                        appendDetailedTree(
+                                sb,
+                                child,
+                                childrenPrefix + style.selfPrefix(hasMore),
+                                childrenPrefix + leafPrefix,
+                                style,
+                                currentPage);
+                case TreeSnapshot.ObjectReference ref -> {
+                    emitPageBreakIfNeeded(sb, ref.page(), currentPage);
                     sb.append(childrenPrefix).append(leafPrefix);
-                    sb.append("<").append(objrLabel(objRef)).append(">");
-                    DocValue.Destination dest = DocValue.destinationOf(objRef);
-                    sb.append(' ').append(dest);
-                    DocValue.Destination originalUri = DocValue.originalUriOf(objRef);
-                    if (originalUri != null) {
-                        sb.append(" [").append(originalUri).append("]");
-                    }
+                    sb.append("<")
+                            .append(ref.annotation() != null ? ref.annotation() : "unknown")
+                            .append("> ")
+                            .append(ref.destination());
+                    if (ref.originalUri() != null)
+                        sb.append(" [").append(ref.originalUri()).append("]");
                     sb.append('\n');
                 }
-                case PdfMcr mcr -> {
-                    if (mcr.getPageIndirectReference() == null) {
-                        sb.append(childrenPrefix).append(leafPrefix);
-                        sb.append("[orphaned mcid ").append(mcr.getMcid()).append("]");
-                        sb.append('\n');
+                case TreeSnapshot.MarkedContent content -> {
+                    if (content.orphaned()) {
+                        sb.append(childrenPrefix)
+                                .append(leafPrefix)
+                                .append("[orphaned mcid ")
+                                .append(content.mcid())
+                                .append("]\n");
                         continue;
                     }
-                    Content.PageMcid pageMcid = new Content.PageMcid(pageOf(mcr), mcr.getMcid());
-                    Content.McidContent mc = mcidInfo.get(pageMcid);
-                    DocValue.Mcr mcrLabel =
-                            new DocValue.Mcr(pageMcid.mcid(), mc != null ? mc.kinds() : null);
-                    emitPageBreakIfNeeded(sb, pageMcid.pageNum(), currentPage);
-                    sb.append(childrenPrefix).append(leafPrefix);
-                    sb.append("[").append(mcrLabel).append("]");
-                    String text = mc != null ? mc.text() : "";
-                    if (!SHOWN_IN_FULL.contains(elem.getRole())) {
-                        text = Format.truncate(text);
-                    }
+                    emitPageBreakIfNeeded(sb, content.page(), currentPage);
+                    sb.append(childrenPrefix)
+                            .append(leafPrefix)
+                            .append("[")
+                            .append(new DocValue.Mcr(content.mcid(), content.kinds()))
+                            .append("]");
+                    String text =
+                            SHOWN_IN_FULL.contains(element.role())
+                                    ? content.text()
+                                    : Format.truncate(content.text());
                     if (!text.isBlank()) sb.append(" `").append(text).append("'");
                     sb.append('\n');
                 }
-                default -> throw new IllegalArgumentException("Unexpected value: " + kids.get(i));
+                case TreeSnapshot.Root ignored ->
+                        throw new IllegalArgumentException("Nested synthetic root in snapshot");
             }
         }
     }
 
-    /** Returns true if a {@link PdfStructElem} appears after {@code fromIdx} in {@code kids}. */
-    private static boolean hasStructElemAfter(List<IStructureNode> kids, int fromIdx) {
+    /** Returns whether another structural element follows this child. */
+    private static boolean hasStructElemAfter(
+            List<TreeNode<TreeSnapshot.Value>> kids, int fromIdx) {
         for (int j = fromIdx + 1; j < kids.size(); j++) {
-            if (kids.get(j) instanceof PdfStructElem) return true;
+            if (kids.get(j).value() instanceof TreeSnapshot.Element) return true;
         }
         return false;
-    }
-
-    /** Returns the page number of the first MCR or OBJR leaf in a subtree, or 0 if none. */
-    private static int firstLeafPage(PdfStructElem elem) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return 0;
-        for (IStructureNode kid : kids) {
-            switch (kid) {
-                case PdfMcr mcr -> {
-                    int page = pageOf(mcr);
-                    if (page > 0) return page;
-                }
-                case PdfStructElem childElem -> {
-                    int page = firstLeafPage(childElem);
-                    if (page > 0) return page;
-                }
-                default -> {}
-            }
-        }
-        return 0;
     }
 
     private static void emitPageBreakIfNeeded(StringBuilder sb, int pageNum, int[] currentPage) {
@@ -289,23 +255,13 @@ public final class TreeDiagram {
         }
     }
 
-    private static String structElemLabel(PdfStructElem elem) {
-        return Label.of(new DocValue.Role(StructTree.mappedRole(elem)))
-                .add(DocValue.ObjNum.of(elem))
-                .add(DocValue.Scribble.of(elem))
-                .add(DocValue.Title.of(elem))
-                .add(DocValue.Scope.of(elem))
+    private static String structElemLabel(TreeSnapshot.Element element) {
+        return Label.of(new DocValue.Role(element.mappedRole()))
+                .add(element.objNum() >= 0 ? new DocValue.ObjNum(element.objNum()) : null)
+                .add(element.scribble())
+                .add(element.title())
+                .add(element.scope())
                 .toString();
-    }
-
-    private static String objrLabel(PdfObjRef objRef) {
-        DocValue annot = DocValue.annotOf(objRef);
-        if (annot == null) {
-            logger.debug(
-                    "No referenced object found for OBJR {}", objRef.getPdfObject().toString());
-            return "unknown";
-        }
-        return annot.toString();
     }
 
     // === Annotate tree from tree diagram file =================================
