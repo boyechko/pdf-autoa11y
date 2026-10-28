@@ -23,6 +23,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
 import net.boyechko.pdf.autoa11y.file.SafeOutput;
@@ -30,6 +31,7 @@ import net.boyechko.pdf.autoa11y.file.VersionInfo;
 import net.boyechko.pdf.autoa11y.tools.DestinationLister;
 import net.boyechko.pdf.autoa11y.tools.OutlineEditor;
 import net.boyechko.pdf.autoa11y.tools.TreeDiagram;
+import net.boyechko.pdf.autoa11y.tools.TreeQuery;
 import net.boyechko.pdf.autoa11y.tools.TreeXml;
 import net.boyechko.pdf.autoa11y.validation.Check;
 import org.slf4j.Logger;
@@ -57,6 +59,7 @@ public class Cli {
             boolean dumpTreeSimple,
             boolean dumpTreeDetailed,
             TreeFormat treeFormat,
+            String treeQuery,
             boolean listDestinations,
             boolean dumpOutline,
             Path annotateTreePath,
@@ -366,19 +369,47 @@ public class Cli {
     /** Prints the structure tree in the requested format. */
     private static void printTreeDiagram(CLIConfig config) {
         try {
-            PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
-            try (PdfDocument pdfDoc = custodian.openForReading()) {
-                String output =
-                        config.treeFormat() == TreeFormat.XML
-                                ? TreeXml.toString(TreeSnapshot.capture(pdfDoc))
-                                : TreeDiagram.dumpToString(
-                                        pdfDoc,
-                                        config.dumpTreeDetailed(),
-                                        TreeDiagram.Style.valueOf(config.treeFormat().name()));
-                System.out.print(output);
+            TreeNode<TreeSnapshot.Value> snapshot;
+            if (config.inputPath()
+                    .getFileName()
+                    .toString()
+                    .toLowerCase(Locale.ROOT)
+                    .endsWith(".xml")) {
+                snapshot = TreeXml.fromString(Files.readString(config.inputPath()));
+            } else {
+                PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+                try (PdfDocument pdfDoc = custodian.openForReading()) {
+                    if (!config.dumpTreeDetailed() && config.treeFormat() != TreeFormat.XML) {
+                        System.out.print(TreeDiagram.dumpToString(pdfDoc, false));
+                        return;
+                    }
+                    snapshot = TreeSnapshot.capture(pdfDoc);
+                }
+            }
+            var matches =
+                    config.treeQuery() != null
+                            ? TreeQuery.select(snapshot, config.treeQuery())
+                            : List.of(snapshot);
+            if (config.treeFormat() == TreeFormat.XML) {
+                var output =
+                        config.treeQuery() == null
+                                ? snapshot
+                                : new TreeNode<TreeSnapshot.Value>(
+                                        new TreeSnapshot.Root(), matches);
+                System.out.print(TreeXml.toString(output));
+            } else {
+                for (int i = 0; i < matches.size(); i++) {
+                    if (i > 0) System.out.println();
+                    System.out.print(
+                            config.dumpTreeDetailed()
+                                    ? TreeDiagram.toDetailedTreeString(
+                                            matches.get(i),
+                                            TreeDiagram.Style.valueOf(config.treeFormat().name()))
+                                    : TreeDiagram.toIndentedTreeString(matches.get(i)));
+                }
             }
         } catch (Exception e) {
-            System.err.println("✗ Failed to read PDF: " + e.getMessage());
+            System.err.println("✗ Failed to inspect structure tree: " + e.getMessage());
             System.exit(1);
         }
     }
@@ -455,6 +486,9 @@ public class Cli {
             } else if (args[i].startsWith("--dump-tree=")) {
                 b.dumpTreeDetailed = true;
                 b.treeFormat = parseTreeFormat(args[i].substring("--dump-tree=".length()));
+            } else if (args[i].startsWith("--query-tree=")) {
+                b.treeQuery = parseTreeQuery(args[i].substring("--query-tree=".length()));
+                b.dumpTreeDetailed = true;
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else if (args[i].startsWith("--apply-outline=")) {
@@ -492,6 +526,15 @@ public class Cli {
                         } else {
                             throw new CLIException(
                                     "Check names not specified after --include-checks");
+                        }
+                    }
+                    case "--query-tree" -> {
+                        if (i + 1 < args.length) {
+                            b.treeQuery = parseTreeQuery(args[++i]);
+                            b.dumpTreeDetailed = true;
+                        } else {
+                            throw new CLIException(
+                                    "XPath expression not specified after --query-tree");
                         }
                     }
                     case "--annotate-tree" -> {
@@ -583,6 +626,7 @@ public class Cli {
         boolean dumpTreeSimple;
         boolean dumpTreeDetailed;
         TreeFormat treeFormat = TreeFormat.BOX;
+        String treeQuery;
         boolean listDestinations;
         boolean dumpOutline;
         Path annotateTreePath;
@@ -626,6 +670,7 @@ public class Cli {
                     dumpTreeSimple,
                     dumpTreeDetailed,
                     treeFormat,
+                    treeQuery,
                     listDestinations,
                     dumpOutline,
                     annotateTreePath,
@@ -682,6 +727,12 @@ public class Cli {
                 reportPath = reportPath.resolve(reportFilename);
             }
         }
+    }
+
+    /** Requires a nonempty XPath for a tree query. */
+    private static String parseTreeQuery(String value) throws CLIException {
+        if (value.isBlank()) throw new CLIException("XPath expression required for --query-tree");
+        return value;
     }
 
     /** Parses the output format of {@code --dump-tree=<format>}. */
@@ -795,6 +846,9 @@ public class Cli {
                 + "                    indentation (stable format for goal snapshots and diffing)\n"
                 + "                    xml exports full text and metadata for machine use\n"
                 + "  --dump-roles      Print the structure tree (roles only) and exit\n"
+                + "  --query-tree <xpath>  Print each matching structure subtree and exit\n"
+                + "                        Input may be a PDF or an exported .xml tree\n"
+                + "                        Combine with --dump-tree=plain or xml for other formats\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
                 + "  --dump-outline    Print the document outline (bookmarks) and exit\n"
                 + "  --annotate-tree <file>  Read scribbles from an annotated tree diagram\n"

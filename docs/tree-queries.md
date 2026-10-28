@@ -11,11 +11,64 @@ the human-readable diagram. It preserves the reading order of structure
 elements, marked-content references, and annotation references. It does not
 modify the PDF.
 
+## Finding Patterns in Context
+
+To find lists inside `Art #4291` with an H3, H4, or H5 directly inside an
+item's LBody:
+
+```bash
+query="//Art[@id='4291']//L[LI/LBody/*[self::H3 or self::H4 or self::H5]]"
+./pdf-autoa11y --query-tree="$query" catalog/catalog.tree.xml
+```
+
+The same command accepts `catalog/catalog.pdf` directly. Exporting XML first
+avoids extracting PDF content again for every query. XML input filenames
+must end in `.xml`.
+
+Each matching element prints as a complete subtree, including text, object
+numbers, annotations, and page separators. Several matching headings in one
+list select that list only once. Results follow document order. A match
+inside another match appears only within that match's subtree, so query
+results never overlap.
+
+Use `--dump-tree=plain` for plain indentation, or `--dump-tree=xml` to export
+the matches for further queries:
+
+```bash
+./pdf-autoa11y --query-tree="$query" --dump-tree=plain catalog/catalog.tree.xml
+./pdf-autoa11y --query-tree="$query" --dump-tree=xml catalog/catalog.tree.xml \
+  > matching-lists.tree.xml
+```
+
+Queries use XPath 1.0 and must select structure elements. A query with no
+matches succeeds with no diagram output; XML output contains an empty
+container. Malformed queries, scalar results such as `count(//L)`, and
+selections of attributes, content references, or the `StructureTree`
+wrapper are errors.
+
+Useful expressions:
+
+```xpath
+//L
+//Art[@id='4291']//L
+//*[@role and @id='65848']
+//L[LI/LBody/H3]
+//L[LI/LBody//H3]
+//L[.//Content[contains(., 'Health Studies')]]
+//*[@role and contains(@scribble, '!BREAK_OUT')]
+```
+
+`/` selects direct children; `//` searches descendants. For example,
+`LI/LBody/H3` requires H3 to be an immediate child of LBody, whereas
+`LI/LBody//H3` also finds headings inside intervening wrappers. Text
+predicates search the full exported text, even when the diagram excerpt
+is shortened.
+
 ## XML Format
 
 Exports use a `StructureTree` wrapper with `version="1"`. Its `root` attribute
-is `element` for a single root element, or `container` for a structure root
-without a Document element.
+is `element` for a single root element, or `container` for query results or
+a structure root without a Document element.
 
 ```xml
 <StructureTree version="1" root="element">
@@ -42,9 +95,10 @@ cannot be used as an XML name, or that is one of the format's own tags
 tag, retaining the mapped role in `role`.
 
 Optional attributes include `id` (PDF object number), `scribble` (including
-the `__` prefix), `title`, and table-cell `scope`. Elements stored directly
-in the PDF have no `id`. An element's `page` is its first content page;
-unknown pages are omitted.
+the `__` prefix), `title`, and table-cell `scope`. An element written inline
+as a direct object, rather than as an indirect object, has no object number
+and so no `id`. An element's `page` is its first content page; unknown pages
+are omitted.
 
 `Content` children carry the page-scoped `mcid`, space-separated `kinds`
 (`text`, `image`, `path`), and full text. An orphaned reference carries

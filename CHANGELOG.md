@@ -10,6 +10,8 @@ Versioning](https://semver.org/).
 ### Added
 - `--dump-tree=xml` exports a machine-readable structure tree with full text,
   element metadata, and ordered content references.
+- `--query-tree` selects structure subtrees using XPath, from either a PDF
+  or an exported XML tree, and prints each match in context.
 - New `!HOIST` scribbled instruction: lifts an element out of the chain of
   single-kid wrappers above it, so it takes the outermost wrapper's place.
 - `!SPLIT_LINES` item sizes accept an `NxK` shorthand for K consecutive

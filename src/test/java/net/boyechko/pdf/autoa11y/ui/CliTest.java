@@ -4,7 +4,10 @@ package net.boyechko.pdf.autoa11y.ui;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -23,6 +26,106 @@ class CliTest {
     void createInputFile() throws IOException {
         input = Files.createFile(tempDir.resolve("in.pdf")).toString();
         output = tempDir.resolve("out.pdf").toString();
+    }
+
+    @Test
+    void treeQueriesAcceptEitherOptionSyntaxAndDoNotCreateAnOutputPdf() throws Cli.CLIException {
+        for (String[] arguments :
+                new String[][] {{"--query-tree=//L", input}, {"--query-tree", "//L", input}}) {
+            CLIConfig config = Cli.parseArguments(arguments);
+
+            assertEquals("//L", config.treeQuery());
+            assertTrue(config.dumpTreeDetailed());
+            assertNull(config.outputPath());
+        }
+    }
+
+    @Test
+    void missingOrBlankTreeQueriesAreRejected() {
+        assertThrows(
+                Cli.CLIException.class, () -> Cli.parseArguments(new String[] {"--query-tree"}));
+        assertThrows(
+                Cli.CLIException.class,
+                () -> Cli.parseArguments(new String[] {"--query-tree= ", input}));
+    }
+
+    @Test
+    void queriesAnXmlExportAndPrintsTheWholeMatchingList() throws IOException {
+        Path xml = tempDir.resolve("input.tree.xml");
+        Files.writeString(
+                xml,
+                """
+                <StructureTree version="1" root="element">
+                  <Document role="Document" id="1" page="1">
+                    <Art role="Art" id="4291" page="1">
+                      <L role="L" id="10" page="1">
+                        <LI role="LI" id="11" page="1">
+                          <LBody role="LBody" id="12" page="1">
+                            <H3 role="H3" id="13" page="1">
+                              <Content page="1" mcid="0" kinds="text">Program overview</Content>
+                            </H3>
+                          </LBody>
+                        </LI>
+                        <LI role="LI" id="14" page="2">
+                          <LBody role="LBody" id="15" page="2">
+                            <P role="P" id="16" page="2">
+                              <Content page="2" mcid="0" kinds="text">Following details</Content>
+                            </P>
+                          </LBody>
+                        </LI>
+                      </L>
+                    </Art>
+                    <L role="L" id="30"/>
+                  </Document>
+                </StructureTree>
+                """);
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(
+                    new String[] {
+                        "--dump-tree=plain",
+                        "--query-tree",
+                        "//Art[@id='4291']//L[LI/LBody/H3]",
+                        xml.toString()
+                    });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        assertTrue(result.contains("L #10"));
+        assertTrue(result.contains("Program overview"));
+        assertTrue(result.contains("Page 2"));
+        assertTrue(result.contains("Following details"));
+        assertFalse(result.contains("L #30"));
+        assertFalse(result.contains("Art #4291"));
+    }
+
+    @Test
+    void queriesAPdfDirectlyAndPrintsOnlyTheMatchingSubtree() {
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(
+                    new String[] {
+                        "--dump-tree=plain",
+                        "--query-tree",
+                        "//L",
+                        "src/test/resources/tagged_baseline.pdf"
+                    });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        assertTrue(result.contains("L #61"));
+        assertTrue(result.contains("LI #63"));
+        assertTrue(result.contains("LBody #68"));
+        assertFalse(result.contains("Document #55"));
+        assertFalse(result.contains("Table #69"));
     }
 
     @Test
