@@ -3,6 +3,8 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -12,51 +14,70 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
-import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
 /**
- * Repairs a structure element whose marked-content kids are not (or wrongly) reflected in the page
- * ParentTree. Each such MCR is removed from the element's /K and re-added via {@link
- * PdfStructElem#addKid}, which routes through the ParentTreeHandler and rebuilds the reverse index
- * so the ParentTree is rewritten consistently on save.
+ * Makes the page ParentTree agree with the live structure tree. iText seeds its marked-content
+ * registry from the elements the <em>stored</em> ParentTree names, so two kinds of drift survive a
+ * save: elements no longer reachable from the root (e.g. a structure tree left behind by
+ * re-tagging) keep claiming MCIDs, and live MCRs whose MCID they hold stay unregistered. The fix
+ * first drops the detached owners' MCRs, then re-registers every live MCR the registry does not
+ * resolve back to its element. The order matters: iText unregisters by (page, MCID), so dropping a
+ * detached claim can evict a live registration that the second pass restores.
  */
 public class InconsistentParentTreeFix implements IssueFix {
 
-    private final PdfStructElem element;
+    private int droppedCount;
     private int repairedCount;
-
-    public InconsistentParentTreeFix(PdfStructElem element) {
-        this.element = element;
-    }
 
     @Override
     public void apply(DocContext ctx) {
-        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        PdfDocument doc = ctx.doc();
+        PdfStructTreeRoot root = doc.getStructTreeRoot();
+        List<PdfStructElem> live = liveElements(root);
 
-        // Collect the MCR kids needing re-registration up front; re-adding mutates /K, so we
-        // must not iterate the live kid list while changing it.
-        List<PdfMcr> toRepair = new ArrayList<>();
-        List<IStructureNode> kids = element.getKids();
-        if (kids == null) return;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr && needsReregistration(root, element, mcr)) {
-                toRepair.add(mcr);
+        for (PdfStructElem owner : detachedOwners(doc, live)) {
+            droppedCount += dropRegisteredMcrs(owner);
+        }
+        for (PdfStructElem element : live) {
+            repairedCount += reregister(root, element);
+        }
+    }
+
+    /** Returns every structure element reachable from the root, ignoring verification marks. */
+    public static List<PdfStructElem> liveElements(PdfStructTreeRoot root) {
+        List<PdfStructElem> result = new ArrayList<>();
+        collectElements(root, result);
+        return result;
+    }
+
+    /** Returns the elements holding ParentTree registrations but unreachable from the root. */
+    public static Collection<PdfStructElem> detachedOwners(
+            PdfDocument doc, List<PdfStructElem> live) {
+        Set<PdfIndirectReference> liveRefs = new LinkedHashSet<>();
+        for (PdfStructElem elem : live) liveRefs.add(elem.getPdfObject().getIndirectReference());
+
+        Map<PdfIndirectReference, PdfStructElem> detached = new LinkedHashMap<>();
+        PdfStructTreeRoot root = doc.getStructTreeRoot();
+        for (int pageNum = 1; pageNum <= doc.getNumberOfPages(); pageNum++) {
+            Collection<PdfMcr> mcrs = root.getPageMarkedContentReferences(doc.getPage(pageNum));
+            if (mcrs == null) continue;
+            for (PdfMcr mcr : mcrs) {
+                if (mcr.getParent() instanceof PdfStructElem owner) {
+                    PdfIndirectReference ref = owner.getPdfObject().getIndirectReference();
+                    if (!liveRefs.contains(ref)) detached.putIfAbsent(ref, owner);
+                }
             }
         }
-
-        for (PdfMcr mcr : toRepair) {
-            int idx = indexOfKid(element, mcr);
-            if (idx < 0) continue;
-            element.removeKid(
-                    idx, true); // drop from /K without unregistering (it isn't registered)
-            element.addKid(idx, freshWrapper(mcr, element)); // re-add + register under this element
-            repairedCount++;
-        }
+        return detached.values();
     }
 
     /**
@@ -78,6 +99,55 @@ public class InconsistentParentTreeFix implements IssueFix {
         IStructureNode registeredParent = registered.getParent();
         return !(registeredParent instanceof PdfStructElem parentElem)
                 || !StructTree.isSameElement(parentElem, owner);
+    }
+
+    private static void collectElements(IStructureNode node, List<PdfStructElem> result) {
+        List<IStructureNode> kids = node.getKids();
+        if (kids == null) return;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfStructElem elem) {
+                result.add(elem);
+                collectElements(elem, result);
+            }
+        }
+    }
+
+    /** Removes {@code owner}'s page-bound MCR kids, which unregisters them; returns the count. */
+    private static int dropRegisteredMcrs(PdfStructElem owner) {
+        List<IStructureNode> kids = owner.getKids();
+        int dropped = 0;
+        for (int i = kids.size() - 1; i >= 0; i--) {
+            // Pageless MCRs were never registered, and unregistering them can NPE
+            if (kids.get(i) instanceof PdfMcr mcr && mcr.getPageIndirectReference() != null) {
+                owner.removeKid(i);
+                dropped++;
+            }
+        }
+        return dropped;
+    }
+
+    /**
+     * Re-adds {@code element}'s unresolved MCR kids so they register under it; returns the count.
+     */
+    private static int reregister(PdfStructTreeRoot root, PdfStructElem element) {
+        // Collect up front; re-adding mutates /K, so don't iterate the live kid list
+        List<PdfMcr> toRepair = new ArrayList<>();
+        List<IStructureNode> kids = element.getKids();
+        if (kids == null) return 0;
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfMcr mcr && needsReregistration(root, element, mcr)) {
+                toRepair.add(mcr);
+            }
+        }
+
+        for (PdfMcr mcr : toRepair) {
+            int idx = indexOfKid(element, mcr);
+            if (idx < 0) continue;
+            element.removeKid(
+                    idx, true); // drop from /K without unregistering (it isn't registered)
+            element.addKid(idx, freshWrapper(mcr, element)); // re-add + register under this element
+        }
+        return toRepair.size();
     }
 
     private static PdfMcr freshWrapper(PdfMcr mcr, PdfStructElem parent) {
@@ -102,12 +172,11 @@ public class InconsistentParentTreeFix implements IssueFix {
 
     @Override
     public String describe() {
-        return "Re-registered " + repairedCount + " marked-content reference(s) in the ParentTree";
-    }
-
-    @Override
-    public IssueMsg describeLocated(DocContext ctx) {
-        return new IssueMsg(describe(), Locus.atElem(ctx, element));
+        return "Re-registered "
+                + repairedCount
+                + " marked-content reference(s) in the ParentTree; dropped "
+                + droppedCount
+                + " held by detached structure elements";
     }
 
     @Override
@@ -117,6 +186,6 @@ public class InconsistentParentTreeFix implements IssueFix {
 
     @Override
     public int resolvedItemCount() {
-        return repairedCount;
+        return repairedCount + droppedCount;
     }
 }

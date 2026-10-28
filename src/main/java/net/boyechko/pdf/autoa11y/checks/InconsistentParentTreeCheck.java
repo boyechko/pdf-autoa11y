@@ -7,25 +7,24 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.fixes.InconsistentParentTreeFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
-import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
-import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
-import net.boyechko.pdf.autoa11y.validation.Visit;
+import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
 
 /**
- * Detects structure elements whose marked-content kids are not reflected in the page ParentTree --
- * the /K forward references exist and the content renders, but the reverse index (the page's
- * ParentTree entry) is missing or points at a different element. Such gaps make the content
- * invisible to consumers that rebuild structure from the ParentTree, including iText's page
- * extraction and Acrobat, and are flagged by preflight as "inconsistent ParentTree mapping".
+ * Detects a page ParentTree that disagrees with the live structure tree: marked-content kids whose
+ * reverse index is missing or points at a different element, and ParentTree entries naming elements
+ * no longer reachable from the root. Such gaps make content invisible to consumers that rebuild
+ * structure from the ParentTree, including iText's page extraction and Acrobat, and are flagged by
+ * preflight as "inconsistent ParentTree mapping". A document-level check, since the ParentTree is
+ * file-wide bookkeeping: it must cover verified subtrees and see detached elements that no tree
+ * walk reaches.
  */
-public class InconsistentParentTreeCheck extends StructTreeCheck {
-
-    private final IssueList issues = new IssueList();
+public class InconsistentParentTreeCheck extends DocumentCheck {
 
     @Override
     public String name() {
@@ -38,35 +37,43 @@ public class InconsistentParentTreeCheck extends StructTreeCheck {
     }
 
     @Override
-    public void leaveElement(Visit visit) {
-        PdfStructElem node = visit.node();
-        List<IStructureNode> kids = node.getKids();
-        if (kids == null) return;
-
-        PdfStructTreeRoot root = visit.doc().getStructTreeRoot();
-        int broken = 0;
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcr mcr
-                    && InconsistentParentTreeFix.needsReregistration(root, node, mcr)) {
-                broken++;
-            }
-        }
-        if (broken == 0) return;
-
-        IssueFix fix = new InconsistentParentTreeFix(node);
-        issues.add(
-                new Issue(
-                        IssueType.INCONSISTENT_PARENT_TREE,
-                        IssueSev.WARNING,
-                        visit.locus(),
-                        broken
-                                + " marked-content reference(s) missing from ParentTree in "
-                                + visit.role(),
-                        fix));
+    public String passedMessage() {
+        return "ParentTree is consistent with the structure tree";
     }
 
     @Override
-    public IssueList getIssues() {
-        return issues;
+    public String failedMessage() {
+        return "ParentTree is inconsistent with the structure tree";
+    }
+
+    @Override
+    public IssueList findIssues(DocContext ctx) {
+        PdfStructTreeRoot root = ctx.doc().getStructTreeRoot();
+        if (root == null) return new IssueList();
+
+        List<PdfStructElem> live = InconsistentParentTreeFix.liveElements(root);
+        int detached = InconsistentParentTreeFix.detachedOwners(ctx.doc(), live).size();
+        int unregistered = 0;
+        for (PdfStructElem element : live) {
+            List<IStructureNode> kids = element.getKids();
+            if (kids == null) continue;
+            for (IStructureNode kid : kids) {
+                if (kid instanceof PdfMcr mcr
+                        && InconsistentParentTreeFix.needsReregistration(root, element, mcr)) {
+                    unregistered++;
+                }
+            }
+        }
+        if (detached == 0 && unregistered == 0) return new IssueList();
+
+        return new IssueList(
+                new Issue(
+                        IssueType.INCONSISTENT_PARENT_TREE,
+                        IssueSev.WARNING,
+                        unregistered
+                                + " marked-content reference(s) missing from ParentTree; "
+                                + detached
+                                + " detached element(s) still named in it",
+                        new InconsistentParentTreeFix()));
     }
 }

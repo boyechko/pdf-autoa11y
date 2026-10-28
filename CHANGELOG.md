@@ -36,6 +36,10 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- `InconsistentParentTreeCheck` now drops ParentTree entries for structure
+  elements no longer in the tree (e.g. left behind by re-tagging), which kept
+  reclaiming live content after every save, and covers subtrees marked `OK`.
+  Clears Acrobat preflight's "inconsistent ParentTree mapping" on such files.
 - Lists built by `!SPLIT_LINES` no longer carry a `BULLETS N` scribble, which
   claimed bullets that were never there; they carry just the item count.
 - Kids placed by `!REORDER_KIDS` are now marked `REORDER N` instead of

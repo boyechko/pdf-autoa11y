@@ -9,11 +9,14 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -70,6 +73,46 @@ class InconsistentParentTreeCheckTest extends PdfTestBase {
             PdfMcr registered = root.findMcrByMcid(page.getPdfObject(), 0);
             assertNotNull(registered, "MCID 0 should now resolve through the ParentTree");
             assertSame(p.getPdfObject(), ((PdfStructElem) registered.getParent()).getPdfObject());
+        }
+    }
+
+    @Test
+    void detachedOwnerNoLongerShadowsLiveOwnerAfterReopen() throws Exception {
+        // Round-trips through bytes: iText seeds its MCR registry from the stored ParentTree on
+        // load, so a detached owner only reasserts its claim when the file is reopened.
+        ByteArrayOutputStream corrupt = new ByteArrayOutputStream();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(corrupt))) {
+            PdfStructElem p = buildDocWithUnregisteredMcid(pdfDoc, 0);
+            PdfStructElem document = (PdfStructElem) p.getParent();
+            PdfStructElem detached = new PdfStructElem(pdfDoc, PdfName.Art);
+            document.addKid(detached);
+            detached.getPdfObject().put(PdfName.Pg, pdfDoc.getPage(1).getPdfObject());
+            detached.addKid(new PdfMcrNumber(new PdfNumber(0), detached)); // registered
+            // A claim no live element shares keeps the Art named in the ParentTree even after
+            // MCID 0 is re-registered under P, so the Art re-seeds (and wins) on every reopen.
+            detached.addKid(new PdfMcrNumber(new PdfNumber(1), detached));
+            document.getPdfObject().put(PdfName.K, p.getPdfObject()); // raw: Art now unreachable
+        }
+
+        ByteArrayOutputStream fixed = new ByteArrayOutputStream();
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(new ByteArrayInputStream(corrupt.toByteArray())),
+                        new PdfWriter(fixed))) {
+            DocContext ctx = new DocContext(pdfDoc);
+            IssueList issues = new InconsistentParentTreeCheck().findIssues(ctx);
+            assertFalse(issues.isEmpty(), "detached owner should be detected");
+            for (Issue issue : issues) issue.fix().apply(ctx);
+        }
+
+        try (PdfDocument pdfDoc =
+                new PdfDocument(new PdfReader(new ByteArrayInputStream(fixed.toByteArray())))) {
+            PdfMcr registered =
+                    pdfDoc.getStructTreeRoot().findMcrByMcid(pdfDoc.getPage(1).getPdfObject(), 0);
+            assertNotNull(registered);
+            assertEquals(PdfName.P, ((PdfStructElem) registered.getParent()).getRole());
+            assertTrue(
+                    new InconsistentParentTreeCheck().findIssues(new DocContext(pdfDoc)).isEmpty());
         }
     }
 
