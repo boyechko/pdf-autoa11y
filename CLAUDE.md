@@ -79,6 +79,14 @@ mvn exec:java -Dexec.args="--dump-tree input.pdf"  # print structure tree with M
 # refs or longer-number substrings) and stays idempotent on re-runs:
 sed -i '' '/#8018$/s/$/ "__!ARTIFACT"/; /#8019$/s/$/ "__!ARTIFACT"/' tree.txt
 ./pdf-autoa11y --annotate-tree=tree.txt input.pdf output.pdf
+
+# Find subtrees with XPath 1.0 (see docs/tree-queries.md). Input is a PDF or an
+# exported .xml tree; exporting once avoids re-extracting content per query.
+# Output defaults to the box diagram; --dump-tree=roles|plain|xml picks another
+# (xml exports the matches for further queries).
+./pdf-autoa11y --dump-tree=xml input.pdf > input.tree.xml
+./pdf-autoa11y --query-tree="//Art[@id='4291']//L[LI/LBody/H3]" input.tree.xml
+./pdf-autoa11y --query-tree="//L" --dump-tree=roles input.tree.xml
 ```
 
 ## Architecture
