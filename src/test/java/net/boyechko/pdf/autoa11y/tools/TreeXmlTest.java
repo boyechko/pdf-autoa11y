@@ -43,7 +43,7 @@ class TreeXmlTest {
                                         new DocValue.Destination.Uri(
                                                 "https://example.com/?a=1&b=2"))));
 
-        assertEquals(snapshot, TreeXml.fromString(TreeXml.toString(snapshot)));
+        assertEquals(snapshot, TreeXml.parse(TreeXml.format(snapshot)));
     }
 
     @Test
@@ -58,7 +58,7 @@ class TreeXmlTest {
 
             assertTrue(TreeQuery.select(tree, "//*[@role and self::" + role + "]").isEmpty());
             assertEquals(1, TreeQuery.select(tree, "//*[@role='" + role + "']").size());
-            assertEquals(tree, TreeXml.fromString(TreeXml.toString(tree)));
+            assertEquals(tree, TreeXml.parse(TreeXml.format(tree)));
         }
     }
 
@@ -70,8 +70,8 @@ class TreeXmlTest {
                                 Path.of("src/test/resources/tagged_baseline.pdf").toString()))) {
             var snapshot = TreeSnapshot.capture(doc);
 
-            String xml = TreeXml.toString(snapshot);
-            var restored = TreeXml.fromString(xml);
+            String xml = TreeXml.format(snapshot);
+            var restored = TreeXml.parse(xml);
 
             assertTrue(xml.contains("<Document"));
             assertTrue(xml.contains("<Content"));

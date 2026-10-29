@@ -392,7 +392,7 @@ public class Cli {
                                                 TreeDiagram.toDetailedTreeString(
                                                         tree, TreeDiagram.Style.PLAIN));
                         case XML ->
-                                TreeXml.toString(
+                                TreeXml.format(
                                         config.treeQuery() != null
                                                 ? new TreeNode<TreeSnapshot.Value>(
                                                         new TreeSnapshot.Root(), matches)
@@ -409,7 +409,7 @@ public class Cli {
      */
     private static TreeNode<TreeSnapshot.Value> readSnapshot(CLIConfig config) throws IOException {
         if (config.inputPath().getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".xml")) {
-            return TreeXml.fromString(Files.readString(config.inputPath()));
+            return TreeXml.parse(Files.readString(config.inputPath()));
         }
         PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
         try (PdfDocument pdfDoc = custodian.openForReading()) {

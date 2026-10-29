@@ -40,7 +40,7 @@ public final class TreeXml {
     private TreeXml() {}
 
     /** Exports a snapshot with full text, labels, page numbers, and ordered children. */
-    public static String toString(TreeNode<TreeSnapshot.Value> tree) {
+    public static String format(TreeNode<TreeSnapshot.Value> tree) {
         try {
             var factory = TransformerFactory.newInstance();
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -57,7 +57,7 @@ public final class TreeXml {
     }
 
     /** Reads a version-1 snapshot export without loading external entities or DTDs. */
-    public static TreeNode<TreeSnapshot.Value> fromString(String xml) {
+    public static TreeNode<TreeSnapshot.Value> parse(String xml) {
         try {
             var builder = documentFactory().newDocumentBuilder();
             builder.setErrorHandler(new DefaultHandler());

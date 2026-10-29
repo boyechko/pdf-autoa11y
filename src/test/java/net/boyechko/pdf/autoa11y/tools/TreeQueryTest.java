@@ -49,7 +49,7 @@ class TreeQueryTest {
     void selectsEachListOnceWithinTheArticleAndRespectsDirectChildren() {
         var matches =
                 TreeQuery.select(
-                        TreeXml.fromString(TREE),
+                        TreeXml.parse(TREE),
                         "//Art[@id='4291']//L[LI/LBody/*[self::H3 or self::H4 or self::H5]]");
 
         assertEquals(
@@ -63,7 +63,7 @@ class TreeQueryTest {
     void searchesFullTextBeyondTheDiagramExcerpt() {
         var matches =
                 TreeQuery.select(
-                        TreeXml.fromString(TREE), "//L[.//Content[contains(., 'Health Studies')]]");
+                        TreeXml.parse(TREE), "//L[.//Content[contains(., 'Health Studies')]]");
 
         assertEquals(1, matches.size());
         assertEquals(10, ((TreeSnapshot.Element) matches.getFirst().value()).objNum());
@@ -76,7 +76,7 @@ class TreeQueryTest {
     void descendantQueriesCanFindHeadingsInsideWrappers() {
         var matches =
                 TreeQuery.select(
-                        TreeXml.fromString(TREE),
+                        TreeXml.parse(TREE),
                         "//Art[@id='4291']//L[LI/LBody//*[self::H3 or self::H4 or self::H5]]");
 
         assertEquals(
@@ -88,7 +88,7 @@ class TreeQueryTest {
 
     @Test
     void matchesInsideAnotherMatchAppearOnlyWithinIt() {
-        var matches = TreeQuery.select(TreeXml.fromString(TREE), "//Art[@id='4291'] | //L");
+        var matches = TreeQuery.select(TreeXml.parse(TREE), "//Art[@id='4291'] | //L");
 
         assertEquals(
                 List.of(4291, 30),
@@ -99,10 +99,10 @@ class TreeQueryTest {
 
     @Test
     void queryResultsExportedAsAContainerCanBeReadBackAndQueriedAgain() {
-        var matches = TreeQuery.select(TreeXml.fromString(TREE), "//Art");
-        String xml = TreeXml.toString(new TreeNode<>(new TreeSnapshot.Root(), matches));
+        var matches = TreeQuery.select(TreeXml.parse(TREE), "//Art");
+        String xml = TreeXml.format(new TreeNode<>(new TreeSnapshot.Root(), matches));
 
-        var restored = TreeXml.fromString(xml);
+        var restored = TreeXml.parse(xml);
 
         assertInstanceOf(TreeSnapshot.Root.class, restored.value());
         assertEquals(matches, restored.children());
@@ -115,12 +115,12 @@ class TreeQueryTest {
 
     @Test
     void unmatchedQueryReturnsNoSubtrees() {
-        assertTrue(TreeQuery.select(TreeXml.fromString(TREE), "//H6").isEmpty());
+        assertTrue(TreeQuery.select(TreeXml.parse(TREE), "//H6").isEmpty());
     }
 
     @Test
     void rejectsMalformedExpressionsAndResultsThatAreNotStructureElements() {
-        var tree = TreeXml.fromString(TREE);
+        var tree = TreeXml.parse(TREE);
 
         for (String expression :
                 List.of(
