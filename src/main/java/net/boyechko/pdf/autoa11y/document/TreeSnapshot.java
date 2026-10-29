@@ -65,8 +65,7 @@ public final class TreeSnapshot {
 
     /** Captures a document's structure tree, extracting content once per page. */
     public static TreeNode<Value> capture(PdfDocument doc) {
-        var root = doc.getStructTreeRoot();
-        if (root == null) throw new IllegalStateException("PDF has no structure tree");
+        var start = startOf(doc);
         Map<Content.PageMcid, Content.McidContent> contents = new HashMap<>();
         for (int page = 1; page <= doc.getNumberOfPages(); page++) {
             int pageNumber = page;
@@ -75,8 +74,12 @@ public final class TreeSnapshot {
                             (mcid, content) ->
                                     contents.put(new Content.PageMcid(pageNumber, mcid), content));
         }
-        var document = StructTree.findDocument(root);
-        return capture(document != null ? document : root, contents);
+        return capture(start, contents);
+    }
+
+    /** Captures a document's structure tree with labels only, skipping content extraction. */
+    public static TreeNode<Value> captureStructure(PdfDocument doc) {
+        return capture(startOf(doc), Map.of());
     }
 
     /** Captures a subtree using previously extracted content, or an empty map for labels only. */
@@ -134,5 +137,13 @@ public final class TreeSnapshot {
             value = new Root();
         }
         return new TreeNode<>(value, children);
+    }
+
+    /** Returns the Document element, or the structure root when there is none. */
+    private static IStructureNode startOf(PdfDocument doc) {
+        var root = doc.getStructTreeRoot();
+        if (root == null) throw new IllegalStateException("PDF has no structure tree");
+        var document = StructTree.findDocument(root);
+        return document != null ? document : root;
     }
 }

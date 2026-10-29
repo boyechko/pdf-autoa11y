@@ -80,16 +80,10 @@ public final class TreeDiagram {
 
     /** Like {@link #dumpToString(PdfDocument, boolean)}, with an explicit line-prefix style. */
     public static String dumpToString(PdfDocument pdfDoc, boolean detailed, Style style) {
-        PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
-        if (root == null) {
-            throw new IllegalStateException("PDF has no structure tree");
-        }
-        PdfStructElem docElem = StructTree.findDocument(root);
-        IStructureNode start = docElem != null ? docElem : root;
         if (detailed) {
             return toDetailedTreeString(TreeSnapshot.capture(pdfDoc), style);
         }
-        return toIndentedTreeString(start);
+        return toIndentedTreeString(TreeSnapshot.captureStructure(pdfDoc));
     }
 
     // === Indented tree diagram =============================================

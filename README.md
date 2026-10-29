@@ -101,7 +101,7 @@ Common options:
 - `-vv, --debug` show full debug output
 - `-t, --print-tree` print the structure tree during processing
 - `--dump-tree` print the structure tree with MCRs/annotations and exit
-- `--dump-roles` print the structure tree roles and exit
+- `--dump-tree=roles` print only the structure tree roles and exit
 - `--skip-checks <a,b,c>` skip specific checks
 - `--only-checks <a,b,c>` run only specific checks
 - `--scope <objnum>` confine tree checks to one element's subtree

@@ -26,6 +26,9 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `--dump-roles` is replaced by `--dump-tree=roles`, so every tree format,
+  including roles-only, is chosen the same way and works with `--query-tree`.
+  Conflicting `--dump-tree` formats and unknown options are now rejected.
 - `EmptyLinkTagCheck` also reunites a Link holding only its annotation with
   a Link elsewhere on the page holding only its text, as when a tagger
   dumps link annotations at the end of a section.

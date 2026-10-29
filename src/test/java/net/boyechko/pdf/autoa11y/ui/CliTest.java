@@ -35,9 +35,64 @@ class CliTest {
             CLIConfig config = Cli.parseArguments(arguments);
 
             assertEquals("//L", config.treeQuery());
-            assertTrue(config.dumpTreeDetailed());
             assertNull(config.outputPath());
         }
+    }
+
+    @Test
+    void treeQueryWithoutAFormatDefaultsToTheBoxDiagram() throws Cli.CLIException {
+        CLIConfig config = Cli.parseArguments(new String[] {"--query-tree=//L", input});
+
+        assertEquals(Cli.TreeFormat.BOX, config.treeFormat());
+    }
+
+    @Test
+    void treeQueryKeepsAnExplicitlyChosenFormatInEitherArgumentOrder() throws Cli.CLIException {
+        for (String[] arguments :
+                new String[][] {
+                    {"--dump-tree=roles", "--query-tree=//L", input},
+                    {"--query-tree=//L", "--dump-tree=roles", input}
+                }) {
+            assertEquals(Cli.TreeFormat.ROLES, Cli.parseArguments(arguments).treeFormat());
+        }
+    }
+
+    @Test
+    void rolesIsATreeFormatThatNeedsNoOutputPdf() throws Cli.CLIException {
+        CLIConfig config = Cli.parseArguments(new String[] {"--dump-tree=roles", input});
+
+        assertEquals(Cli.TreeFormat.ROLES, config.treeFormat());
+        assertNull(config.outputPath());
+    }
+
+    @Test
+    void bareDumpTreeMeansTheBoxDiagram() throws Cli.CLIException {
+        CLIConfig config = Cli.parseArguments(new String[] {"--dump-tree", input});
+
+        assertEquals(Cli.TreeFormat.BOX, config.treeFormat());
+    }
+
+    @Test
+    void remediationRunHasNoTreeFormat() throws Cli.CLIException {
+        assertNull(Cli.parseArguments(new String[] {input, output}).treeFormat());
+    }
+
+    @Test
+    void conflictingTreeFormatsAreRejected() {
+        for (String[] arguments :
+                new String[][] {
+                    {"--dump-tree=xml", "--dump-tree=plain", input},
+                    {"--dump-tree", "--dump-tree=roles", input}
+                }) {
+            assertThrows(Cli.CLIException.class, () -> Cli.parseArguments(arguments));
+        }
+    }
+
+    @Test
+    void unknownOptionsAreRejectedRatherThanTakenAsFiles() {
+        assertThrows(
+                Cli.CLIException.class,
+                () -> Cli.parseArguments(new String[] {"--dump-roles", input}));
     }
 
     @Test
@@ -104,6 +159,29 @@ class CliTest {
     }
 
     @Test
+    void rolesQueryPrintsOnlyTheRoleNamesOfTheMatchingSubtree() {
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(
+                    new String[] {
+                        "--dump-tree=roles",
+                        "--query-tree=//L",
+                        "src/test/resources/tagged_baseline.pdf"
+                    });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        var lines = output.toString(StandardCharsets.UTF_8).lines().toList();
+        assertEquals("L", lines.getFirst());
+        assertTrue(lines.contains("  LI"));
+        assertTrue(lines.stream().noneMatch(line -> line.contains("#")));
+        assertFalse(lines.contains("Document"));
+    }
+
+    @Test
     void queriesAPdfDirectlyAndPrintsOnlyTheMatchingSubtree() {
         var output = new ByteArrayOutputStream();
         var originalOut = System.out;
@@ -132,7 +210,6 @@ class CliTest {
     void xmlTreeExportIsReadOnly() throws Cli.CLIException {
         CLIConfig config = Cli.parseArguments(new String[] {"--dump-tree=xml", input});
 
-        assertTrue(config.dumpTreeDetailed());
         assertEquals(Cli.TreeFormat.XML, config.treeFormat());
         assertNull(config.outputPath());
     }

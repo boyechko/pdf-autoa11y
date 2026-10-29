@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.checks.MistaggedArtifactCheck;
@@ -44,6 +45,7 @@ public class Cli {
 
     /** Output formats for structure-tree inspection. */
     public enum TreeFormat {
+        ROLES,
         BOX,
         PLAIN,
         XML
@@ -56,8 +58,6 @@ public class Cli {
             String password,
             boolean force_save,
             boolean analyzeOnly,
-            boolean dumpTreeSimple,
-            boolean dumpTreeDetailed,
             TreeFormat treeFormat,
             String treeQuery,
             boolean listDestinations,
@@ -78,9 +78,11 @@ public class Cli {
             if (inputPath == null) {
                 throw new IllegalArgumentException("Input path is required");
             }
+            if (treeQuery != null && treeFormat == null) {
+                throw new IllegalArgumentException("Tree query requires a tree format");
+            }
             if (!analyzeOnly
-                    && !dumpTreeSimple
-                    && !dumpTreeDetailed
+                    && treeFormat == null
                     && !listDestinations
                     && !dumpOutline
                     && !createSidecar
@@ -128,7 +130,7 @@ public class Cli {
             createSidecar(config);
             return;
         }
-        if (config.dumpTreeSimple() || config.dumpTreeDetailed()) {
+        if (config.treeFormat() != null) {
             printTreeDiagram(config);
             return;
         }
@@ -366,52 +368,64 @@ public class Cli {
         }
     }
 
-    /** Prints the structure tree in the requested format. */
+    /** Prints the structure tree, or the subtrees a query selects, in the requested format. */
     private static void printTreeDiagram(CLIConfig config) {
         try {
-            TreeNode<TreeSnapshot.Value> snapshot;
-            if (config.inputPath()
-                    .getFileName()
-                    .toString()
-                    .toLowerCase(Locale.ROOT)
-                    .endsWith(".xml")) {
-                snapshot = TreeXml.fromString(Files.readString(config.inputPath()));
-            } else {
-                PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
-                try (PdfDocument pdfDoc = custodian.openForReading()) {
-                    if (!config.dumpTreeDetailed() && config.treeFormat() != TreeFormat.XML) {
-                        System.out.print(TreeDiagram.dumpToString(pdfDoc, false));
-                        return;
-                    }
-                    snapshot = TreeSnapshot.capture(pdfDoc);
-                }
-            }
+            var snapshot = readSnapshot(config);
             var matches =
                     config.treeQuery() != null
                             ? TreeQuery.select(snapshot, config.treeQuery())
                             : List.of(snapshot);
-            if (config.treeFormat() == TreeFormat.XML) {
-                var output =
-                        config.treeQuery() == null
-                                ? snapshot
-                                : new TreeNode<TreeSnapshot.Value>(
-                                        new TreeSnapshot.Root(), matches);
-                System.out.print(TreeXml.toString(output));
-            } else {
-                for (int i = 0; i < matches.size(); i++) {
-                    if (i > 0) System.out.println();
-                    System.out.print(
-                            config.dumpTreeDetailed()
-                                    ? TreeDiagram.toDetailedTreeString(
-                                            matches.get(i),
-                                            TreeDiagram.Style.valueOf(config.treeFormat().name()))
-                                    : TreeDiagram.toIndentedTreeString(matches.get(i)));
-                }
-            }
+            System.out.print(
+                    switch (config.treeFormat()) {
+                        case ROLES -> renderEach(matches, TreeDiagram::toIndentedTreeString);
+                        case BOX ->
+                                renderEach(
+                                        matches,
+                                        tree ->
+                                                TreeDiagram.toDetailedTreeString(
+                                                        tree, TreeDiagram.Style.BOX));
+                        case PLAIN ->
+                                renderEach(
+                                        matches,
+                                        tree ->
+                                                TreeDiagram.toDetailedTreeString(
+                                                        tree, TreeDiagram.Style.PLAIN));
+                        case XML ->
+                                TreeXml.toString(
+                                        config.treeQuery() != null
+                                                ? new TreeNode<TreeSnapshot.Value>(
+                                                        new TreeSnapshot.Root(), matches)
+                                                : snapshot);
+                    });
         } catch (Exception e) {
             System.err.println("✗ Failed to inspect structure tree: " + e.getMessage());
             System.exit(1);
         }
+    }
+
+    /**
+     * Reads an exported .xml tree or a PDF, skipping content extraction a roles dump never uses.
+     */
+    private static TreeNode<TreeSnapshot.Value> readSnapshot(CLIConfig config) throws IOException {
+        if (config.inputPath().getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".xml")) {
+            return TreeXml.fromString(Files.readString(config.inputPath()));
+        }
+        PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
+        try (PdfDocument pdfDoc = custodian.openForReading()) {
+            boolean needsContent =
+                    config.treeFormat() != TreeFormat.ROLES || config.treeQuery() != null;
+            return needsContent
+                    ? TreeSnapshot.capture(pdfDoc)
+                    : TreeSnapshot.captureStructure(pdfDoc);
+        }
+    }
+
+    /** Renders each tree, separating consecutive trees with a blank line. */
+    private static String renderEach(
+            List<TreeNode<TreeSnapshot.Value>> trees,
+            Function<TreeNode<TreeSnapshot.Value>, String> renderer) {
+        return trees.stream().map(renderer).collect(Collectors.joining("\n"));
     }
 
     /** Prints the document outline (bookmarks) of the input PDF to the console. */
@@ -484,11 +498,9 @@ public class Cli {
             } else if (args[i].startsWith("--include-checks=")) {
                 b.includeChecks = parseCheckNames(args[i].substring("--include-checks=".length()));
             } else if (args[i].startsWith("--dump-tree=")) {
-                b.dumpTreeDetailed = true;
-                b.treeFormat = parseTreeFormat(args[i].substring("--dump-tree=".length()));
+                b.chooseTreeFormat(parseTreeFormat(args[i].substring("--dump-tree=".length())));
             } else if (args[i].startsWith("--query-tree=")) {
                 b.treeQuery = parseTreeQuery(args[i].substring("--query-tree=".length()));
-                b.dumpTreeDetailed = true;
             } else if (args[i].startsWith("--annotate-tree=")) {
                 b.annotateTreePath = Paths.get(args[i].substring("--annotate-tree=".length()));
             } else if (args[i].startsWith("--apply-outline=")) {
@@ -531,7 +543,6 @@ public class Cli {
                     case "--query-tree" -> {
                         if (i + 1 < args.length) {
                             b.treeQuery = parseTreeQuery(args[++i]);
-                            b.dumpTreeDetailed = true;
                         } else {
                             throw new CLIException(
                                     "XPath expression not specified after --query-tree");
@@ -569,8 +580,7 @@ public class Cli {
                     case "-v", "--verbose" -> b.verbosity = VerbosityLevel.VERBOSE;
                     case "-vv", "--debug" -> b.verbosity = VerbosityLevel.DEBUG;
                     case "-t", "--print-tree" -> b.printStructureTree = true;
-                    case "--dump-tree" -> b.dumpTreeDetailed = true;
-                    case "--dump-roles" -> b.dumpTreeSimple = true;
+                    case "--dump-tree" -> b.chooseTreeFormat(TreeFormat.BOX);
                     case "--list-destinations" -> b.listDestinations = true;
                     case "--dump-outline" -> b.dumpOutline = true;
                     case "--create-sidecar" -> b.createSidecar = true;
@@ -579,7 +589,9 @@ public class Cli {
                     case "-r", "--report" -> b.generateReport = true;
                     case "--no-log" -> b.noRemediationLog = true;
                     default -> {
-                        if (b.inputPath == null) {
+                        if (args[i].startsWith("-")) {
+                            throw new CLIException("Unknown option: " + args[i]);
+                        } else if (b.inputPath == null) {
                             b.inputPath = Paths.get(args[i]);
                         } else if (b.outputPath == null) {
                             b.outputPath = Paths.get(args[i]);
@@ -623,9 +635,7 @@ public class Cli {
         String password;
         boolean forceSave;
         boolean analyzeOnly;
-        boolean dumpTreeSimple;
-        boolean dumpTreeDetailed;
-        TreeFormat treeFormat = TreeFormat.BOX;
+        TreeFormat treeFormat;
         String treeQuery;
         boolean listDestinations;
         boolean dumpOutline;
@@ -644,6 +654,18 @@ public class Cli {
         Set<String> includeChecks = Set.of();
         int scopeObjNum;
 
+        /** Sets the tree format, rejecting a second option that asks for a different one. */
+        void chooseTreeFormat(TreeFormat format) throws CLIException {
+            if (treeFormat != null && treeFormat != format) {
+                throw new CLIException(
+                        "Conflicting tree formats: "
+                                + treeFormat.name().toLowerCase(Locale.ROOT)
+                                + " and "
+                                + format.name().toLowerCase(Locale.ROOT));
+            }
+            treeFormat = format;
+        }
+
         CLIConfig build() throws CLIException {
             if (inputPath == null) {
                 throw new CLIException("No input file specified");
@@ -653,6 +675,9 @@ public class Cli {
             }
             if (sidecarPath != null && !Files.exists(sidecarPath)) {
                 throw new CLIException("Sidecar config not found: " + sidecarPath);
+            }
+            if (treeQuery != null && treeFormat == null) {
+                treeFormat = TreeFormat.BOX;
             }
 
             String baseName =
@@ -667,8 +692,6 @@ public class Cli {
                     password,
                     forceSave,
                     analyzeOnly,
-                    dumpTreeSimple,
-                    dumpTreeDetailed,
                     treeFormat,
                     treeQuery,
                     listDestinations,
@@ -689,8 +712,7 @@ public class Cli {
 
         private void resolveOutputPath(String baseName) {
             if (analyzeOnly
-                    || dumpTreeSimple
-                    || dumpTreeDetailed
+                    || treeFormat != null
                     || listDestinations
                     || dumpOutline
                     || createSidecar) {
@@ -741,7 +763,9 @@ public class Cli {
             return TreeFormat.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new CLIException(
-                    "Unknown tree format '" + value + "' (expected 'box', 'plain', or 'xml')");
+                    "Unknown tree format '"
+                            + value
+                            + "' (expected 'roles', 'box', 'plain', or 'xml')");
         }
     }
 
@@ -841,14 +865,13 @@ public class Cli {
                 + "                    Use -r=<file> or --report=<file> for a custom path\n"
                 + "  --no-log          Do not append to <basename>.autoa11y.log\n"
                 + "  --dump-tree       Print the structure tree (with MCRs and annotations) and exit\n"
-                + "                    Use --dump-tree=<box|plain|xml> to choose the format:\n"
-                + "                    box-drawing connectors (default) or plain 2-space\n"
-                + "                    indentation (stable format for goal snapshots and diffing)\n"
-                + "                    xml exports full text and metadata for machine use\n"
-                + "  --dump-roles      Print the structure tree (roles only) and exit\n"
+                + "                    Use --dump-tree=<roles|box|plain|xml> to choose the format:\n"
+                + "                    roles only, box-drawing connectors (default), plain 2-space\n"
+                + "                    indentation (stable format for goal snapshots and diffing),\n"
+                + "                    or xml with full text and metadata for machine use\n"
                 + "  --query-tree <xpath>  Print each matching structure subtree and exit\n"
                 + "                        Input may be a PDF or an exported .xml tree\n"
-                + "                        Combine with --dump-tree=plain or xml for other formats\n"
+                + "                        Combine with --dump-tree=<format> for other formats\n"
                 + "  --list-destinations  Print named destinations by target page, and exit\n"
                 + "  --dump-outline    Print the document outline (bookmarks) and exit\n"
                 + "  --annotate-tree <file>  Read scribbles from an annotated tree diagram\n"

@@ -31,8 +31,8 @@ list select that list only once. Results follow document order. A match
 inside another match appears only within that match's subtree, so query
 results never overlap.
 
-Use `--dump-tree=plain` for plain indentation, or `--dump-tree=xml` to export
-the matches for further queries:
+Use `--dump-tree=roles` for role names only, `--dump-tree=plain` for plain
+indentation, or `--dump-tree=xml` to export the matches for further queries:
 
 ```bash
 ./pdf-autoa11y --query-tree="$query" --dump-tree=plain catalog/catalog.tree.xml
