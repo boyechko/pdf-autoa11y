@@ -51,7 +51,7 @@ public final class MergeSplitLinksFix implements IssueFix {
         if (links.size() < 2 || !(links.get(0).getParent() instanceof PdfStructElem parent)) {
             return;
         }
-        if (!areAdjacentKidsOf(parent) || !Link.allShareOneDestination(links)) {
+        if (!StructTree.areConsecutiveKids(parent, links) || !Link.allShareOneDestination(links)) {
             logger.debug(
                     "Links #{} and following are no longer one split link; skipping merge",
                     StructTree.objNum(links.get(0)));
@@ -70,25 +70,6 @@ public final class MergeSplitLinksFix implements IssueFix {
         StructTree.addToolScribble(target, MERGED_SCRIBBLE);
 
         logger.debug("Merged {} Link tags into #{}", links.size(), StructTree.objNum(target));
-    }
-
-    /** True if the links are still consecutive kids of the parent, in the recorded order. */
-    private boolean areAdjacentKidsOf(PdfStructElem parent) {
-        int first = StructTree.findKidIndex(parent, links.get(0));
-        if (first < 0) {
-            return false;
-        }
-        List<IStructureNode> kids = parent.getKids();
-        if (first + links.size() > kids.size()) {
-            return false;
-        }
-        for (int i = 1; i < links.size(); i++) {
-            if (!(kids.get(first + i) instanceof PdfStructElem sibling)
-                    || !StructTree.isSameElement(sibling, links.get(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**

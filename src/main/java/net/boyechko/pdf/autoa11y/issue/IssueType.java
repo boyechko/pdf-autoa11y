@@ -26,6 +26,7 @@ public enum IssueType {
     EMPTY_LINK_TAG("Link elements without description"),
     INVALID_LINK_URI("Link elements with invalid URIs"),
     LINK_SPLIT_ACROSS_TAGS("single links split across several Link tags"),
+    PARAGRAPH_FRAGMENTED("single paragraphs split across several P tags"),
 
     // Structure Issues
     MISSING_DOCUMENT_ELEMENT("no Document element under /StructTreeRoot"),

@@ -172,6 +172,25 @@ public final class StructTree {
         return -1;
     }
 
+    /** True if the elements are consecutive kids of {@code parent}, in the given order. */
+    public static boolean areConsecutiveKids(PdfStructElem parent, List<PdfStructElem> elems) {
+        if (elems.isEmpty()) {
+            return false;
+        }
+        int first = findKidIndex(parent, elems.get(0));
+        List<IStructureNode> kids = kidsOf(parent);
+        if (first < 0 || first + elems.size() > kids.size()) {
+            return false;
+        }
+        for (int i = 1; i < elems.size(); i++) {
+            if (!(kids.get(first + i) instanceof PdfStructElem sibling)
+                    || !isSameElement(sibling, elems.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** Returns the underlying PDF object of a structure node, or null if it is neither kind. */
     private static PdfObject pdfObjectOf(IStructureNode node) {
         if (node instanceof PdfStructElem elem) return elem.getPdfObject();

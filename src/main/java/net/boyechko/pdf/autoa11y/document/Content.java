@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,6 +317,22 @@ public final class Content {
             }
         }
 
+        return combinedText.toString();
+    }
+
+    /**
+     * Gets the text content for all MCRs within a structure element, reading each MCR from its own
+     * page, so an element continued across a page break yields all of its text.
+     */
+    public static String getTextForElement(PdfStructElem node, DocContext ctx) {
+        StringJoiner combinedText = new StringJoiner(" ");
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            int pageNum = StructTree.pageOf(mcr);
+            String text = pageNum > 0 ? ctx.pages().text(pageNum, mcr.getMcid()) : "";
+            if (!text.isEmpty()) {
+                combinedText.add(text);
+            }
+        }
         return combinedText.toString();
     }
 
