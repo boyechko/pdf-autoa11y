@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.checks;
 
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayDeque;
 import java.util.Comparator;
@@ -324,22 +322,11 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     private Map<Float, Long> charCountsForElement(PdfStructElem node, DocContext ctx) {
         Map<Float, Long> charCountBySize = new HashMap<>();
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            if (mcr instanceof PdfObjRef) {
-                continue;
-            }
-            int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                continue;
-            }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 continue;
             }
-            Content.McidContent mc = ctx.pages().content(pageNum).get(mcid);
+            Content.McidContent mc = ctx.pages().content(pageNum).get(mcr.getMcid());
             if (mc != null) {
                 accumulate(charCountBySize, mc);
             }

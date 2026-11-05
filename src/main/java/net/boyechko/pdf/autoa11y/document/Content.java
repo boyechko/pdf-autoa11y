@@ -10,7 +10,6 @@ import com.itextpdf.kernel.geom.Point;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.geom.Subpath;
 import com.itextpdf.kernel.geom.Vector;
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
@@ -78,12 +77,7 @@ public final class Content {
 
         for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
             int mcid = mcr.getMcid();
-
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                continue;
-            }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 continue;
             }
