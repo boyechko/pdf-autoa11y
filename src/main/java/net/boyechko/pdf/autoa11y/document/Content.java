@@ -541,14 +541,16 @@ public final class Content {
         return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;
     }
 
-    /** Gets the union bounding box for all MCRs within a structure element. */
+    /** Gets the union bounding box for all of a structure element's MCRs on one page. */
     public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
         Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
 
         Rectangle result = null;
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            int mcid = mcr.getMcid();
-            Rectangle bounds = mcidBounds.get(mcid);
+            if (StructTree.pageOf(mcr) != pageNum) {
+                continue;
+            }
+            Rectangle bounds = mcidBounds.get(mcr.getMcid());
             if (bounds != null) {
                 result = Geometry.union(result, bounds);
             }
