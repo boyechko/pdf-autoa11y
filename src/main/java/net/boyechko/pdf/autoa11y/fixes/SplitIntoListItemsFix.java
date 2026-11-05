@@ -5,8 +5,6 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNumber;
-import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -303,7 +301,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         PdfStructElem p = assembler.newContentIn(lBody, PdfName.P, page);
         for (int i = 0; i < plans.size(); i++) {
             McrPlan plan = plans.get(i);
-            plans.set(i, plan.withMcr(moveMcr(plan.mcr(), plan.page(), p)));
+            plans.set(i, plan.withMcr(moveMcr(plan.mcr(), p)));
         }
         return (PdfStructElem) lBody.getParent();
     }
@@ -352,7 +350,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
             int mcrLines = mcrPlan.plan().splitOffsets().size() + 1;
             if (mcrPlan.continuesLine()) {
                 // The block's first line is the tail of the previous line, already counted.
-                moveMcr(mcrPlan.mcr(), page, itemBody);
+                moveMcr(mcrPlan.mcr(), itemBody);
                 bodyPerSegment.add(itemBody);
             }
             for (int line = mcrPlan.continuesLine() ? 1 : 0; line < mcrLines; line++) {
@@ -364,7 +362,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
                 }
                 if (line == 0) {
                     if (mcrPlan.mcr() != plans.get(0).mcr()) {
-                        moveMcr(mcrPlan.mcr(), page, itemBody);
+                        moveMcr(mcrPlan.mcr(), itemBody);
                     }
                     bodyPerSegment.add(itemBody);
                 } else if (startsItem) {
@@ -402,29 +400,10 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return assembler.newContentIn(lBody, role, page);
     }
 
-    /**
-     * Moves an MCR from its current parent into a new one, re-registering it there and returning
-     * the rebound MCR. A bare-number MCR resolves its page through the parent's /Pg, so one landing
-     * under a parent pinned to a different page is upgraded to an MCR dictionary carrying its own
-     * /Pg.
-     */
-    private static PdfMcr moveMcr(PdfMcr mcr, PdfPage page, PdfStructElem newParent) {
-        PdfObject underlying = mcr.getPdfObject();
-        ((PdfStructElem) mcr.getParent()).removeKid(mcr);
-        PdfMcr rebound;
-        if (!(underlying instanceof PdfNumber num)) {
-            rebound = new PdfMcrDictionary((PdfDictionary) underlying, newParent);
-        } else if (parentIsPinnedTo(newParent, page)) {
-            rebound = new PdfMcrNumber(num, newParent);
-        } else {
-            PdfDictionary dict = new PdfDictionary();
-            dict.put(PdfName.Type, PdfName.MCR);
-            dict.put(PdfName.Pg, page.getPdfObject().getIndirectReference());
-            dict.put(PdfName.MCID, num);
-            rebound = new PdfMcrDictionary(dict, newParent);
-        }
-        newParent.addKid(rebound);
-        return rebound;
+    /** Moves an MCR from its current parent to the end of a new one, returning the rebound MCR. */
+    private static PdfMcr moveMcr(PdfMcr mcr, PdfStructElem newParent) {
+        StructTree.moveKid(mcr, (PdfStructElem) mcr.getParent(), newParent);
+        return (PdfMcr) StructTree.kidsOf(newParent).getLast();
     }
 
     /**
