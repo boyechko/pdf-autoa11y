@@ -7,7 +7,6 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
@@ -234,18 +233,10 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     /** Returns the element's kids, which must all be marked-content references. */
     private List<PdfMcr> mcrKidsOf(PdfStructElem elem) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null || kids.isEmpty()) {
-            throw new IllegalStateException("Splitting requires an element with MCR kids");
-        }
-        List<PdfMcr> mcrs = new ArrayList<>();
-        for (IStructureNode kid : kids) {
-            if (!(kid instanceof PdfMcr mcr)) {
-                throw new IllegalStateException(
-                        "Splitting requires an element whose kids are all marked-content"
-                                + " references");
-            }
-            mcrs.add(mcr);
+        List<PdfMcr> mcrs = StructTree.childrenAllMcrOf(elem);
+        if (mcrs.isEmpty()) {
+            throw new IllegalStateException(
+                    "Splitting requires an element whose kids are all marked-content references");
         }
         return mcrs;
     }

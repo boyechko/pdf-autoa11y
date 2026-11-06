@@ -344,8 +344,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      * split and the markup re-homed.
      */
     private static boolean ownsOnlyMarkedContent(PdfStructElem element) {
-        List<IStructureNode> kids = StructTree.kidsOf(element);
-        return !kids.isEmpty() && kids.stream().allMatch(kid -> kid instanceof PdfMcr);
+        return !StructTree.childrenAllMcrOf(element).isEmpty();
     }
 
     /** Renders the per-item line counts as the comma-separated spec the split fix takes. */

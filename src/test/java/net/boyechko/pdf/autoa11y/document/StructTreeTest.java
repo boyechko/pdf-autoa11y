@@ -267,6 +267,22 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void childrenAllMcrOfIsEmptyWhenAStructElemIsMixedIn() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrNumber(new PdfNumber(0), p));
+            p.addKid(new PdfStructElem(doc, PdfName.Span));
+
+            assertTrue(StructTree.childrenAllMcrOf(p).isEmpty());
+        }
+    }
+
+    @Test
     void moveKidReparentsChild() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
