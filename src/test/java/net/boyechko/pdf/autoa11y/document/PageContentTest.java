@@ -14,6 +14,10 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.Test;
@@ -70,6 +74,53 @@ class PageContentTest extends PdfTestBase {
 
             assertEquals("Hello", pages.text(1, 0).strip());
             assertEquals("", pages.text(1, 1));
+        }
+    }
+
+    @Test
+    void contentAndLineBoundsAreReadPerMcr() throws Exception {
+        Path pdfPath = testOutputPath();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            pdfDoc.getStructTreeRoot().addKid(p);
+            PdfMcr mcr = p.addKid(new PdfMcrDictionary(page, p));
+            PdfCanvas canvas = new PdfCanvas(page);
+            canvas.beginMarkedContent(PdfName.P, mcidProps(mcr.getMcid()));
+            canvas.beginText()
+                    .setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 12)
+                    .moveText(100, 700)
+                    .showText("Hello")
+                    .moveText(0, -14)
+                    .showText("World")
+                    .endText();
+            canvas.endMarkedContent();
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            PdfStructElem p = (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0);
+            PdfMcr mcr = StructTree.childrenOf(p, PdfMcr.class).get(0);
+            PageContent pages = new PageContent(pdfDoc);
+
+            assertTrue(pages.content(mcr).text().contains("Hello"));
+            assertEquals(2, pages.lineBounds(mcr).size());
+        }
+    }
+
+    @Test
+    void mcrWithoutResolvablePageHasNoContent() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
+            pdfDoc.getStructTreeRoot().addKid(p);
+            PdfMcr orphan = new PdfMcrNumber(new PdfNumber(0), p);
+
+            PageContent pages = new PageContent(pdfDoc);
+
+            assertNull(pages.content(orphan));
+            assertTrue(pages.lineBounds(orphan).isEmpty());
         }
     }
 

@@ -4,6 +4,7 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,10 +34,22 @@ public class PageContent {
                 pageNum, k -> Content.extractLineBoundsForPage(doc.getPage(pageNum)));
     }
 
+    /** Returns an MCR's text lines, top to bottom, or none when its page is unresolved. */
+    public List<Rectangle> lineBounds(PdfMcr mcr) {
+        int pageNum = StructTree.pageOf(mcr);
+        return pageNum > 0 ? lineBounds(pageNum).getOrDefault(mcr.getMcid(), List.of()) : List.of();
+    }
+
     /** Returns text with font information for all MCIDs on a page. */
     public Map<Integer, Content.McidContent> content(int pageNum) {
         return contentCache.computeIfAbsent(
                 pageNum, k -> Content.extractContentForPage(doc.getPage(pageNum)));
+    }
+
+    /** Returns an MCR's text and font information, or null when it has none. */
+    public Content.McidContent content(PdfMcr mcr) {
+        int pageNum = StructTree.pageOf(mcr);
+        return pageNum > 0 ? content(pageNum).get(mcr.getMcid()) : null;
     }
 
     /** Returns all MCID text on a page. */

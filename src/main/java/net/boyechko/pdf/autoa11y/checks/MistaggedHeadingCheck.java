@@ -322,11 +322,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     private Map<Float, Long> charCountsForElement(PdfStructElem node, DocContext ctx) {
         Map<Float, Long> charCountBySize = new HashMap<>();
         for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            int pageNum = StructTree.pageOf(mcr);
-            if (pageNum <= 0) {
-                continue;
-            }
-            Content.McidContent mc = ctx.pages().content(pageNum).get(mcr.getMcid());
+            Content.McidContent mc = ctx.pages().content(mcr);
             if (mc != null) {
                 accumulate(charCountBySize, mc);
             }

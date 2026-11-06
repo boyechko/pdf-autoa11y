@@ -144,15 +144,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (!(kid instanceof PdfMcr mcr)) {
                 continue;
             }
-            int mcid = mcr.getMcid();
-            if (mcid < 0) {
-                continue;
-            }
-            int pageNum = StructTree.pageOf(mcr);
-            if (pageNum <= 0) {
-                continue;
-            }
-            Content.McidContent mc = visit.docCtx().pages().content(pageNum).get(mcid);
+            Content.McidContent mc = visit.docCtx().pages().content(mcr);
             if (mc != null && !mc.kinds().isEmpty()) {
                 return false;
             }

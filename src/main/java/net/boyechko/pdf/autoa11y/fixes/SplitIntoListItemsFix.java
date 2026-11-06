@@ -446,9 +446,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
         if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
             return false;
         }
-        Map<Integer, List<Rectangle>> lineBounds = ctx.pages().lineBounds(StructTree.pageOf(mcr));
-        List<Rectangle> prevLines = lineBounds.getOrDefault(previous.getMcid(), List.of());
-        List<Rectangle> lines = lineBounds.getOrDefault(mcr.getMcid(), List.of());
+        List<Rectangle> prevLines = ctx.pages().lineBounds(previous);
+        List<Rectangle> lines = ctx.pages().lineBounds(mcr);
         return !prevLines.isEmpty()
                 && !lines.isEmpty()
                 && Content.onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
