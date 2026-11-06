@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
@@ -21,6 +20,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedArtifactFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -148,11 +148,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
             if (mcid < 0) {
                 continue;
             }
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                continue;
-            }
-            int pageNum = visit.doc().getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 continue;
             }
@@ -197,11 +193,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
                 continue;
             }
 
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                continue;
-            }
-            int pageNum = visit.doc().getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 continue;
             }

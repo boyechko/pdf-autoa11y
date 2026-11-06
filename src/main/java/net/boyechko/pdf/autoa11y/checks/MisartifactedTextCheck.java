@@ -216,22 +216,17 @@ public class MisartifactedTextCheck extends DocumentCheck {
         if (root == null) return map;
         for (var kid : root.getKids()) {
             if (kid instanceof PdfStructElem elem) {
-                collectMcrOwners(elem, ctx.doc(), map);
+                collectMcrOwners(elem, map);
             }
         }
         return map;
     }
 
-    private static void collectMcrOwners(
-            PdfStructElem elem, PdfDocument doc, Map<PageMcid, PdfStructElem> map) {
+    private static void collectMcrOwners(PdfStructElem elem, Map<PageMcid, PdfStructElem> map) {
         List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
-            if (mcid < 0) continue;
-            if (mcr.getPageIndirectReference() == null) continue;
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) continue;
-            int pageNum = doc.getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) continue;
             if (mcr.getParent() instanceof PdfStructElem parent) {
                 map.put(new PageMcid(pageNum, mcid), parent);

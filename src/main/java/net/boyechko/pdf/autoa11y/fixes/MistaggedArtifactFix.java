@@ -121,12 +121,7 @@ public class MistaggedArtifactFix implements IssueFix {
         List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
-            PdfDictionary pageDict = mcr.getPageObject();
-            if (pageDict == null) {
-                logger.debug("Skipping MCID {} with no page dictionary", mcid);
-                continue;
-            }
-            int pageNum = ctx.doc().getPageNumber(pageDict);
+            int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 logger.debug("Skipping MCID {} with unresolved page dictionary", mcid);
                 continue;
