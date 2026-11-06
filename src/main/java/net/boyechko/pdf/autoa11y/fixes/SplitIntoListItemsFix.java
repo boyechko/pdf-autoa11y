@@ -137,7 +137,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
         int lineCount = 0;
         PdfMcr previous = null;
         for (PdfMcr mcr : mcrs) {
-            PdfPage page = pageOf(ctx, mcr);
+            PdfPage page = StructTree.requirePageOf(mcr);
             SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
             McrPlan mcrPlan = new McrPlan(mcr, page, plan, continuesLineOf(ctx, previous, mcr));
             plans.add(mcrPlan);
@@ -248,15 +248,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
             mcrs.add(mcr);
         }
         return mcrs;
-    }
-
-    /** Resolves the MCR's page, refusing when it cannot be determined. */
-    private static PdfPage pageOf(DocContext ctx, PdfMcr mcr) {
-        int pageNum = StructTree.pageOf(mcr);
-        if (pageNum <= 0) {
-            throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
-        }
-        return ctx.doc().getPage(pageNum);
     }
 
     /** Returns "page N" or "pages N-M" spanning the plans' pages in reading order. */

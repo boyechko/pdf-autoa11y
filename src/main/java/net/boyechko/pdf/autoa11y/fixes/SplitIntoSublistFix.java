@@ -77,7 +77,7 @@ public final class SplitIntoSublistFix implements IssueFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         PdfMcr mcr = onlyMcrKidOf(element);
-        PdfPage page = pageOf(ctx, mcr);
+        PdfPage page = StructTree.requirePageOf(mcr);
         SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
         int lineCount = plan.splitOffsets().size() + 1;
         if (leadingLines < 1 || leadingLines >= lineCount) {
@@ -188,14 +188,5 @@ public final class SplitIntoSublistFix implements IssueFix {
         }
         throw new IllegalStateException(
                 "Splitting off a sublist requires an element with a single marked-content kid");
-    }
-
-    /** Resolves the MCR's page, refusing when it cannot be determined. */
-    private static PdfPage pageOf(DocContext ctx, PdfMcr mcr) {
-        int pageNum = StructTree.pageOf(mcr);
-        if (pageNum <= 0) {
-            throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
-        }
-        return ctx.doc().getPage(pageNum);
     }
 }

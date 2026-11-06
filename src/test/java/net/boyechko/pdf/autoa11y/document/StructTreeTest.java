@@ -237,6 +237,36 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void requirePageOfReturnsTheMcrsPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page2.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+            PdfMcr mcr = p.addKid(new PdfMcrNumber(new PdfNumber(0), p));
+
+            assertEquals(2, doc.getPageNumber(StructTree.requirePageOf(mcr)));
+        }
+    }
+
+    @Test
+    void requirePageOfRefusesUnresolvablePage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            PdfMcr orphan = new PdfMcrNumber(new PdfNumber(0), p);
+
+            assertThrows(IllegalStateException.class, () -> StructTree.requirePageOf(orphan));
+        }
+    }
+
+    @Test
     void moveKidReparentsChild() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

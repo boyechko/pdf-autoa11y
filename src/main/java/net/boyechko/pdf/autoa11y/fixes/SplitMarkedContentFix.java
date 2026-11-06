@@ -45,7 +45,7 @@ public final class SplitMarkedContentFix implements IssueFix {
     @Override
     public void apply(DocContext ctx) throws Exception {
         PdfMcr mcr = onlyMcrKidOf(element);
-        PdfPage page = pageOf(ctx, mcr);
+        PdfPage page = StructTree.requirePageOf(mcr);
         SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
         List<Integer> splices = plan.sizeChangeOffsets();
         if (splices.isEmpty()) {
@@ -94,15 +94,6 @@ public final class SplitMarkedContentFix implements IssueFix {
         }
         throw new IllegalStateException(
                 "Splitting by size requires an element with a single marked-content reference");
-    }
-
-    /** Resolves the MCR's page, refusing when it cannot be determined. */
-    private static PdfPage pageOf(DocContext ctx, PdfMcr mcr) {
-        int pageNum = StructTree.pageOf(mcr);
-        if (pageNum <= 0) {
-            throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
-        }
-        return ctx.doc().getPage(pageNum);
     }
 
     @Override

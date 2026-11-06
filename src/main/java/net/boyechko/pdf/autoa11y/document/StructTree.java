@@ -105,6 +105,15 @@ public final class StructTree {
         return doc.getPageNumber(pageObj);
     }
 
+    /** Returns the page an MCR renders on, refusing when it cannot be resolved. */
+    public static PdfPage requirePageOf(PdfMcr mcr) {
+        int pageNum = pageOf(mcr);
+        if (pageNum <= 0) {
+            throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
+        }
+        return mcr.getPageIndirectReference().getDocument().getPage(pageNum);
+    }
+
     /** Walks up ancestors from {@code elem} and returns the first /Pg page reference found. */
     public static PdfObject effectivePageDict(PdfStructElem elem) {
         IStructureNode current = elem;
