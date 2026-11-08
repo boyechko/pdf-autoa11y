@@ -56,9 +56,10 @@ public final class Content {
     /**
      * One text line of a marked-content block: its bounds, the width of its first word, and the
      * width of a space in its font, which together tell whether that word would have fit at the end
-     * of the line before.
+     * of the line before; and its last visible character, which tells whether it ends a sentence.
      */
-    public record TextLine(Rectangle bounds, float firstWordWidth, float spaceWidth) {}
+    public record TextLine(
+            Rectangle bounds, float firstWordWidth, float spaceWidth, char lastChar) {}
 
     /** Aggregated text, font spans, and content kinds for a single MCID. */
     public record McidContent(String text, List<TextSpan> spans, Set<ContentKind> kinds) {
@@ -638,6 +639,8 @@ public final class Content {
             private final List<Glyph> glyphs = new ArrayList<>();
             private float spaceWidth;
             private float boundaryX = Float.MAX_VALUE;
+            private float lastEndX = -Float.MAX_VALUE;
+            private char lastChar;
 
             private Line(float baselineY) {
                 this.baselineY = baselineY;
@@ -690,7 +693,7 @@ public final class Content {
                     }
                 }
                 float width = wordStart <= wordEnd ? wordEnd - wordStart : bounds.getWidth();
-                return new TextLine(bounds, width, spaceWidth);
+                return new TextLine(bounds, width, spaceWidth, lastChar);
             }
         }
 
@@ -712,6 +715,12 @@ public final class Content {
             }
             if (rect != null) {
                 line.bounds = Geometry.union(line.bounds, rect);
+                float endX = (float) textInfo.getBaseline().getEndPoint().get(Vector.I1);
+                if (endX > line.lastEndX) {
+                    String visible = textInfo.getText().stripTrailing();
+                    line.lastEndX = endX;
+                    line.lastChar = visible.charAt(visible.length() - 1);
+                }
             }
             if (startX(textInfo) < line.boundaryX) {
                 line.measure(textInfo);

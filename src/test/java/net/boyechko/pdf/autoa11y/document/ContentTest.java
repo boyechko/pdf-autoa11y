@@ -119,6 +119,21 @@ class ContentTest extends PdfTestBase {
     }
 
     @Test
+    void textLinesNoteTheirLastVisibleCharacter() throws Exception {
+        Path pdfPath =
+                writeTextLines(
+                        testOutputPath(), List.of(List.of("Hello world"), List.of("ends", ". ")));
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            List<Content.TextLine> lines =
+                    Content.extractTextLinesForPage(pdfDoc.getPage(1)).get(0);
+
+            assertEquals('d', lines.get(0).lastChar());
+            assertEquals('.', lines.get(1).lastChar());
+        }
+    }
+
+    @Test
     void detectsFilledAndHollowBullets() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfPage page = pdfDoc.addNewPage();
