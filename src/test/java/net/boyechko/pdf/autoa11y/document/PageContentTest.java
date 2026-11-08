@@ -49,6 +49,7 @@ class PageContentTest extends PdfTestBase {
 
             assertSame(pages.bounds(1), pages.bounds(1));
             assertSame(pages.lineBounds(1), pages.lineBounds(1));
+            assertSame(pages.textLines(1), pages.textLines(1));
             assertSame(pages.content(1), pages.content(1));
             assertSame(pages.text(1), pages.text(1));
             assertSame(pages.bullets(1), pages.bullets(1));
@@ -105,6 +106,7 @@ class PageContentTest extends PdfTestBase {
 
             assertTrue(pages.content(mcr).text().contains("Hello"));
             assertEquals(2, pages.lineBounds(mcr).size());
+            assertEquals(2, pages.textLines(mcr).size());
         }
     }
 
@@ -121,6 +123,7 @@ class PageContentTest extends PdfTestBase {
 
             assertNull(pages.content(orphan));
             assertTrue(pages.lineBounds(orphan).isEmpty());
+            assertTrue(pages.textLines(orphan).isEmpty());
         }
     }
 

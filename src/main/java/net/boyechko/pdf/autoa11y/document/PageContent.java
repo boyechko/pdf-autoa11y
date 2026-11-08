@@ -14,6 +14,8 @@ public class PageContent {
     private final PdfDocument doc;
     private final Map<Integer, Map<Integer, Rectangle>> boundsCache = new HashMap<>();
     private final Map<Integer, Map<Integer, List<Rectangle>>> lineBoundsCache = new HashMap<>();
+    private final Map<Integer, Map<Integer, List<Content.TextLine>>> textLinesCache =
+            new HashMap<>();
     private final Map<Integer, Map<Integer, Content.McidContent>> contentCache = new HashMap<>();
     private final Map<Integer, Map<Integer, String>> textCache = new HashMap<>();
     private final Map<Integer, List<Content.BulletPosition>> bulletCache = new HashMap<>();
@@ -31,13 +33,37 @@ public class PageContent {
     /** Returns each MCID's text lines on a page, top to bottom. */
     public Map<Integer, List<Rectangle>> lineBounds(int pageNum) {
         return lineBoundsCache.computeIfAbsent(
-                pageNum, k -> Content.extractLineBoundsForPage(doc.getPage(pageNum)));
+                pageNum,
+                k -> {
+                    Map<Integer, List<Rectangle>> bounds = new HashMap<>();
+                    textLines(pageNum)
+                            .forEach(
+                                    (mcid, lines) ->
+                                            bounds.put(
+                                                    mcid,
+                                                    lines.stream()
+                                                            .map(Content.TextLine::bounds)
+                                                            .toList()));
+                    return bounds;
+                });
     }
 
     /** Returns an MCR's text lines, top to bottom, or none when its page is unresolved. */
     public List<Rectangle> lineBounds(PdfMcr mcr) {
         int pageNum = StructTree.pageOf(mcr);
         return pageNum > 0 ? lineBounds(pageNum).getOrDefault(mcr.getMcid(), List.of()) : List.of();
+    }
+
+    /** Returns each MCID's text lines on a page, top to bottom, with word measurements. */
+    public Map<Integer, List<Content.TextLine>> textLines(int pageNum) {
+        return textLinesCache.computeIfAbsent(
+                pageNum, k -> Content.extractTextLinesForPage(doc.getPage(pageNum)));
+    }
+
+    /** Returns an MCR's text lines with word measurements, or none when its page is unresolved. */
+    public List<Content.TextLine> textLines(PdfMcr mcr) {
+        int pageNum = StructTree.pageOf(mcr);
+        return pageNum > 0 ? textLines(pageNum).getOrDefault(mcr.getMcid(), List.of()) : List.of();
     }
 
     /** Returns text with font information for all MCIDs on a page. */

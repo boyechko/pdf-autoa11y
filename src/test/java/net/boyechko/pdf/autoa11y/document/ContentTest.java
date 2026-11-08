@@ -4,18 +4,23 @@ package net.boyechko.pdf.autoa11y.document;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import org.junit.jupiter.api.Test;
@@ -49,6 +54,68 @@ class ContentTest extends PdfTestBase {
                 .rectangle(100, y, 200, 10)
                 .fill()
                 .endMarkedContent();
+    }
+
+    /** Writes one MCID-0 block of Helvetica 12 lines, each a list of show-operator strings. */
+    private static Path writeTextLines(Path pdfPath, List<List<String>> lines) throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            PdfDictionary props = new PdfDictionary();
+            props.put(PdfName.MCID, new PdfNumber(0));
+            PdfCanvas canvas = new PdfCanvas(pdfDoc.addNewPage());
+            canvas.beginMarkedContent(PdfName.P, props)
+                    .beginText()
+                    .setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 12);
+            canvas.moveText(100, 700);
+            for (List<String> chunks : lines) {
+                chunks.forEach(canvas::showText);
+                canvas.moveText(0, -14);
+            }
+            canvas.endText().endMarkedContent();
+        }
+        return pdfPath;
+    }
+
+    @Test
+    void textLinesMeasureFirstWordAndSpace() throws Exception {
+        PdfFont helvetica = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+        Path pdfPath =
+                writeTextLines(
+                        testOutputPath(), List.of(List.of("Hello world"), List.of("Next line")));
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            List<Content.TextLine> lines =
+                    Content.extractTextLinesForPage(pdfDoc.getPage(1)).get(0);
+
+            assertEquals(2, lines.size());
+            assertEquals(helvetica.getWidth("Hello", 12), lines.get(0).firstWordWidth(), 0.5f);
+            assertEquals(helvetica.getWidth("Next", 12), lines.get(1).firstWordWidth(), 0.5f);
+            assertEquals(helvetica.getWidth(" ", 12), lines.get(0).spaceWidth(), 0.5f);
+        }
+    }
+
+    @Test
+    void firstWordSpanningShowOperatorsIsMeasuredWhole() throws Exception {
+        PdfFont helvetica = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+        Path pdfPath = writeTextLines(testOutputPath(), List.of(List.of("Hel", "lo world")));
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            Content.TextLine line =
+                    Content.extractTextLinesForPage(pdfDoc.getPage(1)).get(0).get(0);
+
+            assertEquals(helvetica.getWidth("Hello", 12), line.firstWordWidth(), 0.5f);
+        }
+    }
+
+    @Test
+    void lineWithoutSpacesIsAllFirstWord() throws Exception {
+        Path pdfPath = writeTextLines(testOutputPath(), List.of(List.of("Word")));
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            Content.TextLine line =
+                    Content.extractTextLinesForPage(pdfDoc.getPage(1)).get(0).get(0);
+
+            assertEquals(line.bounds().getWidth(), line.firstWordWidth(), 0.5f);
+        }
     }
 
     @Test

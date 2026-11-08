@@ -53,6 +53,13 @@ public final class Content {
     /** Font and text for a contiguous run of same-font text within an MCID. */
     public record TextSpan(String fontName, float fontSize, String text) {}
 
+    /**
+     * One text line of a marked-content block: its bounds, the width of its first word, and the
+     * width of a space in its font, which together tell whether that word would have fit at the end
+     * of the line before.
+     */
+    public record TextLine(Rectangle bounds, float firstWordWidth, float spaceWidth) {}
+
     /** Aggregated text, font spans, and content kinds for a single MCID. */
     public record McidContent(String text, List<TextSpan> spans, Set<ContentKind> kinds) {
         /** Returns the font of the first span, typically the dominant/heading font. */
@@ -589,18 +596,18 @@ public final class Content {
     }
 
     /**
-     * Extracts each MCID's text lines on a page as separate bounding boxes, ordered top to bottom.
+     * Extracts each MCID's text lines on a page, ordered top to bottom, with word measurements.
      * Unlike {@link #extractBoundsForPage}, which unions an MCID's content into one rectangle, this
      * keeps the lines apart so content lumped into a single marked-content block can be matched
-     * against per-line evidence such as bullet glyphs.
+     * against per-line evidence such as bullet glyphs or ragged line ends.
      */
-    public static Map<Integer, List<Rectangle>> extractLineBoundsForPage(PdfPage page) {
+    public static Map<Integer, List<TextLine>> extractTextLinesForPage(PdfPage page) {
         if (page == null) {
             return Map.of();
         }
 
         try {
-            McidLineBoundsListener listener = new McidLineBoundsListener();
+            McidTextLinesListener listener = new McidTextLinesListener();
             PdfCanvasProcessor processor = new PdfCanvasProcessor(listener);
             processor.processPageContent(page);
             return listener.buildResults();
@@ -613,21 +620,77 @@ public final class Content {
 
     /**
      * Groups an MCID's text into lines by baseline, since one line may be drawn by several show
-     * operators and one marked-content block may hold many lines.
+     * operators and one marked-content block may hold many lines. Glyphs are measured only until
+     * each line's first word boundary is known, so most show operators are never broken into
+     * glyphs.
      */
-    private static class McidLineBoundsListener implements IEventListener {
+    private static class McidTextLinesListener implements IEventListener {
         /** Baselines closer than this (pt) belong to the same line. */
         private static final float BASELINE_TOLERANCE = 2.0f;
 
         private final Map<Integer, List<Line>> linesByMcid = new HashMap<>();
 
+        private record Glyph(float start, float end, boolean space) {}
+
         private static final class Line {
             private final float baselineY;
             private Rectangle bounds;
+            private final List<Glyph> glyphs = new ArrayList<>();
+            private float spaceWidth;
+            private float boundaryX = Float.MAX_VALUE;
 
-            private Line(float baselineY, Rectangle bounds) {
+            private Line(float baselineY) {
                 this.baselineY = baselineY;
-                this.bounds = bounds;
+            }
+
+            /** Records the chunk's glyphs and re-derives where the first word ends. */
+            private void measure(TextRenderInfo info) {
+                if (spaceWidth == 0) {
+                    spaceWidth = info.getSingleSpaceWidth();
+                }
+                for (TextRenderInfo glyph : info.getCharacterRenderInfos()) {
+                    glyphs.add(
+                            new Glyph(
+                                    startX(glyph),
+                                    (float) glyph.getBaseline().getEndPoint().get(Vector.I1),
+                                    glyph.getText().isBlank()));
+                }
+                glyphs.sort(Comparator.comparingDouble(Glyph::start));
+                boundaryX = firstWordBoundary();
+            }
+
+            /**
+             * Returns the x where the first word ends: at a space glyph, or at a gap wider than
+             * half a space between glyphs; leading spaces are skipped. MAX_VALUE when none is seen.
+             */
+            private float firstWordBoundary() {
+                Float previousEnd = null;
+                for (Glyph glyph : glyphs) {
+                    if (glyph.space()) {
+                        if (previousEnd != null) {
+                            return glyph.start();
+                        }
+                        continue;
+                    }
+                    if (previousEnd != null && glyph.start() - previousEnd > spaceWidth / 2) {
+                        return previousEnd;
+                    }
+                    previousEnd = glyph.end();
+                }
+                return Float.MAX_VALUE;
+            }
+
+            private TextLine toTextLine() {
+                float wordStart = Float.MAX_VALUE;
+                float wordEnd = -Float.MAX_VALUE;
+                for (Glyph glyph : glyphs) {
+                    if (!glyph.space() && glyph.start() < boundaryX) {
+                        wordStart = Math.min(wordStart, glyph.start());
+                        wordEnd = Math.max(wordEnd, glyph.end());
+                    }
+                }
+                float width = wordStart <= wordEnd ? wordEnd - wordStart : bounds.getWidth();
+                return new TextLine(bounds, width, spaceWidth);
             }
         }
 
@@ -638,34 +701,54 @@ public final class Content {
             }
             TextRenderInfo textInfo = (TextRenderInfo) data;
             int mcid = textInfo.getMcid();
-            Rectangle rect = rectFromText(textInfo);
-            if (mcid < 0 || rect == null) {
+            if (mcid < 0) {
                 return;
             }
             float baselineY = (float) textInfo.getBaseline().getStartPoint().get(Vector.I2);
-            addToLine(mcid, baselineY, rect);
+            Rectangle rect = rectFromText(textInfo);
+            Line line = lineAt(mcid, baselineY, rect != null);
+            if (line == null) {
+                return;
+            }
+            if (rect != null) {
+                line.bounds = Geometry.union(line.bounds, rect);
+            }
+            if (startX(textInfo) < line.boundaryX) {
+                line.measure(textInfo);
+            }
         }
 
-        private void addToLine(int mcid, float baselineY, Rectangle rect) {
+        /** Finds the MCID's line on this baseline, starting one only for visible text. */
+        private Line lineAt(int mcid, float baselineY, boolean visible) {
             List<Line> lines = linesByMcid.computeIfAbsent(mcid, k -> new ArrayList<>());
             for (Line line : lines) {
                 if (Math.abs(line.baselineY - baselineY) <= BASELINE_TOLERANCE) {
-                    line.bounds = Geometry.union(line.bounds, rect);
-                    return;
+                    return line;
                 }
             }
-            lines.add(new Line(baselineY, rect));
+            if (!visible) {
+                return null;
+            }
+            Line line = new Line(baselineY);
+            lines.add(line);
+            return line;
         }
 
-        private Map<Integer, List<Rectangle>> buildResults() {
-            Map<Integer, List<Rectangle>> results = new HashMap<>();
+        private static float startX(TextRenderInfo info) {
+            return (float) info.getBaseline().getStartPoint().get(Vector.I1);
+        }
+
+        private Map<Integer, List<TextLine>> buildResults() {
+            Map<Integer, List<TextLine>> results = new HashMap<>();
             for (Map.Entry<Integer, List<Line>> entry : linesByMcid.entrySet()) {
-                List<Rectangle> ordered =
+                List<TextLine> ordered =
                         entry.getValue().stream()
                                 .sorted(Comparator.comparingDouble((Line l) -> -l.baselineY))
-                                .map(l -> l.bounds)
+                                .map(Line::toTextLine)
                                 .toList();
-                results.put(entry.getKey(), ordered);
+                if (!ordered.isEmpty()) {
+                    results.put(entry.getKey(), ordered);
+                }
             }
             return results;
         }
