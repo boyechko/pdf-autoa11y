@@ -535,6 +535,21 @@ public final class Content {
         return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;
     }
 
+    /**
+     * Checks whether the MCR's first line sits on the previous MCR's last line, as when a dissolved
+     * inline span leaves a line's tail in a block of its own.
+     */
+    public static boolean continuesLineOf(DocContext ctx, PdfMcr previous, PdfMcr mcr) {
+        if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
+            return false;
+        }
+        List<Rectangle> prevLines = ctx.pages().lineBounds(previous);
+        List<Rectangle> lines = ctx.pages().lineBounds(mcr);
+        return !prevLines.isEmpty()
+                && !lines.isEmpty()
+                && onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
+    }
+
     /** Gets the union bounding box for all of a structure element's MCRs on one page. */
     public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
         Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
@@ -138,7 +137,8 @@ public final class SplitIntoListItemsFix implements IssueFix {
         for (PdfMcr mcr : mcrs) {
             PdfPage page = StructTree.requirePageOf(mcr);
             SplitPlan plan = ContentStream.planLineSplit(page, mcr.getMcid());
-            McrPlan mcrPlan = new McrPlan(mcr, page, plan, continuesLineOf(ctx, previous, mcr));
+            McrPlan mcrPlan =
+                    new McrPlan(mcr, page, plan, Content.continuesLineOf(ctx, previous, mcr));
             plans.add(mcrPlan);
             lineCount += mcrPlan.countedLines();
             previous = mcr;
@@ -418,21 +418,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
         McrPlan withMcr(PdfMcr rebound) {
             return new McrPlan(rebound, page, plan, continuesLine);
         }
-    }
-
-    /**
-     * Checks whether the MCR's first line sits on the previous MCR's last line, as when a dissolved
-     * inline span leaves a line's tail in a block of its own.
-     */
-    private static boolean continuesLineOf(DocContext ctx, PdfMcr previous, PdfMcr mcr) {
-        if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
-            return false;
-        }
-        List<Rectangle> prevLines = ctx.pages().lineBounds(previous);
-        List<Rectangle> lines = ctx.pages().lineBounds(mcr);
-        return !prevLines.isEmpty()
-                && !lines.isEmpty()
-                && Content.onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
     }
 
     /**
