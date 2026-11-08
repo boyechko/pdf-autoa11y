@@ -8,6 +8,11 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `FusedParagraphCheck`: splits a `P` that holds several paragraphs set
+  with no indent or blank line between them, detected by a line that stops
+  short even though the next line's first word would have fit. Each paragraph
+  gets its own `P`, stamped `__:SPLIT paragraphs`; an inline `Link` or `Span`
+  moves whole into the paragraph holding it.
 - New `FragmentedParagraphCheck`: merges consecutive `P` tags that are one
   paragraph broken at a page break or layout line, such as a sentence whose
   tail landed in a `P` of its own, so a screen reader reads it as one

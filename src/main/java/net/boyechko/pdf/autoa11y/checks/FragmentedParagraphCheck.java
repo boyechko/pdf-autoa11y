@@ -31,7 +31,7 @@ import net.boyechko.pdf.autoa11y.validation.Visit;
  */
 public class FragmentedParagraphCheck extends StructTreeCheck {
 
-    private static final String TERMINAL_PUNCTUATION = ".!?:;";
+    private static final String SENTENCE_END = ".!?:;";
     private static final Pattern LETTER_LABEL = Pattern.compile("^[a-z][.)]\\s");
     private static final Pattern EMAIL_OR_URL = Pattern.compile("^(\\S+@|www\\b|https?:)");
 
@@ -98,7 +98,7 @@ public class FragmentedParagraphCheck extends StructTreeCheck {
             return false;
         }
         char lastChar = previous.charAt(previous.length() - 1);
-        return TERMINAL_PUNCTUATION.indexOf(lastChar) < 0
+        return SENTENCE_END.indexOf(lastChar) < 0
                 && Character.isLowerCase(next.charAt(0))
                 && !LETTER_LABEL.matcher(next).find()
                 && !EMAIL_OR_URL.matcher(next).find();

@@ -39,6 +39,7 @@ public final class ProcessingDefaults {
                 InvalidLinkUriCheck::new,
                 BadlySplitLinkCheck::new,
                 FragmentedParagraphCheck::new,
+                FusedParagraphCheck::new,
                 MistaggedListCheck::new,
                 IrregularTocCheck::new,
                 BadlyMarkedContentCheck::new,
