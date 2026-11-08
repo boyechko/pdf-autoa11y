@@ -5,6 +5,8 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import com.itextpdf.kernel.pdf.tagutils.TagStructureContext;
@@ -112,6 +114,19 @@ public final class StructTree {
             throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
         }
         return mcr.getPageIndirectReference().getDocument().getPage(pageNum);
+    }
+
+    /**
+     * Adds a fresh-MCID marked-content reference on the page to the parent and returns it: a bare
+     * number when the parent is pinned to that page, else an MCR dictionary carrying its own /Pg.
+     */
+    public static PdfMcr addNewMcr(PdfStructElem parent, PdfPage page) {
+        PdfDictionary pg = parent.getPdfObject().getAsDictionary(PdfName.Pg);
+        PdfMcr mcr =
+                pg != null && isSamePage(pg, page)
+                        ? new PdfMcrNumber(page, parent)
+                        : new PdfMcrDictionary(page, parent);
+        return parent.addKid(mcr);
     }
 
     /** Walks up ancestors from {@code elem} and returns the first /Pg page reference found. */

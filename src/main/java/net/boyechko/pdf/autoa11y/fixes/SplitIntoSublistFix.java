@@ -5,7 +5,6 @@ package net.boyechko.pdf.autoa11y.fixes;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
@@ -93,8 +92,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         moveAfterPredecessor(itemBody, page);
         PdfStructElem tail = buildSublistTail(ctx, itemBody, page);
 
-        PdfMcr tailMcr = new PdfMcrNumber(page, tail);
-        tail.addKid(tailMcr);
+        PdfMcr tailMcr = StructTree.addNewMcr(tail, page);
         List<Edit> edits =
                 ContentStream.blockEditsFor(
                         plan,

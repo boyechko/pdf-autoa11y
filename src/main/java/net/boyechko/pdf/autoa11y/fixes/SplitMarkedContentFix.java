@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +65,7 @@ public final class SplitMarkedContentFix implements IssueFix {
             // Pin /Pg on the MCR's immediate parent so its bare-number MCR resolves its page.
             sibling.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             parent.addKid(index + 1 + i, sibling);
-            PdfMcr newMcr = new PdfMcrNumber(page, sibling);
-            sibling.addKid(newMcr);
+            PdfMcr newMcr = StructTree.addNewMcr(sibling, page);
             newMcids.add(newMcr.getMcid());
             StructTree.addToolScribble(sibling, SPLIT_SCRIBBLE);
         }

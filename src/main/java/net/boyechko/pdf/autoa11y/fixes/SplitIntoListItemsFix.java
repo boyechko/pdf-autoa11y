@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -388,22 +385,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
         return (PdfMcr) StructTree.kidsOf(newParent).getLast();
     }
 
-    /**
-     * Creates a fresh-MCID kid for the item body on the given page: a bare number when the body is
-     * pinned to that page, an MCR dictionary otherwise.
-     */
-    private static PdfMcr newMcrOn(PdfPage page, PdfStructElem itemBody) {
-        return parentIsPinnedTo(itemBody, page)
-                ? new PdfMcrNumber(page, itemBody)
-                : new PdfMcrDictionary(page, itemBody);
-    }
-
-    /** Checks whether the element's own /Pg refers to the given page. */
-    private static boolean parentIsPinnedTo(PdfStructElem elem, PdfPage page) {
-        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        return pg != null && StructTree.isSamePage(pg, page);
-    }
-
     // == Split planning ==================================================
 
     /**
@@ -426,8 +407,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
      * up owning a reference to the block in each.
      */
     private int mintMcid(PdfStructElem itemBody, PdfPage page, List<Integer> newMcids) {
-        PdfMcr mcr = newMcrOn(page, itemBody);
-        itemBody.addKid(mcr);
+        PdfMcr mcr = StructTree.addNewMcr(itemBody, page);
         newMcids.add(mcr.getMcid());
         return mcr.getMcid();
     }

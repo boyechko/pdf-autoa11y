@@ -283,6 +283,42 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void addNewMcrUnderParentPinnedToPageIsBareNumber() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+
+            PdfMcr mcr = StructTree.addNewMcr(p, page);
+
+            assertInstanceOf(PdfMcrNumber.class, mcr);
+            assertEquals(1, StructTree.pageOf(mcr));
+            assertEquals(1, StructTree.childrenOf(p, PdfMcr.class).size());
+        }
+    }
+
+    @Test
+    void addNewMcrUnderParentPinnedElsewhereCarriesItsOwnPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+
+            PdfMcr mcr = StructTree.addNewMcr(p, page2);
+
+            assertInstanceOf(PdfMcrDictionary.class, mcr);
+            assertEquals(2, StructTree.pageOf(mcr));
+        }
+    }
+
+    @Test
     void moveKidReparentsChild() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
