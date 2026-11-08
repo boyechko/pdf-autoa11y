@@ -8,12 +8,9 @@ import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
@@ -53,66 +50,33 @@ public final class SplitIntoListItemsFix implements IssueFix {
     private static final Logger logger = LoggerFactory.getLogger(SplitIntoListItemsFix.class);
 
     private final PdfStructElem element;
-    private final Integer expectedLines;
-    private final List<Integer> itemSizes;
+    private final ItemSizes itemSizes;
     private final boolean inPlace;
 
     /** Splits at every detected line, deriving the item count from the content stream. */
     public SplitIntoListItemsFix(PdfStructElem element) {
-        this(element, (Integer) null);
+        this(element, ItemSizes.eachLine(), false);
     }
 
     /** Splits into exactly {@code expectedLines} one-line items, refusing on a count mismatch. */
     public SplitIntoListItemsFix(PdfStructElem element, Integer expectedLines) {
-        this.element = element;
-        this.expectedLines = expectedLines;
-        this.itemSizes = null;
-        this.inPlace = false;
+        this(element, ItemSizes.expecting(expectedLines), false);
     }
 
     /** Splits per the spec, building the new list where the element is rather than joining one. */
     public static SplitIntoListItemsFix inPlace(PdfStructElem element, String spec) {
-        return new SplitIntoListItemsFix(element, spec, true);
+        return new SplitIntoListItemsFix(element, ItemSizes.parse(spec), true);
     }
 
-    /**
-     * Splits per the instruction's spec: null/blank derives everything, a plain number is the
-     * expected total line count (one item per line), and a comma-separated list gives the line
-     * count of each item in order (e.g. {@code 1,1,2} for two one-line items followed by a two-line
-     * item; {@code 1x3} is short for {@code 1,1,1}), counting lines across all the element's MCRs.
-     */
+    /** Splits per the instruction's spec, as parsed by {@link ItemSizes#parse}. */
     public SplitIntoListItemsFix(PdfStructElem element, String spec) {
-        this(element, spec, false);
+        this(element, ItemSizes.parse(spec), false);
     }
 
-    private SplitIntoListItemsFix(PdfStructElem element, String spec, boolean inPlace) {
+    private SplitIntoListItemsFix(PdfStructElem element, ItemSizes itemSizes, boolean inPlace) {
         this.element = element;
+        this.itemSizes = itemSizes;
         this.inPlace = inPlace;
-        if (spec == null || spec.isBlank()) {
-            this.expectedLines = null;
-            this.itemSizes = null;
-        } else if (spec.matches("\\d+")) {
-            this.expectedLines = Integer.valueOf(spec);
-            this.itemSizes = null;
-        } else if (spec.matches("\\d+(x\\d+)?(\\s*,\\s*\\d+(x\\d+)?)*")) {
-            this.expectedLines = null;
-            this.itemSizes =
-                    Arrays.stream(spec.split(","))
-                            .map(String::strip)
-                            .flatMap(SplitIntoListItemsFix::expandItemSizes)
-                            .toList();
-        } else {
-            throw new IllegalArgumentException(
-                    "Bad !SPLIT_LINES spec '" + spec + "'; expected N or N,N,... (NxK repeats N)");
-        }
-    }
-
-    /** Expands one spec group: {@code N} is one N-line item, {@code NxK} is K such items. */
-    private static Stream<Integer> expandItemSizes(String group) {
-        String[] parts = group.split("x");
-        int size = Integer.parseInt(parts[0]);
-        int repeat = parts.length == 2 ? Integer.parseInt(parts[1]) : 1;
-        return Collections.nCopies(repeat, size).stream();
     }
 
     @Override
@@ -122,10 +86,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        if (expectedLines != null && expectedLines < 2) {
-            throw new IllegalArgumentException(
-                    "Splitting requires at least 2 lines, got " + expectedLines);
-        }
         List<PdfMcr> mcrs = mcrKidsOf(element);
 
         List<McrPlan> plans = new ArrayList<>();
@@ -141,7 +101,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
             previous = mcr;
         }
         String pages = pageLabelOf(ctx, plans);
-        List<Integer> sizes = resolveItemSizes(lineCount, pages);
+        List<Integer> sizes = itemSizes.resolve(lineCount, pages);
         if (sizes.size() < 2) {
             throw new IllegalStateException(
                     "Splitting on " + pages + " would produce fewer than 2 items");
@@ -162,34 +122,6 @@ public final class SplitIntoListItemsFix implements IssueFix {
                 pages,
                 sizes.size(),
                 newMcids);
-    }
-
-    /**
-     * Verifies the detected total line count against the spec and returns the per-item line counts:
-     * the given sizes, or one line per item when no sizes were specified.
-     */
-    private List<Integer> resolveItemSizes(int lineCount, String pages) {
-        if (itemSizes != null) {
-            int specTotal = itemSizes.stream().mapToInt(Integer::intValue).sum();
-            if (specTotal != lineCount) {
-                throw new IllegalStateException(
-                        "Item sizes sum to "
-                                + specTotal
-                                + " lines but found "
-                                + lineCount
-                                + " on "
-                                + pages);
-            }
-            if (itemSizes.stream().anyMatch(size -> size < 1)) {
-                throw new IllegalArgumentException("Item sizes must be at least 1");
-            }
-            return itemSizes;
-        }
-        if (expectedLines != null && lineCount != expectedLines) {
-            throw new IllegalStateException(
-                    "Expected " + expectedLines + " lines but found " + lineCount + " on " + pages);
-        }
-        return Collections.nCopies(lineCount, 1);
     }
 
     /**
