@@ -18,8 +18,9 @@
 #
 # The extract is then run through tools/StripFontPrograms.java: it would
 # otherwise carry the source's whole-document font subsets, which make up most
-# of a few-page fixture. Dropping the font programs leaves text extraction
-# intact, unlike re-subsetting (`mutool clean -S`), which corrupts it.
+# of a few-page fixture. Dropping the simple fonts' programs leaves text
+# extraction intact, unlike re-subsetting (`mutool clean -S`), which corrupts
+# it; Type0 fonts keep theirs so the extract still displays.
 #
 # Examples:
 #   tools/extract-pages.sh catalog.pdf 89-90
