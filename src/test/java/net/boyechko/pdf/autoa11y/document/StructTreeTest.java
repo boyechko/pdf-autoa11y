@@ -978,4 +978,59 @@ class StructTreeTest extends PdfTestBase {
             assertTrue(StructTree.isSame(childDict, kEntry));
         }
     }
+
+    // === Structure attributes ==============================================
+
+    @Test
+    void setAttributeValueCreatesOwnedDictionaryWhenNoneExists() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+
+            StructTree.setAttributeValue(th, PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(
+                    PdfName.Column, StructTree.attributeValue(th, PdfName.Table, PdfName.Scope));
+        }
+    }
+
+    @Test
+    void setAttributeValueKeepsDictionaryOfAnotherOwner() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+            PdfDictionary layout = new PdfDictionary();
+            layout.put(PdfName.O, PdfName.Layout);
+            layout.put(PdfName.Width, new PdfNumber(72));
+            th.getPdfObject().put(PdfName.A, layout);
+
+            StructTree.setAttributeValue(th, PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(
+                    PdfName.Column, StructTree.attributeValue(th, PdfName.Table, PdfName.Scope));
+            assertEquals(
+                    new PdfNumber(72),
+                    StructTree.attributeValue(th, PdfName.Layout, PdfName.Width));
+        }
+    }
+
+    @Test
+    void setAttributeValueUpdatesExistingOwnedDictionaryInPlace() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+            PdfDictionary table = new PdfDictionary();
+            table.put(PdfName.O, PdfName.Table);
+            table.put(PdfName.Scope, PdfName.Row);
+            PdfArray attrs = new PdfArray();
+            attrs.add(table);
+            attrs.add(new PdfNumber(0));
+            th.getPdfObject().put(PdfName.A, attrs);
+
+            StructTree.setAttributeValue(th, PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(2, th.getPdfObject().getAsArray(PdfName.A).size());
+            assertEquals(PdfName.Column, table.get(PdfName.Scope));
+        }
+    }
 }

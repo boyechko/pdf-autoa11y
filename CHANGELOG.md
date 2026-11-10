@@ -9,7 +9,8 @@ Versioning](https://semver.org/).
 
 ### Added
 - New `UnscopedTableHeaderCheck`: reports `TH` cells without a `Scope`
-  attribute.
+  attribute, and scopes them by position when the layout is unambiguous: a
+  header row as `Column`, a header column below it as `Row`.
 - `--annotate-tree` can retag elements: change an element's role in the
   tree file (e.g. `TH #18211` to `TD #18211`) and it scribbles
   `__!SET_ROLE TD` for `ScribbledInstructionCheck` to carry out, instead of

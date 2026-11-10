@@ -9,9 +9,12 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -29,7 +32,7 @@ class UnscopedTableHeaderCheckTest extends PdfTestBase {
             IssueList issues = runCheck(pdfDoc);
             assertEquals(1, issues.size());
             assertEquals(IssueType.TABLE_HEADER_UNSCOPED, issues.get(0).type());
-            assertNull(issues.get(0).fix(), "Scope direction needs human judgment");
+            assertNull(issues.get(0).fix(), "A header row with no data below is not fixable");
         }
     }
 
@@ -83,14 +86,138 @@ class UnscopedTableHeaderCheckTest extends PdfTestBase {
         }
     }
 
+    @Test
+    void headerRowAboveDataRowsIsScopedAsColumn() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem header = addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(2, issues.size());
+            DocContext ctx = new DocContext(pdfDoc);
+            for (Issue issue : issues) {
+                assertNotNull(issue.fix());
+                issue.fix().apply(ctx);
+            }
+
+            for (PdfStructElem th : StructTree.childrenOf(header, PdfStructElem.class)) {
+                assertEquals("Column", DocValue.Scope.of(th).value());
+            }
+            assertTrue(runCheck(pdfDoc).isEmpty());
+        }
+    }
+
+    @Test
+    void headerRowInsideTHeadIsScopedAsColumn() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem thead = new PdfStructElem(pdfDoc, PdfName.THead);
+            table.addKid(thead);
+            PdfStructElem tbody = new PdfStructElem(pdfDoc, PdfName.TBody);
+            table.addKid(tbody);
+            addRow(pdfDoc, thead, PdfName.TH, PdfName.TH);
+            addRow(pdfDoc, tbody, PdfName.TD, PdfName.TD);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(2, issues.size());
+            assertTrue(issues.stream().allMatch(issue -> issue.fix() != null));
+        }
+    }
+
+    @Test
+    void headerColumnBelowHeaderRowIsScopedAsRow() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem header = addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            PdfStructElem second = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            PdfStructElem third = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(4, issues.size());
+            DocContext ctx = new DocContext(pdfDoc);
+            for (Issue issue : issues) {
+                assertNotNull(issue.fix());
+                issue.fix().apply(ctx);
+            }
+
+            List<PdfStructElem> headerCells = StructTree.childrenOf(header, PdfStructElem.class);
+            assertEquals("Column", DocValue.Scope.of(headerCells.get(0)).value(), "corner cell");
+            assertEquals("Column", DocValue.Scope.of(headerCells.get(1)).value());
+            for (PdfStructElem row : List.of(second, third)) {
+                PdfStructElem rowHeader = StructTree.childrenOf(row, PdfStructElem.class).get(0);
+                assertEquals("Row", DocValue.Scope.of(rowHeader).value());
+            }
+            assertTrue(runCheck(pdfDoc).isEmpty());
+        }
+    }
+
+    @Test
+    void headerColumnWithGapsLeavesTableUnfixed() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(3, issues.size());
+            assertTrue(issues.stream().allMatch(issue -> issue.fix() == null));
+        }
+    }
+
+    @Test
+    void headerOutsideFirstColumnLeavesTableUnfixed() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TH);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(3, issues.size());
+            assertTrue(issues.stream().allMatch(issue -> issue.fix() == null));
+        }
+    }
+
+    @Test
+    void mixedFirstRowLeavesTableUnfixed() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            IssueList issues = runCheck(pdfDoc);
+            assertEquals(1, issues.size());
+            assertNull(issues.get(0).fix());
+        }
+    }
+
     private static PdfStructElem addTableRow(PdfDocument pdfDoc) {
-        PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+        return addRow(pdfDoc, addTable(pdfDoc));
+    }
+
+    private static PdfStructElem addTable(PdfDocument pdfDoc) {
         PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-        root.addKid(document);
+        pdfDoc.getStructTreeRoot().addKid(document);
         PdfStructElem table = new PdfStructElem(pdfDoc, PdfName.Table);
         document.addKid(table);
+        return table;
+    }
+
+    private static PdfStructElem addRow(
+            PdfDocument pdfDoc, PdfStructElem parent, PdfName... cellRoles) {
         PdfStructElem row = new PdfStructElem(pdfDoc, PdfName.TR);
-        table.addKid(row);
+        parent.addKid(row);
+        for (PdfName role : cellRoles) {
+            row.addKid(new PdfStructElem(pdfDoc, role));
+        }
         return row;
     }
 

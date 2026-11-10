@@ -528,6 +528,45 @@ public final class StructTree {
         return null;
     }
 
+    /**
+     * Writes one attribute value into the element's first {@code /A} dictionary owned by {@code
+     * owner}, adding such a dictionary (and promoting {@code /A} to an array) when none exists.
+     */
+    public static void setAttributeValue(
+            PdfStructElem elem, PdfName owner, PdfName key, PdfObject value) {
+        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
+        PdfDictionary owned = ownedDictionary(attrs, owner);
+        if (owned != null) {
+            owned.put(key, value);
+            return;
+        }
+        PdfDictionary added = new PdfDictionary();
+        added.put(PdfName.O, owner);
+        added.put(key, value);
+        if (attrs instanceof PdfArray array) {
+            array.add(added);
+        } else if (attrs instanceof PdfDictionary dict) {
+            elem.getPdfObject().put(PdfName.A, new PdfArray(List.of(dict, added)));
+        } else {
+            elem.getPdfObject().put(PdfName.A, added);
+        }
+    }
+
+    private static PdfDictionary ownedDictionary(PdfObject attrs, PdfName owner) {
+        if (attrs instanceof PdfDictionary dict) {
+            return owner.equals(dict.getAsName(PdfName.O)) ? dict : null;
+        }
+        if (attrs instanceof PdfArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                if (array.get(i) instanceof PdfDictionary dict
+                        && owner.equals(dict.getAsName(PdfName.O))) {
+                    return dict;
+                }
+            }
+        }
+        return null;
+    }
+
     private static PdfObject ownedValue(PdfDictionary attrs, PdfName owner, PdfName key) {
         return owner.equals(attrs.getAsName(PdfName.O)) ? attrs.get(key) : null;
     }
