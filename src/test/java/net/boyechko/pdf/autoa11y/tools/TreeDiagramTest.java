@@ -254,7 +254,29 @@ class TreeDiagramTest {
     }
 
     @Test
-    void annotateFromStringWarnsOnRoleMismatch() throws Exception {
+    void annotateFromStringScribblesSetRoleWhenLineChangesRole() throws Exception {
+        Path outPdf = tempDir.resolve("retagged.pdf");
+        String dump = TreeDiagram.dumpToString(openForReading(), true);
+        String retagged = dump.replace("H1 #56\n", "H2 #56\n");
+
+        try (PdfDocument doc = openForModification(outPdf)) {
+            TreeDiagram.AnnotateResult result =
+                    TreeDiagram.annotateFromString(doc, retagged, msg -> {});
+
+            assertEquals(1, result.updated());
+            assertEquals(0, result.unmatchedLines());
+            assertEquals(0, result.unmatchedElements(), "Retagged element is still listed");
+        }
+
+        try (PdfDocument doc = new PdfDocument(new PdfReader(outPdf.toString()))) {
+            assertEquals(
+                    StructTree.SCRIBBLE_PREFIX + "!SET_ROLE H2",
+                    findByObjNum(doc, 56).getPdfObject().getAsString(PdfName.T).toUnicodeString());
+        }
+    }
+
+    @Test
+    void annotateFromStringRejectsRoleChangeThatAlsoCarriesScribble() throws Exception {
         Path outPdf = tempDir.resolve("mismatch.pdf");
         String dump = TreeDiagram.dumpToString(openForReading(), true);
         String bad = dump.replace("H1 #56\n", "H3 #56 \"__bogus\"\n");
@@ -264,6 +286,7 @@ class TreeDiagramTest {
             TreeDiagram.AnnotateResult result =
                     TreeDiagram.annotateFromString(doc, bad, warnings::add);
 
+            assertEquals(0, result.updated());
             assertEquals(1, result.unmatchedLines());
             assertTrue(
                     warnings.stream().anyMatch(w -> w.contains("H3") && w.contains("H1")),

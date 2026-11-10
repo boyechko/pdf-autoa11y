@@ -32,6 +32,12 @@ public final class TreeDiagram {
     private static final Pattern ANNOTATED_LINE =
             Pattern.compile("^\\W*(?<!<)(\\w+)\\s+#(\\d+)(?:\\s+\"([^\"]*)\")?.*$");
 
+    /**
+     * Scribble that asks ScribbledInstructionCheck to retag an element; spelled out here because
+     * {@code tools} may not depend on {@code checks} or {@code fixes}.
+     */
+    private static final String SET_ROLE_SCRIBBLE = StructTree.SCRIBBLE_PREFIX + "!SET_ROLE ";
+
     /** Roles whose text is shown untruncated, since it identifies the element. */
     private static final Set<String> SHOWN_IN_FULL =
             Set.of("Link", "H1", "H2", "H3", "H4", "H5", "H6");
@@ -266,8 +272,10 @@ public final class TreeDiagram {
 
     /**
      * Parses an annotated tree diagram and writes quoted scribbles back to the matching elements'
-     * {@code /T} keys. Lines without a quoted scribble clear {@code /T} on the matched element.
-     * Role mismatches and unknown object numbers are reported via {@code warn}.
+     * {@code /T} keys. Lines without a quoted scribble clear {@code /T} on the matched element. A
+     * line whose role differs from the element's scribbles a {@code !SET_ROLE} instruction instead,
+     * unless it also carries its own scribble. Such conflicts and unknown object numbers are
+     * reported via {@code warn}.
      */
     public static AnnotateResult annotateFromString(
             PdfDocument doc, String annotatedDiagram, Consumer<String> warn) {
@@ -291,16 +299,24 @@ public final class TreeDiagram {
                 unmatchedLines++;
                 continue;
             }
+            Optional<String> newScribble = entry.getValue();
             String actualRole = StructTree.mappedRole(elem);
             if (!key.role().equals(actualRole)) {
-                warn.accept("line says " + key.label() + " but element's role is " + actualRole);
-                unmatchedLines++;
-                continue;
+                if (newScribble.isPresent()) {
+                    warn.accept(
+                            "line says "
+                                    + key.label()
+                                    + " but element's role is "
+                                    + actualRole
+                                    + "; remove the scribble to retag it");
+                    unmatchedLines++;
+                    continue;
+                }
+                newScribble = Optional.of(SET_ROLE_SCRIBBLE + key.role());
             }
 
             DocValue.Scribble existing = DocValue.Scribble.of(elem);
             String existingRaw = existing != null ? existing.rawValue() : null;
-            Optional<String> newScribble = entry.getValue();
             if (newScribble.isPresent()) {
                 if (newScribble.get().equals(existingRaw)) {
                     unchanged++;
@@ -330,10 +346,11 @@ public final class TreeDiagram {
             }
         }
 
+        Set<Integer> listed = new HashSet<>();
+        desired.keySet().forEach(key -> listed.add(key.objNum()));
         int unmatchedElements = 0;
-        for (Map.Entry<Integer, PdfStructElem> e : byObj.entrySet()) {
-            String role = StructTree.mappedRole(e.getValue());
-            if (!desired.containsKey(new ElemKey(role, e.getKey()))) {
+        for (Integer objNum : byObj.keySet()) {
+            if (!listed.contains(objNum)) {
                 unmatchedElements++;
             }
         }

@@ -8,6 +8,10 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `--annotate-tree` can retag elements: change an element's role in the
+  tree file (e.g. `TH #18211` to `TD #18211`) and it scribbles
+  `__!SET_ROLE TD` for `ScribbledInstructionCheck` to carry out, instead of
+  rejecting the line.
 - New `FusedParagraphCheck`: splits a `P` that holds several paragraphs set
   with no indent or blank line between them, detected by a line that stops
   short even though the next line's first word would have fit. Each paragraph

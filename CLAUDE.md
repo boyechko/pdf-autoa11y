@@ -71,6 +71,8 @@ mvn exec:java -Dexec.args="--dump-tree input.pdf"  # print structure tree with M
 # Edit /T scribbles via the tree diagram: dump to text, annotate, then apply back.
 # Append a quoted scribble after an element's `Role #objNum` to set it; matching
 # is keyed on the object number, so box-drawing/indentation need not be preserved.
+# Changing an element's role (e.g. `TH #18211` -> `TD #18211`) scribbles
+# `__!SET_ROLE TD`, which ScribbledInstructionCheck carries out on the next run.
 ./pdf-autoa11y --dump-tree input.pdf > tree.txt
 ./pdf-autoa11y --annotate-tree=tree.txt input.pdf output.pdf
 
