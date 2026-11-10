@@ -76,6 +76,16 @@ class ContentTest extends PdfTestBase {
     }
 
     @Test
+    void lineLeavesRoomOnlyWhenTheGapHoldsTheNextLinesFirstWord() {
+        // Right edge at 372; the next line needs a 3pt space plus its 40pt first word.
+        Content.TextLine line = new Content.TextLine(new Rectangle(72, 700, 300, 12), 40, 3, '.');
+        Content.TextLine next = new Content.TextLine(new Rectangle(72, 686, 400, 12), 40, 3, 'x');
+
+        assertTrue(line.leavesRoomFor(next, 472), "a 100pt gap holds the word");
+        assertFalse(line.leavesRoomFor(next, 410), "a 38pt gap does not");
+    }
+
+    @Test
     void textLinesMeasureFirstWordAndSpace() throws Exception {
         PdfFont helvetica = PdfFontFactory.createFont(StandardFonts.HELVETICA);
         Path pdfPath =

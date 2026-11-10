@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
-import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
@@ -47,9 +45,6 @@ public class FusedParagraphCheck extends StructTreeCheck {
     /** Characters a paragraph-ending line may end with: sentence and clause ends, closing marks. */
     private static final String PARAGRAPH_END = ".!?:;)\"'”’";
 
-    /** How far (pt) the next word must clear the gap, so rounding cannot fake a fit. */
-    private static final float FIT_TOLERANCE = 1.0f;
-
     private static final TagSchema schema = TagSchema.loadDefault();
 
     private final IssueList issues = new IssueList();
@@ -73,12 +68,12 @@ public class FusedParagraphCheck extends StructTreeCheck {
                 || !holdsOnlyTextAndInlines(visit)) {
             return true;
         }
-        List<PdfMcr> mcrs = StructTree.descendantsOf(node, PdfMcr.class);
-        if (mcrs.isEmpty()) {
+        List<TextLine> lines = Content.getTextLinesForElement(node, visit.docCtx());
+        if (lines.isEmpty()) {
             return true;
         }
 
-        List<Integer> sizes = paragraphSizes(linesOf(mcrs, visit.docCtx()));
+        List<Integer> sizes = paragraphSizes(lines);
         if (sizes.size() >= 2) {
             issues.add(
                     new Issue(
@@ -116,41 +111,11 @@ public class FusedParagraphCheck extends StructTreeCheck {
     }
 
     /**
-     * Returns the element's text lines in reading order, joining an MCR's first line to the
-     * previous MCR's last when they share a line, as the split counts them.
-     */
-    private static List<TextLine> linesOf(List<PdfMcr> mcrs, DocContext ctx) {
-        List<TextLine> lines = new ArrayList<>();
-        PdfMcr previous = null;
-        for (PdfMcr mcr : mcrs) {
-            List<TextLine> mcrLines = ctx.pages().textLines(mcr);
-            int first = 0;
-            if (!lines.isEmpty()
-                    && !mcrLines.isEmpty()
-                    && Content.continuesLineOf(ctx, previous, mcr)) {
-                TextLine head = lines.removeLast();
-                TextLine tail = mcrLines.get(0);
-                lines.add(
-                        new TextLine(
-                                Geometry.union(head.bounds(), tail.bounds()),
-                                head.firstWordWidth(),
-                                head.spaceWidth(),
-                                tail.lastChar()));
-                first = 1;
-            }
-            lines.addAll(mcrLines.subList(first, mcrLines.size()));
-            previous = mcr;
-        }
-        return lines;
-    }
-
-    /**
      * Returns the line count of each paragraph in reading order, or a single size when the lines
      * read as one paragraph or no line wraps.
      */
     private static List<Integer> paragraphSizes(List<TextLine> lines) {
-        float widestRight =
-                (float) lines.stream().mapToDouble(l -> l.bounds().getRight()).max().orElse(0);
+        float measureRight = TextLine.measureRightOf(lines);
         List<Integer> sizes = new ArrayList<>();
         boolean wraps = false;
         int size = 0;
@@ -159,7 +124,7 @@ public class FusedParagraphCheck extends StructTreeCheck {
             if (i == lines.size() - 1) {
                 break;
             }
-            if (endsParagraph(lines.get(i), lines.get(i + 1), widestRight)) {
+            if (endsParagraph(lines.get(i), lines.get(i + 1), measureRight)) {
                 sizes.add(size);
                 size = 0;
             } else {
@@ -171,9 +136,8 @@ public class FusedParagraphCheck extends StructTreeCheck {
     }
 
     /** True if the line ends a sentence and the next line's first word would have fit after it. */
-    private static boolean endsParagraph(TextLine line, TextLine next, float widestRight) {
-        float gap = widestRight - line.bounds().getRight();
-        float needed = next.spaceWidth() + next.firstWordWidth() + FIT_TOLERANCE;
-        return PARAGRAPH_END.indexOf(line.lastChar()) >= 0 && gap >= needed;
+    private static boolean endsParagraph(TextLine line, TextLine next, float measureRight) {
+        return PARAGRAPH_END.indexOf(line.lastChar()) >= 0
+                && line.leavesRoomFor(next, measureRight);
     }
 }

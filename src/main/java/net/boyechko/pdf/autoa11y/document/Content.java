@@ -59,7 +59,29 @@ public final class Content {
      * of the line before; and its last visible character, which tells whether it ends a sentence.
      */
     public record TextLine(
-            Rectangle bounds, float firstWordWidth, float spaceWidth, char lastChar) {}
+            Rectangle bounds, float firstWordWidth, float spaceWidth, char lastChar) {
+
+        /** How far (pt) the next word must clear the gap, so rounding cannot fake a fit. */
+        private static final float FIT_TOLERANCE = 1.0f;
+
+        /**
+         * True if the next line's first word, with a space before it, would have fit after this
+         * line within a measure ending at {@code measureRight}. Text set greedily never leaves such
+         * room at a wrap, so a line that does was broken on purpose.
+         */
+        public boolean leavesRoomFor(TextLine next, float measureRight) {
+            float gap = measureRight - bounds.getRight();
+            return gap >= next.spaceWidth() + next.firstWordWidth() + FIT_TOLERANCE;
+        }
+
+        /**
+         * Returns the right edge of the widest line, standing in for the block's measure: it can
+         * only underestimate the true measure, so a fit judged against it is never overstated.
+         */
+        public static float measureRightOf(List<TextLine> lines) {
+            return (float) lines.stream().mapToDouble(l -> l.bounds().getRight()).max().orElse(0);
+        }
+    }
 
     /** Aggregated text, font spans, and content kinds for a single MCID. */
     public record McidContent(String text, List<TextSpan> spans, Set<ContentKind> kinds) {
@@ -521,6 +543,33 @@ public final class Content {
                         .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
                         .forEach(fragment -> mergeIntoLines(lines, fragment));
             }
+        }
+        return lines;
+    }
+
+    /**
+     * Gets an element's text lines with word measurements, in reading order across pages, joining
+     * an MCR's first line to the previous MCR's last when they share a line.
+     */
+    public static List<TextLine> getTextLinesForElement(PdfStructElem node, DocContext ctx) {
+        List<TextLine> lines = new ArrayList<>();
+        PdfMcr previous = null;
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            List<TextLine> mcrLines = ctx.pages().textLines(mcr);
+            int first = 0;
+            if (!lines.isEmpty() && !mcrLines.isEmpty() && continuesLineOf(ctx, previous, mcr)) {
+                TextLine head = lines.removeLast();
+                TextLine tail = mcrLines.get(0);
+                lines.add(
+                        new TextLine(
+                                Geometry.union(head.bounds(), tail.bounds()),
+                                head.firstWordWidth(),
+                                head.spaceWidth(),
+                                tail.lastChar()));
+                first = 1;
+            }
+            lines.addAll(mcrLines.subList(first, mcrLines.size()));
+            previous = mcr;
         }
         return lines;
     }
