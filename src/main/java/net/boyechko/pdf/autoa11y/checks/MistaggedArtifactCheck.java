@@ -234,7 +234,7 @@ public class MistaggedArtifactCheck extends StructTreeCheck {
         if (pageNumber == 0) {
             return "";
         }
-        return Content.getTextForElement(visit.node(), visit.docCtx(), pageNumber);
+        return visit.docCtx().pages().text(visit.node(), pageNumber);
     }
 
     @SuppressWarnings("unchecked")

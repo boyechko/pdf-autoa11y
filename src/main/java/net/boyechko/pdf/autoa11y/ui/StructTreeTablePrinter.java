@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.ui;
 
 import java.util.function.Consumer;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -88,7 +87,7 @@ public class StructTreeTablePrinter extends StructTreeCheck {
         int pageNum = visit.page();
         String pageString = (pageNum == 0) ? "" : "(p. " + pageNum + ")";
 
-        String mcrText = Content.getTextForElement(visit.node(), visit.docCtx(), pageNum);
+        String mcrText = visit.docCtx().pages().text(visit.node(), pageNum);
         mcrText = (mcrText == null || mcrText.isEmpty()) ? "" : mcrText;
         String truncated = Format.truncate(mcrText, CONTENT_SUMMARY_WIDTH);
 

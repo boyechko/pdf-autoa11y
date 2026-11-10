@@ -9,7 +9,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -70,7 +69,7 @@ public class FragmentedParagraphCheck extends StructTreeCheck {
                 previousText = null;
                 continue;
             }
-            String text = Content.getTextForElement(elem, visit.docCtx()).strip();
+            String text = visit.docCtx().pages().text(elem).strip();
             if (previousText == null
                     || !continuesSentence(previousText, text, run.getLast(), elem, visit)) {
                 emitIfFragmented(visit, run);

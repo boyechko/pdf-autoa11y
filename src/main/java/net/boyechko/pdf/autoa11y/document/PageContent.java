@@ -4,12 +4,15 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 /** Per-page marked-content facts, each extracted from the page on first access. */
 public class PageContent {
@@ -179,6 +182,31 @@ public class PageContent {
         return text(pageNum).getOrDefault(mcid, "");
     }
 
+    /**
+     * Returns the text of an element's MCRs on one page, recursing into children. Only bare-number
+     * MCRs are read, since they resolve to the page through their parent; MCR dictionaries are
+     * skipped.
+     */
+    public String text(PdfStructElem node, int pageNum) {
+        return textOf(node, text(pageNum));
+    }
+
+    /**
+     * Returns the text of all an element's MCRs, reading each from its own page, so an element
+     * continued across a page break yields all of its text.
+     */
+    public String text(PdfStructElem node) {
+        StringJoiner combinedText = new StringJoiner(" ");
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            int pageNum = StructTree.pageOf(mcr);
+            String text = pageNum > 0 ? text(pageNum, mcr.getMcid()) : "";
+            if (!text.isEmpty()) {
+                combinedText.add(text);
+            }
+        }
+        return combinedText.toString();
+    }
+
     /** Returns the bullet glyphs drawn on a page. */
     public List<Content.BulletPosition> bullets(int pageNum) {
         return bulletCache.computeIfAbsent(
@@ -194,5 +222,30 @@ public class PageContent {
             }
         }
         lines.add(new Rectangle(fragment));
+    }
+
+    /** Joins the text of an element's bare-number MCRs from one page's MCID text, depth first. */
+    private static String textOf(PdfStructElem node, Map<Integer, String> mcidText) {
+        List<IStructureNode> kids = node.getKids();
+        if (kids == null) return "";
+
+        StringBuilder combinedText = new StringBuilder();
+        for (IStructureNode kid : kids) {
+            if (kid instanceof PdfMcrNumber mcr) {
+                String text = mcidText.getOrDefault(mcr.getMcid(), "");
+                if (!text.isEmpty()) {
+                    if (!combinedText.isEmpty()) combinedText.append(" ");
+                    combinedText.append(text);
+                }
+            } else if (kid instanceof PdfStructElem childElem) {
+                String childText = textOf(childElem, mcidText);
+                if (!childText.isEmpty()) {
+                    if (!combinedText.isEmpty()) combinedText.append(" ");
+                    combinedText.append(childText);
+                }
+            }
+        }
+
+        return combinedText.toString();
     }
 }

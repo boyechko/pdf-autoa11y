@@ -353,7 +353,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
             return "";
         }
 
-        return Format.truncate(Content.getTextForElement(visit.node(), visit.docCtx(), pageNum));
+        return Format.truncate(visit.docCtx().pages().text(visit.node(), pageNum));
     }
 
     /** Rounds font size to the nearest 0.25pt to handle floating-point noise. */

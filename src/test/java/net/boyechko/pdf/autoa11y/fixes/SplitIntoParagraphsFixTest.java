@@ -12,7 +12,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import org.junit.jupiter.api.Test;
@@ -51,13 +50,13 @@ class SplitIntoParagraphsFixTest extends PdfTestBase {
             assertEquals(PdfName.P, second.getRole());
             assertEquals(PdfName.P, third.getRole());
             assertTrue(
-                    Content.getTextForElement(first, ctx).strip().endsWith("their withdrawal."),
+                    ctx.pages().text(first).strip().endsWith("their withdrawal."),
                     "first P ends the first paragraph");
             assertTrue(
-                    Content.getTextForElement(second, ctx).strip().startsWith("A recipient"),
+                    ctx.pages().text(second).strip().startsWith("A recipient"),
                     "second P starts the second paragraph");
             assertTrue(
-                    Content.getTextForElement(third, ctx).strip().startsWith("A student with"),
+                    ctx.pages().text(third).strip().startsWith("A student with"),
                     "third P starts the third paragraph");
         }
     }
@@ -74,9 +73,9 @@ class SplitIntoParagraphsFixTest extends PdfTestBase {
 
             PdfStructElem first = (PdfStructElem) parent.getKids().get(index);
             PdfStructElem second = (PdfStructElem) parent.getKids().get(index + 1);
-            String secondText = Content.getTextForElement(second, ctx).strip();
+            String secondText = ctx.pages().text(second).strip();
             assertTrue(
-                    Content.getTextForElement(first, ctx).strip().endsWith("this catalog."),
+                    ctx.pages().text(first).strip().endsWith("this catalog."),
                     "first P ends the first paragraph");
             assertTrue(secondText.startsWith("During summer"), "second P starts the second");
             assertTrue(secondText.endsWith("specific dates."), "second P keeps the line's tail");

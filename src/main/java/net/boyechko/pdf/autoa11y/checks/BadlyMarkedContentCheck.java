@@ -8,7 +8,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SegmentMcids;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
@@ -77,7 +76,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
             return true;
         }
 
-        String text = Format.truncate(Content.getTextForElement(node, visit.docCtx(), pageNum));
+        String text = Format.truncate(visit.docCtx().pages().text(node, pageNum));
         IssueFix fix = new SplitMarkedContentFix(node);
         issues.add(
                 new Issue(

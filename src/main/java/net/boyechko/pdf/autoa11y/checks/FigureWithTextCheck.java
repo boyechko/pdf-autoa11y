@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.fixes.FigureWithTextFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -39,7 +38,7 @@ public class FigureWithTextCheck extends StructTreeCheck {
             return true;
         }
 
-        String textContent = Content.getTextForElement(visit.node(), visit.docCtx(), pageNumber);
+        String textContent = visit.docCtx().pages().text(visit.node(), pageNumber);
 
         if (textContent != null && !textContent.isEmpty() && textContent.length() > 1) {
             IssueFix fix = new FigureWithTextFix(visit.node(), PdfName.P);

@@ -18,9 +18,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -312,52 +309,6 @@ public final class Content {
             textOnly.put(entry.getKey(), entry.getValue().text());
         }
         return textOnly;
-    }
-
-    /** Gets the text content for all MCRs within a structure element. */
-    public static String getTextForElement(PdfStructElem node, DocContext ctx, int pageNum) {
-        return getTextForElement(node, ctx.pages().text(pageNum));
-    }
-
-    /** Gets the text content for all MCRs within a structure element, recursing into children. */
-    public static String getTextForElement(PdfStructElem node, Map<Integer, String> mcidText) {
-        List<IStructureNode> kids = node.getKids();
-        if (kids == null) return "";
-
-        StringBuilder combinedText = new StringBuilder();
-        for (IStructureNode kid : kids) {
-            if (kid instanceof PdfMcrNumber mcr) {
-                String text = mcidText.getOrDefault(mcr.getMcid(), "");
-                if (!text.isEmpty()) {
-                    if (!combinedText.isEmpty()) combinedText.append(" ");
-                    combinedText.append(text);
-                }
-            } else if (kid instanceof PdfStructElem childElem) {
-                String childText = getTextForElement(childElem, mcidText);
-                if (!childText.isEmpty()) {
-                    if (!combinedText.isEmpty()) combinedText.append(" ");
-                    combinedText.append(childText);
-                }
-            }
-        }
-
-        return combinedText.toString();
-    }
-
-    /**
-     * Gets the text content for all MCRs within a structure element, reading each MCR from its own
-     * page, so an element continued across a page break yields all of its text.
-     */
-    public static String getTextForElement(PdfStructElem node, DocContext ctx) {
-        StringJoiner combinedText = new StringJoiner(" ");
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            int pageNum = StructTree.pageOf(mcr);
-            String text = pageNum > 0 ? ctx.pages().text(pageNum, mcr.getMcid()) : "";
-            if (!text.isEmpty()) {
-                combinedText.add(text);
-            }
-        }
-        return combinedText.toString();
     }
 
     /** Collects text spans, font information, and content kinds for every MCID on a page. */
