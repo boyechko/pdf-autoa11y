@@ -522,83 +522,11 @@ public final class Content {
         return ratio > ARTIFICIAL_SPACING_RATIO;
     }
 
-    /**
-     * Gets an element's text lines on one page, in reading order, one rectangle per line. A line
-     * broken up into multiple MCRs still returns a single bounding rectangle.
-     */
-    public static List<Rectangle> getLineBoundsForElement(
-            PdfStructElem node, DocContext ctx, int pageNum) {
-        Map<Integer, List<Rectangle>> lineBounds = ctx.pages().lineBounds(pageNum);
-
-        List<Rectangle> lines = new ArrayList<>();
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            if (StructTree.pageOf(mcr) == pageNum) {
-                lineBounds
-                        .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
-                        .forEach(fragment -> mergeIntoLines(lines, fragment));
-            }
-        }
-        return lines;
-    }
-
-    /**
-     * Gets an element's text lines with word measurements, in reading order across pages, joining
-     * an MCR's first line to the previous MCR's last when they share a line.
-     */
-    public static List<TextLine> getTextLinesForElement(PdfStructElem node, DocContext ctx) {
-        List<TextLine> lines = new ArrayList<>();
-        PdfMcr previous = null;
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            List<TextLine> mcrLines = ctx.pages().textLines(mcr);
-            int first = 0;
-            if (!lines.isEmpty() && !mcrLines.isEmpty() && continuesLineOf(ctx, previous, mcr)) {
-                TextLine head = lines.removeLast();
-                TextLine tail = mcrLines.get(0);
-                lines.add(
-                        new TextLine(
-                                Geometry.union(head.bounds(), tail.bounds()),
-                                head.firstWordWidth(),
-                                head.spaceWidth(),
-                                tail.lastChar()));
-                first = 1;
-            }
-            lines.addAll(mcrLines.subList(first, mcrLines.size()));
-            previous = mcr;
-        }
-        return lines;
-    }
-
-    /** Adds a fragment to the line it sits on, widening that line, or starts a new line with it. */
-    private static void mergeIntoLines(List<Rectangle> lines, Rectangle fragment) {
-        for (int i = 0; i < lines.size(); i++) {
-            if (onSameLine(lines.get(i), fragment)) {
-                lines.set(i, Geometry.union(lines.get(i), fragment));
-                return;
-            }
-        }
-        lines.add(new Rectangle(fragment));
-    }
-
     /** Whether two fragments share a text line, judged by how far their vertical centres differ. */
     public static boolean onSameLine(Rectangle one, Rectangle other) {
         float centre = one.getBottom() + one.getHeight() / 2;
         float otherCentre = other.getBottom() + other.getHeight() / 2;
         return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;
-    }
-
-    /**
-     * Checks whether the MCR's first line sits on the previous MCR's last line, as when a dissolved
-     * inline span leaves a line's tail in a block of its own.
-     */
-    public static boolean continuesLineOf(DocContext ctx, PdfMcr previous, PdfMcr mcr) {
-        if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
-            return false;
-        }
-        List<Rectangle> prevLines = ctx.pages().lineBounds(previous);
-        List<Rectangle> lines = ctx.pages().lineBounds(mcr);
-        return !prevLines.isEmpty()
-                && !lines.isEmpty()
-                && onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
     }
 
     // == Bounds extraction ===============================================

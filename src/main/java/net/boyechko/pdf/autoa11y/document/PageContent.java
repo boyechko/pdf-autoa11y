@@ -6,6 +6,7 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +80,38 @@ public class PageContent {
         return pageNum > 0 ? lineBounds(pageNum).getOrDefault(mcr.getMcid(), List.of()) : List.of();
     }
 
+    /**
+     * Returns an element's text lines on one page, in reading order, one rectangle per line. A line
+     * broken up into multiple MCRs still returns a single bounding rectangle.
+     */
+    public List<Rectangle> lineBounds(PdfStructElem node, int pageNum) {
+        Map<Integer, List<Rectangle>> mcidLines = lineBounds(pageNum);
+        List<Rectangle> lines = new ArrayList<>();
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            if (StructTree.pageOf(mcr) == pageNum) {
+                mcidLines
+                        .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
+                        .forEach(fragment -> mergeIntoLines(lines, fragment));
+            }
+        }
+        return lines;
+    }
+
+    /**
+     * Checks whether the MCR's first line sits on the previous MCR's last line, as when a dissolved
+     * inline span leaves a line's tail in a block of its own.
+     */
+    public boolean continuesLineOf(PdfMcr previous, PdfMcr mcr) {
+        if (previous == null || StructTree.pageOf(previous) != StructTree.pageOf(mcr)) {
+            return false;
+        }
+        List<Rectangle> prevLines = lineBounds(previous);
+        List<Rectangle> lines = lineBounds(mcr);
+        return !prevLines.isEmpty()
+                && !lines.isEmpty()
+                && Content.onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
+    }
+
     /** Returns each MCID's text lines on a page, top to bottom, with word measurements. */
     public Map<Integer, List<Content.TextLine>> textLines(int pageNum) {
         return textLinesCache.computeIfAbsent(
@@ -89,6 +122,33 @@ public class PageContent {
     public List<Content.TextLine> textLines(PdfMcr mcr) {
         int pageNum = StructTree.pageOf(mcr);
         return pageNum > 0 ? textLines(pageNum).getOrDefault(mcr.getMcid(), List.of()) : List.of();
+    }
+
+    /**
+     * Returns an element's text lines with word measurements, in reading order across pages,
+     * joining an MCR's first line to the previous MCR's last when they share a line.
+     */
+    public List<Content.TextLine> textLines(PdfStructElem node) {
+        List<Content.TextLine> lines = new ArrayList<>();
+        PdfMcr previous = null;
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            List<Content.TextLine> mcrLines = textLines(mcr);
+            int first = 0;
+            if (!lines.isEmpty() && !mcrLines.isEmpty() && continuesLineOf(previous, mcr)) {
+                Content.TextLine head = lines.removeLast();
+                Content.TextLine tail = mcrLines.get(0);
+                lines.add(
+                        new Content.TextLine(
+                                Geometry.union(head.bounds(), tail.bounds()),
+                                head.firstWordWidth(),
+                                head.spaceWidth(),
+                                tail.lastChar()));
+                first = 1;
+            }
+            lines.addAll(mcrLines.subList(first, mcrLines.size()));
+            previous = mcr;
+        }
+        return lines;
     }
 
     /** Returns text with font information for all MCIDs on a page. */
@@ -123,5 +183,16 @@ public class PageContent {
     public List<Content.BulletPosition> bullets(int pageNum) {
         return bulletCache.computeIfAbsent(
                 pageNum, k -> Content.extractBulletPositionsForPage(doc.getPage(pageNum)));
+    }
+
+    /** Adds a fragment to the line it sits on, widening that line, or starts a new line with it. */
+    private static void mergeIntoLines(List<Rectangle> lines, Rectangle fragment) {
+        for (int i = 0; i < lines.size(); i++) {
+            if (Content.onSameLine(lines.get(i), fragment)) {
+                lines.set(i, Geometry.union(lines.get(i), fragment));
+                return;
+            }
+        }
+        lines.add(new Rectangle(fragment));
     }
 }

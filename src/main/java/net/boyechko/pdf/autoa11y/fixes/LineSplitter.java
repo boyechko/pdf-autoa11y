@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
@@ -195,7 +194,7 @@ final class LineSplitter {
                     mcr,
                     page,
                     ContentStream.planLineSplit(page, mcr.getMcid()),
-                    Content.continuesLineOf(ctx, previous, mcr));
+                    ctx.pages().continuesLineOf(previous, mcr));
         }
 
         @Override
@@ -235,7 +234,7 @@ final class LineSplitter {
                     elem,
                     StructTree.requirePageOf(mcrs.get(0)),
                     lineSpan,
-                    Content.continuesLineOf(ctx, previous, mcrs.get(0)),
+                    ctx.pages().continuesLineOf(previous, mcrs.get(0)),
                     last);
         }
 

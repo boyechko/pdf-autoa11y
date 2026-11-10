@@ -937,8 +937,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         List<BulletLine> perLine = new ArrayList<>();
         for (int pageNum : pagesTouchedBy(element)) {
             List<Content.BulletPosition> bullets = visit.docCtx().pages().bullets(pageNum);
-            for (Rectangle line :
-                    Content.getLineBoundsForElement(element, visit.docCtx(), pageNum)) {
+            for (Rectangle line : visit.docCtx().pages().lineBounds(element, pageNum)) {
                 perLine.add(new BulletLine(pageNum, line, bulletOnLine(bullets, line)));
             }
         }

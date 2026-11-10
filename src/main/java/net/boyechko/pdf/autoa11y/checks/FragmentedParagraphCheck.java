@@ -133,8 +133,8 @@ public class FragmentedParagraphCheck extends StructTreeCheck {
      * has had no chance to, so there a wrap within the second P will do.
      */
     private static boolean wrapsInto(PdfStructElem previous, PdfStructElem next, Visit visit) {
-        List<TextLine> before = Content.getTextLinesForElement(previous, visit.docCtx());
-        List<TextLine> after = Content.getTextLinesForElement(next, visit.docCtx());
+        List<TextLine> before = visit.docCtx().pages().textLines(previous);
+        List<TextLine> after = visit.docCtx().pages().textLines(next);
         if (before.isEmpty() || after.isEmpty()) {
             return false;
         }

@@ -8,7 +8,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
@@ -68,7 +67,7 @@ public class FusedParagraphCheck extends StructTreeCheck {
                 || !holdsOnlyTextAndInlines(visit)) {
             return true;
         }
-        List<TextLine> lines = Content.getTextLinesForElement(node, visit.docCtx());
+        List<TextLine> lines = visit.docCtx().pages().textLines(node);
         if (lines.isEmpty()) {
             return true;
         }
