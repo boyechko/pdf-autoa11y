@@ -5,6 +5,7 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,30 @@ public class PageContent {
     public Map<Integer, Rectangle> bounds(int pageNum) {
         return boundsCache.computeIfAbsent(
                 pageNum, k -> Content.extractBoundsForPage(doc.getPage(pageNum)));
+    }
+
+    /** Returns an MCR's bounding box, or null when it has none or its page is unresolved. */
+    public Rectangle bounds(PdfMcr mcr) {
+        int pageNum = StructTree.pageOf(mcr);
+        return pageNum > 0 ? bounds(pageNum).get(mcr.getMcid()) : null;
+    }
+
+    /**
+     * Returns the union bounding box of an element's MCRs on one page, or null when none has one.
+     */
+    public Rectangle bounds(PdfStructElem node, int pageNum) {
+        Map<Integer, Rectangle> mcidBounds = bounds(pageNum);
+        Rectangle result = null;
+        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+            if (StructTree.pageOf(mcr) != pageNum) {
+                continue;
+            }
+            Rectangle bounds = mcidBounds.get(mcr.getMcid());
+            if (bounds != null) {
+                result = Geometry.union(result, bounds);
+            }
+        }
+        return result;
     }
 
     /** Returns each MCID's text lines on a page, top to bottom. */

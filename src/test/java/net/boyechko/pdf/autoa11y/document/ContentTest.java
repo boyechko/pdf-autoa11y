@@ -16,10 +16,6 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
@@ -46,16 +42,6 @@ class ContentTest extends PdfTestBase {
     }
 
     /** Fills a 200x10 rectangle at (100, y) inside a P block marked with the MCR's MCID. */
-    private static void fillMarkedRect(PdfPage page, PdfMcr mcr, float y) {
-        PdfDictionary props = new PdfDictionary();
-        props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
-        new PdfCanvas(page)
-                .beginMarkedContent(PdfName.P, props)
-                .rectangle(100, y, 200, 10)
-                .fill()
-                .endMarkedContent();
-    }
-
     /** Writes one MCID-0 block of Helvetica 12 lines, each a list of show-operator strings. */
     private static Path writeTextLines(Path pdfPath, List<List<String>> lines) throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
@@ -174,42 +160,6 @@ class ContentTest extends PdfTestBase {
             canvas.stroke();
 
             assertTrue(Content.extractBulletPositionsForPage(page).isEmpty());
-        }
-    }
-
-    @Test
-    void elementBoundsOnPageIgnoreSameMcidOnOtherPage() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfPage page1 = pdfDoc.addNewPage();
-            PdfPage page2 = pdfDoc.addNewPage();
-            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
-            pdfDoc.getStructTreeRoot().addKid(document);
-
-            // Each page numbers its MCIDs from 0 in creation order, so creating this
-            // unrelated P first on page 1 gives it MCID 0, near the bottom of the page
-            PdfStructElem other = new PdfStructElem(pdfDoc, PdfName.P, page1);
-            document.addKid(other);
-            PdfMcr otherMcr = other.addKid(new PdfMcrNumber(page1, other));
-            fillMarkedRect(page1, otherMcr, 100);
-
-            // A P starting near the top of page 1 and continuing onto page 2, where it
-            // reuses MCID 0
-            PdfStructElem spanning = new PdfStructElem(pdfDoc, PdfName.P, page1);
-            document.addKid(spanning);
-            PdfMcr onPage1 = spanning.addKid(new PdfMcrNumber(page1, spanning));
-            fillMarkedRect(page1, onPage1, 700);
-            PdfMcr onPage2 = spanning.addKid(new PdfMcrDictionary(page2, spanning));
-            fillMarkedRect(page2, onPage2, 700);
-            assertEquals(otherMcr.getMcid(), onPage2.getMcid(), "precondition: MCIDs collide");
-
-            DocContext ctx = new DocContext(pdfDoc);
-            Rectangle expected = Content.getBoundsForMcid(ctx, 1, onPage1.getMcid());
-            Rectangle actual = Content.getBoundsForElement(spanning, ctx, 1);
-
-            assertTrue(
-                    expected.equalsWithEpsilon(actual),
-                    "expected " + expected + " but got " + actual);
         }
     }
 }

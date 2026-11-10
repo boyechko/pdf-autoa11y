@@ -15,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
@@ -157,8 +156,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                             .filter(
                                     textLink ->
                                             Geometry.boundsSimilar(
-                                                    Content.getBoundsForElement(
-                                                            textLink, ctx, pageNum),
+                                                    ctx.pages().bounds(textLink, pageNum),
                                                     annotRect))
                             .toList();
             if (matches.size() != 1) {

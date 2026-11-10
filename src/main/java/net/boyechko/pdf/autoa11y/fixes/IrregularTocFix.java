@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
@@ -91,7 +90,7 @@ public final class IrregularTocFix implements IssueFix {
                 continue;
             }
             int pageNum = StructTree.pageOf(kid, ctx);
-            Rectangle bounds = pageNum > 0 ? Content.getBoundsForElement(kid, ctx, pageNum) : null;
+            Rectangle bounds = pageNum > 0 ? ctx.pages().bounds(kid, pageNum) : null;
             out.add(new Item(kid, elem, pageNum, bounds));
         }
     }

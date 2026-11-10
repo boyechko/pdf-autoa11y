@@ -51,7 +51,7 @@ public class MissingAltTextCheck extends StructTreeCheck {
             return true;
         }
 
-        Rectangle bounds = Content.getBoundsForElement(visit.node(), visit.docCtx(), pageNumber);
+        Rectangle bounds = visit.docCtx().pages().bounds(visit.node(), pageNumber);
         if (bounds == null || !MistaggedArtifactCheck.isMeaningfulSize(bounds)) {
             return true;
         }

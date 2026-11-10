@@ -966,14 +966,11 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Returns a kid's own bounds on its own page, or null when it has none (e.g. an OBJR). */
     private static Rectangle boundsOfKid(Visit visit, IStructureNode kid) {
         if (kid instanceof PdfMcr mcr) {
-            int pageNum = StructTree.pageOf(mcr);
-            return pageNum > 0 && mcr.getMcid() >= 0
-                    ? Content.getBoundsForMcid(visit.docCtx(), pageNum, mcr.getMcid())
-                    : null;
+            return visit.docCtx().pages().bounds(mcr);
         }
         if (kid instanceof PdfStructElem elem) {
             int pageNum = StructTree.pageOf(elem, visit.docCtx());
-            return pageNum > 0 ? Content.getBoundsForElement(elem, visit.docCtx(), pageNum) : null;
+            return pageNum > 0 ? visit.docCtx().pages().bounds(elem, pageNum) : null;
         }
         return null;
     }

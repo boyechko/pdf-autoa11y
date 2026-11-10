@@ -522,12 +522,6 @@ public final class Content {
         return ratio > ARTIFICIAL_SPACING_RATIO;
     }
 
-    /** Gets the bounding box for a single MCR by its MCID. */
-    public static Rectangle getBoundsForMcid(DocContext ctx, int pageNum, int mcid) {
-        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
-        return mcidBounds.get(mcid);
-    }
-
     /**
      * Gets an element's text lines on one page, in reading order, one rectangle per line. A line
      * broken up into multiple MCRs still returns a single bounding rectangle.
@@ -605,23 +599,6 @@ public final class Content {
         return !prevLines.isEmpty()
                 && !lines.isEmpty()
                 && onSameLine(prevLines.get(prevLines.size() - 1), lines.get(0));
-    }
-
-    /** Gets the union bounding box for all of a structure element's MCRs on one page. */
-    public static Rectangle getBoundsForElement(PdfStructElem node, DocContext ctx, int pageNum) {
-        Map<Integer, Rectangle> mcidBounds = ctx.pages().bounds(pageNum);
-
-        Rectangle result = null;
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
-            if (StructTree.pageOf(mcr) != pageNum) {
-                continue;
-            }
-            Rectangle bounds = mcidBounds.get(mcr.getMcid());
-            if (bounds != null) {
-                result = Geometry.union(result, bounds);
-            }
-        }
-        return result;
     }
 
     // == Bounds extraction ===============================================
