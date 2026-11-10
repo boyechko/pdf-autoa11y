@@ -35,6 +35,7 @@ public final class ProcessingDefaults {
                 MistaggedArtifactCheck::new,
                 FigureWithTextCheck::new,
                 MissingAltTextCheck::new,
+                UnscopedTableHeaderCheck::new,
                 EmptyLinkTagCheck::new,
                 InvalidLinkUriCheck::new,
                 BadlySplitLinkCheck::new,

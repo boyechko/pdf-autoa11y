@@ -56,6 +56,7 @@ public enum IssueType {
     MISTAGGED_HEADING("headings tagged as paragraphs"),
     IMPROPERLY_NESTED_HEADING("headings with skipped or out-of-order levels"),
     IRREGULAR_TOC("TOC contents not nested into a TOCI hierarchy"),
+    TABLE_HEADER_UNSCOPED("table header cells without a Scope attribute"),
     MIXED_FONT_MARKED_CONTENT("marked content lumping differently-sized lines");
 
     private final String groupLabel;
