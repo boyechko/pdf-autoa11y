@@ -61,6 +61,10 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- An element whose page is named only on its marked-content references, not
+  on the element itself, is no longer treated as having no page: checks such
+  as `FigureWithTextCheck` and `MissingAltTextCheck` now examine it, and
+  reports show its page number.
 - Checks that read an element's text on one page, such as
   `FigureWithTextCheck` and `MistaggedArtifactCheck`, no longer miss content
   referenced through MCR dictionaries, nor read a child's text from the wrong

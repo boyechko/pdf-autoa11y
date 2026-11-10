@@ -222,6 +222,42 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
+    void pageOfFromMcrDictionaryKid() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrDictionary(page2, p));
+
+            DocContext ctx = new DocContext(doc);
+            // P has no /Pg; only its MCR dictionary names the page
+            assertEquals(2, StructTree.pageOf(p, ctx));
+        }
+    }
+
+    @Test
+    void pageOfTakesFirstPageInReadingOrder() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            div.addKid(span);
+            span.addKid(new PdfMcrDictionary(page2, span));
+            div.addKid(new PdfStructElem(doc, PdfName.P, page1));
+
+            DocContext ctx = new DocContext(doc);
+            assertEquals(2, StructTree.pageOf(div, ctx));
+        }
+    }
+
+    @Test
     void pageOfReturnsZeroWhenUnresolvable() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

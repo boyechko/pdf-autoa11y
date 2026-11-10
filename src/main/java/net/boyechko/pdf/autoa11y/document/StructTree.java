@@ -75,7 +75,10 @@ public final class StructTree {
         return false;
     }
 
-    /** Finds the page via /Pg, then recursion into kids. */
+    /**
+     * Finds the element's page via its own /Pg, else the first page among its kids in reading
+     * order: an MCR or OBJR naming its own page, or an element kid resolved the same way.
+     */
     public static int pageOf(PdfStructElem elem, DocContext ctx) {
         PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
         if (pg != null) {
@@ -83,17 +86,15 @@ public final class StructTree {
             if (pageNum > 0) return pageNum;
         }
 
-        // Recursively check for the first child with a page
-        List<IStructureNode> kids = elem.getKids();
-        if (kids != null) {
-            for (IStructureNode kid : kids) {
-                if (kid instanceof PdfStructElem childElem) {
-                    int pageNum = pageOf(childElem, ctx);
-                    if (pageNum > 0) return pageNum;
-                }
-            }
+        for (IStructureNode kid : kidsOf(elem)) {
+            int pageNum =
+                    switch (kid) {
+                        case PdfMcr mcr -> pageOf(mcr);
+                        case PdfStructElem childElem -> pageOf(childElem, ctx);
+                        default -> 0;
+                    };
+            if (pageNum > 0) return pageNum;
         }
-
         return 0;
     }
 
