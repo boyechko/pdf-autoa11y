@@ -29,7 +29,16 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Extracts text and bounds from PDF content streams, keyed by MCID. */
+/**
+ * Reads marked content out of one page's content stream: per-MCID text and fonts, content kinds,
+ * bounds, text lines, and bullet glyphs, each from a fresh parse of the page. Also holds the
+ * records that carry those facts and pure geometry on them, such as {@link #onSameLine}.
+ *
+ * <p>Out of scope by design: caching, and every query keyed by a structure element or MCR, which
+ * live in {@link PageContent}; and editing a content stream, which is {@link ContentStream}'s job.
+ * Methods here take a {@link PdfPage} or plain values, never a {@link DocContext} or a structure
+ * element, so a new question about an element belongs in PageContent.
+ */
 public final class Content {
     private static final Logger logger = LoggerFactory.getLogger(Content.class);
     private static final double ARTIFICIAL_SPACING_RATIO = 0.3;

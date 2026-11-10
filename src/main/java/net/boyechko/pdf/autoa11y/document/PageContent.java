@@ -15,7 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-/** Per-page marked-content facts, each extracted from the page on first access. */
+/**
+ * A document's marked-content facts, each extracted from its page by {@link Content} on first
+ * access and cached, and the queries that read them by page, by MCR, or by structure element.
+ * Checks and fixes reach it as {@code ctx.pages()}.
+ */
 public class PageContent {
     private final PdfDocument doc;
     private final Map<Integer, Map<Integer, Rectangle>> boundsCache = new HashMap<>();
