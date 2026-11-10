@@ -175,6 +175,64 @@ class PageContentTest extends PdfTestBase {
                 .endMarkedContent();
     }
 
+    @Test
+    void elementTextOnPageIncludesMcrDictionaries() throws Exception {
+        Path pdfPath = testOutputPath();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page);
+            pdfDoc.getStructTreeRoot().addKid(p);
+            showMarkedText(page, p.addKid(new PdfMcrNumber(page, p)), "Hello", 700);
+            showMarkedText(page, p.addKid(new PdfMcrDictionary(page, p)), "World", 680);
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            PdfStructElem p = (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0);
+            PageContent pages = new PageContent(pdfDoc);
+
+            assertEquals("Hello World", pages.text(p, 1));
+        }
+    }
+
+    @Test
+    void elementTextOnPageIgnoresKidsOnOtherPages() throws Exception {
+        Path pdfPath = testOutputPath();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(pdfPath.toString()))) {
+            pdfDoc.setTagged();
+            PdfPage page1 = pdfDoc.addNewPage();
+            PdfPage page2 = pdfDoc.addNewPage();
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, page1);
+            pdfDoc.getStructTreeRoot().addKid(p);
+            showMarkedText(page1, p.addKid(new PdfMcrNumber(page1, p)), "First", 700);
+            // A Span continuing the P on page 2, where its MCID repeats page 1's
+            PdfStructElem span = new PdfStructElem(pdfDoc, PdfName.Span, page2);
+            p.addKid(span);
+            showMarkedText(page2, span.addKid(new PdfMcrNumber(page2, span)), "Second", 700);
+        }
+
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
+            PdfStructElem p = (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0);
+            PageContent pages = new PageContent(pdfDoc);
+
+            assertEquals("First", pages.text(p, 1));
+            assertEquals("Second", pages.text(p, 2));
+        }
+    }
+
+    /** Shows one Helvetica 12 line at (100, y) inside the MCR's marked-content block. */
+    private static void showMarkedText(PdfPage page, PdfMcr mcr, String text, float y)
+            throws Exception {
+        new PdfCanvas(page)
+                .beginMarkedContent(PdfName.P, mcidProps(mcr.getMcid()))
+                .beginText()
+                .setFontAndSize(PdfFontFactory.createFont(StandardFonts.HELVETICA), 12)
+                .moveText(100, y)
+                .showText(text)
+                .endText()
+                .endMarkedContent();
+    }
+
     private static PdfDictionary mcidProps(int mcid) {
         PdfDictionary props = new PdfDictionary();
         props.put(PdfName.MCID, new PdfNumber(mcid));

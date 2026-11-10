@@ -61,6 +61,10 @@ Versioning](https://semver.org/).
   abbreviations; see `docs/remediation-log.md`.
 
 ### Fixed
+- Checks that read an element's text on one page, such as
+  `FigureWithTextCheck` and `MistaggedArtifactCheck`, no longer miss content
+  referenced through MCR dictionaries, nor read a child's text from the wrong
+  page when its MCIDs repeat ones on the page being checked.
 - `InconsistentParentTreeCheck` now drops ParentTree entries for structure
   elements no longer in the tree (e.g. left behind by re-tagging), which kept
   reclaiming live content after every save, and covers subtrees marked `OK`.
