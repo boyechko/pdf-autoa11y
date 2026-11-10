@@ -29,9 +29,10 @@ public final class SplitIntoParagraphsFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        SiblingPlacement placement = new SiblingPlacement(ctx.doc());
-        new LineSplitter(element, ItemSizes.of(paragraphSizes), placement).split(ctx);
-        for (PdfStructElem paragraph : placement.placed()) {
+        List<PdfStructElem> paragraphs =
+                new LineSplitter(element, ItemSizes.of(paragraphSizes), new SiblingPlacement())
+                        .split(ctx);
+        for (PdfStructElem paragraph : paragraphs) {
             StructTree.addToolScribble(paragraph, SPLIT_SCRIBBLE);
         }
     }

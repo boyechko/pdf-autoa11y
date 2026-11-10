@@ -50,8 +50,11 @@ final class LineSplitter {
         this.placement = placement;
     }
 
-    /** Splits the element, refusing (before any mutation) when its shape cannot be split. */
-    void split(DocContext ctx) throws Exception {
+    /**
+     * Splits the element, refusing (before any mutation) when its shape cannot be split, and
+     * returns each item's content element in reading order.
+     */
+    List<PdfStructElem> split(DocContext ctx) throws Exception {
         List<KidPlan> plans = planKids(ctx);
         int lineCount = plans.stream().mapToInt(KidPlan::countedLines).sum();
         String pages = pageLabelOf(ctx, plans);
@@ -68,15 +71,9 @@ final class LineSplitter {
                 plans.set(i, plans.get(i).movedTo(firstBody));
             }
         }
-        List<Integer> newMcids = buildItems(firstBody, plans, sizes);
-        placement.finish();
-
-        logger.debug(
-                "Split {} kid(s) on {} into {} items (new MCIDs {})",
-                plans.size(),
-                pages,
-                sizes.size(),
-                newMcids);
+        List<PdfStructElem> items = buildItems(firstBody, plans, sizes, pages);
+        placement.finish(firstBody);
+        return items;
     }
 
     /**
@@ -255,15 +252,16 @@ final class LineSplitter {
      * Walks the element's lines in reading order, grouping them into items of the given sizes; each
      * item after the first gets a content element from the placement. A line that opens a kid
      * carries that kid into its item; a line that starts a new item mid-MCR cuts the block there
-     * with a fresh MCID; a line continuing its item within the same kid stays put. Returns the new
-     * MCIDs in reading order.
+     * with a fresh MCID; a line continuing its item within the same kid stays put. Returns the
+     * items' content elements in reading order.
      */
-    private List<Integer> buildItems(
-            PdfStructElem firstBody, List<KidPlan> plans, List<Integer> sizes) {
+    private List<PdfStructElem> buildItems(
+            PdfStructElem firstBody, List<KidPlan> plans, List<Integer> sizes, String pages) {
         List<Integer> newMcids = new ArrayList<>();
         Map<PdfStream, List<Edit>> editsByStream = new LinkedHashMap<>();
 
         PdfStructElem itemBody = firstBody; // item 1 keeps the first kid
+        List<PdfStructElem> items = new ArrayList<>(List.of(firstBody));
         int itemIndex = 0;
         int linesLeftInItem = sizes.get(0);
 
@@ -280,7 +278,8 @@ final class LineSplitter {
                 boolean startsItem = linesLeftInItem == 0;
                 if (startsItem) {
                     linesLeftInItem = sizes.get(++itemIndex);
-                    itemBody = placement.placeNext(firstBody.getRole(), page);
+                    itemBody = placement.placeNext(itemBody, page);
+                    items.add(itemBody);
                 }
                 if (line == 0) {
                     if (kid != plans.get(0)) {
@@ -309,7 +308,13 @@ final class LineSplitter {
         for (Map.Entry<PdfStream, List<Edit>> entry : editsByStream.entrySet()) {
             ContentStream.applyEdits(entry.getKey(), entry.getValue());
         }
-        return newMcids;
+        logger.debug(
+                "Split {} kid(s) on {} into {} items (new MCIDs {})",
+                plans.size(),
+                pages,
+                sizes.size(),
+                newMcids);
+        return items;
     }
 
     /** Moves an MCR from its current parent to the end of a new one, returning the rebound MCR. */

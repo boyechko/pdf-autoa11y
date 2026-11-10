@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.function.Function;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -28,32 +26,30 @@ import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 public final class SplitIntoListItemsFix implements IssueFix {
     private final PdfStructElem element;
     private final ItemSizes itemSizes;
-    private final Function<PdfDocument, ListPlacement> placement;
+    private final ListPlacement placement;
 
     /** Splits at every detected line, deriving the item count from the content stream. */
     public SplitIntoListItemsFix(PdfStructElem element) {
-        this(element, ItemSizes.eachLine(), ListPlacement::joiningEnclosing);
+        this(element, ItemSizes.eachLine(), ListPlacement.JOINING_ENCLOSING);
     }
 
     /** Splits into exactly {@code expectedLines} one-line items, refusing on a count mismatch. */
     public SplitIntoListItemsFix(PdfStructElem element, Integer expectedLines) {
-        this(element, ItemSizes.expecting(expectedLines), ListPlacement::joiningEnclosing);
+        this(element, ItemSizes.expecting(expectedLines), ListPlacement.JOINING_ENCLOSING);
     }
 
     /** Splits per the instruction's spec, as parsed by {@link ItemSizes#parse}. */
     public SplitIntoListItemsFix(PdfStructElem element, String spec) {
-        this(element, ItemSizes.parse(spec), ListPlacement::joiningEnclosing);
+        this(element, ItemSizes.parse(spec), ListPlacement.JOINING_ENCLOSING);
     }
 
     /** Splits per the spec, building the new list where the element is rather than joining one. */
     public static SplitIntoListItemsFix inPlace(PdfStructElem element, String spec) {
-        return new SplitIntoListItemsFix(element, ItemSizes.parse(spec), ListPlacement::inPlace);
+        return new SplitIntoListItemsFix(element, ItemSizes.parse(spec), ListPlacement.IN_PLACE);
     }
 
     private SplitIntoListItemsFix(
-            PdfStructElem element,
-            ItemSizes itemSizes,
-            Function<PdfDocument, ListPlacement> placement) {
+            PdfStructElem element, ItemSizes itemSizes, ListPlacement placement) {
         this.element = element;
         this.itemSizes = itemSizes;
         this.placement = placement;
@@ -66,7 +62,7 @@ public final class SplitIntoListItemsFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        new LineSplitter(element, itemSizes, placement.apply(ctx.doc())).split(ctx);
+        new LineSplitter(element, itemSizes, placement).split(ctx);
     }
 
     @Override

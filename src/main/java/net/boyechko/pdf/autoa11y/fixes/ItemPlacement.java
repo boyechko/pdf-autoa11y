@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
 /**
  * Where a {@link LineSplitter} puts the items it cuts from an element: the structure each item's
- * content element lives in. Placements build structure only; the splitter moves the MCRs.
+ * content element lives in. Placements build structure only and keep no state between calls, each
+ * reading what it needs from the content elements it is handed; the splitter moves the MCRs.
  */
 interface ItemPlacement {
 
@@ -18,9 +18,11 @@ interface ItemPlacement {
      */
     PdfStructElem placeFirst(PdfStructElem element, PdfPage page);
 
-    /** Creates the content element for the next item, following the previous one. */
-    PdfStructElem placeNext(PdfName role, PdfPage page);
+    /**
+     * Creates the content element for the next item, of the previous item's role, right after it.
+     */
+    PdfStructElem placeNext(PdfStructElem previous, PdfPage page);
 
-    /** Finishes the structure once every item is placed. */
-    default void finish() {}
+    /** Finishes the structure once every item is placed, given the first item's content element. */
+    default void finish(PdfStructElem firstBody) {}
 }
