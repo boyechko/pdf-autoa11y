@@ -18,14 +18,11 @@ import com.itextpdf.kernel.pdf.canvas.parser.data.ImageRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.PathRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IEventListener;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,34 +86,6 @@ public final class Content {
     }
 
     private Content() {}
-
-    // == Content kind extraction =========================================
-
-    /**
-     * Returns the content for each MCR in a structure element (including descendants), keyed by
-     * page-scoped MCID.
-     */
-    public static Map<PageMcid, McidContent> findMcidsForElem(PdfStructElem elem, DocContext ctx) {
-        Map<PageMcid, McidContent> results = new LinkedHashMap<>();
-        if (elem == null || ctx == null) {
-            return results;
-        }
-
-        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
-            int mcid = mcr.getMcid();
-            int pageNum = StructTree.pageOf(mcr);
-            if (pageNum <= 0) {
-                continue;
-            }
-
-            McidContent mc = ctx.pages().content(pageNum).get(mcid);
-            if (mc != null && !mc.kinds().isEmpty()) {
-                results.put(new PageMcid(pageNum, mcid), mc);
-            }
-        }
-
-        return results;
-    }
 
     // == Bullet glyph detection =========================================
 

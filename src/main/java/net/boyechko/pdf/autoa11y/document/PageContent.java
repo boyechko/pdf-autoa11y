@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -164,6 +165,28 @@ public class PageContent {
     public Content.McidContent content(PdfMcr mcr) {
         int pageNum = StructTree.pageOf(mcr);
         return pageNum > 0 ? content(pageNum).get(mcr.getMcid()) : null;
+    }
+
+    /**
+     * Returns the content of each MCR in an element and its descendants that holds any text, image,
+     * or path, keyed by page-scoped MCID.
+     */
+    public Map<Content.PageMcid, Content.McidContent> content(PdfStructElem elem) {
+        Map<Content.PageMcid, Content.McidContent> results = new LinkedHashMap<>();
+        if (elem == null) {
+            return results;
+        }
+        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
+            int pageNum = StructTree.pageOf(mcr);
+            if (pageNum <= 0) {
+                continue;
+            }
+            Content.McidContent mc = content(pageNum).get(mcr.getMcid());
+            if (mc != null && !mc.kinds().isEmpty()) {
+                results.put(new Content.PageMcid(pageNum, mcr.getMcid()), mc);
+            }
+        }
+        return results;
     }
 
     /** Returns all MCID text on a page. */
