@@ -39,8 +39,7 @@ public final class StructTree {
 
     /** Returns the PDF object number for a structure element, or -1 if unavailable. */
     public static int objNum(PdfStructElem elem) {
-        var ref = elem.getPdfObject().getIndirectReference();
-        return ref != null ? ref.getObjNumber() : -1;
+        return Tag.of(elem).objNum();
     }
 
     /** Finds the first child element with the given role. */
@@ -80,22 +79,7 @@ public final class StructTree {
      * order: an MCR or OBJR naming its own page, or an element kid resolved the same way.
      */
     public static int pageOf(PdfStructElem elem, DocContext ctx) {
-        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
-        if (pg != null) {
-            int pageNum = ctx.doc().getPageNumber(pg);
-            if (pageNum > 0) return pageNum;
-        }
-
-        for (IStructureNode kid : kidsOf(elem)) {
-            int pageNum =
-                    switch (kid) {
-                        case PdfMcr mcr -> pageOf(mcr);
-                        case PdfStructElem childElem -> pageOf(childElem, ctx);
-                        default -> 0;
-                    };
-            if (pageNum > 0) return pageNum;
-        }
-        return 0;
+        return Tag.of(elem).page();
     }
 
     /** Returns the page number for any MCR or OBJR (since PdfObjRef extends PdfMcr). */
@@ -365,7 +349,7 @@ public final class StructTree {
 
     /** Checks whether two structure elements refer to the same PDF object. */
     public static boolean isSameElement(PdfStructElem a, PdfStructElem b) {
-        return a == b || isSame(a.getPdfObject(), b.getPdfObject());
+        return Tag.of(a).equals(Tag.of(b));
     }
 
     /** Checks whether a candidate element is a descendant of an ancestor element. */
@@ -427,18 +411,8 @@ public final class StructTree {
      * Returns direct children of an element matching the given type. When {@code type} is {@code
      * PdfMcr.class}, OBJRs (which extend PdfMcr but have mcid &lt; 0) are excluded.
      */
-    @SuppressWarnings("unchecked")
     public static <T extends IStructureNode> List<T> childrenOf(PdfStructElem elem, Class<T> type) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return List.of();
-
-        List<T> out = new ArrayList<>();
-        for (IStructureNode kid : kids) {
-            if (type.isInstance(kid) && !isExcludedMcr(kid, type)) {
-                out.add((T) kid);
-            }
-        }
-        return out;
+        return Tag.of(elem).kids(type);
     }
 
     /**
@@ -447,7 +421,7 @@ public final class StructTree {
      */
     public static List<PdfMcr> childrenAllMcrOf(PdfStructElem elem) {
         List<IStructureNode> kids = kidsOf(elem);
-        List<PdfMcr> mcrs = childrenOf(elem, PdfMcr.class);
+        List<PdfMcr> mcrs = Tag.of(elem).mcrs();
         return mcrs.size() == kids.size() ? mcrs : List.of();
     }
 
@@ -457,52 +431,20 @@ public final class StructTree {
      */
     public static <T extends IStructureNode> List<T> descendantsOf(
             PdfStructElem elem, Class<T> type) {
-        List<T> result = new ArrayList<>();
-        collectDescendants(elem, type, result);
-        return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends IStructureNode> void collectDescendants(
-            PdfStructElem elem, Class<T> type, List<T> result) {
-        List<IStructureNode> kids = elem.getKids();
-        if (kids == null) return;
-        for (IStructureNode kid : kids) {
-            if (type.isInstance(kid) && !isExcludedMcr(kid, type)) {
-                result.add((T) kid);
-            } else if (kid instanceof PdfStructElem childElem) {
-                collectDescendants(childElem, type, result);
-            }
-        }
-    }
-
-    /** When collecting PdfMcr, exclude OBJRs (which have getMcid() &lt; 0). */
-    private static boolean isExcludedMcr(IStructureNode kid, Class<?> type) {
-        return type == PdfMcr.class && kid instanceof PdfMcr mcr && mcr.getMcid() < 0;
+        return Tag.of(elem).descendants(type);
     }
 
     /**
      * Returns the mapped role for a structure element, or the raw role if no mapping is available.
      */
     public static String mappedRole(PdfStructElem n) {
-        PdfName role = n.getRole();
-        PdfStructTreeRoot structTreeRoot = pdfDocumentFor(n).getStructTreeRoot();
-        if (structTreeRoot == null) {
-            return role.getValue();
-        }
-        PdfDictionary roleMap = structTreeRoot.getRoleMap();
-
-        if (roleMap != null) {
-            PdfName mappedRole = roleMap.getAsName(role);
-            return (mappedRole != null) ? mappedRole.getValue() : role.getValue();
-        }
-        return role.getValue();
+        return Tag.of(n).role();
     }
 
     /** Returns the parent of a structure element, or null if no parent is available. */
     public static PdfStructElem parentOf(PdfStructElem n) {
-        IStructureNode p = n.getParent();
-        return (p instanceof PdfStructElem) ? (PdfStructElem) p : null;
+        Tag parent = Tag.of(n).parent();
+        return parent != null ? parent.elem() : null;
     }
 
     // === Structure attributes ==============================================
