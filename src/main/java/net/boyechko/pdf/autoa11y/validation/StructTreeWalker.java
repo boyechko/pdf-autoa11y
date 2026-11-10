@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ public class StructTreeWalker {
                 logger.warn("Scope element #{} not found; nothing to walk", scopeObjNum);
                 return;
             }
-            logger.debug("Confining walk to {} #{}", StructTree.mappedRole(scope), scopeObjNum);
+            logger.debug("Confining walk to {} #{}", Tag.of(scope).role(), scopeObjNum);
             walkElement(scope, "/", 0);
             return;
         }
@@ -87,8 +88,8 @@ public class StructTreeWalker {
             logger.debug(
                     "Skipping user-verified subtree at {}{} #{}",
                     parentPath,
-                    StructTree.mappedRole(node),
-                    StructTree.objNum(node));
+                    Tag.of(node).role(),
+                    Tag.of(node).objNum());
             return;
         }
 

@@ -63,7 +63,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
             if (!order.isLocatable(child)) {
                 logger.debug(
                         "Not judging the order of #{}: child #{} paints nothing locatable",
-                        StructTree.objNum(visit.node()),
+                        visit.objNum(),
                         StructTree.objNum(child));
                 return false;
             }

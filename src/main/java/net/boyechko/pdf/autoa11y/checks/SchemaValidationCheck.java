@@ -83,8 +83,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
         if (ruleFor(visit) == null) {
             String message =
                     String.format(
-                            "%s role is not defined in schema",
-                            formatRole(StructTree.mappedRole(visit.node())));
+                            "%s role is not defined in schema", formatRole(visit.mappedRole()));
             scribbleIssue(visit.node(), message);
             issues.add(
                     new Issue(IssueType.TAG_UNKNOWN_ROLE, IssueSev.ERROR, visit.locus(), message));

@@ -163,7 +163,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         if (itemStarts.size() < MIN_ITEMS_PER_LIST) {
             return;
         }
-        claimed.add(StructTree.objNum(visit.node()));
+        claimed.add(visit.objNum());
 
         int leadingLines = itemStarts.get(0);
         String spec = specOf(itemStarts, lines.size());
@@ -184,7 +184,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         logger.debug(
                 "Element #{} lumps {} bulleted items at x={}, lines {}, behind {} leading line(s),"
                         + " splittable={}",
-                StructTree.objNum(visit.node()),
+                visit.objNum(),
                 itemStarts.size(),
                 String.format("%.1f", levelX),
                 spec,
@@ -211,7 +211,7 @@ public class MistaggedListCheck extends StructTreeCheck {
 
         logger.debug(
                 "Element #{} lumps {} bulleted items behind {} continuation line(s), remedy {}",
-                StructTree.objNum(visit.node()),
+                visit.objNum(),
                 items,
                 leadingLines,
                 fix == null ? "none" : fix.getClass().getSimpleName());
@@ -498,7 +498,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         logger.debug(
                 "Elements {} under #{} each carry one bullet, unwrapped{}{}",
                 run.stream().map(item -> StructTree.objNum(item.element())).toList(),
-                StructTree.objNum(visit.node()),
+                visit.objNum(),
                 opener.isWhole()
                         ? ""
                         : " (first carved out of #" + StructTree.objNum(opener.element()) + ")",

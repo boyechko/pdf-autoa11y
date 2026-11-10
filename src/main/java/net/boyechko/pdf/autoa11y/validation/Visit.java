@@ -8,7 +8,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Immutable context passed to visitors during structure tree traversal. Contains pre-computed
@@ -16,7 +16,7 @@ import net.boyechko.pdf.autoa11y.document.StructTree;
  * children.
  */
 public record Visit(
-        PdfStructElem node,
+        Tag tag,
         String path,
         String role,
         String mappedRole,
@@ -41,19 +41,21 @@ public record Visit(
      */
     public static Visit fromNode(
             PdfStructElem node, String parentPath, int depth, int globalIndex, DocContext docCtx) {
+        Tag tag = Tag.of(node);
         // TODO: Update callers to use mappedRole, then change to PdfName.
-        String role = StructTree.mappedRole(node);
-        String mappedRole = StructTree.mappedRole(node);
+        String role = tag.role();
+        String mappedRole = tag.role();
         String path = parentPath + role + "[" + globalIndex + "]";
 
-        PdfStructElem parent = StructTree.parentOf(node);
-        String parentRole = parent != null ? StructTree.mappedRole(parent) : null;
+        Tag parent = tag.parent();
+        String parentRole = parent != null ? parent.role() : null;
 
-        List<PdfStructElem> children = StructTree.childrenOf(node, PdfStructElem.class);
-        List<String> childRoles = children.stream().map(StructTree::mappedRole).toList();
+        List<Tag> childTags = tag.children();
+        List<PdfStructElem> children = childTags.stream().map(Tag::elem).toList();
+        List<String> childRoles = childTags.stream().map(Tag::role).toList();
 
         return new Visit(
-                node,
+                tag,
                 path,
                 role,
                 mappedRole,
@@ -65,20 +67,25 @@ public record Visit(
                 docCtx);
     }
 
+    /** The visited element as iText's own type. */
+    public PdfStructElem node() {
+        return tag.elem();
+    }
+
     public PdfDocument doc() {
         return docCtx.doc();
     }
 
     public int page() {
-        return StructTree.pageOf(node, docCtx);
+        return tag.page();
     }
 
     public int objNum() {
-        return StructTree.objNum(node);
+        return tag.objNum();
     }
 
     public Locus locus() {
-        return Locus.atElem(docCtx, node);
+        return Locus.atElem(docCtx, node());
     }
 
     public boolean hasRole(String roleName) {
@@ -86,7 +93,7 @@ public record Visit(
     }
 
     public boolean hasRole(PdfName roleName) {
-        return roleName.equals(node.getRole());
+        return roleName.equals(node().getRole());
     }
 
     public boolean hasAnyRole(String... roleNames) {
