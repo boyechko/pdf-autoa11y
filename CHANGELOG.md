@@ -23,7 +23,9 @@ Versioning](https://semver.org/).
 - New `FragmentedParagraphCheck`: merges consecutive `P` tags that are one
   paragraph broken at a page break or layout line, such as a sentence whose
   tail landed in a `P` of its own, so a screen reader reads it as one
-  paragraph. Merged tags are stamped `__:MERGE paragraphs`.
+  paragraph. A tail opening with a capital, such as a proper noun, is caught
+  when the line before it had no room for its first word. Merged tags are
+  stamped `__:MERGE paragraphs`.
 - `--dump-tree=xml` exports a machine-readable structure tree with full text,
   element metadata, and ordered content references.
 - `--query-tree` selects structure subtrees using XPath, from either a PDF

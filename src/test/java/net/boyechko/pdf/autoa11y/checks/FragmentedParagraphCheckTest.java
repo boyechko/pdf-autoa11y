@@ -11,6 +11,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import java.nio.file.Path;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -18,6 +19,19 @@ import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
 class FragmentedParagraphCheckTest extends PdfTestBase {
+
+    /**
+     * Catalog page where P #36 ends "…without ofcial" on a full-width line and P #37 continues it
+     * with "University and Bothell campus approval.", while P #33, #39 and #44 are each continued
+     * by a P starting lowercase.
+     */
+    private static final Path WRAPPED_PDF = Path.of("src/test/resources/catalog_279.pdf");
+
+    /**
+     * Catalog pages where P #51, one line at the foot of the first page ending "…authority of RCW",
+     * is continued by P #52 at the top of the next, opening "28B.15.558, enables…".
+     */
+    private static final Path PAGE_BREAK_PDF = Path.of("src/test/resources/catalog_313-314.pdf");
 
     /**
      * Lays out each string as its own tagged P under Document and runs the check on the saved file,
@@ -60,6 +74,43 @@ class FragmentedParagraphCheckTest extends PdfTestBase {
                         "enrolled may skip this step.");
 
         assertEquals(2, issues.size(), "Should have 2 issues");
+    }
+
+    @Test
+    void detectsCapitalizedContinuationOfFullWidthLine() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(WRAPPED_PDF.toString()))) {
+            IssueList issues = new FragmentedParagraphCheck().findIssues(new DocContext(pdfDoc));
+
+            assertEquals(
+                    List.of(33, 36, 39, 44), issues.stream().map(i -> i.where().objNum()).toList());
+        }
+    }
+
+    @Test
+    void detectsOneLineFragmentContinuedOnTheNextPage() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(PAGE_BREAK_PDF.toString()))) {
+            IssueList issues = new FragmentedParagraphCheck().findIssues(new DocContext(pdfDoc));
+
+            assertEquals(List.of(51), issues.stream().map(i -> i.where().objNum()).toList());
+        }
+    }
+
+    @Test
+    void ignoresStackedAddressAfterOneLineParagraph() throws Exception {
+        IssueList issues =
+                checkParagraphs(
+                        "uwbses@uw.edu",
+                        "425.352.5411\nBox 358531\n18115 Campus Way NE\nBothell, WA 98011-8246");
+
+        assertTrue(issues.isEmpty(), "Should have no issues");
+    }
+
+    @Test
+    void ignoresCapitalizedParagraphAfterLineSettingItsOwnMeasure() throws Exception {
+        IssueList issues =
+                checkParagraphs("Office of Financial Aid and Scholarship Services", "Box 1234");
+
+        assertTrue(issues.isEmpty(), "Should have no issues");
     }
 
     @Test
