@@ -452,7 +452,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         List<PdfObject> onLine = new ArrayList<>();
         for (IStructureNode kid : StructTree.kidsOf(element)) {
             Rectangle bounds = boundsOfKid(visit, kid);
-            if (bounds != null && sitOnOneLine(bounds, line)) {
+            if (bounds != null && Content.onSameLine(bounds, line)) {
                 onLine.add(pdfObjectOf(kid));
             }
         }
@@ -953,13 +953,6 @@ public class MistaggedListCheck extends StructTreeCheck {
                 .map(Content.BulletPosition::x)
                 .findFirst()
                 .orElse(null);
-    }
-
-    /** Whether two boxes share a text line, judged by how far their vertical centres differ. */
-    private static boolean sitOnOneLine(Rectangle one, Rectangle other) {
-        float centre = one.getBottom() + one.getHeight() / 2;
-        float otherCentre = other.getBottom() + other.getHeight() / 2;
-        return Math.abs(centre - otherCentre) <= SAME_LINE_TOLERANCE;
     }
 
     /** Returns a kid's own bounds on its own page, or null when it has none (e.g. an OBJR). */
