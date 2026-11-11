@@ -133,10 +133,10 @@ public final class TreeXml {
         Element node;
         switch (tree.value()) {
             case TreeSnapshot.Element element -> {
-                String role = element.mappedRole();
+                String role = element.role();
                 node = document.createElement(tagOf(role));
                 attribute(node, "role", role);
-                if (!element.role().equals(role)) attribute(node, "rawRole", element.role());
+                if (!element.rawRole().equals(role)) attribute(node, "rawRole", element.rawRole());
                 if (element.objNum() >= 0) attribute(node, "id", element.objNum());
                 if (element.scribble() != null)
                     attribute(node, "scribble", element.scribble().rawValue());

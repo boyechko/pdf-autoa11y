@@ -104,7 +104,7 @@ public final class TreeDiagram {
         return toIndentedTreeString(TreeSnapshot.capture(node, Map.of()));
     }
 
-    /** Renders the original roles in a snapshot, omitting content children. */
+    /** Renders the raw roles in a snapshot, omitting content children. */
     public static String toIndentedTreeString(TreeNode<TreeSnapshot.Value> tree) {
         StringBuilder sb = new StringBuilder();
         appendIndentedTree(sb, tree, 0);
@@ -116,7 +116,7 @@ public final class TreeDiagram {
         int childDepth = depth;
         if (node.value() instanceof TreeSnapshot.Element element) {
             sb.repeat("  ", depth);
-            sb.append(element.role()).append('\n');
+            sb.append(element.rawRole()).append('\n');
             childDepth++;
         }
         for (var child : node.children()) {
@@ -226,7 +226,7 @@ public final class TreeDiagram {
                             .append(new DocValue.Mcr(content.mcid(), content.kinds()))
                             .append("]");
                     String text =
-                            SHOWN_IN_FULL.contains(element.role())
+                            SHOWN_IN_FULL.contains(element.rawRole())
                                     ? content.text()
                                     : Format.truncate(content.text());
                     if (!text.isBlank()) sb.append(" `").append(text).append("'");
@@ -257,7 +257,7 @@ public final class TreeDiagram {
     }
 
     private static String structElemLabel(TreeSnapshot.Element element) {
-        return Label.of(new DocValue.Role(element.mappedRole()))
+        return Label.of(new DocValue.Role(element.role()))
                 .add(element.objNum() >= 0 ? new DocValue.ObjNum(element.objNum()) : null)
                 .add(element.scribble())
                 .add(element.title())

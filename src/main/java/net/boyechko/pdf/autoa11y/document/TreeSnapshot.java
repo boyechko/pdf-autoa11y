@@ -35,10 +35,10 @@ public final class TreeSnapshot {
         }
     }
 
-    /** An element's original and mapped roles, labels, and first content page. */
+    /** An element's raw and mapped roles, labels, and first content page. */
     public record Element(
+            String rawRole,
             String role,
-            String mappedRole,
             int objNum,
             DocValue.Scribble scribble,
             DocValue.Title title,

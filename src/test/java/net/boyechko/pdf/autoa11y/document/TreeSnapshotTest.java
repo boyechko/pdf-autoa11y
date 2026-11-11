@@ -43,7 +43,7 @@ class TreeSnapshotTest {
         }
 
         var article = assertInstanceOf(TreeSnapshot.Element.class, snapshot.value());
-        assertEquals("Art", article.role());
+        assertEquals("Art", article.rawRole());
         assertEquals("REVIEW", article.scribble().value());
         assertEquals(1, article.page());
         assertTrue(article.objNum() > 0);
