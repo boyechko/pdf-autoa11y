@@ -143,9 +143,8 @@ public final class RebuildListFix implements IssueFix {
     /** Returns the content of the {@code count} consecutive items starting with the element's. */
     private static List<PdfStructElem> itemsSplitFrom(PdfStructElem element, int count) {
         Tag li = Tag.of(element).parent().parent();
-        Tag list = li.parent();
-        List<Tag> items = list.children();
-        int first = StructTree.findKidIndex(list.elem(), li.elem());
+        List<Tag> items = li.parent().children();
+        int first = items.indexOf(li);
         List<PdfStructElem> contents = new ArrayList<>();
         for (Tag item : items.subList(first, first + count)) {
             Tag lBody = item.children().get(0);
