@@ -19,7 +19,6 @@ public record Visit(
         Tag tag,
         String path,
         String role,
-        String mappedRole,
         String parentRole,
         List<PdfStructElem> children,
         List<String> childRoles,
@@ -42,9 +41,7 @@ public record Visit(
     public static Visit fromNode(
             PdfStructElem node, String parentPath, int depth, int globalIndex, DocContext docCtx) {
         Tag tag = Tag.of(node);
-        // TODO: Update callers to use mappedRole, then change to PdfName.
         String role = tag.role();
-        String mappedRole = tag.role();
         String path = parentPath + role + "[" + globalIndex + "]";
 
         Tag parent = tag.parent();
@@ -55,16 +52,7 @@ public record Visit(
         List<String> childRoles = childTags.stream().map(Tag::role).toList();
 
         return new Visit(
-                tag,
-                path,
-                role,
-                mappedRole,
-                parentRole,
-                children,
-                childRoles,
-                depth,
-                globalIndex,
-                docCtx);
+                tag, path, role, parentRole, children, childRoles, depth, globalIndex, docCtx);
     }
 
     /** The visited element as iText's own type. */

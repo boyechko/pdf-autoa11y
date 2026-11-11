@@ -194,7 +194,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
 
     @Override
     public void leaveElement(Visit visit) {
-        if (ART_ROLE.equals(visit.mappedRole()) && !scopeStack.isEmpty()) {
+        if (ART_ROLE.equals(visit.role()) && !scopeStack.isEmpty()) {
             scopeStack.pop();
         }
     }

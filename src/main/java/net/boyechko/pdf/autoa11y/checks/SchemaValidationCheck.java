@@ -82,8 +82,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
         /* If the schema rule is null, the role is not defined in the schema. */
         if (ruleFor(visit) == null) {
             String message =
-                    String.format(
-                            "%s role is not defined in schema", formatRole(visit.mappedRole()));
+                    String.format("%s role is not defined in schema", formatRole(visit.role()));
             scribbleIssue(visit.node(), message);
             issues.add(
                     new Issue(IssueType.TAG_UNKNOWN_ROLE, IssueSev.ERROR, visit.locus(), message));
@@ -191,7 +190,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
 
     /** Returns the schema rule for the element's role, or null if the role is not in the schema. */
     private TagSchema.Rule ruleFor(Visit visit) {
-        return schema.roles.get(visit.mappedRole());
+        return schema.roles.get(visit.role());
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {
