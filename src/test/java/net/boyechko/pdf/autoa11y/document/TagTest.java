@@ -204,6 +204,62 @@ class TagTest extends PdfTestBase {
     }
 
     @Test
+    void holdsOnlyMarkedContentWhenEveryKidIsAnMcr() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P, page);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrNumber(new PdfNumber(0), p));
+            p.addKid(new PdfMcrNumber(new PdfNumber(1), p));
+
+            assertTrue(Tag.of(p).holdsOnlyMarkedContent());
+        }
+    }
+
+    @Test
+    void doesNotHoldOnlyMarkedContentWhenAnElementIsMixedIn() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P, page);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrNumber(new PdfNumber(0), p));
+            p.addKid(new PdfStructElem(doc, PdfName.Span));
+
+            assertFalse(Tag.of(p).holdsOnlyMarkedContent());
+        }
+    }
+
+    @Test
+    void doesNotHoldOnlyMarkedContentWithAnObjRefAmongTheKids() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfLinkAnnotation annot = new PdfLinkAnnotation(new Rectangle(0, 0, 10, 10));
+            page.addAnnotation(annot);
+            PdfStructElem link = new PdfStructElem(doc, PdfName.Link, page);
+            doc.getStructTreeRoot().addKid(link);
+            link.addKid(new PdfMcrNumber(new PdfNumber(0), link));
+            link.addKid(new PdfObjRef(annot, link, doc.getNextStructParentIndex()));
+
+            assertFalse(Tag.of(link).holdsOnlyMarkedContent());
+        }
+    }
+
+    @Test
+    void emptyElementDoesNotHoldOnlyMarkedContent() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+
+            assertFalse(Tag.of(p).holdsOnlyMarkedContent());
+        }
+    }
+
+    @Test
     void descendantMcrsReachThroughNestedElements() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

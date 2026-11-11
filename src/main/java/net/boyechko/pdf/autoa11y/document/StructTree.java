@@ -394,16 +394,6 @@ public final class StructTree {
     }
 
     /**
-     * Returns the element's kids when every one is a marked-content reference, else an empty list.
-     * An OBJR marks no content, so one among the kids disqualifies the element.
-     */
-    public static List<PdfMcr> childrenAllMcrOf(PdfStructElem elem) {
-        List<IStructureNode> kids = kidsOf(elem);
-        List<PdfMcr> mcrs = Tag.of(elem).mcrs();
-        return mcrs.size() == kids.size() ? mcrs : List.of();
-    }
-
-    /**
      * Recursively collects all descendants matching the given type, traversing only through {@link
      * PdfStructElem} intermediaries. When {@code type} is {@code PdfMcr.class}, OBJRs are excluded.
      */

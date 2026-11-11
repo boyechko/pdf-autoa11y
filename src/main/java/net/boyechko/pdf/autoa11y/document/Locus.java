@@ -58,16 +58,21 @@ public sealed interface Locus {
      * element stored as a direct object has no object number, so it falls back to its page, if any.
      */
     static Locus atElem(DocContext ctx, PdfStructElem element) {
-        if (ctx == null || element == null) {
+        return atElem(ctx, element != null ? Tag.of(element) : null);
+    }
+
+    /** Element location for a tag, resolved as for its underlying element. */
+    static Locus atElem(DocContext ctx, Tag tag) {
+        if (ctx == null || tag == null) {
             return none();
         }
-        int objNum = StructTree.objNum(element);
-        int pageNum = StructTree.pageOf(element, ctx);
+        int objNum = tag.objNum();
+        int pageNum = tag.page();
         if (objNum < 0) {
             return pageNum > 0 ? atPage(pageNum) : none();
         }
         Integer maybePage = pageNum > 0 ? pageNum : null;
-        String role = element.getRole() != null ? StructTree.mappedRole(element) : null;
+        String role = tag.elem().getRole() != null ? tag.role() : null;
         return new AtElem(objNum, maybePage, role);
     }
 

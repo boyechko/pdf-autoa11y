@@ -35,6 +35,22 @@ class LocusTest extends PdfTestBase {
     }
 
     @Test
+    void tagLocusNamesItsObjectPageAndRole() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            pdfDoc.addNewPage();
+            PdfPage second = pdfDoc.addNewPage();
+            PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, second);
+            pdfDoc.getStructTreeRoot().addKid(p);
+            Tag tag = Tag.of(p);
+
+            assertEquals(
+                    new Locus.AtElem(tag.objNum(), 2, "P"),
+                    Locus.atElem(new DocContext(pdfDoc), tag));
+        }
+    }
+
+    @Test
     void directStructElemFallsBackToItsPage() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();

@@ -121,6 +121,15 @@ public final class Tag {
         return kids(PdfObjRef.class);
     }
 
+    /**
+     * Whether the tag has kids and every one is marked content. An element or an OBJR among them
+     * disqualifies it, since an OBJR marks no content.
+     */
+    public boolean holdsOnlyMarkedContent() {
+        int kids = StructTree.kidsOf(elem).size();
+        return kids > 0 && mcrs().size() == kids;
+    }
+
     /** Marked-content references anywhere below, excluding OBJRs. */
     public List<PdfMcr> descendantMcrs() {
         return descendants(PdfMcr.class);
