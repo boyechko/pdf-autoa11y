@@ -139,17 +139,38 @@ public final class Tag {
         return descendants(PdfObjRef.class);
     }
 
-    /** The element kid right after this one in its parent, or null if none or not an element. */
+    /** Whether the parent this tag names lists it among its kids; false for a removed tag. */
+    public boolean isAttached() {
+        return indexInParent() >= 0;
+    }
+
+    /** The kid right before this one in its parent, or null if none or not an element. */
+    public Tag previousSibling() {
+        List<IStructureNode> preceding = precedingSiblings();
+        return !preceding.isEmpty() && preceding.getLast() instanceof PdfStructElem previous
+                ? Tag.of(previous)
+                : null;
+    }
+
+    /** The kid right after this one in its parent, or null if none or not an element. */
     public Tag nextSibling() {
-        IStructureNode container = elem.getParent();
-        if (container == null) return null;
-        List<IStructureNode> kids = StructTree.kidsOf(container);
-        int index = StructTree.findKidIndex(container, elem);
-        return index >= 0
-                        && index + 1 < kids.size()
-                        && kids.get(index + 1) instanceof PdfStructElem next
+        List<IStructureNode> following = followingSiblings();
+        return !following.isEmpty() && following.getFirst() instanceof PdfStructElem next
                 ? Tag.of(next)
                 : null;
+    }
+
+    /** Its parent's kids of every kind that come before this tag, in order. */
+    public List<IStructureNode> precedingSiblings() {
+        int index = indexInParent();
+        return index < 0 ? List.of() : List.copyOf(siblings().subList(0, index));
+    }
+
+    /** Its parent's kids of every kind that come after this tag, in order. */
+    public List<IStructureNode> followingSiblings() {
+        int index = indexInParent();
+        List<IStructureNode> siblings = siblings();
+        return index < 0 ? List.of() : List.copyOf(siblings.subList(index + 1, siblings.size()));
     }
 
     /** Places this tag right before the sibling, taking it out of wherever it sits now. */
@@ -162,8 +183,25 @@ public final class Tag {
         insertBeside(sibling, 1);
     }
 
+    /**
+     * Moves a kid of any kind out of its parent to sit right before this tag: an element, or marked
+     * content or an OBJR, which keeps resolving the page it renders on.
+     */
+    public void precedeWith(IStructureNode kid) {
+        if (kid instanceof PdfStructElem kidElem) {
+            Tag.of(kidElem).insertBefore(this);
+            return;
+        }
+        requireAttached();
+        if (!(elem.getParent() instanceof PdfStructElem container)) {
+            throw new IllegalStateException("Marked content cannot sit beside top-level " + this);
+        }
+        StructTree.moveKid(kid, (PdfStructElem) kid.getParent(), container, indexInParent());
+    }
+
     /** Puts the replacements where this tag sits, in order, and takes this tag out of the tree. */
     public void replaceWith(List<Tag> replacements) {
+        requireAttached();
         for (Tag replacement : replacements) {
             replacement.insertBefore(this);
         }
@@ -194,18 +232,32 @@ public final class Tag {
      * longer supply.
      */
     private void insertBeside(Tag sibling, int offset) {
+        sibling.requireAttached();
         IStructureNode container = sibling.elem.getParent();
-        if (container == null || StructTree.findKidIndex(container, sibling.elem) < 0) {
-            throw new IllegalStateException(sibling + " is not among its parent's kids");
-        }
         IStructureNode former = elem.getParent();
         if (former != null) {
             StructTree.materializeInheritedPage(elem);
             StructTree.removeFromParent(elem, former);
         }
         // Looked up only now: leaving the same parent shifts the sibling's position.
-        int index = StructTree.findKidIndex(container, sibling.elem);
-        StructTree.addKidToParent(container, index + offset, elem);
+        StructTree.addKidToParent(container, sibling.indexInParent() + offset, elem);
+    }
+
+    private void requireAttached() {
+        if (!isAttached()) {
+            throw new IllegalStateException(this + " is not among its parent's kids");
+        }
+    }
+
+    /** This tag's position among its parent's kids of every kind, or -1 if it is not there. */
+    private int indexInParent() {
+        IStructureNode container = elem.getParent();
+        return container == null ? -1 : StructTree.findKidIndex(container, elem);
+    }
+
+    /** Its parent's kids of every kind, this tag included. */
+    private List<IStructureNode> siblings() {
+        return StructTree.kidsOf(elem.getParent());
     }
 
     /** Direct kids of the given type. */

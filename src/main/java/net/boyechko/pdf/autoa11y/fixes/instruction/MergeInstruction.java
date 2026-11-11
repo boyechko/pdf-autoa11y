@@ -34,22 +34,19 @@ record MergeInstruction() implements ScribbledInstruction {
         if (!(element.getParent() instanceof PdfStructElem parent)) {
             throw new IllegalArgumentException("!MERGE requires an element with a parent element");
         }
-        int index = StructTree.findKidIndex(parent, element);
-        if (index < 0) {
+        if (!Tag.of(element).isAttached()) {
             // /P points at the parent but the parent's /K does not list the element back:
             // a malformed tree, or a wrapper left stale by an earlier fix that detached it.
             throw new IllegalArgumentException(
                     "!MERGE refuses: element is not among its parent's kids (dangling /P)");
         }
-        if (index == 0) {
+        Tag previous = Tag.of(element).previousSibling();
+        if (previous == null) {
             throw new IllegalArgumentException(
                     "!MERGE refuses: there is no preceding sibling element to merge into");
         }
-        if (!(parent.getKids().get(index - 1) instanceof PdfStructElem target)) {
-            throw new IllegalArgumentException(
-                    "!MERGE refuses: preceding sibling is marked content, not an element");
-        }
-        if (!Tag.of(element).role().equals(Tag.of(target).role())) {
+        PdfStructElem target = previous.elem();
+        if (!Tag.of(element).role().equals(previous.role())) {
             throw new IllegalArgumentException(
                     "!MERGE refuses: preceding sibling has a different mapped role");
         }

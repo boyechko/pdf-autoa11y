@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
@@ -606,6 +607,129 @@ class TagTest extends PdfTestBase {
             div.addKid(new PdfStructElem(doc, PdfName.P));
 
             assertNull(Tag.of(first).nextSibling());
+        }
+    }
+
+    @Test
+    void previousSiblingIsTheElementRightBefore() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem first = new PdfStructElem(doc, PdfName.P);
+            PdfStructElem second = new PdfStructElem(doc, PdfName.P);
+            div.addKid(first);
+            div.addKid(second);
+
+            assertEquals(Tag.of(first), Tag.of(second).previousSibling());
+            assertNull(Tag.of(first).previousSibling());
+        }
+    }
+
+    @Test
+    void previousSiblingIsNullWhenMarkedContentPrecedes() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div, page);
+            doc.getStructTreeRoot().addKid(div);
+            div.addKid(new PdfStructElem(doc, PdfName.P));
+            div.addKid(new PdfMcrDictionary(page, div));
+            PdfStructElem last = new PdfStructElem(doc, PdfName.P);
+            div.addKid(last);
+
+            assertNull(Tag.of(last).previousSibling());
+        }
+    }
+
+    @Test
+    void siblingsOnEitherSideIncludeMarkedContent() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div, page);
+            doc.getStructTreeRoot().addKid(div);
+            div.addKid(new PdfMcrDictionary(page, div));
+            PdfStructElem middle = new PdfStructElem(doc, PdfName.P);
+            div.addKid(middle);
+            div.addKid(new PdfStructElem(doc, PdfName.P));
+            div.addKid(new PdfMcrDictionary(page, div));
+
+            assertEquals(1, Tag.of(middle).precedingSiblings().size());
+            assertEquals(2, Tag.of(middle).followingSiblings().size());
+        }
+    }
+
+    @Test
+    void tagIsAttachedOnlyWhileItsParentListsIt() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+
+            assertFalse(Tag.of(p).isAttached());
+            div.addKid(p);
+            assertTrue(Tag.of(p).isAttached());
+            div.removeKid(p);
+            assertFalse(Tag.of(p).isAttached());
+        }
+    }
+
+    @Test
+    void replacingATagThatIsNotInTheTreeIsRefused() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem detached = new PdfStructElem(doc, PdfName.Div);
+
+            assertThrows(
+                    IllegalStateException.class, () -> Tag.of(detached).replaceWith(List.of()));
+        }
+    }
+
+    @Test
+    void precedeWithMovesMarkedContentToSitRightBeforeTheTag() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P, page);
+            doc.getStructTreeRoot().addKid(p);
+            PdfStructElem lead = new PdfStructElem(doc, PdfName.Span);
+            p.addKid(lead);
+            PdfStructElem link = new PdfStructElem(doc, PdfName.Link, page);
+            p.addKid(link);
+            PdfMcrNumber mcr = new PdfMcrNumber(page, link);
+            link.addKid(mcr);
+
+            Tag.of(link).precedeWith(mcr);
+
+            assertEquals(List.of(), Tag.of(link).mcrs());
+            assertEquals(2, Tag.of(link).precedingSiblings().size());
+            PdfMcr moved = Tag.of(p).mcrs().get(0);
+            assertEquals(mcr.getMcid(), moved.getMcid());
+            assertEquals(1, StructTree.pageOf(moved));
+            assertSame(moved.getPdfObject(), ((PdfMcr) p.getKids().get(1)).getPdfObject());
+        }
+    }
+
+    @Test
+    void precedeWithMovesAnElementKidLikeInsertBefore() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem wrapper = new PdfStructElem(doc, PdfName.Sect);
+            div.addKid(wrapper);
+            PdfStructElem inner = new PdfStructElem(doc, PdfName.P);
+            wrapper.addKid(inner);
+
+            Tag.of(wrapper).precedeWith(inner);
+
+            assertEquals(List.of(Tag.of(inner), Tag.of(wrapper)), Tag.of(div).children());
         }
     }
 }

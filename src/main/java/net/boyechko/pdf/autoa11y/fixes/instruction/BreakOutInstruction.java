@@ -35,17 +35,16 @@ record BreakOutInstruction() implements ScribbledInstruction {
                 || !(list.getParent() instanceof PdfStructElem container)) {
             throw new IllegalArgumentException("!BREAK_OUT requires an LI inside a list element");
         }
-        int itemIndex = StructTree.findKidIndex(list, element);
-        int listIndex = StructTree.findKidIndex(container, list);
-        if (itemIndex < 0 || listIndex < 0) {
+        Tag item = Tag.of(element);
+        Tag listTag = Tag.of(list);
+        if (!item.isAttached() || !listTag.isAttached()) {
             throw new IllegalArgumentException(
                     "!BREAK_OUT refuses: item or list is not among its parent's kids (dangling /P)");
         }
         List<PdfStructElem> content = itemContentOf(element);
 
-        List<IStructureNode> listKids = new ArrayList<>(StructTree.kidsOf(list));
-        List<IStructureNode> trailing = listKids.subList(itemIndex + 1, listKids.size());
-        boolean leadingItems = itemIndex > 0;
+        List<IStructureNode> trailing = item.followingSiblings();
+        boolean leadingItems = !item.precedingSiblings().isEmpty();
         PdfStructElem tail = null;
         if (leadingItems && !trailing.isEmpty()) {
             tail = new PdfStructElem(ctx.doc(), list.getRole());
@@ -53,18 +52,22 @@ record BreakOutInstruction() implements ScribbledInstruction {
             if (attributes != null) {
                 tail.put(PdfName.A, attributes.clone());
             }
-            container.addKid(listIndex + 1, tail);
+            Tag.of(tail).insertAfter(listTag);
             for (IStructureNode kid : trailing) {
                 StructTree.moveKid(kid, list, tail);
             }
         }
 
         // With no items ahead of it, the content goes before the list, which keeps the rest.
-        int insertAt = leadingItems ? listIndex + 1 : listIndex;
+        Tag previous = listTag;
         for (PdfStructElem hoistee : content) {
-            StructTree.materializeInheritedPage(hoistee);
-            ((PdfStructElem) hoistee.getParent()).removeKid(hoistee);
-            container.addKid(insertAt++, hoistee);
+            Tag hoisted = Tag.of(hoistee);
+            if (leadingItems) {
+                hoisted.insertAfter(previous);
+                previous = hoisted;
+            } else {
+                hoisted.insertBefore(listTag);
+            }
         }
         list.removeKid(element);
 

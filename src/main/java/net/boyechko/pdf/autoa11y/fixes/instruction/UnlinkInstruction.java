@@ -4,11 +4,8 @@ package net.boyechko.pdf.autoa11y.fixes.instruction;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -18,6 +15,7 @@ import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +39,8 @@ record UnlinkInstruction() implements ScribbledInstruction {
             logger.warn("Cannot unlink: element has no parent");
             return null;
         }
-        int origIdx = StructTree.findKidIndex(parent, element);
-        if (origIdx < 0) {
+        Tag link = Tag.of(element);
+        if (!link.isAttached()) {
             logger.warn("Cannot unlink: element not found in parent's kids");
             return null;
         }
@@ -62,31 +60,19 @@ record UnlinkInstruction() implements ScribbledInstruction {
 
         PdfObject linkEffectivePg = StructTree.effectivePageDict(element);
 
-        int insertAt = origIdx;
         for (IStructureNode kid : origKids) {
             if (kid instanceof PdfObjRef) {
                 continue;
             }
-            if (kid instanceof PdfStructElem childElem) {
-                element.removeKid(childElem);
-                parent.addKid(insertAt++, childElem);
-            } else if (kid instanceof PdfMcr mcr) {
-                PdfObject underlying = mcr.getPdfObject();
-                element.removeKid(mcr);
-                PdfMcr rebound;
-                if (underlying instanceof PdfNumber num) {
-                    // Bare-int MCRs resolve their page via ancestor /Pg. If the parent lacks
-                    // an explicit /Pg, set it now so the promoted MCR can still find its page.
-                    if (linkEffectivePg != null && parent.getPdfObject().get(PdfName.Pg) == null) {
-                        parent.getPdfObject().put(PdfName.Pg, linkEffectivePg);
-                        parent.setModified();
-                    }
-                    rebound = new PdfMcrNumber(num, parent);
-                } else {
-                    rebound = new PdfMcrDictionary((PdfDictionary) underlying, parent);
-                }
-                parent.addKid(insertAt++, rebound);
+            // Bare-int MCRs resolve their page via ancestor /Pg. If the parent lacks an
+            // explicit /Pg, set it now so the promoted MCR can still find its page.
+            if (kid instanceof PdfMcrNumber
+                    && linkEffectivePg != null
+                    && parent.getPdfObject().get(PdfName.Pg) == null) {
+                parent.getPdfObject().put(PdfName.Pg, linkEffectivePg);
+                parent.setModified();
             }
+            link.precedeWith(kid);
         }
 
         parent.removeKid(element);

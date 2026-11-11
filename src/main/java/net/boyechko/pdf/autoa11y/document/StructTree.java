@@ -136,6 +136,12 @@ public final class StructTree {
      */
     public static void moveKid(
             IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
+        moveKid(kid, fromParent, toParent, -1);
+    }
+
+    /** As {@link #moveKid}, landing at {@code toIndex} among the new parent's kids. */
+    static void moveKid(
+            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent, int toIndex) {
         int index = findKidIndex(fromParent, kid);
         if (index < 0) {
             throw new IllegalArgumentException(
@@ -148,8 +154,11 @@ public final class StructTree {
         materializeInheritedPage(fromParent);
         materializeInheritedPage(toParent);
         TagStructureContext context = pdfDocumentFor(fromParent).getTagStructureContext();
-        context.createPointerForStructElem(fromParent)
-                .relocateKid(index, context.createPointerForStructElem(toParent));
+        TagTreePointer destination = context.createPointerForStructElem(toParent);
+        if (toIndex >= 0) {
+            destination.setNextNewKidIndex(toIndex);
+        }
+        context.createPointerForStructElem(fromParent).relocateKid(index, destination);
     }
 
     /**
