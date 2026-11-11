@@ -88,6 +88,88 @@ class TagTest extends PdfTestBase {
     }
 
     @Test
+    void closestIsTheElementItselfWhenItHasTheRole() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem item = new PdfStructElem(doc, PdfName.LI);
+            doc.getStructTreeRoot().addKid(item);
+
+            assertEquals(Tag.of(item), Tag.of(item).closest("LI"));
+        }
+    }
+
+    @Test
+    void closestIsTheNearestAncestorWithOneOfTheMappedRoles() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            root.addRoleMapping("Bullet", "LI");
+            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+            root.addKid(list);
+            PdfStructElem item = new PdfStructElem(doc, new PdfName("Bullet"));
+            list.addKid(item);
+            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
+            item.addKid(para);
+
+            assertEquals(Tag.of(item), Tag.of(para).closest("L", "LI"));
+        }
+    }
+
+    @Test
+    void closestIsNullWhenNoElementHasTheRole() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
+            div.addKid(para);
+
+            assertNull(Tag.of(para).closest("L"));
+        }
+    }
+
+    @Test
+    void isDescendantOfHoldsForAnyAncestorButNotTheElementItself() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            div.addKid(p);
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            p.addKid(span);
+
+            assertTrue(Tag.of(span).isDescendantOf(Tag.of(div)));
+            assertFalse(Tag.of(div).isDescendantOf(Tag.of(span)));
+            assertFalse(Tag.of(span).isDescendantOf(Tag.of(span)));
+        }
+    }
+
+    @Test
+    void commonAncestorIsTheDeepestElementHoldingAllOfThem() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+            div.addKid(list);
+            PdfStructElem first = new PdfStructElem(doc, PdfName.LI);
+            list.addKid(first);
+            PdfStructElem second = new PdfStructElem(doc, PdfName.LI);
+            list.addKid(second);
+
+            assertEquals(
+                    Tag.of(list), Tag.commonAncestorOf(List.of(Tag.of(first), Tag.of(second))));
+            assertEquals(Tag.of(list), Tag.commonAncestorOf(List.of(Tag.of(first), Tag.of(list))));
+        }
+    }
+
+    @Test
     void childrenAreTheElementKidsOnly() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

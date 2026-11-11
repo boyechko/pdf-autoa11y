@@ -24,6 +24,7 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
 import net.boyechko.pdf.autoa11y.fixes.FoldIntoPreviousItemFix;
@@ -107,7 +108,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     public void leaveElement(Visit visit) {
         if (ownsItsLines(visit)) {
             List<BulletLine> lines = bulletLinesOf(visit, visit.node());
-            lines.forEach(line -> laidOut.add(new MisshapenLists.OwnedLine(line, visit.node())));
+            lines.forEach(line -> laidOut.add(new MisshapenLists.OwnedLine(line, visit.tag())));
             detectLumpedItems(visit, lines);
         } else if (CONTAINER_ROLES.contains(visit.role())) {
             detectLooseItems(visit);
@@ -273,16 +274,17 @@ public class MistaggedListCheck extends StructTreeCheck {
      * when no such sibling exists, leaving the continuation no item to rejoin.
      */
     private ContinuedItem continuedItem(Visit visit, float levelX) {
-        if (!(StructTree.parentOf(visit.node()) instanceof PdfStructElem container)) {
+        Tag container = visit.tag().parent();
+        if (container == null) {
             return null;
         }
-        List<PdfStructElem> siblings = StructTree.childrenOf(container, PdfStructElem.class);
-        int index = indexOf(siblings, visit.node());
+        List<Tag> siblings = container.children();
+        int index = siblings.indexOf(visit.tag());
         if (index <= 0) {
             return null;
         }
 
-        PdfStructElem opener = siblings.get(index - 1);
+        PdfStructElem opener = siblings.get(index - 1).elem();
         List<Float> bulleted =
                 bulletLinesOf(visit, opener).stream()
                         .map(BulletLine::bulletX)
@@ -301,27 +303,18 @@ public class MistaggedListCheck extends StructTreeCheck {
      * its own. Rebuilding the item inside it is what keeps one list from becoming two.
      */
     private PdfStructElem followingListAtLevel(
-            Visit visit, List<PdfStructElem> siblings, int index, float openerX) {
+            Visit visit, List<Tag> siblings, int index, float openerX) {
         if (index + 1 >= siblings.size()) {
             return null;
         }
-        PdfStructElem following = siblings.get(index + 1);
-        if (!"L".equals(StructTree.mappedRole(following))) {
+        Tag following = siblings.get(index + 1);
+        if (!"L".equals(following.role())) {
             return null;
         }
-        float listX = listItemBulletX(visit, following, false);
+        float listX = listItemBulletX(visit, following.elem(), false);
         return !Float.isNaN(listX) && Math.abs(listX - openerX) <= SAME_LEVEL_TOLERANCE
-                ? following
+                ? following.elem()
                 : null;
-    }
-
-    private static int indexOf(List<PdfStructElem> elements, PdfStructElem target) {
-        for (int i = 0; i < elements.size(); i++) {
-            if (StructTree.isSameElement(elements.get(i), target)) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     /** States the lumping, and where it cannot be remediated, why. */
@@ -576,7 +569,7 @@ public class MistaggedListCheck extends StructTreeCheck {
     static final class MisshapenLists {
 
         /** A text line read off the page, with the element whose own line it is. */
-        record OwnedLine(BulletLine line, PdfStructElem owner) {}
+        record OwnedLine(BulletLine line, Tag owner) {}
 
         private final DocContext docCtx;
         private final List<OwnedLine> laidOut;
@@ -616,28 +609,22 @@ public class MistaggedListCheck extends StructTreeCheck {
                 if (breaches.isEmpty()) {
                     continue;
                 }
-                PdfStructElem host =
-                        StructTree.commonAncestorOf(
-                                bullets.stream().map(OwnedLine::owner).toList());
+                Tag host = Tag.commonAncestorOf(bullets.stream().map(OwnedLine::owner).toList());
                 List<RebuildListFix.Piece> pieces = piecesOf(list.lines, outline);
                 issues.add(
                         new Issue(
                                 IssueType.LIST_MISSHAPEN,
                                 IssueSev.WARNING,
-                                Locus.atElem(docCtx, host),
+                                Locus.atElem(docCtx, host.elem()),
                                 misshapenMessage(bullets.size(), breaches),
                                 pieces != null ? new RebuildListFix(pieces) : null));
                 logger.debug(
                         "List of {} bullets under #{} breaches its outline: {}; owners {}{}",
                         bullets.size(),
-                        StructTree.objNum(host),
+                        host.objNum(),
                         breaches,
                         bullets.stream()
-                                .map(
-                                        owned ->
-                                                owned.line().page()
-                                                        + ":#"
-                                                        + StructTree.objNum(owned.owner()))
+                                .map(owned -> owned.line().page() + ":#" + owned.owner().objNum())
                                 .toList(),
                         pieces != null ? "" : "; not rebuildable");
             }
@@ -658,19 +645,15 @@ public class MistaggedListCheck extends StructTreeCheck {
             Map<OwnedLine, Integer> depthOf = new IdentityHashMap<>();
             outline.forEach(bullet -> depthOf.put(bullet.at(), bullet.depth()));
 
-            Map<Integer, List<OwnedLine>> linesByOwner = new LinkedHashMap<>();
+            Map<Tag, List<OwnedLine>> linesByOwner = new LinkedHashMap<>();
             for (OwnedLine owned : extent) {
-                linesByOwner
-                        .computeIfAbsent(
-                                StructTree.objNum(owned.owner()), objNum -> new ArrayList<>())
-                        .add(owned);
+                linesByOwner.computeIfAbsent(owned.owner(), owner -> new ArrayList<>()).add(owned);
             }
 
             List<RebuildListFix.Piece> pieces = new ArrayList<>();
             for (List<OwnedLine> lines : linesByOwner.values()) {
-                PdfStructElem owner = lines.get(0).owner();
-                if (lines.size() != linesOwnedBy(owner)
-                        || isGroupingListOrTable(StructTree.mappedRole(owner))) {
+                Tag owner = lines.get(0).owner();
+                if (lines.size() != linesOwnedBy(owner) || isGroupingListOrTable(owner.role())) {
                     return null;
                 }
                 List<Integer> itemStarts = new ArrayList<>();
@@ -680,13 +663,13 @@ public class MistaggedListCheck extends StructTreeCheck {
                     }
                 }
                 if (!itemStarts.isEmpty() && itemStarts.get(0) != 0
-                        || itemStarts.size() > 1 && !ownsOnlyMarkedContent(owner)
+                        || itemStarts.size() > 1 && !ownsOnlyMarkedContent(owner.elem())
                         || !itemStarts.isEmpty() && "TOCI".equals(roleOfItemOf(owner))) {
                     return null;
                 }
                 pieces.add(
                         new RebuildListFix.Piece(
-                                owner,
+                                owner.elem(),
                                 lines.get(0).line().page(),
                                 itemStarts.stream().map(i -> depthOf.get(lines.get(i))).toList(),
                                 itemStarts.size() > 1 ? specOf(itemStarts, lines.size()) : null));
@@ -698,45 +681,36 @@ public class MistaggedListCheck extends StructTreeCheck {
         private boolean holdsForeignBullets(List<OwnedLine> extent) {
             Set<OwnedLine> inExtent = Collections.newSetFromMap(new IdentityHashMap<>());
             inExtent.addAll(extent);
-            List<PdfStructElem> flattened =
+            List<Tag> flattened =
                     extent.stream()
                             .map(owned -> outermostWrapperOf(owned.owner()))
                             .filter(Objects::nonNull)
                             .toList();
             return laidOut.stream()
                     .filter(owned -> owned.line().bulletX() != null && !inExtent.contains(owned))
-                    .anyMatch(
-                            owned ->
-                                    flattened.stream()
-                                            .anyMatch(
-                                                    wrapper ->
-                                                            StructTree.isDescendantOf(
-                                                                    owned.owner(), wrapper)));
+                    .anyMatch(owned -> flattened.stream().anyMatch(owned.owner()::isDescendantOf));
         }
 
         /** Returns the outermost list wrapper in the unbroken chain above the element, or null. */
-        private static PdfStructElem outermostWrapperOf(PdfStructElem element) {
-            PdfStructElem outermost = null;
-            PdfStructElem parent = StructTree.parentOf(element);
-            while (parent != null
-                    && RebuildListFix.WRAPPER_ROLES.contains(StructTree.mappedRole(parent))) {
+        private static Tag outermostWrapperOf(Tag element) {
+            Tag outermost = null;
+            Tag parent = element.parent();
+            while (parent != null && RebuildListFix.WRAPPER_ROLES.contains(parent.role())) {
                 outermost = parent;
-                parent = StructTree.parentOf(parent);
+                parent = parent.parent();
             }
             return outermost;
         }
 
         /** Returns how many of the laid-out lines the element owns. */
-        private long linesOwnedBy(PdfStructElem owner) {
-            return laidOut.stream()
-                    .filter(owned -> StructTree.isSameElement(owned.owner(), owner))
-                    .count();
+        private long linesOwnedBy(Tag owner) {
+            return laidOut.stream().filter(owned -> owned.owner().equals(owner)).count();
         }
 
         /** Returns the role of the item enclosing the element, or null when it is in none. */
-        private static String roleOfItemOf(PdfStructElem element) {
-            PdfStructElem item = nearestItemOf(element);
-            return item != null ? StructTree.mappedRole(item) : null;
+        private static String roleOfItemOf(Tag element) {
+            Tag item = nearestItemOf(element);
+            return item != null ? item.role() : null;
         }
 
         /**
@@ -848,24 +822,23 @@ public class MistaggedListCheck extends StructTreeCheck {
          */
         private static Map<String, Integer> breachesOf(List<OutlineBullet> outline) {
             Map<String, Integer> breaches = new LinkedHashMap<>();
-            List<PdfStructElem> itemsSeen = new ArrayList<>();
-            Map<OutlineBullet, PdfStructElem> listOfFirstChild = new LinkedHashMap<>();
-            PdfStructElem topLevelList = null;
+            Set<Tag> itemsSeen = new HashSet<>();
+            Map<OutlineBullet, Tag> listOfFirstChild = new LinkedHashMap<>();
+            Tag topLevelList = null;
 
             for (OutlineBullet bullet : outline) {
-                PdfStructElem item = nearestItemOf(bullet.at().owner());
+                Tag item = nearestItemOf(bullet.at().owner());
                 if (item == null) {
                     breaches.merge("outside any list item", 1, Integer::sum);
                     continue;
                 }
-                if (itemsSeen.stream().anyMatch(seen -> StructTree.isSameElement(seen, item))) {
+                if (!itemsSeen.add(item)) {
                     breaches.merge("sharing a list item", 1, Integer::sum);
                     continue;
                 }
-                itemsSeen.add(item);
 
-                PdfStructElem list = StructTree.parentOf(item);
-                PdfStructElem siblingsList =
+                Tag list = item.parent();
+                Tag siblingsList =
                         bullet.parent() == null
                                 ? topLevelList
                                 : listOfFirstChild.get(bullet.parent());
@@ -875,7 +848,7 @@ public class MistaggedListCheck extends StructTreeCheck {
                     } else {
                         listOfFirstChild.put(bullet.parent(), list);
                     }
-                } else if (list == null || !StructTree.isSameElement(list, siblingsList)) {
+                } else if (!siblingsList.equals(list)) {
                     breaches.merge("in a different list from the items before it", 1, Integer::sum);
                 }
 
@@ -902,25 +875,23 @@ public class MistaggedListCheck extends StructTreeCheck {
          * Whether a sublist nests under the given item: inside it, or as a sibling in the list that
          * holds it, which is how a nested TOC sits beside its TOCI and an L may sit beside its LI.
          */
-        private static boolean nestsUnder(PdfStructElem sublist, PdfStructElem parentItem) {
+        private static boolean nestsUnder(Tag sublist, Tag parentItem) {
             if (parentItem == null) {
                 return false;
             }
-            PdfStructElem host = StructTree.parentOf(sublist);
-            PdfStructElem hostItem = nearestItemOf(host);
-            PdfStructElem parentList = StructTree.parentOf(parentItem);
-            return (hostItem != null && StructTree.isSameElement(hostItem, parentItem))
-                    || (host != null
-                            && parentList != null
-                            && StructTree.isSameElement(host, parentList));
+            Tag host = sublist.parent();
+            if (host == null) {
+                return false;
+            }
+            return parentItem.equals(nearestItemOf(host)) || host.equals(parentItem.parent());
         }
 
         /**
          * Returns the element itself or its nearest ancestor that tags a list item, or null; a TOCI
          * is a table of contents' LI.
          */
-        private static PdfStructElem nearestItemOf(PdfStructElem element) {
-            return StructTree.closest(element, "LI", "TOCI");
+        private static Tag nearestItemOf(Tag element) {
+            return element.closest("LI", "TOCI");
         }
     }
 

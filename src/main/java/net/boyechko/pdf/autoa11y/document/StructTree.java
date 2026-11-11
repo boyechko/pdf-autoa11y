@@ -354,41 +354,19 @@ public final class StructTree {
 
     /** Checks whether a candidate element is a descendant of an ancestor element. */
     public static boolean isDescendantOf(PdfStructElem candidate, PdfStructElem ancestor) {
-        IStructureNode parent = candidate.getParent();
-        while (parent instanceof PdfStructElem parentElem) {
-            if (isSameElement(parentElem, ancestor)) {
-                return true;
-            }
-            parent = parentElem.getParent();
-        }
-        return false;
+        return Tag.of(candidate).isDescendantOf(Tag.of(ancestor));
     }
 
     /** Returns the element itself or its nearest ancestor with one of the mapped roles, or null. */
     public static PdfStructElem closest(PdfStructElem elem, String... roles) {
-        List<String> wanted = List.of(roles);
-        PdfStructElem current = elem;
-        while (current != null && !wanted.contains(mappedRole(current))) {
-            current = parentOf(current);
-        }
-        return current;
+        Tag closest = Tag.of(elem).closest(roles);
+        return closest != null ? closest.elem() : null;
     }
 
     /** Returns the deepest element that is, or contains, every one of the given elements. */
     public static PdfStructElem commonAncestorOf(List<PdfStructElem> elements) {
-        PdfStructElem candidate = elements.get(0);
-        while (candidate != null) {
-            PdfStructElem ancestor = candidate;
-            if (elements.stream()
-                    .allMatch(
-                            elem ->
-                                    isSameElement(elem, ancestor)
-                                            || isDescendantOf(elem, ancestor))) {
-                return candidate;
-            }
-            candidate = parentOf(candidate);
-        }
-        return null;
+        Tag ancestor = Tag.commonAncestorOf(elements.stream().map(Tag::of).toList());
+        return ancestor != null ? ancestor.elem() : null;
     }
 
     /** Finds a structure element by its PDF object number, searching recursively. */

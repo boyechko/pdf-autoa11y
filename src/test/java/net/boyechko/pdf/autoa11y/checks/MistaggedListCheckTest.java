@@ -26,6 +26,7 @@ import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.FoldIntoPreviousItemFix;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoSublistFix;
 import net.boyechko.pdf.autoa11y.fixes.WrapBulletedRunInList;
@@ -622,13 +623,13 @@ class MistaggedListCheckTest extends PdfTestBase {
     /** A page-1 line in the given row, its bullet at x and its text 12pt past the bullet. */
     private static OwnedLine bulletLine(PdfStructElem owner, int row, float x) {
         Rectangle bounds = new Rectangle(x + 12, 688 - 14 * row, 300, 12);
-        return new OwnedLine(new BulletLine(1, bounds, x), owner);
+        return new OwnedLine(new BulletLine(1, bounds, x), Tag.of(owner));
     }
 
     /** A page-1 unbulleted line in the given row, its text starting at left. */
     private static OwnedLine textLine(PdfStructElem owner, int row, float left) {
         Rectangle bounds = new Rectangle(left, 688 - 14 * row, 300, 12);
-        return new OwnedLine(new BulletLine(1, bounds, null), owner);
+        return new OwnedLine(new BulletLine(1, bounds, null), Tag.of(owner));
     }
 
     /** Appends a new element of the given role to the parent and returns it. */

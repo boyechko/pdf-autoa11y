@@ -79,6 +79,35 @@ public final class Tag {
         return elem.getParent() instanceof PdfStructElem parent ? Tag.of(parent) : null;
     }
 
+    /** This tag or its nearest ancestor with one of the mapped roles, or null. */
+    public Tag closest(String... roles) {
+        List<String> wanted = List.of(roles);
+        Tag current = this;
+        while (current != null && !wanted.contains(current.role())) {
+            current = current.parent();
+        }
+        return current;
+    }
+
+    /** Whether the ancestor encloses this tag; a tag is not its own descendant. */
+    public boolean isDescendantOf(Tag ancestor) {
+        for (Tag up = parent(); up != null; up = up.parent()) {
+            if (up.equals(ancestor)) return true;
+        }
+        return false;
+    }
+
+    /** The deepest tag that is, or encloses, every one of the given tags, or null. */
+    public static Tag commonAncestorOf(List<Tag> tags) {
+        for (Tag candidate = tags.get(0); candidate != null; candidate = candidate.parent()) {
+            Tag ancestor = candidate;
+            if (tags.stream().allMatch(t -> t.equals(ancestor) || t.isDescendantOf(ancestor))) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
     public List<Tag> children() {
         return kids(PdfStructElem.class).stream().map(Tag::of).toList();
     }
