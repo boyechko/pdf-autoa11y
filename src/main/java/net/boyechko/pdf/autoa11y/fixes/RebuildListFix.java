@@ -11,6 +11,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -64,14 +65,15 @@ public final class RebuildListFix implements IssueFix {
         List<Placed> placed = splitIntoItems(ctx);
         PdfStructElem host =
                 outsideListWrappers(
-                        StructTree.commonAncestorOf(placed.stream().map(Placed::element).toList()));
+                        Tag.commonAncestorOf(
+                                placed.stream().map(Placed::element).map(Tag::of).toList()));
         if (host == null) {
             throw new IllegalStateException("List content has no common container");
         }
 
         for (Placed placement : placed) {
             PdfStructElem outermost = kidOfHostHolding(host, placement.element());
-            if (WRAPPER_ROLES.contains(StructTree.mappedRole(outermost))) {
+            if (WRAPPER_ROLES.contains(Tag.of(outermost).role())) {
                 flatten(host, outermost, ctx);
             }
         }
@@ -103,7 +105,7 @@ public final class RebuildListFix implements IssueFix {
         logger.debug(
                 "Rebuilt list of {} elements from its outline under #{}",
                 placed.size(),
-                StructTree.objNum(host));
+                Tag.of(host).objNum());
     }
 
     /**
@@ -117,7 +119,7 @@ public final class RebuildListFix implements IssueFix {
             if (piece.element().getParent() == null) {
                 throw new IllegalStateException(
                         "Element #"
-                                + StructTree.objNum(piece.element())
+                                + Tag.of(piece.element()).objNum()
                                 + " is no longer in the tree");
             }
             if (piece.depths().isEmpty()) {
@@ -140,14 +142,14 @@ public final class RebuildListFix implements IssueFix {
 
     /** Returns the content of the {@code count} consecutive items starting with the element's. */
     private static List<PdfStructElem> itemsSplitFrom(PdfStructElem element, int count) {
-        PdfStructElem li = StructTree.parentOf(StructTree.parentOf(element));
-        PdfStructElem list = StructTree.parentOf(li);
-        List<PdfStructElem> items = StructTree.childrenOf(list, PdfStructElem.class);
-        int first = StructTree.findKidIndex(list, li);
+        Tag li = Tag.of(element).parent().parent();
+        Tag list = li.parent();
+        List<Tag> items = list.children();
+        int first = StructTree.findKidIndex(list.elem(), li.elem());
         List<PdfStructElem> contents = new ArrayList<>();
-        for (PdfStructElem item : items.subList(first, first + count)) {
-            PdfStructElem lBody = StructTree.childrenOf(item, PdfStructElem.class).get(0);
-            contents.add(StructTree.childrenOf(lBody, PdfStructElem.class).get(0));
+        for (Tag item : items.subList(first, first + count)) {
+            Tag lBody = item.children().get(0);
+            contents.add(lBody.children().get(0).elem());
         }
         return contents;
     }
@@ -160,21 +162,22 @@ public final class RebuildListFix implements IssueFix {
     }
 
     /** Climbs out of the list wrappers being replaced to the element that holds them. */
-    private static PdfStructElem outsideListWrappers(PdfStructElem element) {
-        PdfStructElem elem = element;
-        while (elem != null && WRAPPER_ROLES.contains(StructTree.mappedRole(elem))) {
-            elem = StructTree.parentOf(elem);
+    private static PdfStructElem outsideListWrappers(Tag element) {
+        Tag tag = element;
+        while (tag != null && WRAPPER_ROLES.contains(tag.role())) {
+            tag = tag.parent();
         }
-        return elem;
+        return tag != null ? tag.elem() : null;
     }
 
     /** Returns the host's kid that is, or contains, the element. */
     private static PdfStructElem kidOfHostHolding(PdfStructElem host, PdfStructElem element) {
-        PdfStructElem kid = element;
-        while (!StructTree.isSameElement(StructTree.parentOf(kid), host)) {
-            kid = StructTree.parentOf(kid);
+        Tag hostTag = Tag.of(host);
+        Tag kid = Tag.of(element);
+        while (!kid.parent().equals(hostTag)) {
+            kid = kid.parent();
         }
-        return kid;
+        return kid.elem();
     }
 
     /**
@@ -187,11 +190,11 @@ public final class RebuildListFix implements IssueFix {
         collectContent(wrapper, content);
         int index = StructTree.findKidIndex(host, wrapper);
         for (PdfStructElem elem : content) {
-            int pageNum = StructTree.pageOf(elem, ctx);
+            int pageNum = Tag.of(elem).page();
             if (pageNum > 0) {
                 ListAssembler.pinPage(elem, ctx.doc().getPage(pageNum));
             }
-            StructTree.parentOf(elem).removeKid(elem);
+            Tag.of(elem).parent().elem().removeKid(elem);
             host.addKid(index++, elem);
         }
         host.removeKid(wrapper);
@@ -200,14 +203,14 @@ public final class RebuildListFix implements IssueFix {
     /** Gathers the content elements under a wrapper, descending through nested wrappers. */
     private static void collectContent(PdfStructElem wrapper, List<PdfStructElem> content) {
         for (IStructureNode kid : StructTree.kidsOf(wrapper)) {
-            if (!(kid instanceof PdfStructElem elem) || "Lbl".equals(StructTree.mappedRole(elem))) {
+            if (!(kid instanceof PdfStructElem elem) || "Lbl".equals(Tag.of(elem).role())) {
                 throw new IllegalStateException(
-                        StructTree.mappedRole(wrapper)
+                        Tag.of(wrapper).role()
                                 + " #"
-                                + StructTree.objNum(wrapper)
+                                + Tag.of(wrapper).objNum()
                                 + " holds marked content or a label of its own");
             }
-            if (WRAPPER_ROLES.contains(StructTree.mappedRole(elem))) {
+            if (WRAPPER_ROLES.contains(Tag.of(elem).role())) {
                 collectContent(elem, content);
             } else {
                 content.add(elem);

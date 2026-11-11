@@ -103,68 +103,6 @@ class StructTreeTest extends PdfTestBase {
     }
 
     @Test
-    void closestReturnsTheElementItselfWhenItHasTheRole() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
-            doc.getStructTreeRoot().addKid(list);
-            PdfStructElem item = new PdfStructElem(doc, PdfName.LI);
-            list.addKid(item);
-
-            assertTrue(StructTree.isSameElement(item, StructTree.closest(item, "LI")));
-        }
-    }
-
-    @Test
-    void closestReturnsTheNearestAncestorWithOneOfTheRoles() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
-            doc.getStructTreeRoot().addKid(list);
-            PdfStructElem item = new PdfStructElem(doc, PdfName.LI);
-            list.addKid(item);
-            PdfStructElem body = new PdfStructElem(doc, PdfName.LBody);
-            item.addKid(body);
-            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
-            body.addKid(para);
-
-            assertTrue(StructTree.isSameElement(item, StructTree.closest(para, "L", "LI")));
-        }
-    }
-
-    @Test
-    void closestMatchesTheMappedRole() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            root.addRoleMapping("Bullet", "LI");
-            PdfStructElem item = new PdfStructElem(doc, new PdfName("Bullet"));
-            root.addKid(item);
-            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
-            item.addKid(para);
-
-            assertTrue(StructTree.isSameElement(item, StructTree.closest(para, "LI")));
-        }
-    }
-
-    @Test
-    void closestReturnsNullWhenNoElementHasTheRole() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
-            doc.getStructTreeRoot().addKid(document);
-            PdfStructElem para = new PdfStructElem(doc, PdfName.P);
-            document.addKid(para);
-
-            assertNull(StructTree.closest(para, "L"));
-        }
-    }
-
-    @Test
     void isSamePageMatchesSamePage() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
@@ -182,93 +120,6 @@ class StructTreeTest extends PdfTestBase {
             PdfPage page2 = doc.addNewPage();
 
             assertFalse(StructTree.isSamePage(page1.getPdfObject(), page2));
-        }
-    }
-
-    @Test
-    void pageOfFromPgEntry() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            PdfPage page = doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
-            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-            root.addKid(p);
-
-            DocContext ctx = new DocContext(doc);
-            assertEquals(1, StructTree.pageOf(p, ctx));
-        }
-    }
-
-    @Test
-    void pageOfFromChildRecursion() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            PdfPage page = doc.addNewPage();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
-            root.addKid(div);
-            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
-            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-            div.addKid(p);
-
-            DocContext ctx = new DocContext(doc);
-            // Div has no /Pg, but its child P does
-            assertEquals(1, StructTree.pageOf(div, ctx));
-        }
-    }
-
-    @Test
-    void pageOfFromMcrDictionaryKid() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfPage page2 = doc.addNewPage();
-
-            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
-            doc.getStructTreeRoot().addKid(p);
-            p.addKid(new PdfMcrDictionary(page2, p));
-
-            DocContext ctx = new DocContext(doc);
-            // P has no /Pg; only its MCR dictionary names the page
-            assertEquals(2, StructTree.pageOf(p, ctx));
-        }
-    }
-
-    @Test
-    void pageOfTakesFirstPageInReadingOrder() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            PdfPage page1 = doc.addNewPage();
-            PdfPage page2 = doc.addNewPage();
-
-            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
-            doc.getStructTreeRoot().addKid(div);
-            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
-            div.addKid(span);
-            span.addKid(new PdfMcrDictionary(page2, span));
-            div.addKid(new PdfStructElem(doc, PdfName.P, page1));
-
-            DocContext ctx = new DocContext(doc);
-            assertEquals(2, StructTree.pageOf(div, ctx));
-        }
-    }
-
-    @Test
-    void pageOfReturnsZeroWhenUnresolvable() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-
-            PdfStructTreeRoot root = doc.getStructTreeRoot();
-            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
-            root.addKid(div);
-
-            DocContext ctx = new DocContext(doc);
-            assertEquals(0, StructTree.pageOf(div, ctx));
         }
     }
 
@@ -316,7 +167,7 @@ class StructTreeTest extends PdfTestBase {
 
             assertInstanceOf(PdfMcrNumber.class, mcr);
             assertEquals(1, StructTree.pageOf(mcr));
-            assertEquals(1, StructTree.childrenOf(p, PdfMcr.class).size());
+            assertEquals(1, Tag.of(p).mcrs().size());
         }
     }
 
@@ -574,8 +425,8 @@ class StructTreeTest extends PdfTestBase {
             assertEquals(3, kids.size());
             assertEquals(1, assertInstanceOf(PdfMcr.class, kids.get(0)).getMcid());
             assertTrue(
-                    StructTree.isSameElement(
-                            assertInstanceOf(PdfStructElem.class, kids.get(1)), span));
+                    Tag.of(assertInstanceOf(PdfStructElem.class, kids.get(1)))
+                            .equals(Tag.of(span)));
             assertEquals(2, assertInstanceOf(PdfMcr.class, kids.get(2)).getMcid());
         }
     }

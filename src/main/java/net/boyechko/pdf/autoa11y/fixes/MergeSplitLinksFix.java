@@ -15,6 +15,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public final class MergeSplitLinksFix implements IssueFix {
         if (!StructTree.areConsecutiveKids(parent, links) || !Link.allShareOneDestination(links)) {
             logger.debug(
                     "Links #{} and following are no longer one split link; skipping merge",
-                    StructTree.objNum(links.get(0)));
+                    Tag.of(links.get(0)).objNum());
             return;
         }
 
@@ -69,7 +70,7 @@ public final class MergeSplitLinksFix implements IssueFix {
         groupObjRefsFirst(target);
         StructTree.addToolScribble(target, MERGED_SCRIBBLE);
 
-        logger.debug("Merged {} Link tags into #{}", links.size(), StructTree.objNum(target));
+        logger.debug("Merged {} Link tags into #{}", links.size(), Tag.of(target).objNum());
     }
 
     /**

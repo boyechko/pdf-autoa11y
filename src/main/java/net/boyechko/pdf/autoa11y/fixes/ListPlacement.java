@@ -6,6 +6,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Places split items as list items, each LI &gt; LBody &gt; content right after the previous item's
@@ -21,11 +22,11 @@ enum ListPlacement implements ItemPlacement {
         @Override
         public PdfStructElem placeFirst(PdfStructElem element, PdfPage page) {
             if (element.getParent() instanceof PdfStructElem parentElem
-                    && "LBody".equals(StructTree.mappedRole(parentElem))) {
+                    && "LBody".equals(Tag.of(parentElem).role())) {
                 if (parentElem.getParent() instanceof PdfStructElem liElem
-                        && "LI".equals(StructTree.mappedRole(liElem))
+                        && "LI".equals(Tag.of(liElem).role())
                         && liElem.getParent() instanceof PdfStructElem listElem
-                        && "L".equals(StructTree.mappedRole(listElem))) {
+                        && "L".equals(Tag.of(listElem).role())) {
                     return element;
                 }
                 throw new IllegalStateException(
@@ -42,7 +43,7 @@ enum ListPlacement implements ItemPlacement {
     IN_PLACE {
         @Override
         public PdfStructElem placeFirst(PdfStructElem element, PdfPage page) {
-            if ("P".equals(StructTree.mappedRole(element))) {
+            if ("P".equals(Tag.of(element).role())) {
                 return wrapInNewList(element, page);
             }
             ListAssembler assembler = assemblerFor(element);

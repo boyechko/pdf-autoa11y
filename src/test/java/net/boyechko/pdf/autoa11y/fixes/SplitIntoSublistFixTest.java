@@ -10,7 +10,6 @@ import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -19,6 +18,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class SplitIntoSublistFixTest extends PdfTestBase {
@@ -41,7 +41,7 @@ class SplitIntoSublistFixTest extends PdfTestBase {
             new SplitIntoSublistFix(continuation, opener, 1, TEN_ONE_LINE_ITEMS).apply(ctx);
 
             PdfStructElem itemBody = (PdfStructElem) opener.getParent();
-            assertEquals("LBody", StructTree.mappedRole(itemBody));
+            assertEquals("LBody", Tag.of(itemBody).role());
             assertEquals(
                     "LBody[P[],P[],L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],"
                             + "LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],"
@@ -68,8 +68,11 @@ class SplitIntoSublistFixTest extends PdfTestBase {
 
             assertEquals(2, itemsOf(following).size(), "the rebuilt item joined the list");
             assertTrue(
-                    StructTree.isSameElement(
-                            following, (PdfStructElem) opener.getParent().getParent().getParent()),
+                    Tag.of(following)
+                            .equals(
+                                    Tag.of(
+                                            (PdfStructElem)
+                                                    opener.getParent().getParent().getParent())),
                     "the opener sits in the joined list's first item");
             assertEquals(
                     "LI[LBody[P[],P[],L[LI[LBody[P[]]],LI[LBody[P[]]],LI[LBody[P[]]],"
@@ -86,15 +89,15 @@ class SplitIntoSublistFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem opener = elementOwningMcid(doc, 3, 3);
             PdfStructElem continuation = elementOwningMcid(doc, 3, 4);
-            assertEquals("Art", StructTree.mappedRole(StructTree.parentOf(opener)));
+            assertEquals("Art", Tag.of(opener).parent().role());
 
             new SplitIntoSublistFix(continuation, opener, 1, TEN_ONE_LINE_ITEMS).apply(ctx);
 
             PdfStructElem li = (PdfStructElem) opener.getParent().getParent();
             PdfStructElem list = (PdfStructElem) li.getParent();
-            assertEquals("LI", StructTree.mappedRole(li));
-            assertEquals("L", StructTree.mappedRole(list));
-            assertEquals("Art", StructTree.mappedRole(StructTree.parentOf(list)));
+            assertEquals("LI", Tag.of(li).role());
+            assertEquals("L", Tag.of(list).role());
+            assertEquals("Art", Tag.of(list).parent().role());
         }
     }
 
@@ -119,23 +122,23 @@ class SplitIntoSublistFixTest extends PdfTestBase {
 
     /** Returns the L that follows an element among its siblings. */
     private static PdfStructElem listAfter(PdfStructElem element) {
-        PdfStructElem container = StructTree.parentOf(element);
-        List<PdfStructElem> siblings = StructTree.childrenOf(container, PdfStructElem.class);
-        int index = StructTree.findKidIndex(container, element);
-        PdfStructElem following = siblings.get(index + 1);
-        assertEquals("L", StructTree.mappedRole(following));
-        return following;
+        Tag container = Tag.of(element).parent();
+        List<Tag> siblings = container.children();
+        Tag following = siblings.get(siblings.indexOf(Tag.of(element)) + 1);
+        assertEquals("L", following.role());
+        return following.elem();
     }
 
     private static List<PdfStructElem> itemsOf(PdfStructElem list) {
-        return StructTree.childrenOf(list, PdfStructElem.class).stream()
-                .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+        return Tag.of(list).children().stream()
+                .filter(kid -> "LI".equals(kid.role()))
+                .map(Tag::elem)
                 .toList();
     }
 
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return StructTree.descendantsOf(document, PdfMcr.class).stream()
+        return Tag.of(document).descendantMcrs().stream()
                 .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
                 .map(mcr -> (PdfStructElem) mcr.getParent())
                 .findFirst()

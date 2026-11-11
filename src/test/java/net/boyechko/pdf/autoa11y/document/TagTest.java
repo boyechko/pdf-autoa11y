@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -334,6 +335,83 @@ class TagTest extends PdfTestBase {
             doc.getStructTreeRoot().addKid(second);
 
             assertNotEquals(Tag.of(first), Tag.of(second));
+        }
+    }
+
+    @Test
+    void pageComesFromThePgEntry() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            root.addKid(p);
+            assertEquals(1, Tag.of(p).page());
+        }
+    }
+
+    @Test
+    void pageComesFromAnElementKid() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            root.addKid(div);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            div.addKid(p);
+            // Div has no /Pg, but its child P does
+            assertEquals(1, Tag.of(div).page());
+        }
+    }
+
+    @Test
+    void pageComesFromAnMcrDictionaryKid() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrDictionary(page2, p));
+            // P has no /Pg; only its MCR dictionary names the page
+            assertEquals(2, Tag.of(p).page());
+        }
+    }
+
+    @Test
+    void pageIsTheFirstInReadingOrder() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            div.addKid(span);
+            span.addKid(new PdfMcrDictionary(page2, span));
+            div.addKid(new PdfStructElem(doc, PdfName.P, page1));
+            assertEquals(2, Tag.of(div).page());
+        }
+    }
+
+    @Test
+    void pageIsZeroWhenUnresolvable() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            root.addKid(div);
+            assertEquals(0, Tag.of(div).page());
         }
     }
 }

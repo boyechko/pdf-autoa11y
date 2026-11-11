@@ -15,6 +15,7 @@ import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Label;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.slf4j.Logger;
@@ -300,7 +301,7 @@ public final class TreeDiagram {
                 continue;
             }
             Optional<String> newScribble = entry.getValue();
-            String actualRole = StructTree.mappedRole(elem);
+            String actualRole = Tag.of(elem).role();
             if (!key.role().equals(actualRole)) {
                 if (newScribble.isPresent()) {
                     warn.accept(
@@ -403,7 +404,7 @@ public final class TreeDiagram {
      */
     private static void indexByObjNum(IStructureNode node, Map<Integer, PdfStructElem> out) {
         if (node instanceof PdfStructElem elem) {
-            int objNum = StructTree.objNum(elem);
+            int objNum = Tag.of(elem).objNum();
             if (objNum > 0) out.put(objNum, elem);
         }
         List<IStructureNode> kids = node.getKids();

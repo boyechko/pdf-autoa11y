@@ -28,7 +28,7 @@ public sealed interface DocValue {
     record ObjNum(int value) implements DocValue {
         /** Extracts the object number from a structure element, or null if unavailable. */
         public static ObjNum of(PdfStructElem elem) {
-            int obj = StructTree.objNum(elem);
+            int obj = Tag.of(elem).objNum();
             return obj >= 0 ? new ObjNum(obj) : null;
         }
 

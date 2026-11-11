@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.junit.jupiter.api.Test;
@@ -309,7 +310,7 @@ class TreeDiagramTest {
 
     private static PdfStructElem findByObjNum(
             com.itextpdf.kernel.pdf.tagging.IStructureNode node, int objNum) {
-        if (node instanceof PdfStructElem elem && StructTree.objNum(elem) == objNum) {
+        if (node instanceof PdfStructElem elem && Tag.of(elem).objNum() == objNum) {
             return elem;
         }
         if (node.getKids() != null) {

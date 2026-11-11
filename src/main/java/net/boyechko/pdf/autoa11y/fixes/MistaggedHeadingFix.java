@@ -8,6 +8,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
@@ -27,7 +28,7 @@ public class MistaggedHeadingFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) {
-        if (!ELEMENTS_TO_TAG.contains(StructTree.mappedRole(element))) {
+        if (!ELEMENTS_TO_TAG.contains(Tag.of(element).role())) {
             return;
         }
         StructTree.setToolScribble(element, "!SET_ROLE " + headingLevel.getValue());

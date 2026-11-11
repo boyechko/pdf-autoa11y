@@ -12,7 +12,6 @@ import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -24,6 +23,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class SplitMarkedContentFixTest extends PdfTestBase {
@@ -128,7 +128,7 @@ class SplitMarkedContentFixTest extends PdfTestBase {
     /** Finds the struct element owning the MCR with the given MCID on the given page. */
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return StructTree.descendantsOf(document, PdfMcr.class).stream()
+        return Tag.of(document).descendantMcrs().stream()
                 .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
                 .map(mcr -> (PdfStructElem) mcr.getParent())
                 .findFirst()
@@ -137,28 +137,27 @@ class SplitMarkedContentFixTest extends PdfTestBase {
 
     /** Counts the parent's kids sharing the element's role, including the element itself. */
     private static int sameRoleSiblingCount(PdfStructElem parent, PdfStructElem elem) {
-        String role = StructTree.mappedRole(elem);
+        String role = Tag.of(elem).role();
         return (int)
-                StructTree.childrenOf(parent, PdfStructElem.class).stream()
-                        .filter(kid -> role.equals(StructTree.mappedRole(kid)))
-                        .count();
+                Tag.of(parent).children().stream().filter(kid -> role.equals(kid.role())).count();
     }
 
     /** Returns the run at index and the {@code count} same-role siblings starting from it. */
     private static List<PdfStructElem> sameRoleSiblingsAfter(
             PdfStructElem parent, PdfStructElem elem, int count) {
-        String role = StructTree.mappedRole(elem);
+        String role = Tag.of(elem).role();
         int start = StructTree.findKidIndex(parent, elem);
-        return StructTree.childrenOf(parent, PdfStructElem.class).stream()
+        return Tag.of(parent).children().stream()
                 .skip(start)
-                .filter(kid -> role.equals(StructTree.mappedRole(kid)))
+                .filter(kid -> role.equals(kid.role()))
                 .limit(count)
+                .map(Tag::elem)
                 .toList();
     }
 
     /** Joins the raw text of all MCRs under an element. */
     private static String text(PdfStructElem elem, Map<Integer, Content.McidContent> content) {
-        return StructTree.descendantsOf(elem, PdfMcr.class).stream()
+        return Tag.of(elem).descendantMcrs().stream()
                 .map(mcr -> content.get(mcr.getMcid()))
                 .filter(Objects::nonNull)
                 .flatMap(mc -> mc.spans().stream())

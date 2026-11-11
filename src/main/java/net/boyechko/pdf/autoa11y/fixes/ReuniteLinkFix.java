@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
@@ -34,10 +34,10 @@ public final class ReuniteLinkFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        List<PdfObjRef> objRefs = StructTree.childrenOf(annotLink, PdfObjRef.class);
+        List<PdfObjRef> objRefs = Tag.of(annotLink).objRefs();
         if (objRefs.isEmpty()
-                || !StructTree.descendantsOf(annotLink, PdfMcr.class).isEmpty()
-                || !StructTree.descendantsOf(textLink, PdfObjRef.class).isEmpty()) {
+                || !Tag.of(annotLink).descendantMcrs().isEmpty()
+                || !Tag.of(textLink).descendantObjRefs().isEmpty()) {
             return;
         }
         for (PdfObjRef objRef : objRefs) {
@@ -55,6 +55,6 @@ public final class ReuniteLinkFix implements IssueFix {
     public IssueMsg describeLocated(DocContext ctx) {
         return new IssueMsg(
                 describe(ctx),
-                Locus.atObj(StructTree.objNum(textLink), pageNum, Locus.ObjKind.STRUCT_ELEM));
+                Locus.atObj(Tag.of(textLink).objNum(), pageNum, Locus.ObjKind.STRUCT_ELEM));
     }
 }

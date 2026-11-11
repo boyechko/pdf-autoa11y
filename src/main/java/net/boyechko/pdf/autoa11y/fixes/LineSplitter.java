@@ -19,6 +19,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ final class LineSplitter {
         validateSplices(plans, sizes);
 
         PdfStructElem firstBody = placement.placeFirst(element, plans.get(0).page());
-        if (!StructTree.isSameElement(firstBody, element)) {
+        if (!Tag.of(firstBody).equals(Tag.of(element))) {
             for (int i = 0; i < plans.size(); i++) {
                 plans.set(i, plans.get(i).movedTo(firstBody));
             }
@@ -218,7 +219,7 @@ final class LineSplitter {
             PdfStructElem elem, PdfPage page, int lineSpan, boolean continuesLine, PdfMcr lastMcr)
             implements KidPlan {
         static ElemPlan of(DocContext ctx, PdfStructElem elem, PdfMcr previous) throws IOException {
-            List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
+            List<PdfMcr> mcrs = Tag.of(elem).descendantMcrs();
             if (mcrs.isEmpty()) {
                 throw new IllegalStateException(
                         "Splitting cannot place " + Format.elem(elem) + ", which marks no content");

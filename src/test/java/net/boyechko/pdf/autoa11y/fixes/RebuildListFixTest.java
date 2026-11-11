@@ -15,6 +15,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -190,7 +191,7 @@ class RebuildListFixTest extends PdfTestBase {
 
     /** Returns the LI holding an item's content element. */
     private static PdfStructElem itemOf(PdfStructElem content) {
-        return StructTree.parentOf(StructTree.parentOf(content));
+        return Tag.of(content).parent().parent().elem();
     }
 
     private static PdfStructElem elementByObjNum(PdfDocument doc, int objNum) {

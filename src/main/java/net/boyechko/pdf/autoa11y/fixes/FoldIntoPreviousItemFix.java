@@ -8,6 +8,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -56,10 +57,11 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        list = StructTree.closest(element, "L");
-        if (list == null) {
+        Tag enclosing = Tag.of(element).closest("L");
+        if (enclosing == null) {
             throw new IllegalStateException("Element is not inside a list");
         }
+        list = enclosing.elem();
         PdfStructElem opener = openerFor(element);
         if (opener == null) {
             throw new IllegalStateException("No item precedes the one this element continues");
@@ -75,8 +77,8 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
         logger.debug(
                 "Folded {} leading line(s) of #{} into #{}'s item, pruning {} emptied element(s)",
                 leadingLines,
-                StructTree.objNum(element),
-                StructTree.objNum(opener),
+                Tag.of(element).objNum(),
+                Tag.of(opener).objNum(),
                 pruned);
     }
 
@@ -90,15 +92,14 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
      * when the issue was raised.
      */
     public static PdfStructElem openerFor(PdfStructElem element) {
-        if (!(StructTree.parentOf(element) instanceof PdfStructElem body)
-                || !"LBody".equals(StructTree.mappedRole(body))
-                || !(StructTree.parentOf(body) instanceof PdfStructElem item)
-                || !(StructTree.parentOf(item) instanceof PdfStructElem list)
-                || !"L".equals(StructTree.mappedRole(list))) {
+        Tag body = Tag.of(element).parent();
+        Tag item = body != null && "LBody".equals(body.role()) ? body.parent() : null;
+        Tag list = item != null ? item.parent() : null;
+        if (list == null || !"L".equals(list.role())) {
             return null;
         }
-        List<PdfStructElem> items = itemsOf(list);
-        int index = indexOf(items, item);
+        List<Tag> items = itemsOf(list);
+        int index = items.indexOf(item);
         return index > 0 ? contentOf(items.get(index - 1)) : null;
     }
 
@@ -106,32 +107,21 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
      * Returns the element holding a list item's own content: the sole element inside its body, or
      * null where the body holds its content directly or splits it over several elements.
      */
-    private static PdfStructElem contentOf(PdfStructElem item) {
-        PdfStructElem body =
-                StructTree.childrenOf(item, PdfStructElem.class).stream()
-                        .filter(kid -> "LBody".equals(StructTree.mappedRole(kid)))
+    private static PdfStructElem contentOf(Tag item) {
+        Tag body =
+                item.children().stream()
+                        .filter(kid -> "LBody".equals(kid.role()))
                         .findFirst()
                         .orElse(null);
         if (body == null) {
             return null;
         }
-        List<IStructureNode> kids = StructTree.kidsOf(body);
+        List<IStructureNode> kids = StructTree.kidsOf(body.elem());
         return kids.size() == 1 && kids.get(0) instanceof PdfStructElem only ? only : null;
     }
 
-    private static List<PdfStructElem> itemsOf(PdfStructElem list) {
-        return StructTree.childrenOf(list, PdfStructElem.class).stream()
-                .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
-                .toList();
-    }
-
-    private static int indexOf(List<PdfStructElem> elements, PdfStructElem target) {
-        for (int i = 0; i < elements.size(); i++) {
-            if (StructTree.isSameElement(elements.get(i), target)) {
-                return i;
-            }
-        }
-        return -1;
+    private static List<Tag> itemsOf(Tag list) {
+        return list.children().stream().filter(kid -> "LI".equals(kid.role())).toList();
     }
 
     /**
@@ -139,8 +129,8 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
      * something other than the paragraph they appear to continue.
      */
     private void requireSameRole(PdfStructElem opener) {
-        String elementRole = StructTree.mappedRole(element);
-        String openerRole = StructTree.mappedRole(opener);
+        String elementRole = Tag.of(element).role();
+        String openerRole = Tag.of(opener).role();
         if (!elementRole.equals(openerRole)) {
             throw new IllegalStateException(
                     "Cannot fold a " + elementRole + " into a " + openerRole);

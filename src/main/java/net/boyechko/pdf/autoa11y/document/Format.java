@@ -41,7 +41,7 @@ public final class Format {
 
     /** Returns a short label for a structure element, resolving the page via {@code ctx}. */
     public static String elem(PdfStructElem elem, DocContext ctx) {
-        return elem(elem, StructTree.pageOf(elem, ctx));
+        return elem(elem, Tag.of(elem).page());
     }
 
     /** Returns a short label for a PDF object number. */

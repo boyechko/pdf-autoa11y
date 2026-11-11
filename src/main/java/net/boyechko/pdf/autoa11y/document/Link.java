@@ -39,7 +39,7 @@ public final class Link {
         for (PdfStructElem elem : elems) {
             if (!PdfName.Link.equals(elem.getRole())) return false;
 
-            List<PdfObjRef> objRefs = StructTree.childrenOf(elem, PdfObjRef.class);
+            List<PdfObjRef> objRefs = Tag.of(elem).objRefs();
             if (objRefs.isEmpty()) return false;
 
             for (PdfObjRef objRef : objRefs) {

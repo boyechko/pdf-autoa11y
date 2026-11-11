@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
@@ -17,6 +16,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class MergeSplitParagraphsFixTest extends PdfTestBase {
@@ -26,7 +26,7 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
     }
 
     private static List<PdfStructElem> paragraphsOf(PdfDocument pdfDoc) {
-        return StructTree.childrenOf(documentOf(pdfDoc), PdfStructElem.class);
+        return Tag.of(documentOf(pdfDoc)).children().stream().map(Tag::elem).toList();
     }
 
     @Test
@@ -43,9 +43,8 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
 
             assertEquals(1, paragraphsOf(pdfDoc).size(), "Fragments should be one P");
             PdfStructElem merged = paragraphsOf(pdfDoc).get(0);
-            assertTrue(StructTree.isSameElement(fragments.get(0), merged), "First P survives");
-            assertEquals(
-                    3, StructTree.descendantsOf(merged, PdfMcr.class).size(), "Kept all content");
+            assertTrue(Tag.of(fragments.get(0)).equals(Tag.of(merged)), "First P survives");
+            assertEquals(3, Tag.of(merged).descendantMcrs().size(), "Kept all content");
         }
     }
 
@@ -82,7 +81,7 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
             assertEquals(1, paragraphsOf(pdfDoc).size(), "Fragments should be one P");
             assertEquals(
                     2,
-                    StructTree.descendantsOf(paragraphsOf(pdfDoc).get(0), PdfMcr.class).size(),
+                    Tag.of(paragraphsOf(pdfDoc).get(0)).descendantMcrs().size(),
                     "Content should be merged once");
         }
     }

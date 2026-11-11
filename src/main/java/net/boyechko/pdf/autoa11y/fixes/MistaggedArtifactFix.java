@@ -33,6 +33,7 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -118,7 +119,7 @@ public class MistaggedArtifactFix implements IssueFix {
     private static Map<PdfPage, Set<Integer>> collectMcidsByPage(
             PdfStructElem elem, DocContext ctx) {
         Map<PdfPage, Set<Integer>> result = new LinkedHashMap<>();
-        List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
+        List<PdfMcr> mcrs = Tag.of(elem).descendantMcrs();
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
             int pageNum = StructTree.pageOf(mcr);
@@ -234,7 +235,7 @@ public class MistaggedArtifactFix implements IssueFix {
      * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
      */
     private void removeAnnotationsForElement(PdfStructElem elem, DocContext ctx) {
-        List<PdfObjRef> objRefs = StructTree.descendantsOf(elem, PdfObjRef.class);
+        List<PdfObjRef> objRefs = Tag.of(elem).descendantObjRefs();
 
         logger.trace("Found {} object ref(s) in {}", objRefs.size(), Format.elem(elem));
 
@@ -361,14 +362,14 @@ public class MistaggedArtifactFix implements IssueFix {
     public boolean invalidates(IssueFix otherFix) {
         if (otherFix instanceof MistaggedArtifactFix other) {
             boolean sameOrDescendant =
-                    StructTree.isSameElement(other.element, this.element)
-                            || StructTree.isDescendantOf(other.element, this.element);
+                    Tag.of(other.element).equals(Tag.of(this.element))
+                            || Tag.of(other.element).isDescendantOf(Tag.of(this.element));
             // Whole-element fix invalidates any fix on same/descendant element
             if (this.targetMcids == null && sameOrDescendant) {
                 return true;
             }
             // Targeted fix only invalidates descendant whole-element fixes
-            return StructTree.isDescendantOf(other.element, this.element);
+            return Tag.of(other.element).isDescendantOf(Tag.of(this.element));
         }
         return false;
     }

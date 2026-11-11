@@ -18,6 +18,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class MissingPagePartsFix implements IssueFix {
         }
 
         for (PdfStructElem elem : elementsToMove) {
-            int pageNum = StructTree.pageOf(elem, ctx);
+            int pageNum = Tag.of(elem).page();
             if (pageNum > 0 && pageParts.containsKey(pageNum)) {
                 PdfStructElem targetPart = pageParts.get(pageNum);
                 StructTree.moveKid(elem, documentElem, targetPart);

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /**
@@ -98,7 +99,7 @@ public class InconsistentParentTreeFix implements IssueFix {
         }
         IStructureNode registeredParent = registered.getParent();
         return !(registeredParent instanceof PdfStructElem parentElem)
-                || !StructTree.isSameElement(parentElem, owner);
+                || !Tag.of(parentElem).equals(Tag.of(owner));
     }
 
     private static void collectElements(IStructureNode node, List<PdfStructElem> result) {

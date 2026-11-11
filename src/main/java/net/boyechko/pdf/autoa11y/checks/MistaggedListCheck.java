@@ -250,7 +250,7 @@ public class MistaggedListCheck extends StructTreeCheck {
      */
     private boolean continuesAnItemOfItsList(Visit visit, float levelX) {
         PdfStructElem opener = FoldIntoPreviousItemFix.openerFor(visit.node());
-        if (opener == null || !visit.role().equals(StructTree.mappedRole(opener))) {
+        if (opener == null || !visit.role().equals(Tag.of(opener).role())) {
             return false;
         }
         List<Float> bulleted =
@@ -426,11 +426,7 @@ public class MistaggedListCheck extends StructTreeCheck {
         List<PdfObject> carved = kidsOnLine(visit, element, line.bounds());
         return carved.isEmpty()
                 ? null
-                : new Item(
-                        element,
-                        line.bulletX(),
-                        carved,
-                        StructTree.pageOf(element, visit.docCtx()));
+                : new Item(element, line.bulletX(), carved, Tag.of(element).page());
     }
 
     /** Returns the element's kids whose own content sits on the given line. */
@@ -483,18 +479,18 @@ public class MistaggedListCheck extends StructTreeCheck {
 
         logger.debug(
                 "Elements {} under #{} each carry one bullet, unwrapped{}{}",
-                run.stream().map(item -> StructTree.objNum(item.element())).toList(),
+                run.stream().map(item -> Tag.of(item.element()).objNum()).toList(),
                 visit.objNum(),
                 opener.isWhole()
                         ? ""
-                        : " (first carved out of #" + StructTree.objNum(opener.element()) + ")",
-                nestInto == null ? "" : " (sublist of #" + StructTree.objNum(nestInto) + ")");
+                        : " (first carved out of #" + Tag.of(opener.element()).objNum() + ")",
+                nestInto == null ? "" : " (sublist of #" + Tag.of(nestInto).objNum() + ")");
         return nestInto;
     }
 
     /** Returns the preceding list an indented run should nest into as a sublist, or null. */
     private PdfStructElem sublistTarget(Visit visit, PdfStructElem predecessor, float bulletX) {
-        if (predecessor == null || !"L".equals(StructTree.mappedRole(predecessor))) {
+        if (predecessor == null || !"L".equals(Tag.of(predecessor).role())) {
             return null;
         }
         float listX = listItemBulletX(visit, Tag.of(predecessor), true);
@@ -521,8 +517,8 @@ public class MistaggedListCheck extends StructTreeCheck {
 
         logger.debug(
                 "Detected split list: #{} and #{} flank a sublist at the same indent",
-                StructTree.objNum(first),
-                StructTree.objNum(second));
+                Tag.of(first).objNum(),
+                Tag.of(second).objNum());
     }
 
     /** Returns a list's items in order. */
@@ -923,7 +919,7 @@ public class MistaggedListCheck extends StructTreeCheck {
             return visit.docCtx().pages().bounds(mcr);
         }
         if (kid instanceof PdfStructElem elem) {
-            int pageNum = StructTree.pageOf(elem, visit.docCtx());
+            int pageNum = Tag.of(elem).page();
             return pageNum > 0 ? visit.docCtx().pages().bounds(elem, pageNum) : null;
         }
         return null;

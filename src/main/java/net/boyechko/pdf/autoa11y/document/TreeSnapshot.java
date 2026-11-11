@@ -127,8 +127,8 @@ public final class TreeSnapshot {
             value =
                     new Element(
                             element.getRole().getValue(),
-                            StructTree.mappedRole(element),
-                            StructTree.objNum(element),
+                            Tag.of(element).role(),
+                            Tag.of(element).objNum(),
                             DocValue.Scribble.of(element),
                             DocValue.Title.of(element),
                             DocValue.Scope.of(element),

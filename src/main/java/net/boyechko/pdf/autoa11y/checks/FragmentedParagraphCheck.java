@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MergeSplitParagraphsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -158,8 +159,8 @@ public class FragmentedParagraphCheck extends StructTreeCheck {
 
     /** True if the second P's content starts on a later page than the first P's ends. */
     private static boolean startsNewPage(PdfStructElem previous, PdfStructElem next) {
-        List<PdfMcr> before = StructTree.descendantsOf(previous, PdfMcr.class);
-        List<PdfMcr> after = StructTree.descendantsOf(next, PdfMcr.class);
+        List<PdfMcr> before = Tag.of(previous).descendantMcrs();
+        List<PdfMcr> after = Tag.of(next).descendantMcrs();
         return StructTree.pageOf(after.getFirst()) > StructTree.pageOf(before.getLast());
     }
 

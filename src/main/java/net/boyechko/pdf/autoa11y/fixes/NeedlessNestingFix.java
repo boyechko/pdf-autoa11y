@@ -10,6 +10,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -42,7 +43,8 @@ public class NeedlessNestingFix implements IssueFix {
             return;
         }
 
-        List<PdfStructElem> childrenToMove = StructTree.childrenOf(wrapper, PdfStructElem.class);
+        List<PdfStructElem> childrenToMove =
+                Tag.of(wrapper).children().stream().map(Tag::elem).toList();
         if (childrenToMove.isEmpty()) {
             StructTree.removeFromParent(wrapper, parentNode);
             flattened++;

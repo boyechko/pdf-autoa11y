@@ -12,7 +12,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SegmentMcids;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.Format;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.SplitMarkedContentFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -59,7 +59,7 @@ public class BadlyMarkedContentCheck extends StructTreeCheck {
     @Override
     public boolean enterElement(Visit visit) {
         PdfStructElem node = visit.node();
-        if (!SPLITTABLE_ROLES.contains(StructTree.mappedRole(node))) {
+        if (!SPLITTABLE_ROLES.contains(Tag.of(node).role())) {
             return true;
         }
         PdfMcr mcr = onlyMcrKid(node);

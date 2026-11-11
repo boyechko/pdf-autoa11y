@@ -51,7 +51,7 @@ public class PageContent {
     public Rectangle bounds(PdfStructElem node, int pageNum) {
         Map<Integer, Rectangle> mcidBounds = bounds(pageNum);
         Rectangle result = null;
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
             if (StructTree.pageOf(mcr) != pageNum) {
                 continue;
             }
@@ -94,7 +94,7 @@ public class PageContent {
     public List<Rectangle> lineBounds(PdfStructElem node, int pageNum) {
         Map<Integer, List<Rectangle>> mcidLines = lineBounds(pageNum);
         List<Rectangle> lines = new ArrayList<>();
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
             if (StructTree.pageOf(mcr) == pageNum) {
                 mcidLines
                         .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
@@ -138,7 +138,7 @@ public class PageContent {
     public List<Content.TextLine> textLines(PdfStructElem node) {
         List<Content.TextLine> lines = new ArrayList<>();
         PdfMcr previous = null;
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
             List<Content.TextLine> mcrLines = textLines(mcr);
             int first = 0;
             if (!lines.isEmpty() && !mcrLines.isEmpty() && continuesLineOf(previous, mcr)) {
@@ -179,7 +179,7 @@ public class PageContent {
         if (elem == null) {
             return results;
         }
-        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(elem).descendantMcrs()) {
             int pageNum = StructTree.pageOf(mcr);
             if (pageNum <= 0) {
                 continue;
@@ -244,7 +244,7 @@ public class PageContent {
      */
     private String joinedText(PdfStructElem node, IntPredicate onPage) {
         StringJoiner joined = new StringJoiner(" ");
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
             int pageNum = StructTree.pageOf(mcr);
             if (pageNum > 0 && onPage.test(pageNum)) {
                 String text = text(pageNum, mcr.getMcid());

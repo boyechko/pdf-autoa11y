@@ -13,7 +13,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -25,6 +24,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstructionFix;
 import org.junit.jupiter.api.Test;
 
@@ -64,7 +64,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertEquals(4, items.size(), "2 new LIs joined the original 2");
             assertEquals(
                     2,
-                    StructTree.descendantsOf(items.get(1), PdfMcr.class).size(),
+                    Tag.of(items.get(1)).descendantMcrs().size(),
                     "the straddling item owns one marked-content block per text object");
             assertProperlyNestedOperators(doc.getPage(2).getContentBytes());
         }
@@ -203,7 +203,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem lastItem = items.get(5);
             assertEquals(
                     2,
-                    StructTree.descendantsOf(lastItem, PdfMcr.class).size(),
+                    Tag.of(lastItem).descendantMcrs().size(),
                     "last item holds one MCR fragment per side of the MCR boundary");
 
             Map<Integer, Content.McidContent> content =
@@ -250,7 +250,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
 
             List<Integer> itemPages =
                     items.stream()
-                            .map(li -> StructTree.descendantsOf(li, PdfMcr.class).get(0))
+                            .map(li -> Tag.of(li).descendantMcrs().get(0))
                             .map(StructTree::pageOf)
                             .toList();
             assertEquals(List.of(2, 2, 3, 3, 3), itemPages);
@@ -286,7 +286,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem twoLineItem = items.get(2);
             assertEquals(
                     1,
-                    StructTree.descendantsOf(twoLineItem, PdfMcr.class).size(),
+                    Tag.of(twoLineItem).descendantMcrs().size(),
                     "consecutive same-item lines stay one unsplit MCR");
 
             Map<Integer, Content.McidContent> content =
@@ -311,7 +311,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertEquals(8, items.size(), "1x5 stands for five one-line items");
             assertEquals(
                     1,
-                    StructTree.descendantsOf(items.get(2), PdfMcr.class).size(),
+                    Tag.of(items.get(2)).descendantMcrs().size(),
                     "the 2 still groups two lines into one item");
         }
     }
@@ -329,7 +329,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
 
             assertEquals(1, listItems(outerList).size(), "no items joined the enclosing list");
             PdfStructElem sublist = (PdfStructElem) lBody.getKids().get(origIndex);
-            assertEquals("L", StructTree.mappedRole(sublist), "P replaced by a new L in place");
+            assertEquals("L", Tag.of(sublist).role(), "P replaced by a new L in place");
             List<PdfStructElem> items = listItems(sublist);
             assertEquals(9, items.size());
 
@@ -352,13 +352,11 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             List<IStructureNode> kids = container.getKids();
             assertEquals(1, kids.size(), "the container's MCRs moved into the new list");
             PdfStructElem list = (PdfStructElem) kids.get(0);
-            assertEquals("L", StructTree.mappedRole(list));
+            assertEquals("L", Tag.of(list).role());
             List<PdfStructElem> items = listItems(list);
             assertEquals(9, items.size());
-            PdfStructElem firstBody =
-                    StructTree.childrenOf(items.get(0), PdfStructElem.class).get(0);
-            PdfStructElem firstP = StructTree.childrenOf(firstBody, PdfStructElem.class).get(0);
-            assertEquals("P", StructTree.mappedRole(firstP), "first line sits in a new P");
+            Tag firstP = Tag.of(items.get(0)).children().get(0).children().get(0);
+            assertEquals("P", firstP.role(), "first line sits in a new P");
 
             Map<Integer, Content.McidContent> content =
                     Content.extractContentForPage(doc.getPage(2));
@@ -401,7 +399,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
     /** Finds the struct element owning the MCR with the given MCID on the given page. */
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return StructTree.descendantsOf(document, PdfMcr.class).stream()
+        return Tag.of(document).descendantMcrs().stream()
                 .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
                 .map(mcr -> (PdfStructElem) mcr.getParent())
                 .findFirst()
@@ -416,8 +414,9 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
     }
 
     private static List<PdfStructElem> listItems(PdfStructElem list) {
-        return StructTree.childrenOf(list, PdfStructElem.class).stream()
-                .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+        return Tag.of(list).children().stream()
+                .filter(kid -> "LI".equals(kid.role()))
+                .map(Tag::elem)
                 .toList();
     }
 
@@ -427,7 +426,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
      * artificial-spacing heuristic (e.g. "B BUS 307 - Business Writing").
      */
     private static String itemText(PdfStructElem li, Map<Integer, Content.McidContent> content) {
-        return StructTree.descendantsOf(li, PdfMcr.class).stream()
+        return Tag.of(li).descendantMcrs().stream()
                 .map(mcr -> content.get(mcr.getMcid()))
                 .filter(Objects::nonNull)
                 .flatMap(mc -> mc.spans().stream())

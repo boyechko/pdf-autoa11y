@@ -13,7 +13,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -103,8 +103,8 @@ class UnscopedTableHeaderCheckTest extends PdfTestBase {
                 issue.fix().apply(ctx);
             }
 
-            for (PdfStructElem th : StructTree.childrenOf(header, PdfStructElem.class)) {
-                assertEquals("Column", DocValue.Scope.of(th).value());
+            for (Tag th : Tag.of(header).children()) {
+                assertEquals("Column", DocValue.Scope.of(th.elem()).value());
             }
             assertTrue(runCheck(pdfDoc).isEmpty());
         }
@@ -145,11 +145,12 @@ class UnscopedTableHeaderCheckTest extends PdfTestBase {
                 issue.fix().apply(ctx);
             }
 
-            List<PdfStructElem> headerCells = StructTree.childrenOf(header, PdfStructElem.class);
-            assertEquals("Column", DocValue.Scope.of(headerCells.get(0)).value(), "corner cell");
-            assertEquals("Column", DocValue.Scope.of(headerCells.get(1)).value());
+            List<Tag> headerCells = Tag.of(header).children();
+            assertEquals(
+                    "Column", DocValue.Scope.of(headerCells.get(0).elem()).value(), "corner cell");
+            assertEquals("Column", DocValue.Scope.of(headerCells.get(1).elem()).value());
             for (PdfStructElem row : List.of(second, third)) {
-                PdfStructElem rowHeader = StructTree.childrenOf(row, PdfStructElem.class).get(0);
+                PdfStructElem rowHeader = Tag.of(row).children().get(0).elem();
                 assertEquals("Row", DocValue.Scope.of(rowHeader).value());
             }
             assertTrue(runCheck(pdfDoc).isEmpty());

@@ -7,6 +7,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +51,11 @@ public final class MergeAdjacentListsFix implements IssueFix {
         List<IStructureNode> containerKids = container.getKids();
         if (firstIndex + 1 >= containerKids.size()
                 || !(containerKids.get(firstIndex + 1) instanceof PdfStructElem next)
-                || !StructTree.isSameElement(next, secondList)) {
+                || !Tag.of(next).equals(Tag.of(secondList))) {
             logger.debug(
                     "Lists #{} and #{} are not adjacent; skipping merge",
-                    StructTree.objNum(firstList),
-                    StructTree.objNum(secondList));
+                    Tag.of(firstList).objNum(),
+                    Tag.of(secondList).objNum());
             return;
         }
 
@@ -62,7 +63,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
         List<IStructureNode> items = secondList.getKids();
         if (items.stream().anyMatch(kid -> !(kid instanceof PdfStructElem))) {
             logger.debug(
-                    "List #{} has non-element kids; skipping merge", StructTree.objNum(secondList));
+                    "List #{} has non-element kids; skipping merge", Tag.of(secondList).objNum());
             return;
         }
 
@@ -77,8 +78,8 @@ public final class MergeAdjacentListsFix implements IssueFix {
         logger.debug(
                 "Merged {} items of list #{} into list #{}",
                 items.size(),
-                StructTree.objNum(secondList),
-                StructTree.objNum(firstList));
+                Tag.of(secondList).objNum(),
+                Tag.of(firstList).objNum());
     }
 
     @Override

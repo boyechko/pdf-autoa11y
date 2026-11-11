@@ -6,7 +6,7 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MergeAdjacentListsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -39,7 +39,7 @@ public class AdjacentListsCheck extends StructTreeCheck {
 
         PdfStructElem firstList = null;
         for (IStructureNode kid : kids) {
-            if (kid instanceof PdfStructElem elem && "L".equals(StructTree.mappedRole(elem))) {
+            if (kid instanceof PdfStructElem elem && "L".equals(Tag.of(elem).role())) {
                 if (firstList == null) {
                     firstList = elem;
                 } else {

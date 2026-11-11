@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !FLATTEN}: hoists every leaf element in the element's subtree to become an immediate kid
@@ -69,7 +70,7 @@ record FlattenInstruction() implements ScribbledInstruction {
             } else {
                 throw new IllegalArgumentException(
                         "!FLATTEN refuses: "
-                                + StructTree.mappedRole(elem)
+                                + Tag.of(elem).role()
                                 + " holds marked content alongside nested elements");
             }
         }
@@ -77,17 +78,17 @@ record FlattenInstruction() implements ScribbledInstruction {
 
     /** Returns true when the element has no structure-element kids of its own. */
     private static boolean isLeaf(PdfStructElem elem) {
-        return StructTree.childrenOf(elem, PdfStructElem.class).isEmpty();
+        return Tag.of(elem).children().isEmpty();
     }
 
     /** Collects the element's leaf descendants in document order. */
     private static List<PdfStructElem> leavesOf(PdfStructElem elem) {
         List<PdfStructElem> leaves = new ArrayList<>();
-        for (PdfStructElem child : StructTree.childrenOf(elem, PdfStructElem.class)) {
-            if (isLeaf(child)) {
-                leaves.add(child);
+        for (Tag child : Tag.of(elem).children()) {
+            if (isLeaf(child.elem())) {
+                leaves.add(child.elem());
             } else {
-                leaves.addAll(leavesOf(child));
+                leaves.addAll(leavesOf(child.elem()));
             }
         }
         return leaves;

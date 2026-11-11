@@ -16,7 +16,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Utilities for navigating and manipulating the PDF structure tree. */
+/**
+ * Low-level operations on the PDF structure tree: mutation, marked-content bookkeeping, attributes,
+ * and scribbles. Reading an element (its role, relatives, kids, or page) belongs to {@link Tag}.
+ * When an operation here would read better as a message to a Tag, it moves there; it is never
+ * duplicated in both.
+ */
 public final class StructTree {
     private static final Logger logger = LoggerFactory.getLogger(StructTree.class);
 
@@ -35,11 +40,6 @@ public final class StructTree {
         }
         PdfStructTreeRoot root = (PdfStructTreeRoot) current;
         return root.getDocument();
-    }
-
-    /** Returns the PDF object number for a structure element, or -1 if unavailable. */
-    public static int objNum(PdfStructElem elem) {
-        return Tag.of(elem).objNum();
     }
 
     /** Finds the first child element with the given role. */
@@ -72,14 +72,6 @@ public final class StructTree {
             return pgDict.getIndirectReference().equals(targetDict.getIndirectReference());
         }
         return false;
-    }
-
-    /**
-     * Finds the element's page via its own /Pg, else the first page among its kids in reading
-     * order: an MCR or OBJR naming its own page, or an element kid resolved the same way.
-     */
-    public static int pageOf(PdfStructElem elem, DocContext ctx) {
-        return Tag.of(elem).page();
     }
 
     /** Returns the page number for any MCR or OBJR (since PdfObjRef extends PdfMcr). */
@@ -193,7 +185,7 @@ public final class StructTree {
         }
         for (int i = 1; i < elems.size(); i++) {
             if (!(kids.get(first + i) instanceof PdfStructElem sibling)
-                    || !isSameElement(sibling, elems.get(i))) {
+                    || !Tag.of(sibling).equals(Tag.of(elems.get(i)))) {
                 return false;
             }
         }
@@ -264,7 +256,7 @@ public final class StructTree {
                 break;
             }
             String role = current.getRole() != null ? current.getRole().getValue() : "unknown";
-            logger.debug("Pruning empty {} (obj. #{})", role, objNum(current));
+            logger.debug("Pruning empty {} (obj. #{})", role, Tag.of(current).objNum());
             removeFromParent(current, parent);
             removed++;
             current = (parent instanceof PdfStructElem parentElem) ? parentElem : null;
@@ -347,72 +339,18 @@ public final class StructTree {
         return aRef != null && aRef.equals(bRef);
     }
 
-    /** Checks whether two structure elements refer to the same PDF object. */
-    public static boolean isSameElement(PdfStructElem a, PdfStructElem b) {
-        return Tag.of(a).equals(Tag.of(b));
-    }
-
-    /** Checks whether a candidate element is a descendant of an ancestor element. */
-    public static boolean isDescendantOf(PdfStructElem candidate, PdfStructElem ancestor) {
-        return Tag.of(candidate).isDescendantOf(Tag.of(ancestor));
-    }
-
-    /** Returns the element itself or its nearest ancestor with one of the mapped roles, or null. */
-    public static PdfStructElem closest(PdfStructElem elem, String... roles) {
-        Tag closest = Tag.of(elem).closest(roles);
-        return closest != null ? closest.elem() : null;
-    }
-
-    /** Returns the deepest element that is, or contains, every one of the given elements. */
-    public static PdfStructElem commonAncestorOf(List<PdfStructElem> elements) {
-        Tag ancestor = Tag.commonAncestorOf(elements.stream().map(Tag::of).toList());
-        return ancestor != null ? ancestor.elem() : null;
-    }
-
     /** Finds a structure element by its PDF object number, searching recursively. */
     public static PdfStructElem findByObjNumber(IStructureNode parent, int objNum) {
         List<IStructureNode> kids = parent.getKids();
         if (kids == null) return null;
         for (IStructureNode kid : kids) {
             if (kid instanceof PdfStructElem elem) {
-                if (objNum(elem) == objNum) return elem;
+                if (Tag.of(elem).objNum() == objNum) return elem;
                 PdfStructElem found = findByObjNumber(elem, objNum);
                 if (found != null) return found;
             }
         }
         return null;
-    }
-
-    // --- Children and descendants by type ---
-
-    /**
-     * Returns direct children of an element matching the given type. When {@code type} is {@code
-     * PdfMcr.class}, OBJRs (which extend PdfMcr but have mcid &lt; 0) are excluded.
-     */
-    public static <T extends IStructureNode> List<T> childrenOf(PdfStructElem elem, Class<T> type) {
-        return Tag.of(elem).kids(type);
-    }
-
-    /**
-     * Recursively collects all descendants matching the given type, traversing only through {@link
-     * PdfStructElem} intermediaries. When {@code type} is {@code PdfMcr.class}, OBJRs are excluded.
-     */
-    public static <T extends IStructureNode> List<T> descendantsOf(
-            PdfStructElem elem, Class<T> type) {
-        return Tag.of(elem).descendants(type);
-    }
-
-    /**
-     * Returns the mapped role for a structure element, or the raw role if no mapping is available.
-     */
-    public static String mappedRole(PdfStructElem n) {
-        return Tag.of(n).role();
-    }
-
-    /** Returns the parent of a structure element, or null if no parent is available. */
-    public static PdfStructElem parentOf(PdfStructElem n) {
-        Tag parent = Tag.of(n).parent();
-        return parent != null ? parent.elem() : null;
     }
 
     // === Structure attributes ==============================================
@@ -637,8 +575,8 @@ public final class StructTree {
     /** Converts a PdfStructElem tree into a TreeNode tree of role-name strings. */
     public static TreeNode<String> toRoleTree(PdfStructElem elem) {
         List<TreeNode<String>> childNodes = new ArrayList<>();
-        for (PdfStructElem kid : childrenOf(elem, PdfStructElem.class)) {
-            childNodes.add(toRoleTree(kid));
+        for (Tag kid : Tag.of(elem).children()) {
+            childNodes.add(toRoleTree(kid.elem()));
         }
         return new TreeNode<>(elem.getRole().getValue(), childNodes);
     }

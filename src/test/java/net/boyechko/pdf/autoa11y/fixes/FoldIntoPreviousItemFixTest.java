@@ -15,6 +15,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class FoldIntoPreviousItemFixTest extends PdfTestBase {
@@ -40,7 +41,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = StructTree.closest(element, "L");
+            PdfStructElem list = Tag.of(element).closest("L").elem();
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -60,7 +61,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
-            List<PdfMcr> mcrs = StructTree.descendantsOf(target, PdfMcr.class);
+            List<PdfMcr> mcrs = Tag.of(target).descendantMcrs();
             assertEquals(2, mcrs.size(), "the item reads as one paragraph over two pages");
             assertEquals(1, StructTree.pageOf(mcrs.get(0)));
             assertEquals(2, StructTree.pageOf(mcrs.get(1)), "the folded line keeps its own page");
@@ -74,13 +75,12 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
             PdfStructElem emptied = (PdfStructElem) element.getParent().getParent();
-            PdfStructElem list = StructTree.closest(element, "L");
+            PdfStructElem list = Tag.of(element).closest("L").elem();
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
             assertTrue(
-                    StructTree.childrenOf(list, PdfStructElem.class).stream()
-                            .noneMatch(kid -> StructTree.isSameElement(kid, emptied)),
+                    Tag.of(list).children().stream().noneMatch(kid -> kid.equals(Tag.of(emptied))),
                     "the item the continuation vacated is gone, not left empty");
         }
     }
@@ -91,7 +91,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem target = elementOwningMcid(doc, 1, 27);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = StructTree.closest(element, "L");
+            PdfStructElem list = Tag.of(element).closest("L").elem();
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -108,7 +108,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
         try (PdfDocument doc = openForStamping(CATALOG_PDF)) {
             DocContext ctx = new DocContext(doc);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
-            PdfStructElem list = StructTree.closest(element, "L");
+            PdfStructElem list = Tag.of(element).closest("L").elem();
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
@@ -141,7 +141,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             PdfStructElem lumped = elementOwningMcid(doc, 1, 23);
             PdfStructElem element = elementOwningMcid(doc, 2, 0);
             assertTrue(
-                    StructTree.isSameElement(lumped, FoldIntoPreviousItemFix.openerFor(element)),
+                    Tag.of(lumped).equals(Tag.of(FoldIntoPreviousItemFix.openerFor(element))),
                     "the lump is the only item ahead of this element before it is split");
 
             new SplitIntoListItemsFix(lumped, "2,2").apply(new DocContext(doc));
@@ -149,7 +149,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             PdfStructElem opener = FoldIntoPreviousItemFix.openerFor(element);
             assertNotNull(opener);
             assertFalse(
-                    StructTree.isSameElement(lumped, opener),
+                    Tag.of(lumped).equals(Tag.of(opener)),
                     "the opener is the item the split created, not the lump it came from");
         }
     }
@@ -162,7 +162,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
 
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return StructTree.descendantsOf(document, PdfMcr.class).stream()
+        return Tag.of(document).descendantMcrs().stream()
                 .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
                 .map(mcr -> (PdfStructElem) mcr.getParent())
                 .findFirst()

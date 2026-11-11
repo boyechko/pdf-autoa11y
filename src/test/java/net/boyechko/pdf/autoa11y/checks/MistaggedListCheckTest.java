@@ -138,7 +138,7 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             Map<Integer, String> lumped = issuesByObjNum(check, IssueType.LIST_ITEMS_LUMPED);
             assertTrue(lumped.containsKey(43));
-            assertFalse(lumped.containsKey(StructTree.objNum(note)));
+            assertFalse(lumped.containsKey(Tag.of(note).objNum()));
             Issue issue =
                     check.getIssues().stream()
                             .filter(i -> i.type() == IssueType.LIST_ITEMS_LUMPED)
@@ -257,8 +257,9 @@ class MistaggedListCheckTest extends PdfTestBase {
 
             PdfStructElem list = elementByObjNum(pdfDoc, 63);
             List<PdfStructElem> items =
-                    StructTree.childrenOf(list, PdfStructElem.class).stream()
-                            .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
+                    Tag.of(list).children().stream()
+                            .filter(kid -> "LI".equals(kid.role()))
+                            .map(Tag::elem)
                             .toList();
             assertEquals(4, items.size(), "one item per bullet");
             String second = itemText(pdfDoc, items.get(1));
@@ -317,9 +318,7 @@ class MistaggedListCheckTest extends PdfTestBase {
             check.getIssues().applyFixes(new DocContext(pdfDoc));
 
             for (int objNum = 48; objNum <= 51; objNum++) {
-                assertEquals(
-                        44,
-                        StructTree.objNum(StructTree.parentOf(elementByObjNum(pdfDoc, objNum))));
+                assertEquals(44, Tag.of(elementByObjNum(pdfDoc, objNum)).parent().objNum());
             }
         }
     }
@@ -339,7 +338,7 @@ class MistaggedListCheckTest extends PdfTestBase {
                     "L[LI[LBody[P[Link[]]]],LI[LBody[P[Link[]]]],LI[LBody[P[Link[]]]],"
                             + "LI[LBody[P[Link[]]]]]",
                     StructTree.toRoleTreeString(
-                            StructTree.closest(elementByObjNum(pdfDoc, 48), "L")),
+                            Tag.of(elementByObjNum(pdfDoc, 48)).closest("L").elem()),
                     "the four bulleted paragraphs become one four-item list");
         }
     }
@@ -395,7 +394,7 @@ class MistaggedListCheckTest extends PdfTestBase {
                             List.of(bulletLine(first, 0, 72), bulletLine(second, 1, 72)));
 
             assertEquals(1, issues.size(), "one misshapen list: " + issues);
-            assertEquals(StructTree.objNum(document), issues.get(0).where().objNum());
+            assertEquals(Tag.of(document).objNum(), issues.get(0).where().objNum());
             assertNotNull(issues.get(0).fix(), "the list can be rebuilt");
         }
     }
@@ -648,7 +647,7 @@ class MistaggedListCheckTest extends PdfTestBase {
     /** Concatenates the raw text of every MCR under an element, in reading order. */
     private static String itemText(PdfDocument doc, PdfStructElem elem) {
         StringBuilder text = new StringBuilder();
-        for (PdfMcr mcr : StructTree.descendantsOf(elem, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(elem).descendantMcrs()) {
             int pageNum = StructTree.pageOf(mcr);
             Content.McidContent content =
                     Content.extractContentForPage(doc.getPage(pageNum)).get(mcr.getMcid());
@@ -662,12 +661,10 @@ class MistaggedListCheckTest extends PdfTestBase {
     /** Returns the element following the given one among its parent's children. */
     private static PdfStructElem nextSiblingOf(PdfDocument doc, int objNum) {
         PdfStructElem elem = elementByObjNum(doc, objNum);
-        List<PdfStructElem> siblings =
-                StructTree.childrenOf(
-                        (PdfStructElem) StructTree.parentOf(elem), PdfStructElem.class);
+        List<Tag> siblings = Tag.of(elem).parent().children();
         for (int i = 0; i < siblings.size() - 1; i++) {
-            if (StructTree.isSameElement(siblings.get(i), elem)) {
-                return siblings.get(i + 1);
+            if (siblings.get(i).equals(Tag.of(elem))) {
+                return siblings.get(i + 1).elem();
             }
         }
         throw new AssertionError("no sibling after #" + objNum);

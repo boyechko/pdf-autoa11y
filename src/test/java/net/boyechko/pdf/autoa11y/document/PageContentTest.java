@@ -102,7 +102,7 @@ class PageContentTest extends PdfTestBase {
 
         try (PdfDocument pdfDoc = new PdfDocument(new PdfReader(pdfPath.toString()))) {
             PdfStructElem p = (PdfStructElem) pdfDoc.getStructTreeRoot().getKids().get(0);
-            PdfMcr mcr = StructTree.childrenOf(p, PdfMcr.class).get(0);
+            PdfMcr mcr = Tag.of(p).mcrs().get(0);
             PageContent pages = new PageContent(pdfDoc);
 
             assertTrue(pages.content(mcr).text().contains("Hello"));

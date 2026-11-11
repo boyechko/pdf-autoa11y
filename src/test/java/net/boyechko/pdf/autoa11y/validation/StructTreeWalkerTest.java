@@ -15,6 +15,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
@@ -314,7 +315,7 @@ class StructTreeWalkerTest extends PdfTestBase {
             document.addKid(siblingP);
 
             StructTreeWalker walker = new StructTreeWalker();
-            walker.addVisitor(tracker).scopeTo(StructTree.objNum(scopedArt));
+            walker.addVisitor(tracker).scopeTo(Tag.of(scopedArt).objNum());
             walker.walk(root, new DocContext(pdfDoc));
         }
 
@@ -339,7 +340,7 @@ class StructTreeWalkerTest extends PdfTestBase {
             document.addKid(scopedArt);
             document.addKid(new PdfStructElem(pdfDoc, PdfName.P));
 
-            tracker.scopeTo(StructTree.objNum(scopedArt));
+            tracker.scopeTo(Tag.of(scopedArt).objNum());
             tracker.findIssues(new DocContext(pdfDoc));
         }
 
@@ -385,7 +386,7 @@ class StructTreeWalkerTest extends PdfTestBase {
             StructTree.setScribble(verifiedSect, StructTree.SCRIBBLE_VERIFIED_TOKEN);
 
             StructTreeWalker walker = new StructTreeWalker();
-            walker.addVisitor(tracker).scopeTo(StructTree.objNum(scopedArt));
+            walker.addVisitor(tracker).scopeTo(Tag.of(scopedArt).objNum());
             walker.walk(root, new DocContext(pdfDoc));
         }
 

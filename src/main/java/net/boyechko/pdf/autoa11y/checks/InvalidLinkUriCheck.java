@@ -11,6 +11,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueSev;
@@ -58,7 +59,7 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
             return true;
         }
 
-        List<PdfObjRef> objRefs = StructTree.childrenOf(node, PdfObjRef.class);
+        List<PdfObjRef> objRefs = Tag.of(node).objRefs();
         if (objRefs.isEmpty()) {
             return true;
         }

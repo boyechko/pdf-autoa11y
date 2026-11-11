@@ -11,7 +11,6 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.action.PdfAction;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.layout.Document;
@@ -22,6 +21,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class MergeSplitLinksFixTest extends PdfTestBase {
@@ -50,16 +50,15 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             layoutDoc.add(splitLink("Program of Study: Major:", "Developmental and Youth Studies"));
 
             PdfStructElem p = paragraphOf(pdfDoc);
-            List<PdfStructElem> links = StructTree.childrenOf(p, PdfStructElem.class);
+            List<PdfStructElem> links = Tag.of(p).children().stream().map(Tag::elem).toList();
             assertEquals(2, links.size(), "Expected two Link tags before the fix");
 
             new MergeSplitLinksFix(links).apply(new DocContext(pdfDoc));
 
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Links should be merged");
-            PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
-            assertEquals(
-                    2, StructTree.childrenOf(merged, PdfObjRef.class).size(), "Kept both OBJRs");
-            assertEquals(2, StructTree.childrenOf(merged, PdfMcr.class).size(), "Kept both MCRs");
+            PdfStructElem merged = Tag.of(p).children().get(0).elem();
+            assertEquals(2, Tag.of(merged).objRefs().size(), "Kept both OBJRs");
+            assertEquals(2, Tag.of(merged).mcrs().size(), "Kept both MCRs");
         }
     }
 
@@ -71,10 +70,10 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             layoutDoc.add(splitLink("https://www", ".pdfa.org"));
 
             PdfStructElem p = paragraphOf(pdfDoc);
-            new MergeSplitLinksFix(StructTree.childrenOf(p, PdfStructElem.class))
+            new MergeSplitLinksFix(Tag.of(p).children().stream().map(Tag::elem).toList())
                     .apply(new DocContext(pdfDoc));
 
-            PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
+            PdfStructElem merged = Tag.of(p).children().get(0).elem();
             List<IStructureNode> kids = merged.getKids();
             int lastObjRef = -1;
             int firstContent = kids.size();
@@ -97,7 +96,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             layoutDoc.add(splitLink("first half", "second half"));
 
             PdfStructElem p = paragraphOf(pdfDoc);
-            List<PdfStructElem> links = StructTree.childrenOf(p, PdfStructElem.class);
+            List<PdfStructElem> links = Tag.of(p).children().stream().map(Tag::elem).toList();
             // An earlier fix moved the second Link out from between them
             p.removeKid(links.get(1));
 
@@ -106,10 +105,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Should not have merged");
             assertEquals(
                     1,
-                    StructTree.childrenOf(
-                                    StructTree.childrenOf(p, PdfStructElem.class).get(0),
-                                    PdfObjRef.class)
-                            .size(),
+                    Tag.of(p).children().get(0).objRefs().size(),
                     "The surviving Link should keep only its own OBJR");
         }
     }
@@ -122,10 +118,10 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             layoutDoc.add(splitLink("Back to ", "top"));
 
             PdfStructElem p = paragraphOf(pdfDoc);
-            new MergeSplitLinksFix(StructTree.childrenOf(p, PdfStructElem.class))
+            new MergeSplitLinksFix(Tag.of(p).children().stream().map(Tag::elem).toList())
                     .apply(new DocContext(pdfDoc));
 
-            PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
+            PdfStructElem merged = Tag.of(p).children().get(0).elem();
             DocValue.Scribble scribble = StructTree.getScribble(merged);
             assertNotNull(scribble, "Merged Link should carry a scribble");
             assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
@@ -141,12 +137,12 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             layoutDoc.add(splitLink("Back to ", "top"));
 
             PdfStructElem p = paragraphOf(pdfDoc);
-            List<PdfStructElem> links = StructTree.childrenOf(p, PdfStructElem.class);
+            List<PdfStructElem> links = Tag.of(p).children().stream().map(Tag::elem).toList();
             StructTree.setScribble(links.get(0), "check me");
 
             new MergeSplitLinksFix(links).apply(new DocContext(pdfDoc));
 
-            PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
+            PdfStructElem merged = Tag.of(p).children().get(0).elem();
             assertEquals(
                     List.of("check me", "MERGE links"),
                     StructTree.getScribble(merged).segments(),
@@ -163,14 +159,13 @@ class MergeSplitLinksFixTest extends PdfTestBase {
 
             PdfStructElem p = paragraphOf(pdfDoc);
             MergeSplitLinksFix fix =
-                    new MergeSplitLinksFix(StructTree.childrenOf(p, PdfStructElem.class));
+                    new MergeSplitLinksFix(Tag.of(p).children().stream().map(Tag::elem).toList());
             fix.apply(new DocContext(pdfDoc));
             fix.apply(new DocContext(pdfDoc));
 
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Should stay merged");
-            PdfStructElem merged = StructTree.childrenOf(p, PdfStructElem.class).get(0);
-            assertEquals(
-                    2, StructTree.childrenOf(merged, PdfObjRef.class).size(), "Kept both OBJRs");
+            PdfStructElem merged = Tag.of(p).children().get(0).elem();
+            assertEquals(2, Tag.of(merged).objRefs().size(), "Kept both OBJRs");
             assertEquals(
                     List.of("MERGE links"),
                     StructTree.getScribble(merged).segments(),

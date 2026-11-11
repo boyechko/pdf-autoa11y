@@ -18,7 +18,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.EmptyLinkTagFix;
 import net.boyechko.pdf.autoa11y.fixes.ReuniteLinkFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -87,8 +87,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!linkElem.getRole().equals(PdfName.Link)
-                    || !StructTree.childrenOf(linkElem, PdfMcr.class).isEmpty()) {
+            if (!linkElem.getRole().equals(PdfName.Link) || !Tag.of(linkElem).mcrs().isEmpty()) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {
@@ -123,7 +122,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
                                     + ") is missing link description",
                             fix);
             issues.add(issue);
-            fixedBySiblingMcr.add(StructTree.objNum(linkElem));
+            fixedBySiblingMcr.add(Tag.of(linkElem).objNum());
         }
     }
 
@@ -133,8 +132,8 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
         if (fixedBySiblingMcr.contains(visit.objNum()) || visit.page() <= 0) {
             return;
         }
-        boolean hasText = !StructTree.descendantsOf(link, PdfMcr.class).isEmpty();
-        boolean hasAnnotation = !StructTree.descendantsOf(link, PdfObjRef.class).isEmpty();
+        boolean hasText = !Tag.of(link).descendantMcrs().isEmpty();
+        boolean hasAnnotation = !Tag.of(link).descendantObjRefs().isEmpty();
         if (hasAnnotation && !hasText && annotationOf(link) != null) {
             annotationOnlyLinks.computeIfAbsent(visit.page(), k -> new ArrayList<>()).add(link);
         } else if (hasText && !hasAnnotation) {
@@ -177,7 +176,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
 
     /** Returns the annotation dictionary of the Link's first OBJR, or null if there is none. */
     private static PdfDictionary annotationOf(PdfStructElem link) {
-        List<PdfObjRef> objRefs = StructTree.childrenOf(link, PdfObjRef.class);
+        List<PdfObjRef> objRefs = Tag.of(link).objRefs();
         return objRefs.isEmpty() ? null : objRefs.getFirst().getReferencedObject();
     }
 }

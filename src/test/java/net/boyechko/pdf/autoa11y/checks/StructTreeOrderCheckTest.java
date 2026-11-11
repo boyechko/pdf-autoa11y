@@ -25,6 +25,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -205,17 +206,11 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             applyAllFixes(issues, ctx);
 
             // Verify children are now in page order
-            List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);
+            List<Tag> kids = Tag.of(document).children();
             assertEquals(3, kids.size());
-            assertTrue(
-                    StructTree.isSameElement(kids.get(0), p1),
-                    "First child should be page-1 element");
-            assertTrue(
-                    StructTree.isSameElement(kids.get(1), p2),
-                    "Second child should be page-2 element");
-            assertTrue(
-                    StructTree.isSameElement(kids.get(2), p3),
-                    "Third child should be page-3 element");
+            assertTrue(kids.get(0).equals(Tag.of(p1)), "First child should be page-1 element");
+            assertTrue(kids.get(1).equals(Tag.of(p2)), "Second child should be page-2 element");
+            assertTrue(kids.get(2).equals(Tag.of(p3)), "Third child should be page-3 element");
 
             // Re-check: should now be clean
             IssueList afterIssues = new StructTreeOrderCheck().findIssues(new DocContext(doc));
@@ -247,9 +242,9 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             new StructTreeOrderFix(document).apply(ctx);
 
             // Order should be unchanged
-            List<PdfStructElem> kids = StructTree.childrenOf(document, PdfStructElem.class);
-            assertTrue(StructTree.isSameElement(kids.get(0), p1));
-            assertTrue(StructTree.isSameElement(kids.get(1), p2));
+            List<Tag> kids = Tag.of(document).children();
+            assertTrue(kids.get(0).equals(Tag.of(p1)));
+            assertTrue(kids.get(1).equals(Tag.of(p2)));
         }
     }
 
@@ -481,9 +476,8 @@ class StructTreeOrderCheckTest extends PdfTestBase {
             assertFalse(issues.isEmpty(), "Precondition: cells stand right to left");
 
             applyAllFixes(issues, ctx);
-            PdfStructElem table =
-                    StructTree.childrenOf(documentOf(doc), PdfStructElem.class).get(0);
-            PdfStructElem row = StructTree.childrenOf(table, PdfStructElem.class).get(0);
+            PdfStructElem table = Tag.of(documentOf(doc)).children().get(0).elem();
+            PdfStructElem row = Tag.of(table).children().get(0).elem();
             assertEquals(
                     List.of("ELP", "IELTS only, before June 2017", "TOEFL"), childTexts(row, ctx));
         }
@@ -602,9 +596,9 @@ class StructTreeOrderCheckTest extends PdfTestBase {
     /** Returns the text painted for each child of an element, in tree order. */
     private static List<String> childTexts(PdfStructElem parent, DocContext ctx) {
         List<String> texts = new ArrayList<>();
-        for (PdfStructElem child : StructTree.childrenOf(parent, PdfStructElem.class)) {
+        for (Tag child : Tag.of(parent).children()) {
             StringBuilder text = new StringBuilder();
-            for (PdfMcr mcr : StructTree.descendantsOf(child, PdfMcr.class)) {
+            for (PdfMcr mcr : child.descendantMcrs()) {
                 text.append(ctx.pages().text(StructTree.pageOf(mcr), mcr.getMcid()));
             }
             // Normalized, since how the extractor separates an element's lines is beside the point

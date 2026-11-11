@@ -17,6 +17,7 @@ import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MisartifactedTextFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.DocumentCheck;
@@ -223,7 +224,7 @@ public class MisartifactedTextCheck extends DocumentCheck {
     }
 
     private static void collectMcrOwners(PdfStructElem elem, Map<PageMcid, PdfStructElem> map) {
-        List<PdfMcr> mcrs = StructTree.descendantsOf(elem, PdfMcr.class);
+        List<PdfMcr> mcrs = Tag.of(elem).descendantMcrs();
         for (PdfMcr mcr : mcrs) {
             int mcid = mcr.getMcid();
             int pageNum = StructTree.pageOf(mcr);

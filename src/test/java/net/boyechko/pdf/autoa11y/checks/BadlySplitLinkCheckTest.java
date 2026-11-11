@@ -19,6 +19,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
 
@@ -139,7 +140,7 @@ class BadlySplitLinkCheckTest extends PdfTestBase {
 
             assertEquals(
                     4,
-                    StructTree.childrenOf(paragraphOf(pdfDoc), PdfStructElem.class).size(),
+                    Tag.of(paragraphOf(pdfDoc)).children().size(),
                     "Expected four adjacent Link tags");
 
             check(pdfDoc, check);

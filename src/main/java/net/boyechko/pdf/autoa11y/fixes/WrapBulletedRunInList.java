@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +85,8 @@ public final class WrapBulletedRunInList implements IssueFix {
             logger.debug(
                     "Skipping fix: obj. #{} not found in any ancestor's K array "
                             + "(stored container was obj. #{})",
-                    StructTree.objNum(anchor),
-                    StructTree.objNum(container));
+                    Tag.of(anchor).objNum(),
+                    Tag.of(container).objNum());
             return;
         }
 
@@ -120,8 +121,8 @@ public final class WrapBulletedRunInList implements IssueFix {
         logger.debug(
                 "Wrapped {} bulleted items in L > LI > LBody under obj. #{}{}",
                 itemCount(),
-                StructTree.objNum(parent),
-                carved.isEmpty() ? "" : ", first carved out of #" + StructTree.objNum(carveFrom));
+                Tag.of(parent).objNum(),
+                carved.isEmpty() ? "" : ", first carved out of #" + Tag.of(carveFrom).objNum());
     }
 
     /**
@@ -137,10 +138,10 @@ public final class WrapBulletedRunInList implements IssueFix {
     }
 
     private static PdfStructElem lastChildWithRole(PdfStructElem elem, String role) {
-        List<PdfStructElem> children = StructTree.childrenOf(elem, PdfStructElem.class);
+        List<Tag> children = Tag.of(elem).children();
         for (int i = children.size() - 1; i >= 0; i--) {
-            if (role.equals(StructTree.mappedRole(children.get(i)))) {
-                return children.get(i);
+            if (role.equals(children.get(i).role())) {
+                return children.get(i).elem();
             }
         }
         return null;
@@ -172,7 +173,7 @@ public final class WrapBulletedRunInList implements IssueFix {
             } else {
                 logger.debug(
                         "Carved kid no longer in K array of obj. #{}; skipping it",
-                        StructTree.objNum(carveFrom));
+                        Tag.of(carveFrom).objNum());
             }
         }
         indices.sort(null);
@@ -248,7 +249,7 @@ public final class WrapBulletedRunInList implements IssueFix {
     private static int indexOfKid(PdfStructElem parent, PdfStructElem target) {
         List<IStructureNode> kids = parent.getKids();
         for (int i = 0; i < kids.size(); i++) {
-            if (kids.get(i) instanceof PdfStructElem kid && StructTree.isSameElement(kid, target)) {
+            if (kids.get(i) instanceof PdfStructElem kid && Tag.of(kid).equals(Tag.of(target))) {
                 return i;
             }
         }

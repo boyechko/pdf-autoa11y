@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.SetHeaderScopeFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -43,7 +43,7 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
     @Override
     public boolean enterElement(Visit visit) {
         if (visit.hasRole("Table")) {
-            plannedScopes.addAll(headerScopesOf(visit.node()));
+            plannedScopes.addAll(headerScopesOf(visit.tag()));
         } else if (visit.hasRole("TH") && !isScoped(visit.node())) {
             issues.add(
                     new Issue(
@@ -68,7 +68,7 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
 
     private SetHeaderScopeFix fixFor(PdfStructElem th) {
         return plannedScopes.stream()
-                .filter(planned -> StructTree.isSameElement(planned.th(), th))
+                .filter(planned -> Tag.of(planned.th()).equals(Tag.of(th)))
                 .findFirst()
                 .map(planned -> new SetHeaderScopeFix(th, planned.scope()))
                 .orElse(null);
@@ -78,54 +78,49 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
      * Column scopes for a first row of THs over rows of TDs, plus Row scopes when every later row
      * is led by a TH; empty for any other layout.
      */
-    private static List<HeaderScope> headerScopesOf(PdfStructElem table) {
-        List<List<PdfStructElem>> rows =
-                rowsOf(table).stream()
-                        .map(row -> StructTree.childrenOf(row, PdfStructElem.class))
-                        .toList();
+    private static List<HeaderScope> headerScopesOf(Tag table) {
+        List<List<Tag>> rows = rowsOf(table).stream().map(Tag::children).toList();
         if (rows.size() < 2 || rows.getFirst().isEmpty() || !allHaveRole(rows.getFirst(), "TH")) {
             return List.of();
         }
-        List<List<PdfStructElem>> body = rows.subList(1, rows.size());
+        List<List<Tag>> body = rows.subList(1, rows.size());
         List<HeaderScope> scopes = new ArrayList<>();
-        rows.getFirst().forEach(th -> scopes.add(new HeaderScope(th, PdfName.Column)));
+        rows.getFirst().forEach(th -> scopes.add(new HeaderScope(th.elem(), PdfName.Column)));
         if (body.stream().allMatch(row -> allHaveRole(row, "TD"))) {
             return scopes;
         }
         if (body.stream().allMatch(UnscopedTableHeaderCheck::isLedByHeader)) {
-            body.forEach(row -> scopes.add(new HeaderScope(row.getFirst(), PdfName.Row)));
+            body.forEach(row -> scopes.add(new HeaderScope(row.getFirst().elem(), PdfName.Row)));
             return scopes;
         }
         return List.of();
     }
 
-    private static boolean isLedByHeader(List<PdfStructElem> row) {
+    private static boolean isLedByHeader(List<Tag> row) {
         return !row.isEmpty()
                 && hasRole(row.getFirst(), "TH")
                 && allHaveRole(row.subList(1, row.size()), "TD");
     }
 
     /** The table's TRs in order, whether direct kids or grouped under THead, TBody, or TFoot. */
-    private static List<PdfStructElem> rowsOf(PdfStructElem table) {
-        List<PdfStructElem> rows = new ArrayList<>();
-        for (PdfStructElem kid : StructTree.childrenOf(table, PdfStructElem.class)) {
+    private static List<Tag> rowsOf(Tag table) {
+        List<Tag> rows = new ArrayList<>();
+        for (Tag kid : table.children()) {
             if (hasRole(kid, "TR")) {
                 rows.add(kid);
-            } else if (ROW_GROUPS.contains(StructTree.mappedRole(kid))) {
-                StructTree.childrenOf(kid, PdfStructElem.class).stream()
-                        .filter(k -> hasRole(k, "TR"))
-                        .forEach(rows::add);
+            } else if (ROW_GROUPS.contains(kid.role())) {
+                kid.children().stream().filter(k -> hasRole(k, "TR")).forEach(rows::add);
             }
         }
         return rows;
     }
 
-    private static boolean allHaveRole(List<PdfStructElem> cells, String role) {
+    private static boolean allHaveRole(List<Tag> cells, String role) {
         return cells.stream().allMatch(cell -> hasRole(cell, role));
     }
 
-    private static boolean hasRole(PdfStructElem elem, String role) {
-        return role.equals(StructTree.mappedRole(elem));
+    private static boolean hasRole(Tag tag, String role) {
+        return role.equals(tag.role());
     }
 
     private record HeaderScope(PdfStructElem th, PdfName scope) {}

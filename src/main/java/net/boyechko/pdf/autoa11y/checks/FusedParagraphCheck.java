@@ -4,12 +4,12 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
 import net.boyechko.pdf.autoa11y.fixes.SplitIntoParagraphsFix;
@@ -61,7 +61,7 @@ public class FusedParagraphCheck extends StructTreeCheck {
     @Override
     public boolean enterElement(Visit visit) {
         PdfStructElem node = visit.node();
-        if (!"P".equals(StructTree.mappedRole(node))
+        if (!"P".equals(Tag.of(node).role())
                 || hasTextEquivalent(node)
                 || isListItemBody(node.getParent())
                 || !holdsOnlyTextAndInlines(visit)) {
@@ -92,13 +92,13 @@ public class FusedParagraphCheck extends StructTreeCheck {
 
     /** True for an LBody, whose lumped lines are list items for MistaggedListCheck to split. */
     private static boolean isListItemBody(IStructureNode parent) {
-        return parent instanceof PdfStructElem elem && "LBody".equals(StructTree.mappedRole(elem));
+        return parent instanceof PdfStructElem elem && "LBody".equals(Tag.of(elem).role());
     }
 
     /** True if every kid is marked content or an inline element, whose lines are the P's own. */
     private static boolean holdsOnlyTextAndInlines(Visit visit) {
         PdfStructElem node = visit.node();
-        int mcrCount = StructTree.childrenOf(node, PdfMcr.class).size();
+        int mcrCount = Tag.of(node).mcrs().size();
         return mcrCount + visit.children().size() == StructTree.kidsOf(node).size()
                 && visit.childRoles().stream()
                         .allMatch(role -> schema.hasType(role, TagType.INLINE));

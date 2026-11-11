@@ -14,6 +14,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -106,8 +107,8 @@ public final class SplitIntoSublistFix implements IssueFix {
                 "Folded {} leading line(s) of #{} into #{}'s item and nested {} line(s) as its"
                         + " sublist",
                 leadingLines,
-                StructTree.objNum(element),
-                StructTree.objNum(predecessor),
+                Tag.of(element).objNum(),
+                Tag.of(predecessor).objNum(),
                 lineCount - leadingLines);
     }
 
@@ -135,7 +136,7 @@ public final class SplitIntoSublistFix implements IssueFix {
      */
     private PdfStructElem ensureItemBody(DocContext ctx, PdfPage page) {
         if (predecessor.getParent() instanceof PdfStructElem parentElem
-                && "LBody".equals(StructTree.mappedRole(parentElem))) {
+                && "LBody".equals(Tag.of(parentElem).role())) {
             return parentElem;
         }
 

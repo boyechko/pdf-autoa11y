@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !MERGE}: folds the element's kids into its preceding sibling and removes the emptied
@@ -48,7 +49,7 @@ record MergeInstruction() implements ScribbledInstruction {
             throw new IllegalArgumentException(
                     "!MERGE refuses: preceding sibling is marked content, not an element");
         }
-        if (!StructTree.mappedRole(element).equals(StructTree.mappedRole(target))) {
+        if (!Tag.of(element).role().equals(Tag.of(target).role())) {
             throw new IllegalArgumentException(
                     "!MERGE refuses: preceding sibling has a different mapped role");
         }

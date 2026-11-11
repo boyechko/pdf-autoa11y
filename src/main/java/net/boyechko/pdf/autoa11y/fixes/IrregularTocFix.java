@@ -13,6 +13,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +63,7 @@ public final class IrregularTocFix implements IssueFix {
     public void apply(DocContext ctx) throws Exception {
         List<Item> items = collectItems(ctx);
         if (items.isEmpty()) {
-            logger.debug(
-                    "TOC #{} has no measurable content; leaving alone", StructTree.objNum(toc));
+            logger.debug("TOC #{} has no measurable content; leaving alone", Tag.of(toc).objNum());
             return;
         }
 
@@ -84,14 +84,14 @@ public final class IrregularTocFix implements IssueFix {
     }
 
     private static void collectInto(PdfStructElem elem, DocContext ctx, List<Item> out) {
-        for (PdfStructElem kid : StructTree.childrenOf(elem, PdfStructElem.class)) {
-            if (!isEntryContent(kid)) {
-                collectInto(kid, ctx, out);
+        for (Tag kid : Tag.of(elem).children()) {
+            if (!isEntryContent(kid.elem())) {
+                collectInto(kid.elem(), ctx, out);
                 continue;
             }
-            int pageNum = StructTree.pageOf(kid, ctx);
-            Rectangle bounds = pageNum > 0 ? ctx.pages().bounds(kid, pageNum) : null;
-            out.add(new Item(kid, elem, pageNum, bounds));
+            int pageNum = kid.page();
+            Rectangle bounds = pageNum > 0 ? ctx.pages().bounds(kid.elem(), pageNum) : null;
+            out.add(new Item(kid.elem(), elem, pageNum, bounds));
         }
     }
 
@@ -100,8 +100,7 @@ public final class IrregularTocFix implements IssueFix {
      * entry, not separate entries) or any element with no structural children left to descend into.
      */
     private static boolean isEntryContent(PdfStructElem elem) {
-        return PdfName.Link.equals(elem.getRole())
-                || StructTree.childrenOf(elem, PdfStructElem.class).isEmpty();
+        return PdfName.Link.equals(elem.getRole()) || Tag.of(elem).children().isEmpty();
     }
 
     // == Grouping into entries ========================================

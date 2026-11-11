@@ -7,6 +7,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
         if (!StructTree.areConsecutiveKids(parent, paragraphs)) {
             logger.debug(
                     "P #{} and following are no longer adjacent; skipping merge",
-                    StructTree.objNum(paragraphs.get(0)));
+                    Tag.of(paragraphs.get(0)).objNum());
             return;
         }
 
@@ -54,7 +55,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
         }
         StructTree.addToolScribble(target, MERGED_SCRIBBLE);
 
-        logger.debug("Merged {} P tags into #{}", paragraphs.size(), StructTree.objNum(target));
+        logger.debug("Merged {} P tags into #{}", paragraphs.size(), Tag.of(target).objNum());
     }
 
     @Override

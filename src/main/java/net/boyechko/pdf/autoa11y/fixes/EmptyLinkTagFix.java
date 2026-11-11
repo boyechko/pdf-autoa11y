@@ -16,6 +16,7 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class EmptyLinkTagFix implements IssueFix {
     private final int pageNum;
 
     public EmptyLinkTagFix(PdfStructElem linkElem, int mcid, int pageNum) {
-        this.linkObjNum = StructTree.objNum(linkElem);
+        this.linkObjNum = Tag.of(linkElem).objNum();
         this.mcid = mcid;
         this.pageNum = pageNum;
     }
@@ -50,11 +51,11 @@ public class EmptyLinkTagFix implements IssueFix {
             logger.debug("Link element not found for obj. #{}", linkObjNum);
             return;
         }
-        if (!StructTree.childrenOf(linkElem, PdfMcr.class).isEmpty()) {
+        if (!Tag.of(linkElem).mcrs().isEmpty()) {
             return;
         }
 
-        List<PdfObjRef> objRefs = StructTree.childrenOf(linkElem, PdfObjRef.class);
+        List<PdfObjRef> objRefs = Tag.of(linkElem).objRefs();
         PdfObjRef objRef = objRefs.isEmpty() ? null : objRefs.getFirst();
         if (objRef == null) {
             return;
@@ -84,7 +85,7 @@ public class EmptyLinkTagFix implements IssueFix {
             return;
         }
 
-        int resolvedPageNum = pageNum > 0 ? pageNum : StructTree.pageOf(linkElem, ctx);
+        int resolvedPageNum = pageNum > 0 ? pageNum : Tag.of(linkElem).page();
         if (resolvedPageNum <= 0 || resolvedPageNum > ctx.doc().getNumberOfPages()) {
             return;
         }
@@ -105,7 +106,7 @@ public class EmptyLinkTagFix implements IssueFix {
     private int findIndex(List<IStructureNode> kids, PdfStructElem target) {
         for (int i = 0; i < kids.size(); i++) {
             IStructureNode kid = kids.get(i);
-            if (kid instanceof PdfStructElem elem && StructTree.isSameElement(elem, target)) {
+            if (kid instanceof PdfStructElem elem && Tag.of(elem).equals(Tag.of(target))) {
                 return i;
             }
         }

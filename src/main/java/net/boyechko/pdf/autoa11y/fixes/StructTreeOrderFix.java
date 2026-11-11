@@ -10,6 +10,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class StructTreeOrderFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        List<PdfStructElem> children = StructTree.childrenOf(element, PdfStructElem.class);
+        List<PdfStructElem> children = Tag.of(element).children().stream().map(Tag::elem).toList();
         reorderChildren(element, children, ctx);
     }
 

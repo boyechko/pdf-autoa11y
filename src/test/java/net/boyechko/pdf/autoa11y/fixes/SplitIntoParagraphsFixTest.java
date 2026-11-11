@@ -14,6 +14,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class SplitIntoParagraphsFixTest extends PdfTestBase {
@@ -81,7 +82,7 @@ class SplitIntoParagraphsFixTest extends PdfTestBase {
             assertTrue(secondText.endsWith("specific dates."), "second P keeps the line's tail");
             PdfStructElem link = StructTree.findByObjNumber(doc.getStructTreeRoot(), LINK);
             assertTrue(
-                    StructTree.isSameElement((PdfStructElem) link.getParent(), second),
+                    Tag.of((PdfStructElem) link.getParent()).equals(Tag.of(second)),
                     "the Link moves whole into the second P");
         }
     }

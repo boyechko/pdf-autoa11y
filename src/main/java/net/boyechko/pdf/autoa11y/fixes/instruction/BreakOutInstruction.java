@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
 
 /**
@@ -27,7 +28,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
 
     @Override
     public String apply(DocContext ctx, PdfStructElem element) {
-        if (!"LI".equals(StructTree.mappedRole(element))) {
+        if (!"LI".equals(Tag.of(element).role())) {
             throw new IllegalArgumentException("!BREAK_OUT requires an LI element");
         }
         if (!(element.getParent() instanceof PdfStructElem list)
@@ -96,8 +97,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
     private static List<PdfStructElem> itemContentOf(PdfStructElem item) {
         List<PdfStructElem> content = new ArrayList<>();
         for (IStructureNode kid : StructTree.kidsOf(item)) {
-            if (!(kid instanceof PdfStructElem body)
-                    || !"LBody".equals(StructTree.mappedRole(body))) {
+            if (!(kid instanceof PdfStructElem body) || !"LBody".equals(Tag.of(body).role())) {
                 throw new IllegalArgumentException(
                         "!BREAK_OUT refuses: item holds something other than LBody");
             }

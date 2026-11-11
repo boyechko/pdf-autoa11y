@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MissingPagePartsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -100,7 +101,7 @@ public class MissingPagePartsCheck extends StructTreeCheck {
 
         for (IStructureNode kid : documentKids) {
             if (kid instanceof PdfStructElem elem && !PdfName.Part.equals(elem.getRole())) {
-                int pageNum = StructTree.pageOf(elem, ctx);
+                int pageNum = Tag.of(elem).page();
                 if (pageNum > 0) {
                     return true;
                 }

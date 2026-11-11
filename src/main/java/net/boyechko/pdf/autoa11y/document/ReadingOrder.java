@@ -56,7 +56,7 @@ public class ReadingOrder {
      */
     public Comparator<PdfStructElem> within(PdfStructElem parent) {
         Comparator<Position> order =
-                "TR".equals(StructTree.mappedRole(parent))
+                "TR".equals(Tag.of(parent).role())
                         ? Comparator.comparingInt(Position::page).thenComparing(Position::left)
                         : Comparator.naturalOrder();
         return Comparator.comparing(this::positionOf, order);
@@ -69,14 +69,14 @@ public class ReadingOrder {
 
     /** Returns the reading position of an element, computing and caching if needed. */
     private Position positionOf(PdfStructElem elem) {
-        int objNum = StructTree.objNum(elem);
+        int objNum = Tag.of(elem).objNum();
         if (objNum >= 0) {
             Position cached = cache.get(objNum);
             if (cached != null) return cached;
         }
 
         Position position =
-                StructTree.descendantsOf(elem, PdfMcr.class).stream()
+                Tag.of(elem).descendantMcrs().stream()
                         .map(this::positionOf)
                         .filter(Objects::nonNull)
                         .min(Comparator.naturalOrder())

@@ -6,7 +6,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Comparator;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.ReadingOrder;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.*;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
@@ -64,7 +64,7 @@ public class StructTreeOrderCheck extends StructTreeCheck {
                 logger.debug(
                         "Not judging the order of #{}: child #{} paints nothing locatable",
                         visit.objNum(),
-                        StructTree.objNum(child));
+                        Tag.of(child).objNum());
                 return false;
             }
         }

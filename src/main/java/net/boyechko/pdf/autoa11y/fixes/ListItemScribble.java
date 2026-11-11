@@ -4,6 +4,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Maintains the scribble on a list element with a history of events that modified the list along
@@ -40,9 +41,7 @@ public final class ListItemScribble {
      */
     public static void refreshCount(PdfStructElem list) {
         long count =
-                StructTree.childrenOf(list, PdfStructElem.class).stream()
-                        .filter(kid -> "LI".equals(StructTree.mappedRole(kid)))
-                        .count();
+                Tag.of(list).children().stream().filter(kid -> "LI".equals(kid.role())).count();
         StructTree.clearScribbleSegments(list, COUNT_TAG);
         StructTree.addToolScribble(list, countSegment(count));
     }

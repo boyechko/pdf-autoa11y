@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.*;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedHeadingFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -74,7 +75,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     @Override
     public boolean enterElement(Visit visit) {
         PdfStructElem node = visit.node();
-        String role = StructTree.mappedRole(node);
+        String role = Tag.of(node).role();
 
         if (ART_ROLE.equals(role)) {
             HeadingScope scope = buildScope(charCountsForElement(node, visit.docCtx()));
@@ -83,7 +84,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
                     Label.of(new DocValue.Role("Art"))
                             .add("(")
                             .separator("")
-                            .add(new DocValue.PageNum(StructTree.pageOf(node, visit.docCtx())))
+                            .add(new DocValue.PageNum(Tag.of(node).page()))
                             .add(")")
                             .toString(),
                     scope);
@@ -321,7 +322,7 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     /** Accumulates a font-size -> character-count histogram over an element's subtree. */
     private Map<Float, Long> charCountsForElement(PdfStructElem node, DocContext ctx) {
         Map<Float, Long> charCountBySize = new HashMap<>();
-        for (PdfMcr mcr : StructTree.descendantsOf(node, PdfMcr.class)) {
+        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
             Content.McidContent mc = ctx.pages().content(mcr);
             if (mc != null) {
                 accumulate(charCountBySize, mc);

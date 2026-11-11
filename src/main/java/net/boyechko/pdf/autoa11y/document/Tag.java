@@ -157,9 +157,7 @@ public final class Tag {
         return Format.elem(elem);
     }
 
-    /**
-     * Direct kids of the given type. Package-private while StructTree.childrenOf delegates here.
-     */
+    /** Direct kids of the given type. */
     @SuppressWarnings("unchecked")
     <T extends IStructureNode> List<T> kids(Class<T> type) {
         List<T> out = new ArrayList<>();
@@ -171,10 +169,7 @@ public final class Tag {
         return out;
     }
 
-    /**
-     * Kids of the given type at any depth, traversing only through element intermediaries.
-     * Package-private while StructTree.descendantsOf delegates here.
-     */
+    /** Kids of the given type at any depth, traversing only through element intermediaries. */
     <T extends IStructureNode> List<T> descendants(Class<T> type) {
         List<T> out = new ArrayList<>();
         collectDescendants(elem, type, out);
