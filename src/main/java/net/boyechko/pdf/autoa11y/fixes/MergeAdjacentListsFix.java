@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
@@ -44,14 +43,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
         }
 
         // Merge only when the lists ended up as immediate siblings
-        int firstIndex = StructTree.findKidIndex(container, firstList);
-        if (firstIndex < 0) {
-            return;
-        }
-        List<IStructureNode> containerKids = container.getKids();
-        if (firstIndex + 1 >= containerKids.size()
-                || !(containerKids.get(firstIndex + 1) instanceof PdfStructElem next)
-                || !Tag.of(next).equals(Tag.of(secondList))) {
+        if (!Tag.of(secondList).equals(Tag.of(firstList).nextSibling())) {
             logger.debug(
                     "Lists #{} and #{} are not adjacent; skipping merge",
                     Tag.of(firstList).objNum(),

@@ -6,6 +6,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Builds and grows L &gt; LI &gt; LBody list structure for the list-producing fixes, keeping the
@@ -33,6 +34,13 @@ final class ListAssembler {
         return list;
     }
 
+    /** Creates an L element right before the sibling and returns it. */
+    PdfStructElem newListBefore(PdfStructElem sibling) {
+        PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+        Tag.of(list).insertBefore(Tag.of(sibling));
+        return list;
+    }
+
     /** Appends an LI &gt; LBody chain to the list and returns the LBody. */
     PdfStructElem newItemBody(PdfStructElem list) {
         PdfStructElem li = new PdfStructElem(doc, PdfName.LI);
@@ -44,6 +52,13 @@ final class ListAssembler {
     PdfStructElem newItemBody(PdfStructElem list, int index) {
         PdfStructElem li = new PdfStructElem(doc, PdfName.LI);
         list.addKid(index, li);
+        return newBodyIn(li);
+    }
+
+    /** Inserts an LI &gt; LBody chain right after the given item and returns the LBody. */
+    PdfStructElem newItemBodyAfter(PdfStructElem previousItem) {
+        PdfStructElem li = new PdfStructElem(doc, PdfName.LI);
+        Tag.of(li).insertAfter(Tag.of(previousItem));
         return newBodyIn(li);
     }
 

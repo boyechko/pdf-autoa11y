@@ -55,9 +55,8 @@ enum ListPlacement implements ItemPlacement {
     @Override
     public PdfStructElem placeNext(PdfStructElem previous, PdfPage page) {
         PdfStructElem li = listItemOf(previous);
-        PdfStructElem list = (PdfStructElem) li.getParent();
-        ListAssembler assembler = assemblerFor(list);
-        PdfStructElem lBody = assembler.newItemBody(list, StructTree.findKidIndex(list, li) + 1);
+        ListAssembler assembler = assemblerFor(li);
+        PdfStructElem lBody = assembler.newItemBodyAfter(li);
         return assembler.newContentIn(lBody, previous.getRole(), page);
     }
 
@@ -77,12 +76,11 @@ enum ListPlacement implements ItemPlacement {
 
     /** Wraps the element in a new L &gt; LI &gt; LBody chain at its own position. */
     private static PdfStructElem wrapInNewList(PdfStructElem element, PdfPage page) {
-        if (!(element.getParent() instanceof PdfStructElem container)) {
+        if (!(element.getParent() instanceof PdfStructElem)) {
             throw new IllegalStateException("Element has no structure-element parent");
         }
-        int index = StructTree.findKidIndex(container, element);
         ListAssembler assembler = assemblerFor(element);
-        PdfStructElem lBody = assembler.newItemBody(assembler.newListAt(container, index));
+        PdfStructElem lBody = assembler.newItemBody(assembler.newListBefore(element));
         assembler.adoptIntoBody(lBody, element, page);
         return element;
     }

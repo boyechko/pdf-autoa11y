@@ -6,6 +6,7 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Places split items as siblings: the element keeps the first item, and each further item gets a
@@ -23,11 +24,10 @@ final class SiblingPlacement implements ItemPlacement {
 
     @Override
     public PdfStructElem placeNext(PdfStructElem previous, PdfPage page) {
-        PdfStructElem parent = (PdfStructElem) previous.getParent();
         PdfStructElem sibling =
                 new PdfStructElem(StructTree.pdfDocumentFor(previous), previous.getRole());
         sibling.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-        parent.addKid(StructTree.findKidIndex(parent, previous) + 1, sibling);
+        Tag.of(sibling).insertAfter(Tag.of(previous));
         return sibling;
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.RoleTreeNotation;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +39,6 @@ record AddParentInstruction(String tagExpr) implements ScribbledInstruction {
 
         List<String> chain = linearChain(nodes.get(0));
 
-        int index = StructTree.findKidIndex(parent, element);
-
         // Build the chain top-down: each wrapper must have /P set (via addKid on its own
         // parent) before we can addKid into it.
         PdfStructElem innermost = parent;
@@ -48,7 +46,7 @@ record AddParentInstruction(String tagExpr) implements ScribbledInstruction {
         for (String wrapperName : chain) {
             PdfStructElem wrapper = new PdfStructElem(ctx.doc(), RoleMap.toPdfName(wrapperName));
             if (outermost == null) {
-                parent.addKid(index, wrapper);
+                Tag.of(wrapper).insertBefore(Tag.of(element));
                 outermost = wrapper;
             } else {
                 innermost.addKid(wrapper);

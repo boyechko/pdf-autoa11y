@@ -139,6 +139,37 @@ public final class Tag {
         return descendants(PdfObjRef.class);
     }
 
+    /** The element kid right after this one in its parent, or null if none or not an element. */
+    public Tag nextSibling() {
+        IStructureNode container = elem.getParent();
+        if (container == null) return null;
+        List<IStructureNode> kids = StructTree.kidsOf(container);
+        int index = StructTree.findKidIndex(container, elem);
+        return index >= 0
+                        && index + 1 < kids.size()
+                        && kids.get(index + 1) instanceof PdfStructElem next
+                ? Tag.of(next)
+                : null;
+    }
+
+    /** Places this tag right before the sibling, taking it out of wherever it sits now. */
+    public void insertBefore(Tag sibling) {
+        insertBeside(sibling, 0);
+    }
+
+    /** Places this tag right after the sibling, taking it out of wherever it sits now. */
+    public void insertAfter(Tag sibling) {
+        insertBeside(sibling, 1);
+    }
+
+    /** Puts the replacements where this tag sits, in order, and takes this tag out of the tree. */
+    public void replaceWith(List<Tag> replacements) {
+        for (Tag replacement : replacements) {
+            replacement.insertBefore(this);
+        }
+        StructTree.removeFromParent(elem, elem.getParent());
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof Tag that
@@ -155,6 +186,26 @@ public final class Tag {
     @Override
     public String toString() {
         return Format.elem(elem);
+    }
+
+    /**
+     * Inserts this tag among the sibling's kin, {@code offset} places past the sibling. A tag moved
+     * from elsewhere first writes down the page it inherited, which its old ancestors would no
+     * longer supply.
+     */
+    private void insertBeside(Tag sibling, int offset) {
+        IStructureNode container = sibling.elem.getParent();
+        if (container == null || StructTree.findKidIndex(container, sibling.elem) < 0) {
+            throw new IllegalStateException(sibling + " is not among its parent's kids");
+        }
+        IStructureNode former = elem.getParent();
+        if (former != null) {
+            StructTree.materializeInheritedPage(elem);
+            StructTree.removeFromParent(elem, former);
+        }
+        // Looked up only now: leaving the same parent shifts the sibling's position.
+        int index = StructTree.findKidIndex(container, sibling.elem);
+        StructTree.addKidToParent(container, index + offset, elem);
     }
 
     /** Direct kids of the given type. */

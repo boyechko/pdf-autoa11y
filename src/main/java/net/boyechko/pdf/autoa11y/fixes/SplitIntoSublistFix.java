@@ -90,7 +90,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         }
 
         PdfStructElem itemBody = ensureItemBody(ctx, page);
-        moveAfterPredecessor(itemBody, page);
+        moveAfterPredecessor(page);
         PdfStructElem tail = buildSublistTail(ctx, itemBody, page);
 
         PdfMcr tailMcr = StructTree.addNewMcr(tail, page);
@@ -140,18 +140,14 @@ public final class SplitIntoSublistFix implements IssueFix {
             return parentElem;
         }
 
-        if (!(predecessor.getParent() instanceof PdfStructElem container)) {
+        if (!(predecessor.getParent() instanceof PdfStructElem)) {
             throw new IllegalStateException("Predecessor has no structure-element parent");
         }
 
         // With a joinInto list, the item this element continues opens a list already tagged
         // after it, so it belongs at that list's head rather than in a second list beside it.
         ListAssembler assembler = new ListAssembler(ctx.doc());
-        PdfStructElem list =
-                joinInto != null
-                        ? joinInto
-                        : assembler.newListAt(
-                                container, StructTree.findKidIndex(container, predecessor));
+        PdfStructElem list = joinInto != null ? joinInto : assembler.newListBefore(predecessor);
         PdfStructElem lBody =
                 joinInto != null ? assembler.newItemBody(list, 0) : assembler.newItemBody(list);
         assembler.adoptIntoBody(lBody, predecessor, page);
@@ -160,13 +156,12 @@ public final class SplitIntoSublistFix implements IssueFix {
     }
 
     /** Moves the element out of its container to sit beside the predecessor in its item. */
-    private void moveAfterPredecessor(PdfStructElem itemBody, PdfPage page) {
-        if (!(element.getParent() instanceof PdfStructElem container)) {
+    private void moveAfterPredecessor(PdfPage page) {
+        if (!(element.getParent() instanceof PdfStructElem)) {
             throw new IllegalStateException("Element has no structure-element parent");
         }
         ListAssembler.pinPage(element, page);
-        container.removeKid(element);
-        itemBody.addKid(StructTree.findKidIndex(itemBody, predecessor) + 1, element);
+        Tag.of(element).insertAfter(Tag.of(predecessor));
     }
 
     /** Builds an empty L &gt; LI &gt; LBody &gt; P sublist in the item body and returns the P. */

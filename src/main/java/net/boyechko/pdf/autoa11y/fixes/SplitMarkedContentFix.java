@@ -16,6 +16,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -53,18 +54,19 @@ public final class SplitMarkedContentFix implements IssueFix {
             return;
         }
 
-        if (!(element.getParent() instanceof PdfStructElem parent)) {
+        if (!(element.getParent() instanceof PdfStructElem)) {
             throw new IllegalStateException("Element has no structure-element parent");
         }
-        int index = StructTree.findKidIndex(parent, element);
 
         // One same-role sibling per run after the first; the element keeps the first run's MCID.
         List<Integer> newMcids = new ArrayList<>();
+        Tag previous = Tag.of(element);
         for (int i = 0; i < splices.size(); i++) {
             PdfStructElem sibling = new PdfStructElem(ctx.doc(), element.getRole());
             // Pin /Pg on the MCR's immediate parent so its bare-number MCR resolves its page.
             sibling.getPdfObject().put(PdfName.Pg, page.getPdfObject());
-            parent.addKid(index + 1 + i, sibling);
+            Tag.of(sibling).insertAfter(previous);
+            previous = Tag.of(sibling);
             PdfMcr newMcr = StructTree.addNewMcr(sibling, page);
             newMcids.add(newMcr.getMcid());
             StructTree.addToolScribble(sibling, SPLIT_SCRIBBLE);

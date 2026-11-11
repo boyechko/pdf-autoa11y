@@ -74,13 +74,12 @@ public final class RebuildListFix implements IssueFix {
         for (Placed placement : placed) {
             PdfStructElem outermost = kidOfHostHolding(host, placement.element());
             if (WRAPPER_ROLES.contains(Tag.of(outermost).role())) {
-                flatten(host, outermost, ctx);
+                flatten(outermost, ctx);
             }
         }
 
         ListAssembler assembler = new ListAssembler(ctx.doc());
-        PdfStructElem list =
-                assembler.newListAt(host, StructTree.findKidIndex(host, placed.get(0).element()));
+        PdfStructElem list = assembler.newListBefore(placed.get(0).element());
         List<PdfStructElem> openLists = new ArrayList<>(List.of(list));
         List<PdfStructElem> openBodies = new ArrayList<>();
         for (Placed placement : placed) {
@@ -180,23 +179,20 @@ public final class RebuildListFix implements IssueFix {
     }
 
     /**
-     * Replaces a list wrapper in the host with the content it holds, in reading order. Nested
-     * wrappers are flattened along with it; marked content or a label held directly by a wrapper
-     * has no element to stand on its own, so the rebuild refuses it.
+     * Replaces a list wrapper with the content it holds, in reading order. Nested wrappers are
+     * flattened along with it; marked content or a label held directly by a wrapper has no element
+     * to stand on its own, so the rebuild refuses it.
      */
-    private static void flatten(PdfStructElem host, PdfStructElem wrapper, DocContext ctx) {
+    private static void flatten(PdfStructElem wrapper, DocContext ctx) {
         List<PdfStructElem> content = new ArrayList<>();
         collectContent(wrapper, content);
-        int index = StructTree.findKidIndex(host, wrapper);
         for (PdfStructElem elem : content) {
             int pageNum = Tag.of(elem).page();
             if (pageNum > 0) {
                 ListAssembler.pinPage(elem, ctx.doc().getPage(pageNum));
             }
-            Tag.of(elem).parent().elem().removeKid(elem);
-            host.addKid(index++, elem);
         }
-        host.removeKid(wrapper);
+        Tag.of(wrapper).replaceWith(content.stream().map(Tag::of).toList());
     }
 
     /** Gathers the content elements under a wrapper, descending through nested wrappers. */

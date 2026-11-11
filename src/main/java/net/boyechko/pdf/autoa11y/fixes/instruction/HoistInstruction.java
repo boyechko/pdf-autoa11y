@@ -5,8 +5,10 @@ package net.boyechko.pdf.autoa11y.fixes.instruction;
 import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.receipt;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !HOIST}: collapses the chain of wrappers above the element, each holding nothing but the
@@ -32,13 +34,7 @@ record HoistInstruction() implements ScribbledInstruction {
             top = up;
             depth++;
         }
-        PdfStructElem container = (PdfStructElem) top.getParent();
-        int index = StructTree.findKidIndex(container, top);
-
-        StructTree.materializeInheritedPage(element);
-        ((PdfStructElem) element.getParent()).removeKid(element);
-        container.addKid(index, element);
-        container.removeKid(top);
+        Tag.of(top).replaceWith(List.of(Tag.of(element)));
         return receipt("HOIST past " + depth);
     }
 }

@@ -10,6 +10,7 @@ import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +54,8 @@ public class MisartifactedTextFix implements IssueFix {
             }
         }
 
-        int insertIdx = StructTree.findKidIndex(parent, neighborElem);
         PdfStructElem lbl = new PdfStructElem(ctx.doc(), PdfName.Lbl);
-        parent.addKid(insertIdx, lbl);
+        Tag.of(lbl).insertBefore(Tag.of(neighborElem));
         StructTree.setScribble(lbl, scribbleValue);
     }
 
