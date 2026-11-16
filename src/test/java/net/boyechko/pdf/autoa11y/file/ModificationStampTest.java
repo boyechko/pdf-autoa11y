@@ -10,7 +10,8 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 /** Test suite for ModificationStamp. */
@@ -21,8 +22,7 @@ public class ModificationStampTest {
     /** The segment the stamp writes for {@link #WHEN}, and that segment as a whole scribble. */
     private static final String SEGMENT = "STAMP 2026-08-21 Fri 12:01";
 
-    private static final String TOOL_SCRIBBLE =
-            StructTree.SCRIBBLE_PREFIX + StructTree.SCRIBBLE_TOOL_MARK + SEGMENT;
+    private static final String TOOL_SCRIBBLE = Scribble.PREFIX + Scribble.TOOL_MARK + SEGMENT;
 
     private static final String NOTE = "modified using PDF-AutoA11y";
 
@@ -33,7 +33,7 @@ public class ModificationStampTest {
 
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(document).rawValue());
+            assertEquals(TOOL_SCRIBBLE, Tag.of(document).scribble().rawValue());
         }
     }
 
@@ -45,7 +45,7 @@ public class ModificationStampTest {
             ModificationStamp.apply(doc, WHEN.minusDays(3));
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(document).rawValue());
+            assertEquals(TOOL_SCRIBBLE, Tag.of(document).scribble().rawValue());
         }
     }
 
@@ -53,13 +53,13 @@ public class ModificationStampTest {
     void existingSegmentsAndAuthorshipArePreserved() throws Exception {
         try (PdfDocument doc = newTaggedDocument()) {
             PdfStructElem document = addRootKid(doc, PdfName.Document);
-            StructTree.setScribble(document, "OK");
+            Tag.of(document).scribble(Scribble.user("OK"));
 
             ModificationStamp.apply(doc, WHEN);
 
             assertEquals(
-                    StructTree.SCRIBBLE_PREFIX + "OK" + StructTree.SCRIBBLE_SEPARATOR + SEGMENT,
-                    StructTree.getScribble(document).rawValue());
+                    Scribble.PREFIX + "OK" + Scribble.SEPARATOR + SEGMENT,
+                    Tag.of(document).scribble().rawValue());
         }
     }
 
@@ -67,16 +67,13 @@ public class ModificationStampTest {
     void segmentMerelyBeginningWithTheTagIsNotTreatedAsAnEarlierStamp() {
         try (PdfDocument doc = newTaggedDocument()) {
             PdfStructElem document = addRootKid(doc, PdfName.Document);
-            StructTree.setScribble(document, "STAMPING needed on figure 4");
+            Tag.of(document).scribble(Scribble.user("STAMPING needed on figure 4"));
 
             ModificationStamp.apply(doc, WHEN);
 
             assertEquals(
-                    StructTree.SCRIBBLE_PREFIX
-                            + "STAMPING needed on figure 4"
-                            + StructTree.SCRIBBLE_SEPARATOR
-                            + SEGMENT,
-                    StructTree.getScribble(document).rawValue());
+                    Scribble.PREFIX + "STAMPING needed on figure 4" + Scribble.SEPARATOR + SEGMENT,
+                    Tag.of(document).scribble().rawValue());
         }
     }
 
@@ -87,7 +84,7 @@ public class ModificationStampTest {
 
             ModificationStamp.apply(doc, WHEN);
 
-            assertEquals(TOOL_SCRIBBLE, StructTree.getScribble(part).rawValue());
+            assertEquals(TOOL_SCRIBBLE, Tag.of(part).scribble().rawValue());
         }
     }
 

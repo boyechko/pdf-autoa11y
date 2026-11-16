@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -13,6 +12,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import org.junit.jupiter.api.Test;
 
 class StaleScribbleFixTest extends PdfTestBase {
@@ -25,11 +25,11 @@ class StaleScribbleFixTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);
-            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            h1.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "NeedsReview"));
             document.addKid(h1);
 
             DocContext ctx = new DocContext(pdfDoc);
-            new StaleScribbleFix(h1, SCRIBBLE_PREFIX + "NeedsReview").apply(ctx);
+            new StaleScribbleFix(h1, Scribble.PREFIX + "NeedsReview").apply(ctx);
 
             assertNull(h1.getPdfObject().getAsString(PdfName.T));
         }
@@ -59,12 +59,12 @@ class StaleScribbleFixTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1);
-            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "OK"));
+            h1.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "OK"));
             h1.getPdfObject().put(PdfName.Lang, new PdfString("en"));
             document.addKid(h1);
 
             DocContext ctx = new DocContext(pdfDoc);
-            new StaleScribbleFix(h1, SCRIBBLE_PREFIX + "OK").apply(ctx);
+            new StaleScribbleFix(h1, Scribble.PREFIX + "OK").apply(ctx);
 
             assertNull(h1.getPdfObject().getAsString(PdfName.T));
             assertEquals("en", h1.getPdfObject().getAsString(PdfName.Lang).toUnicodeString());

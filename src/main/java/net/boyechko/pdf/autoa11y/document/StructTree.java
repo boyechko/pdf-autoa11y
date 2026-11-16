@@ -431,136 +431,32 @@ public final class StructTree {
 
     // === Miscellaneous utilities ===========================================
 
-    public static final String SCRIBBLE_PREFIX = "__";
-    public static final String SCRIBBLE_SEPARATOR = " // ";
-
-    /** Leading mark distinguishing a tool-authored scribble from a user-authored one. */
-    public static final String SCRIBBLE_TOOL_MARK = ":";
-
     /**
-     * User-authored scribble segment marking the element (and its subtree) as reviewed and correct,
-     * e.g. {@code __OK} or {@code __OK // check figure later}.
-     */
-    public static final String SCRIBBLE_VERIFIED_TOKEN = "OK";
-
-    /**
-     * Whether the user has marked this element as reviewed and correct. Only a user-authored
-     * scribble counts; the mark shields the element's whole subtree from checks and fixes.
-     */
-    public static boolean isVerified(PdfStructElem elem) {
-        DocValue.Scribble scribble = getScribble(elem);
-        if (scribble == null || scribble.toolAuthored()) return false;
-        for (String seg : scribble.segments()) {
-            if (seg.trim().equals(SCRIBBLE_VERIFIED_TOKEN)) return true;
-        }
-        return false;
-    }
-
-    /** Returns the first whitespace-separated token of a scribble segment. */
-    private static String segmentHead(String segment) {
-        int sp = segment.indexOf(' ');
-        return (sp < 0) ? segment : segment.substring(0, sp);
-    }
-
-    /** Returns the scribble value (prefix-stripped, control-char-cleaned), or null if absent. */
-    public static DocValue.Scribble getScribble(PdfStructElem elem) {
-        return DocValue.Scribble.of(elem);
-    }
-
-    public static void setScribble(PdfStructElem elem, String scribble) {
-        elem.put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + scribble));
-    }
-
-    /**
-     * Writes a tool-authored scribble, marked so it reads as the tool's own rather than the user's.
-     */
-    public static void setToolScribble(PdfStructElem elem, String scribble) {
-        setScribble(elem, SCRIBBLE_TOOL_MARK + scribble);
-    }
-
-    /**
-     * Appends a tool-authored segment, creating the scribble when the element has none. An existing
-     * scribble keeps its own authorship, so a tool note appended to a hand-written scribble does
-     * not claim the whole thing for the tool. Appending a segment that is already present is a
-     * no-op, so a fix that runs twice does not stamp itself twice.
-     */
-    public static void addToolScribble(PdfStructElem elem, String segment) {
-        DocValue.Scribble existing = getScribble(elem);
-        if (existing == null) {
-            setToolScribble(elem, segment);
-            return;
-        }
-        for (String seg : existing.segments()) {
-            if (seg.equals(segment)) return;
-        }
-        String body = existing.body() + SCRIBBLE_SEPARATOR + segment;
-        if (existing.toolAuthored()) {
-            setToolScribble(elem, body);
-        } else {
-            setScribble(elem, body);
-        }
-    }
-
-    /**
-     * Removes scribble segments whose first whitespace-separated token equals {@code tag}. If the
-     * element has no scribble, this is a no-op. If all segments are removed, /T is cleared.
-     *
-     * <p>Intended for checks that rewrite their own diagnostics on each run: clear the check's own
-     * segments before re-emitting, so stale violations don't accumulate.
-     */
-    public static boolean clearScribbleSegments(PdfStructElem elem, String tag) {
-        DocValue.Scribble existing = getScribble(elem);
-        if (existing == null) return false;
-
-        StringBuilder kept = new StringBuilder();
-        boolean removedAny = false;
-        for (String seg : existing.segments()) {
-            if (segmentHead(seg).equals(tag)) {
-                removedAny = true;
-                continue;
-            }
-            if (kept.length() > 0) kept.append(SCRIBBLE_SEPARATOR);
-            kept.append(seg);
-        }
-        if (!removedAny) return false;
-        if (kept.length() == 0) {
-            elem.getPdfObject().remove(PdfName.T);
-        } else if (existing.toolAuthored()) {
-            setToolScribble(elem, kept.toString());
-        } else {
-            setScribble(elem, kept.toString());
-        }
-        return true;
-    }
-
-    /**
-     * Walks the structure tree below {@code root}, clearing scribble segments tagged {@code tag} on
-     * every element. Returns {@code true} if any element was modified.
+     * Walks the structure tree below {@code root}, clearing scribble segments headed {@code head}
+     * on every element. Returns {@code true} if any element was modified.
      *
      * <p>Prefer this single pre-pass over per-node clearing in {@code enterElement}: the latter
      * would wipe scribbles that a parent's validator wrote to a child element before the child is
      * visited.
      */
-    public static boolean clearScribbleSegmentsInTree(PdfStructTreeRoot root, String tag) {
+    public static boolean clearScribbleSegmentsInTree(PdfStructTreeRoot root, String head) {
         if (root == null || root.getKids() == null) return false;
         boolean dirty = false;
         for (IStructureNode kid : root.getKids()) {
             if (kid instanceof PdfStructElem elem) {
-                dirty |= clearScribbleSegmentsInSubtree(elem, tag);
+                dirty |= clearScribbleSegmentsInSubtree(Tag.of(elem), head);
             }
         }
         return dirty;
     }
 
-    private static boolean clearScribbleSegmentsInSubtree(PdfStructElem elem, String tag) {
-        boolean dirty = clearScribbleSegments(elem, tag);
-        List<IStructureNode> kids = elem.getKids();
-        if (kids != null) {
-            for (IStructureNode kid : kids) {
-                if (kid instanceof PdfStructElem child) {
-                    dirty |= clearScribbleSegmentsInSubtree(child, tag);
-                }
-            }
+    private static boolean clearScribbleSegmentsInSubtree(Tag tag, String head) {
+        DocValue.Scribble before = tag.scribble();
+        DocValue.Scribble after = before.without(head);
+        boolean dirty = !after.equals(before);
+        if (dirty) tag.scribble(after);
+        for (Tag child : tag.children()) {
+            dirty |= clearScribbleSegmentsInSubtree(child, head);
         }
         return dirty;
     }

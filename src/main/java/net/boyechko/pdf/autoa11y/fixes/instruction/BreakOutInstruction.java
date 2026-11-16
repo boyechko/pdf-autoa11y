@@ -88,7 +88,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
         int total = hoisted.size();
         for (int i = 0; i < total; i++) {
             String ordinal = total > 1 ? " (" + (i + 1) + " of " + total + ")" : "";
-            StructTree.addToolScribble(hoisted.get(i), receipt("BREAK_OUT" + ordinal));
+            Tag.of(hoisted.get(i)).stamp(receipt("BREAK_OUT" + ordinal));
         }
     }
 

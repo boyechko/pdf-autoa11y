@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.checks;
 
-import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
-import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_TOOL_MARK;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -16,6 +14,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.checks.StaleScribbleCheck.Scope;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -33,7 +32,7 @@ class StaleScribbleCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            h1.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "NeedsReview"));
             document.addKid(h1);
 
             IssueList issues = runCheck(pdfDoc);
@@ -91,11 +90,11 @@ class StaleScribbleCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "FixHeadingLevel"));
+            h1.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "FixHeadingLevel"));
             document.addKid(h1);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "ShouldBeList"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -115,7 +114,7 @@ class StaleScribbleCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
-            h1.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            h1.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "NeedsReview"));
             document.addKid(h1);
 
             IssueList issues = runCheck(pdfDoc, Scope.TOOL_AUTHORED);
@@ -137,11 +136,11 @@ class StaleScribbleCheckTest extends PdfTestBase {
             h1.getPdfObject()
                     .put(
                             PdfName.T,
-                            new PdfString(SCRIBBLE_PREFIX + SCRIBBLE_TOOL_MARK + "LINK_URI"));
+                            new PdfString(Scribble.PREFIX + Scribble.TOOL_MARK + "LINK_URI"));
             document.addKid(h1);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "ShouldBeList"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc, Scope.TOOL_AUTHORED);
@@ -164,11 +163,11 @@ class StaleScribbleCheckTest extends PdfTestBase {
             h1.getPdfObject()
                     .put(
                             PdfName.T,
-                            new PdfString(SCRIBBLE_PREFIX + SCRIBBLE_TOOL_MARK + "LINK_URI"));
+                            new PdfString(Scribble.PREFIX + Scribble.TOOL_MARK + "LINK_URI"));
             document.addKid(h1);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "ShouldBeList"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "ShouldBeList"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);

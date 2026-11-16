@@ -3,13 +3,11 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
@@ -41,22 +39,19 @@ public class MisartifactedTextFix implements IssueFix {
             return;
         }
 
-        String scribbleValue = "misartifacted " + text;
+        Scribble signpost = Scribble.user("misartifacted " + text);
 
         // Skip if a signpost with this exact scribble already exists as a sibling
-        for (IStructureNode kid : parent.getKids()) {
-            if (kid instanceof PdfStructElem sibling) {
-                DocValue.Scribble scribble = StructTree.getScribble(sibling);
-                if (scribble != null && scribbleValue.equals(scribble.value())) {
-                    logger.debug("Signpost already exists for '{}', skipping", text);
-                    return;
-                }
+        for (Tag sibling : Tag.of(parent).children()) {
+            if (signpost.equals(sibling.scribble())) {
+                logger.debug("Signpost already exists for '{}', skipping", text);
+                return;
             }
         }
 
         PdfStructElem lbl = new PdfStructElem(ctx.doc(), PdfName.Lbl);
         Tag.of(lbl).insertBefore(Tag.of(neighborElem));
-        StructTree.setScribble(lbl, scribbleValue);
+        Tag.of(lbl).scribble(signpost);
     }
 
     @Override

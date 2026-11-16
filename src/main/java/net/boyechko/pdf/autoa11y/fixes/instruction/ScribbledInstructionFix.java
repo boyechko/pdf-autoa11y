@@ -8,9 +8,10 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Carries out the instruction scribbled in the structure element's /T key. */
@@ -55,10 +56,10 @@ public class ScribbledInstructionFix implements IssueFix {
         if (parsed == null) {
             throw new IllegalArgumentException("Unsupported instruction: " + instruction);
         }
-        // setToolScribble replaces /T wholesale, so the scribbled instruction is cleared here.
+        // The receipt replaces /T wholesale, so the scribbled instruction is cleared here.
         String receipt = parsed.apply(ctx, element);
         if (receipt != null) {
-            StructTree.setToolScribble(element, receipt);
+            Tag.of(element).scribble(Scribble.tool(receipt));
         }
     }
 

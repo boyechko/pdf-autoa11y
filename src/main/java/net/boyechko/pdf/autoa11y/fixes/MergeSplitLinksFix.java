@@ -68,7 +68,7 @@ public final class MergeSplitLinksFix implements IssueFix {
             mergedCount++;
         }
         groupObjRefsFirst(target);
-        StructTree.addToolScribble(target, MERGED_SCRIBBLE);
+        Tag.of(target).stamp(MERGED_SCRIBBLE);
 
         logger.debug("Merged {} Link tags into #{}", links.size(), Tag.of(target).objNum());
     }

@@ -4,7 +4,7 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstructionFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -16,8 +16,6 @@ import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /** Detects elements whose /T scribble encodes a structural instruction. */
 public class ScribbledInstructionCheck extends StructTreeCheck {
-    static final String SCRIBBLED_INSTRUCTION_PREFIX = "!";
-
     private final IssueList issues = new IssueList();
 
     @Override
@@ -42,11 +40,8 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
 
     @Override
     public boolean enterElement(Visit visit) {
-        DocValue.Scribble scribble = DocValue.Scribble.of(visit.node());
-        if (scribble == null) {
-            return true;
-        }
-        String instruction = instructionSegment(scribble);
+        Scribble scribble = visit.tag().scribble();
+        String instruction = scribble.instruction();
         if (instruction != null) {
             issues.add(
                     new Issue(
@@ -58,16 +53,6 @@ public class ScribbledInstructionCheck extends StructTreeCheck {
             return !ScribbledInstructionFix.isSubtreeInstruction(instruction);
         }
         return true;
-    }
-
-    /** Returns the first instruction-bearing segment, or null when the scribble has none. */
-    private static String instructionSegment(DocValue.Scribble scribble) {
-        for (String segment : scribble.segments()) {
-            if (segment.startsWith(SCRIBBLED_INSTRUCTION_PREFIX)) {
-                return segment;
-            }
-        }
-        return null;
     }
 
     @Override

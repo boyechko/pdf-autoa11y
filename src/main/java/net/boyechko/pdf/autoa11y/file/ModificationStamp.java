@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * Records that this tool modified a document, in two places: a tool-authored timestamp scribbled on
@@ -56,8 +57,8 @@ public final class ModificationStamp {
         if (target == null) {
             return;
         }
-        StructTree.clearScribbleSegments(target, TAG);
-        StructTree.addToolScribble(target, TAG + " " + TIMESTAMP.format(when));
+        Tag.of(target).unstamp(TAG);
+        Tag.of(target).stamp(TAG + " " + TIMESTAMP.format(when));
     }
 
     /** Returns the Document element, falling back to the first structure element under the root. */

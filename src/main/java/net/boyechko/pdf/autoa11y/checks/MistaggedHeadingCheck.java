@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.*;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedHeadingFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -50,9 +51,8 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     private static final String ART_ROLE = "Art";
 
     /** Mood mark for a tool finding: informational, never executed (cf. '!' for instructions). */
-    private static final String FINDING_MARK = "?";
-
     private final IssueList issues = new IssueList();
+
     private final Deque<HeadingScope> scopeStack = new ArrayDeque<>();
     private HeadingScope docScope = HeadingScope.EMPTY;
 
@@ -169,16 +169,17 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
         // A tool-authored finding (":?"): the level the size suggests, why it was rejected, and
         // the measured size. It is informational only -- never an executable instruction, since
         // retagging to this level would itself be improperly nested.
-        StructTree.setToolScribble(
-                visit.node(),
-                FINDING_MARK
-                        + sizeLevel.getValue()
-                        + " (expected H"
-                        + expectedLevel
-                        + ")"
-                        + StructTree.SCRIBBLE_SEPARATOR
-                        + dominantSize
-                        + "pt");
+        visit.tag()
+                .scribble(
+                        Scribble.tool(
+                                Scribble.FINDING_MARK
+                                        + sizeLevel.getValue()
+                                        + " (expected H"
+                                        + expectedLevel
+                                        + ")"
+                                        + Scribble.SEPARATOR
+                                        + dominantSize
+                                        + "pt"));
         issues.add(
                 new Issue(
                         IssueType.IMPROPERLY_NESTED_HEADING,

@@ -13,8 +13,8 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import org.junit.jupiter.api.Test;
 
 class DocValueTest extends PdfTestBase {
@@ -120,54 +120,11 @@ class DocValueTest extends PdfTestBase {
     }
 
     @Test
-    void toolAuthoredScribbleStripsMarkFromBody() {
-        DocValue.Scribble scribble =
-                new DocValue.Scribble(StructTree.SCRIBBLE_TOOL_MARK + "!SET_ROLE H1");
-
-        assertTrue(scribble.toolAuthored());
-        assertEquals("!SET_ROLE H1", scribble.body());
-    }
-
-    @Test
-    void userAuthoredScribbleHasNoToolMark() {
-        DocValue.Scribble scribble = new DocValue.Scribble("!SET_ROLE H1");
-
-        assertFalse(scribble.toolAuthored());
-        assertEquals("!SET_ROLE H1", scribble.body());
-    }
-
-    @Test
-    void segmentsSplitBodyAndExcludeToolMark() {
-        DocValue.Scribble scribble =
-                new DocValue.Scribble(
-                        StructTree.SCRIBBLE_TOOL_MARK
-                                + "?H3 (expected H2)"
-                                + StructTree.SCRIBBLE_SEPARATOR
-                                + "23.75pt");
-
-        assertTrue(scribble.toolAuthored());
-        assertEquals(List.of("?H3 (expected H2)", "23.75pt"), scribble.segments());
-    }
-
-    @Test
-    void plainTitleIsNotAScribble() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
-            elem.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
-
-            assertNull(DocValue.Scribble.of(elem));
-            assertEquals("Chapter 1", DocValue.Title.of(elem).value());
-        }
-    }
-
-    @Test
     void scribbleIsNotAPlainTitle() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
-            elem.getPdfObject()
-                    .put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX + "ShouldBeList"));
+            elem.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "ShouldBeList"));
 
             assertNull(DocValue.Title.of(elem));
         }
@@ -176,32 +133,6 @@ class DocValueTest extends PdfTestBase {
     @Test
     void titleRendersAsPdfKey() {
         assertEquals("/T \"Chapter 1\"", new DocValue.Title("Chapter 1").toString());
-    }
-
-    @Test
-    void prefixIsStrippedOnlyFromTheStart() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
-            elem.getPdfObject()
-                    .put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX + "see Chapter__1"));
-
-            DocValue.Scribble scribble = DocValue.Scribble.of(elem);
-
-            assertEquals("see Chapter__1", scribble.value());
-            assertEquals(StructTree.SCRIBBLE_PREFIX + "see Chapter__1", scribble.rawValue());
-        }
-    }
-
-    @Test
-    void prefixWithNothingAfterItIsNotAScribble() throws Exception {
-        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            pdfDoc.setTagged();
-            PdfStructElem elem = new PdfStructElem(pdfDoc, PdfName.P);
-            elem.getPdfObject().put(PdfName.T, new PdfString(StructTree.SCRIBBLE_PREFIX));
-
-            assertNull(DocValue.Scribble.of(elem));
-        }
     }
 
     /** Builds an attribute dictionary with the given owner and optional Scope value. */

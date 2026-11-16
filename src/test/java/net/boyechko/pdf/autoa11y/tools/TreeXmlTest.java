@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class TreeXmlTest {
                                 "Custom / Role",
                                 "Custom / Role",
                                 -1,
-                                new DocValue.Scribble("REVIEW & compare"),
+                                new Scribble("REVIEW & compare"),
                                 null,
                                 new DocValue.Scope("Column"),
                                 2),
@@ -52,9 +53,10 @@ class TreeXmlTest {
             var tree =
                     TreeNode.<TreeSnapshot.Value>branch(
                             new TreeSnapshot.Element(
-                                    "Document", "Document", 1, null, null, null, 0),
+                                    "Document", "Document", 1, Scribble.EMPTY, null, null, 0),
                             TreeNode.leaf(
-                                    new TreeSnapshot.Element(role, role, 2, null, null, null, 0)));
+                                    new TreeSnapshot.Element(
+                                            role, role, 2, Scribble.EMPTY, null, null, 0)));
 
             assertTrue(TreeQuery.select(tree, "//*[@role and self::" + role + "]").isEmpty());
             assertEquals(1, TreeQuery.select(tree, "//*[@role='" + role + "']").size());

@@ -93,8 +93,8 @@ class SplitMarkedContentFixTest extends PdfTestBase {
             new SplitMarkedContentFix(heading).apply(new DocContext(doc));
 
             for (PdfStructElem run : sameRoleSiblingsAfter(parent, heading, 2)) {
-                var scribble = StructTree.getScribble(run);
-                assertTrue(scribble != null && scribble.toolAuthored(), "tool-authored scribble");
+                var scribble = Tag.of(run).scribble();
+                assertTrue(scribble.toolAuthored(), "tool-authored scribble");
                 assertTrue(
                         scribble.segments().stream()
                                 .anyMatch(s -> s.trim().equals("SPLIT content")),

@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -30,7 +29,7 @@ public final class ListItemScribble {
      * @param event a tagged event segment naming the calling fix
      */
     public static void update(PdfStructElem list, String event) {
-        StructTree.addToolScribble(list, event);
+        Tag.of(list).stamp(event);
         refreshCount(list);
     }
 
@@ -42,8 +41,8 @@ public final class ListItemScribble {
     public static void refreshCount(PdfStructElem list) {
         long count =
                 Tag.of(list).children().stream().filter(kid -> "LI".equals(kid.role())).count();
-        StructTree.clearScribbleSegments(list, COUNT_TAG);
-        StructTree.addToolScribble(list, countSegment(count));
+        Tag.of(list).unstamp(COUNT_TAG);
+        Tag.of(list).stamp(countSegment(count));
     }
 
     public static String countSegment(long count) {

@@ -6,8 +6,8 @@ import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -31,7 +31,7 @@ public class MistaggedHeadingFix implements IssueFix {
         if (!ELEMENTS_TO_TAG.contains(Tag.of(element).role())) {
             return;
         }
-        StructTree.setToolScribble(element, "!SET_ROLE " + headingLevel.getValue());
+        Tag.of(element).scribble(Scribble.tool("!SET_ROLE " + headingLevel.getValue()));
     }
 
     @Override

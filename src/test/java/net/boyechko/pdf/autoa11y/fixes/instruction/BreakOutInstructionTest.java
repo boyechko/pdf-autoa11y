@@ -14,7 +14,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
 import org.junit.jupiter.api.Test;
 
@@ -176,10 +176,8 @@ class BreakOutInstructionTest extends PdfTestBase {
             new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
 
             PdfStructElem tail = (PdfStructElem) div.getKids().get(2);
-            assertTrue(
-                    StructTree.getScribble(list).body().contains(ListItemScribble.countSegment(1)));
-            assertTrue(
-                    StructTree.getScribble(tail).body().contains(ListItemScribble.countSegment(2)));
+            assertTrue(Tag.of(list).scribble().body().contains(ListItemScribble.countSegment(1)));
+            assertTrue(Tag.of(tail).scribble().body().contains(ListItemScribble.countSegment(2)));
         }
     }
 
@@ -213,17 +211,19 @@ class BreakOutInstructionTest extends PdfTestBase {
 
             PdfStructElem tail = (PdfStructElem) div.getKids().get(3);
             assertTrue(
-                    StructTree.getScribble(heading)
+                    Tag.of(heading)
+                            .scribble()
                             .body()
                             .contains(ScribbledInstruction.receipt("BREAK_OUT (1 of 2)")));
             assertTrue(
-                    StructTree.getScribble(prose)
+                    Tag.of(prose)
+                            .scribble()
                             .body()
                             .contains(ScribbledInstruction.receipt("BREAK_OUT (2 of 2)")));
             assertFalse(
-                    StructTree.getScribble(list).body().contains("BREAK_OUT"),
+                    Tag.of(list).scribble().body().contains("BREAK_OUT"),
                     "Surviving list carries only its count, not the event");
-            assertFalse(StructTree.getScribble(tail).body().contains("BREAK_OUT"));
+            assertFalse(Tag.of(tail).scribble().body().contains("BREAK_OUT"));
         }
     }
 
@@ -245,7 +245,7 @@ class BreakOutInstructionTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(li, "!BREAK_OUT").apply(ctx);
 
-            String scribble = StructTree.getScribble(heading).body();
+            String scribble = Tag.of(heading).scribble().body();
             assertTrue(scribble.contains(ScribbledInstruction.receipt("BREAK_OUT")));
             assertFalse(scribble.contains(" of "), "A lone hoisted element needs no ordinal");
         }

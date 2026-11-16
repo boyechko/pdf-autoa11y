@@ -5,6 +5,7 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
@@ -48,6 +49,42 @@ public final class Tag {
         PdfDictionary roleMap = root != null ? root.getRoleMap() : null;
         PdfName mapped = roleMap != null ? roleMap.getAsName(role) : null;
         return (mapped != null ? mapped : role).getValue();
+    }
+
+    /**
+     * The element's /T text with the control characters Acrobat appends stripped, or null when the
+     * key is absent or holds nothing else. Whether that text is a title or a scribble is for {@link
+     * DocValue.Title} and {@link #scribble()} to say.
+     */
+    String titleText() {
+        PdfString t = elem.getPdfObject().getAsString(PdfName.T);
+        if (t == null) return null;
+        String value = t.toUnicodeString().replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "");
+        return value.isEmpty() ? null : value;
+    }
+
+    /** The element's scribble; {@link DocValue.Scribble#EMPTY} when it has none. */
+    public DocValue.Scribble scribble() {
+        return DocValue.Scribble.fromRaw(titleText());
+    }
+
+    /** Writes the scribble to /T, removing the key for an empty one. */
+    public void scribble(DocValue.Scribble scribble) {
+        if (scribble.isEmpty()) {
+            elem.getPdfObject().remove(PdfName.T);
+        } else {
+            elem.put(PdfName.T, new PdfString(scribble.rawValue()));
+        }
+    }
+
+    /** Appends a tool segment to the scribble; see {@link DocValue.Scribble#with}. */
+    public void stamp(String segment) {
+        scribble(scribble().with(segment));
+    }
+
+    /** Drops the scribble segments headed {@code head}; see {@link DocValue.Scribble#without}. */
+    public void unstamp(String head) {
+        scribble(scribble().without(head));
     }
 
     /**

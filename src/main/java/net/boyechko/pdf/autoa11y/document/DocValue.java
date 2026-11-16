@@ -74,19 +74,6 @@ public sealed interface DocValue {
     }
 
     /**
-     * Reads an element's /T, stripped of the control characters Acrobat appends, or null when the
-     * key is absent or holds nothing but those characters.
-     */
-    private static String titleValue(PdfStructElem elem) {
-        PdfString t = elem.getPdfObject().getAsString(PdfName.T);
-        if (t == null) {
-            return null;
-        }
-        String value = t.toUnicodeString().replaceAll("[\\p{Cntrl}&&[^\\r\\n\\t]]", "");
-        return value.isEmpty() ? null : value;
-    }
-
-    /**
      * A plain /T title — one written by the authoring tool or by hand, carrying no scribble prefix
      * — rendered as {@code /T "Chapter 1"}. The leading word keeps it distinct from a scribble both
      * to the eye and to the annotated-diagram parser, which reads a quoted value only when it
@@ -95,8 +82,8 @@ public sealed interface DocValue {
     record Title(String value) implements DocValue {
         /** Reads the element's plain title, or null when its /T is absent or holds a scribble. */
         public static Title of(PdfStructElem elem) {
-            String value = titleValue(elem);
-            if (value == null || value.startsWith(StructTree.SCRIBBLE_PREFIX)) {
+            String value = Tag.of(elem).titleText();
+            if (value == null || value.startsWith(Scribble.PREFIX)) {
                 return null;
             }
             return new Title(value);
@@ -108,46 +95,146 @@ public sealed interface DocValue {
         }
     }
 
-    /** A structure element annotation (/T key), rendered as {@code "some title"}. */
+    /**
+     * A workflow note kept in an element's /T, rendered as {@code "__:MERGE lists"}. The value is
+     * the /T text after the scribble prefix; the grammar lives here and nowhere else:
+     *
+     * <ul>
+     *   <li>a leading {@link #TOOL_MARK} means the tool wrote it, otherwise the user did;
+     *   <li>segments are separated by {@link #SEPARATOR}, and a segment's first word is its head;
+     *   <li>a segment opening with {@link #INSTRUCTION_MARK} asks the tool to act, one opening with
+     *       {@link #FINDING_MARK} reports something it saw;
+     *   <li>a user-authored segment that is exactly {@link #VERIFIED_TOKEN} marks the subtree as
+     *       reviewed.
+     * </ul>
+     *
+     * <p>Immutable: {@link #with} and {@link #without} return a new scribble. An element with no
+     * scribble has {@link #EMPTY}, never null.
+     */
     record Scribble(String value) implements DocValue {
+        /** Leads every /T that is a scribble rather than a plain title. */
+        public static final String PREFIX = "__";
+
+        public static final String SEPARATOR = " // ";
+
+        /** Leading mark distinguishing a tool-authored scribble from a user-authored one. */
+        public static final String TOOL_MARK = ":";
+
+        /** Opens a segment the tool is asked to carry out, e.g. {@code !SET_ROLE H2}. */
+        public static final String INSTRUCTION_MARK = "!";
+
+        /** Opens a segment reporting a tool finding, e.g. {@code ?H3 (expected H2)}. */
+        public static final String FINDING_MARK = "?";
+
         /**
-         * Reads the element's scribble, or null when its /T is absent, empty, or a plain title
-         * rather than a scribble. Only a /T carrying the scribble prefix is a scribble; a
-         * hand-authored title such as {@code Chapter 1} is a {@link Title}.
+         * User-authored segment marking the element (and its subtree) as reviewed and correct, e.g.
+         * {@code __OK} or {@code __OK // check figure later}.
          */
-        public static Scribble of(PdfStructElem elem) {
-            String value = titleValue(elem);
-            if (value == null || !value.startsWith(StructTree.SCRIBBLE_PREFIX)) {
-                return null;
-            }
-            String body = value.substring(StructTree.SCRIBBLE_PREFIX.length());
-            return body.isEmpty() ? null : new Scribble(body);
+        public static final String VERIFIED_TOKEN = "OK";
+
+        /** The scribble of an element that has none. */
+        public static final Scribble EMPTY = new Scribble("");
+
+        /**
+         * A scribble the tool wrote, marked so it reads as the tool's own rather than the user's.
+         */
+        public static Scribble tool(String body) {
+            return body.isEmpty() ? EMPTY : new Scribble(TOOL_MARK + body);
         }
 
-        /** Returns the raw {@code /T} storage value (prefix included, no surrounding quotes). */
+        /** A scribble as the user would write it by hand. */
+        public static Scribble user(String body) {
+            return new Scribble(body);
+        }
+
+        /**
+         * Parses a raw /T value. Anything without the prefix is a plain {@link Title}, and a bare
+         * prefix says nothing, so both read as {@link #EMPTY}.
+         */
+        public static Scribble fromRaw(String raw) {
+            if (raw == null || !raw.startsWith(PREFIX)) return EMPTY;
+            return new Scribble(raw.substring(PREFIX.length()));
+        }
+
+        public boolean isEmpty() {
+            return value.isEmpty();
+        }
+
+        /** The {@code /T} storage value, prefix included; empty for {@link #EMPTY}. */
         public String rawValue() {
-            return StructTree.SCRIBBLE_PREFIX + value;
+            return isEmpty() ? "" : PREFIX + value;
         }
 
         /** Whether this scribble was authored by the tool (carries the leading tool mark). */
         public boolean toolAuthored() {
-            return value.startsWith(StructTree.SCRIBBLE_TOOL_MARK);
+            return value.startsWith(TOOL_MARK);
         }
 
         /** The scribble content with any leading tool-authorship mark removed. */
         public String body() {
-            return toolAuthored() ? value.substring(StructTree.SCRIBBLE_TOOL_MARK.length()) : value;
+            return toolAuthored() ? value.substring(TOOL_MARK.length()) : value;
         }
 
-        /** Splits the scribble body into its segments on the shared separator. */
+        /** The body split on the separator; none for {@link #EMPTY}. */
         public List<String> segments() {
-            return List.of(
-                    body().split(java.util.regex.Pattern.quote(StructTree.SCRIBBLE_SEPARATOR)));
+            if (isEmpty()) return List.of();
+            return List.of(body().split(java.util.regex.Pattern.quote(SEPARATOR)));
+        }
+
+        /**
+         * Whether the user has marked this element as reviewed and correct. Only a user-authored
+         * scribble counts; the mark shields the element's whole subtree from checks and fixes.
+         */
+        public boolean isVerified() {
+            if (toolAuthored()) return false;
+            return segments().stream().anyMatch(seg -> seg.trim().equals(VERIFIED_TOKEN));
+        }
+
+        /** The first segment asking the tool to act, or null when none does. */
+        public String instruction() {
+            return segments().stream()
+                    .filter(seg -> seg.startsWith(INSTRUCTION_MARK))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        /**
+         * This scribble with a tool segment appended. Appending to {@link #EMPTY} makes a
+         * tool-authored scribble; an existing scribble keeps its own authorship, so a tool note on
+         * a hand-written scribble does not claim the whole thing for the tool. A segment already
+         * present is not added again, so a fix that runs twice does not stamp itself twice.
+         */
+        public Scribble with(String segment) {
+            if (isEmpty()) return tool(segment);
+            if (segments().contains(segment)) return this;
+            return rebuilt(body() + SEPARATOR + segment);
+        }
+
+        /**
+         * This scribble less every segment whose head is {@code head}; {@link #EMPTY} if none
+         * remain.
+         */
+        public Scribble without(String head) {
+            List<String> kept =
+                    segments().stream().filter(seg -> !headOf(seg).equals(head)).toList();
+            if (kept.size() == segments().size()) return this;
+            return rebuilt(String.join(SEPARATOR, kept));
+        }
+
+        /** The same authorship over a new body. */
+        private Scribble rebuilt(String body) {
+            return toolAuthored() ? tool(body) : user(body);
+        }
+
+        /** The first whitespace-separated token of a segment. */
+        private static String headOf(String segment) {
+            int sp = segment.indexOf(' ');
+            return (sp < 0) ? segment : segment.substring(0, sp);
         }
 
         @Override
         public String toString() {
-            return "\"" + StructTree.SCRIBBLE_PREFIX + value + "\"";
+            return isEmpty() ? "" : "\"" + rawValue() + "\"";
         }
     }
 

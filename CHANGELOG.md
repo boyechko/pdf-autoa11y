@@ -44,6 +44,8 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `--annotate-tree` warns and skips a quoted value that does not begin with
+  `__`, instead of writing it to `/T` as a plain title.
 - `--dump-roles` is replaced by `--dump-tree=roles`, so every tree format,
   including roles-only, is chosen the same way and works with `--query-tree`.
   Conflicting `--dump-tree` formats and unknown options are now rejected.

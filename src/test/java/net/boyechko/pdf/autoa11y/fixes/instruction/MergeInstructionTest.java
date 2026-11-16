@@ -15,8 +15,10 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class MergeInstructionTest extends PdfTestBase {
@@ -240,7 +242,7 @@ class MergeInstructionTest extends PdfTestBase {
 
             PdfStructElem first = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(first);
-            StructTree.setScribble(first, "keep me");
+            Tag.of(first).scribble(Scribble.user("keep me"));
             PdfStructElem second = new PdfStructElem(pdfDoc, PdfName.P);
             document.addKid(second);
             PdfStructElem third = new PdfStructElem(pdfDoc, PdfName.P);
@@ -250,8 +252,8 @@ class MergeInstructionTest extends PdfTestBase {
             new ScribbledInstructionFix(second, "!MERGE").apply(ctx);
             new ScribbledInstructionFix(third, "!MERGE").apply(ctx);
 
-            var scribble = StructTree.getScribble(first);
-            assertNotNull(scribble);
+            var scribble = Tag.of(first).scribble();
+            assertFalse(scribble.isEmpty());
             assertTrue(
                     scribble.segments().contains("keep me"),
                     "Existing scribble segments should survive");

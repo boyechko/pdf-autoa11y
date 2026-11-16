@@ -10,8 +10,8 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
-import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class ListItemScribbleTest extends PdfTestBase {
@@ -38,7 +38,7 @@ class ListItemScribbleTest extends PdfTestBase {
 
             ListItemScribble.update(list, "event1");
 
-            DocValue.Scribble scribble = StructTree.getScribble(list);
+            Scribble scribble = Tag.of(list).scribble();
             assertTrue(scribble.toolAuthored());
             assertEquals(List.of("event1", ListItemScribble.countSegment(2)), scribble.segments());
         }
@@ -52,10 +52,10 @@ class ListItemScribbleTest extends PdfTestBase {
             PdfStructElem list = listWithItems(pdfDoc, 2);
 
             ListItemScribble.update(list, "event1");
-            String afterFirst = StructTree.getScribble(list).value();
+            String afterFirst = Tag.of(list).scribble().value();
             ListItemScribble.update(list, "event1");
 
-            assertEquals(afterFirst, StructTree.getScribble(list).value());
+            assertEquals(afterFirst, Tag.of(list).scribble().value());
         }
     }
 
@@ -70,7 +70,7 @@ class ListItemScribbleTest extends PdfTestBase {
             list.addKid(new PdfStructElem(pdfDoc, PdfName.LI));
             ListItemScribble.update(list, "event2");
 
-            DocValue.Scribble scribble = StructTree.getScribble(list);
+            Scribble scribble = Tag.of(list).scribble();
             assertEquals(
                     List.of("event1", "event2", ListItemScribble.countSegment(3)),
                     scribble.segments());
@@ -83,12 +83,12 @@ class ListItemScribbleTest extends PdfTestBase {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
             PdfStructElem list = listWithItems(pdfDoc, 3);
-            StructTree.setScribble(list, "reviewed by hand");
+            Tag.of(list).scribble(Scribble.user("reviewed by hand"));
 
             ListItemScribble.update(list, "event1");
             ListItemScribble.update(list, "event2");
 
-            DocValue.Scribble scribble = StructTree.getScribble(list);
+            Scribble scribble = Tag.of(list).scribble();
             assertFalse(scribble.toolAuthored());
             assertEquals(
                     List.of(

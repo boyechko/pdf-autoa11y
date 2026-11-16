@@ -74,7 +74,7 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
         }
 
         String scribble = CHECK_SCRIBBLE_PREFIX + " invalid: " + uri;
-        StructTree.addToolScribble(node, scribble);
+        Tag.of(node).stamp(scribble);
 
         issues.add(
                 new Issue(

@@ -69,9 +69,9 @@ public final class SplitMarkedContentFix implements IssueFix {
             previous = Tag.of(sibling);
             PdfMcr newMcr = StructTree.addNewMcr(sibling, page);
             newMcids.add(newMcr.getMcid());
-            StructTree.addToolScribble(sibling, SPLIT_SCRIBBLE);
+            Tag.of(sibling).stamp(SPLIT_SCRIBBLE);
         }
-        StructTree.addToolScribble(element, SPLIT_SCRIBBLE);
+        Tag.of(element).stamp(SPLIT_SCRIBBLE);
 
         List<Edit> edits =
                 ContentStream.blockEditsFor(

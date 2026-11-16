@@ -129,7 +129,7 @@ public final class TreeSnapshot {
                             element.getRole().getValue(),
                             Tag.of(element).role(),
                             Tag.of(element).objNum(),
-                            DocValue.Scribble.of(element),
+                            Tag.of(element).scribble(),
                             DocValue.Title.of(element),
                             DocValue.Scope.of(element),
                             firstPage);

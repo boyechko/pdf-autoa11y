@@ -21,8 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +174,7 @@ public class WrapWebCapturesFix implements IssueFix {
             PdfDocument doc, PdfStructElem document, List<PdfStructElem> toWrap, String scribble) {
         PdfStructElem article = new PdfStructElem(doc, PdfName.Art);
         document.addKid(article);
-        StructTree.setScribble(article, scribble);
+        Tag.of(article).scribble(Scribble.user(scribble));
         for (PdfStructElem kid : toWrap) {
             document.removeKid(kid);
             article.addKid(kid);

@@ -6,7 +6,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
@@ -33,7 +33,7 @@ public final class SplitIntoParagraphsFix implements IssueFix {
                 new LineSplitter(element, ItemSizes.of(paragraphSizes), new SiblingPlacement())
                         .split(ctx);
         for (PdfStructElem paragraph : paragraphs) {
-            StructTree.addToolScribble(paragraph, SPLIT_SCRIBBLE);
+            Tag.of(paragraph).stamp(SPLIT_SCRIBBLE);
         }
     }
 

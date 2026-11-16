@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.checks;
 
-import static net.boyechko.pdf.autoa11y.document.StructTree.SCRIBBLE_PREFIX;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -14,7 +13,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
@@ -33,7 +33,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
             p.getPdfObject()
-                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+                    .put(PdfName.T, new PdfString(Scribble.PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -54,7 +54,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "NeedsReview"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "NeedsReview"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -96,9 +96,9 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
                     .put(
                             PdfName.T,
                             new PdfString(
-                                    SCRIBBLE_PREFIX
+                                    Scribble.PREFIX
                                             + "!SET_ROLE H2"
-                                            + StructTree.SCRIBBLE_SEPARATOR
+                                            + Scribble.SEPARATOR
                                             + "36.5pt"));
             document.addKid(p);
 
@@ -121,7 +121,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
             // Tool-authored instruction: ':' authorship mark before the '!' directive.
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            StructTree.setToolScribble(p, "!SET_ROLE H2");
+            Tag.of(p).scribble(Scribble.tool("!SET_ROLE H2"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -143,8 +143,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
             // A '?' finding is informational, not an instruction; it must never execute.
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            StructTree.setToolScribble(
-                    p, "?H3 (expected H2)" + StructTree.SCRIBBLE_SEPARATOR + "23.75pt");
+            Tag.of(p).scribble(Scribble.tool("?H3 (expected H2)" + Scribble.SEPARATOR + "23.75pt"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -164,12 +163,12 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
 
             PdfStructElem p1 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
             p1.getPdfObject()
-                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+                    .put(PdfName.T, new PdfString(Scribble.PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
             document.addKid(p1);
 
             PdfStructElem p2 = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
             p2.getPdfObject()
-                    .put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
+                    .put(PdfName.T, new PdfString(Scribble.PREFIX + "!ADD_CHILD Reference[Lbl[]]"));
             document.addKid(p2);
 
             IssueList issues = runCheck(pdfDoc);
@@ -188,7 +187,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ADD_PARENT Note[]"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "!ADD_PARENT Note[]"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -209,7 +208,7 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            p.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            p.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "!ARTIFACT"));
             document.addKid(p);
 
             IssueList issues = runCheck(pdfDoc);
@@ -230,11 +229,11 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             root.addKid(document);
 
             PdfStructElem div = new PdfStructElem(pdfDoc, PdfName.Div, firstPage);
-            div.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            div.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "!ARTIFACT"));
             document.addKid(div);
 
             PdfStructElem child = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
-            child.getPdfObject().put(PdfName.T, new PdfString(SCRIBBLE_PREFIX + "!ARTIFACT"));
+            child.getPdfObject().put(PdfName.T, new PdfString(Scribble.PREFIX + "!ARTIFACT"));
             div.addKid(child);
 
             IssueList issues = runCheck(pdfDoc);
@@ -251,15 +250,15 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
-            StructTree.setScribble(document, "!REORDER_KIDS");
+            Tag.of(document).scribble(Scribble.user("!REORDER_KIDS"));
 
             PdfStructElem h1 = new PdfStructElem(pdfDoc, PdfName.H1, firstPage);
             document.addKid(h1);
-            StructTree.setScribble(h1, "REORDER 2");
+            Tag.of(h1).scribble(Scribble.user("REORDER 2"));
 
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P, firstPage);
             document.addKid(p);
-            StructTree.setScribble(p, "REORDER 1");
+            Tag.of(p).scribble(Scribble.user("REORDER 1"));
 
             DocContext ctx = new DocContext(pdfDoc);
             IssueList issues = runCheck(pdfDoc);
@@ -288,14 +287,14 @@ class ScribbledInstructionCheckTest extends PdfTestBase {
             for (int i = 0; i < paragraphs.length; i++) {
                 PdfStructElem item = new PdfStructElem(pdfDoc, PdfName.LI);
                 list.addKid(item);
-                StructTree.setScribble(item, "!BREAK_OUT");
+                Tag.of(item).scribble(Scribble.user("!BREAK_OUT"));
                 PdfStructElem body = new PdfStructElem(pdfDoc, PdfName.LBody);
                 item.addKid(body);
                 paragraphs[i] = new PdfStructElem(pdfDoc, PdfName.P);
                 body.addKid(paragraphs[i]);
                 paragraphs[i].addKid(new PdfStructElem(pdfDoc, PdfName.Span));
                 if (i > 0) {
-                    StructTree.setScribble(paragraphs[i], "!MERGE");
+                    Tag.of(paragraphs[i]).scribble(Scribble.user("!MERGE"));
                 }
             }
 

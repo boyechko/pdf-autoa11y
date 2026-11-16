@@ -11,8 +11,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class MistaggedHeadingFixTest extends PdfTestBase {
@@ -31,8 +31,8 @@ class MistaggedHeadingFixTest extends PdfTestBase {
             // The fix proposes, rather than applies: the role stays P and a tool-authored
             // instruction is scribbled for a later ScribbledInstruction pass to execute.
             assertEquals(PdfName.P, p.getRole());
-            DocValue.Scribble scribble = StructTree.getScribble(p);
-            assertNotNull(scribble);
+            Scribble scribble = Tag.of(p).scribble();
+            assertFalse(scribble.isEmpty());
             assertTrue(scribble.toolAuthored(), "Marked instruction should be tool-authored");
             assertEquals("!SET_ROLE H3", scribble.body());
         }

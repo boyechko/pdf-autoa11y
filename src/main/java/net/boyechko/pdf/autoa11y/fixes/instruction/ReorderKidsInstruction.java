@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !REORDER_KIDS}: reorders the element's kids based on each kid's {@code REORDER NNN}
@@ -36,7 +37,7 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
     public String apply(DocContext ctx, PdfStructElem element) {
         List<IStructureNode> all = new ArrayList<>(StructTree.kidsOf(element));
         if (all.isEmpty()) {
-            StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
+            Tag.of(element).unstamp("!REORDER_KIDS");
             return null;
         }
 
@@ -62,15 +63,15 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
         for (int newIdx = 0; newIdx < annotated.size(); newIdx++) {
             AnnotatedKid a = annotated.get(newIdx);
             if (a.kid() instanceof PdfStructElem se) {
-                StructTree.clearScribbleSegments(se, POSITION_MARKER);
+                Tag.of(se).unstamp(POSITION_MARKER);
                 int oldPos = a.originalIndex();
                 int newPos = newIdx + 1;
                 if (oldPos != newPos) {
-                    StructTree.addToolScribble(se, receipt("REORDER " + oldPos + " -> " + newPos));
+                    Tag.of(se).stamp(receipt("REORDER " + oldPos + " -> " + newPos));
                 }
             }
         }
-        StructTree.clearScribbleSegments(element, "!REORDER_KIDS");
+        Tag.of(element).unstamp("!REORDER_KIDS");
         return null;
     }
 
@@ -79,9 +80,7 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
     /** Extracts the {@code NNN} from a kid's {@code REORDER NNN} scribble segment, or null. */
     private static Integer reorderPositionOf(IStructureNode kid) {
         if (!(kid instanceof PdfStructElem se)) return null;
-        var scribble = StructTree.getScribble(se);
-        if (scribble == null) return null;
-        for (String segment : scribble.segments()) {
+        for (String segment : Tag.of(se).scribble().segments()) {
             Matcher m = REORDER_POSITION_PATTERN.matcher(segment);
             if (m.matches()) return Integer.parseInt(m.group(1));
         }

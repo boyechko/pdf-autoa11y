@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
@@ -69,15 +68,12 @@ record MergeInstruction() implements ScribbledInstruction {
 
     /** Stamps "INST MERGE absorbed N" on the survivor, folding in an earlier merge's count. */
     private static void stampMergeReceipt(PdfStructElem target) {
-        DocValue.Scribble existing = StructTree.getScribble(target);
         int absorbed = 1;
-        if (existing != null) {
-            Matcher m = MERGED_COUNT_PATTERN.matcher(existing.value());
-            if (m.find()) {
-                absorbed += Integer.parseInt(m.group(1));
-            }
+        for (String segment : Tag.of(target).scribble().segments()) {
+            Matcher m = MERGED_COUNT_PATTERN.matcher(segment);
+            if (m.matches()) absorbed += Integer.parseInt(m.group(1));
         }
-        StructTree.clearScribbleSegments(target, ScribbledInstructionFix.INSTRUCTION_TAG);
-        StructTree.addToolScribble(target, receipt("MERGE absorbed " + absorbed));
+        Tag.of(target).unstamp(ScribbledInstructionFix.INSTRUCTION_TAG);
+        Tag.of(target).stamp(receipt("MERGE absorbed " + absorbed));
     }
 }

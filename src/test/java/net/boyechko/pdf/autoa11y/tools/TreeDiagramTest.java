@@ -14,6 +14,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
@@ -249,7 +250,7 @@ class TreeDiagramTest {
 
         try (PdfDocument doc = new PdfDocument(new PdfReader(annotated.toString()))) {
             assertEquals(
-                    StructTree.SCRIBBLE_PREFIX + "TODO",
+                    Scribble.PREFIX + "TODO",
                     findByObjNum(doc, 59).getPdfObject().getAsString(PdfName.T).toUnicodeString());
         }
     }
@@ -271,7 +272,7 @@ class TreeDiagramTest {
 
         try (PdfDocument doc = new PdfDocument(new PdfReader(outPdf.toString()))) {
             assertEquals(
-                    StructTree.SCRIBBLE_PREFIX + "!SET_ROLE H2",
+                    Scribble.PREFIX + "!SET_ROLE H2",
                     findByObjNum(doc, 56).getPdfObject().getAsString(PdfName.T).toUnicodeString());
         }
     }

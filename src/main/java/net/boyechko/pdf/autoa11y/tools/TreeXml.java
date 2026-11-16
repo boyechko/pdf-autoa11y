@@ -21,7 +21,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import org.w3c.dom.Document;
@@ -138,7 +138,7 @@ public final class TreeXml {
                 attribute(node, "role", role);
                 if (!element.rawRole().equals(role)) attribute(node, "rawRole", element.rawRole());
                 if (element.objNum() >= 0) attribute(node, "id", element.objNum());
-                if (element.scribble() != null)
+                if (!element.scribble().isEmpty())
                     attribute(node, "scribble", element.scribble().rawValue());
                 if (element.title() != null) attribute(node, "title", element.title().value());
                 if (element.scope() != null) attribute(node, "scope", element.scope().value());
@@ -247,7 +247,7 @@ public final class TreeXml {
             String role = node.getAttribute("role");
             String rawRole = node.hasAttribute("rawRole") ? node.getAttribute("rawRole") : role;
             String scribble = node.getAttribute("scribble");
-            if (node.hasAttribute("scribble") && !scribble.startsWith(StructTree.SCRIBBLE_PREFIX)) {
+            if (node.hasAttribute("scribble") && !scribble.startsWith(Scribble.PREFIX)) {
                 throw new IllegalArgumentException("Scribble must begin with __");
             }
             value =
@@ -255,10 +255,7 @@ public final class TreeXml {
                             rawRole,
                             role,
                             number(node, "id", -1),
-                            node.hasAttribute("scribble")
-                                    ? new DocValue.Scribble(
-                                            scribble.substring(StructTree.SCRIBBLE_PREFIX.length()))
-                                    : null,
+                            Scribble.fromRaw(scribble),
                             node.hasAttribute("title")
                                     ? new DocValue.Title(node.getAttribute("title"))
                                     : null,

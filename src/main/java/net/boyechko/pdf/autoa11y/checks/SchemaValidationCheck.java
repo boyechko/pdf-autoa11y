@@ -8,6 +8,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -194,7 +195,7 @@ public class SchemaValidationCheck extends StructTreeCheck {
     }
 
     private void scribbleIssue(PdfStructElem elem, String message) {
-        StructTree.addToolScribble(elem, CHECK_SCRIBBLE_PREFIX + " " + message);
+        Tag.of(elem).stamp(CHECK_SCRIBBLE_PREFIX + " " + message);
     }
 
     private String formatRole(String role) {

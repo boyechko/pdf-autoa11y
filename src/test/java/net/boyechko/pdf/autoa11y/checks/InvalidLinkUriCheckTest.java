@@ -4,7 +4,6 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.itextpdf.kernel.geom.Rectangle;
@@ -21,8 +20,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
@@ -42,8 +41,8 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
             Issue issue = issues.get(0);
             assertEquals(IssueType.INVALID_LINK_URI, issue.type());
 
-            DocValue.Scribble scribble = DocValue.Scribble.of(link);
-            assertNotNull(scribble, "Expected a scribble on the Link element");
+            Scribble scribble = Tag.of(link).scribble();
+            assertFalse(scribble.isEmpty(), "Expected a scribble on the Link element");
             assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
             assertTrue(
                     scribble.body().startsWith(InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX),
@@ -143,7 +142,7 @@ class InvalidLinkUriCheckTest extends PdfTestBase {
     void clearingStaleScribbleChangesDoc() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructElem link = buildLinkWithUri(pdfDoc, "https://example.com/page");
-            StructTree.addToolScribble(link, InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX + " stale");
+            Tag.of(link).stamp(InvalidLinkUriCheck.CHECK_SCRIBBLE_PREFIX + " stale");
             InvalidLinkUriCheck check = new InvalidLinkUriCheck();
 
             check.findIssues(new DocContext(pdfDoc));

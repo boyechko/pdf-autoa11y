@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
@@ -20,6 +21,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import org.junit.jupiter.api.Test;
 
 class TagTest extends PdfTestBase {
@@ -730,6 +732,83 @@ class TagTest extends PdfTestBase {
             Tag.of(wrapper).precedeWith(inner);
 
             assertEquals(List.of(Tag.of(inner), Tag.of(wrapper)), Tag.of(div).children());
+        }
+    }
+
+    // == Scribbles =========================================================
+
+    @Test
+    void scribbleIsEmptyWhenTheElementHasNoTitle() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+
+            assertEquals(Scribble.EMPTY, Tag.of(p).scribble());
+        }
+    }
+
+    @Test
+    void plainTitleIsNotAScribble() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.T, new PdfString("Chapter 1"));
+
+            assertEquals(Scribble.EMPTY, Tag.of(p).scribble());
+        }
+    }
+
+    @Test
+    void scribbleRoundTripsThroughTheTitleKey() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            Scribble written = Scribble.user("check spacing" + Scribble.SEPARATOR + "OK");
+
+            Tag.of(p).scribble(written);
+
+            assertEquals(written, Tag.of(p).scribble());
+            assertEquals(written.rawValue(), p.getPdfObject().getAsString(PdfName.T).getValue());
+        }
+    }
+
+    @Test
+    void writingAnEmptyScribbleRemovesTheTitleKey() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            Tag.of(p).scribble(Scribble.tool("ITEMS 2"));
+
+            Tag.of(p).scribble(Scribble.EMPTY);
+
+            assertNull(p.getPdfObject().get(PdfName.T));
+        }
+    }
+
+    @Test
+    void controlCharactersInTheTitleAreIgnored() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.T, new PdfString("__OK\u0000\u0001"));
+
+            assertTrue(Tag.of(p).scribble().isVerified());
+        }
+    }
+
+    @Test
+    void stampAppendsAToolSegment() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem list = new PdfStructElem(doc, PdfName.L);
+            Tag.of(list).scribble(Scribble.user("reviewed by hand"));
+
+            Tag.of(list).stamp("ITEMS 3");
+            Tag.of(list).stamp("ITEMS 3");
+
+            assertEquals(
+                    Scribble.user("reviewed by hand" + Scribble.SEPARATOR + "ITEMS 3"),
+                    Tag.of(list).scribble());
         }
     }
 }

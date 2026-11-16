@@ -3,7 +3,7 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -14,7 +14,7 @@ import com.itextpdf.layout.element.Paragraph;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
@@ -97,8 +97,8 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
             new MergeSplitParagraphsFix(paragraphsOf(pdfDoc)).apply(new DocContext(pdfDoc));
 
             PdfStructElem merged = paragraphsOf(pdfDoc).get(0);
-            DocValue.Scribble scribble = StructTree.getScribble(merged);
-            assertNotNull(scribble, "Merged P should carry a scribble");
+            Scribble scribble = Tag.of(merged).scribble();
+            assertFalse(scribble.isEmpty(), "Merged P should carry a scribble");
             assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
             assertEquals(List.of("MERGE paragraphs"), scribble.segments());
         }

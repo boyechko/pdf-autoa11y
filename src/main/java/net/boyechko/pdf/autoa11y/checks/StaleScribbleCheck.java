@@ -5,7 +5,7 @@ package net.boyechko.pdf.autoa11y.checks;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
-import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.fixes.StaleScribbleFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
@@ -15,9 +15,8 @@ import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.Visit;
 
 /**
- * Flags structure elements whose /T (title) value starts with StructTree.SCRIBBLE_PREFIX,
- * indicating a workflow scribble left over from manual remediation that should be cleared before
- * final output.
+ * Flags structure elements whose /T (title) value starts with the scribble prefix, indicating a
+ * workflow scribble left over from manual remediation that should be cleared before final output.
  *
  * <p>Which scribbles count is governed by {@link Scope}, configurable per document through the
  * sidecar's {@code StaleScribbleCheck: scope:} key.
@@ -75,8 +74,8 @@ public class StaleScribbleCheck extends StructTreeCheck {
 
     @Override
     public boolean enterElement(Visit visit) {
-        DocValue.Scribble scribble = DocValue.Scribble.of(visit.node());
-        if (scribble == null || !inScope(scribble)) {
+        Scribble scribble = visit.tag().scribble();
+        if (scribble.isEmpty() || !inScope(scribble)) {
             return true;
         }
         issues.add(
@@ -90,7 +89,7 @@ public class StaleScribbleCheck extends StructTreeCheck {
     }
 
     /** Whether this check's scope covers the given scribble. */
-    private boolean inScope(DocValue.Scribble scribble) {
+    private boolean inScope(Scribble scribble) {
         return scope != Scope.TOOL_AUTHORED || scribble.toolAuthored();
     }
 

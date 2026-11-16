@@ -16,9 +16,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Walks the PDF structure tree once, invoking one or more visitors at each node. Subtrees the user
- * has marked verified (see {@link StructTree#isVerified}) are skipped entirely, so no check sees or
- * touches them. When {@link DocContext#scopeObjNum} is set, the walk starts at that element instead
- * of the tree root, confining every visitor to its subtree.
+ * has marked verified (see {@link net.boyechko.pdf.autoa11y.document.DocValue.Scribble#isVerified})
+ * are skipped entirely, so no check sees or touches them. When {@link DocContext#scopeObjNum} is
+ * set, the walk starts at that element instead of the tree root, confining every visitor to its
+ * subtree.
  */
 public class StructTreeWalker {
     private static final Logger logger = LoggerFactory.getLogger(StructTreeWalker.class);
@@ -84,7 +85,7 @@ public class StructTreeWalker {
     }
 
     private void walkElement(PdfStructElem node, String parentPath, int depth) {
-        if (StructTree.isVerified(node)) {
+        if (Tag.of(node).scribble().isVerified()) {
             logger.debug(
                     "Skipping user-verified subtree at {}{} #{}",
                     parentPath,

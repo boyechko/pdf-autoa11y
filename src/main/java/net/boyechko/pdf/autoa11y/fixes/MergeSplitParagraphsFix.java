@@ -53,7 +53,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
             parent.removeKid(later);
             mergedCount++;
         }
-        StructTree.addToolScribble(target, MERGED_SCRIBBLE);
+        Tag.of(target).stamp(MERGED_SCRIBBLE);
 
         logger.debug("Merged {} P tags into #{}", paragraphs.size(), Tag.of(target).objNum());
     }

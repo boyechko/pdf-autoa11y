@@ -11,7 +11,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class AddParentInstructionTest extends PdfTestBase {
@@ -114,8 +114,8 @@ class AddParentInstructionTest extends PdfTestBase {
             DocContext ctx = new DocContext(pdfDoc);
             new ScribbledInstructionFix(p, "!ADD_PARENT Note[]").apply(ctx);
 
-            var scribble = StructTree.getScribble(p);
-            assertNotNull(scribble);
+            var scribble = Tag.of(p).scribble();
+            assertFalse(scribble.isEmpty());
             assertTrue(scribble.toolAuthored(), "Receipt should read as tool-authored");
             assertEquals(
                     ScribbledInstructionFix.INSTRUCTION_TAG + " ADD_PARENT Note[]",

@@ -3,8 +3,6 @@
 package net.boyechko.pdf.autoa11y.tools;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -12,9 +10,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Label;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
@@ -37,7 +35,7 @@ public final class TreeDiagram {
      * Scribble that asks ScribbledInstructionCheck to retag an element; spelled out here because
      * {@code tools} may not depend on {@code checks} or {@code fixes}.
      */
-    private static final String SET_ROLE_SCRIBBLE = StructTree.SCRIBBLE_PREFIX + "!SET_ROLE ";
+    private static final String SET_ROLE_SCRIBBLE = Scribble.PREFIX + "!SET_ROLE ";
 
     /** Roles whose text is shown untruncated, since it identifies the element. */
     private static final Set<String> SHOWN_IN_FULL =
@@ -316,34 +314,33 @@ public final class TreeDiagram {
                 newScribble = Optional.of(SET_ROLE_SCRIBBLE + key.role());
             }
 
-            DocValue.Scribble existing = DocValue.Scribble.of(elem);
-            String existingRaw = existing != null ? existing.rawValue() : null;
-            if (newScribble.isPresent()) {
-                if (newScribble.get().equals(existingRaw)) {
-                    unchanged++;
-                } else {
-                    if (existing == null) {
-                        logger.debug("set {}: {}", key.label(), newScribble.get());
-                    } else {
-                        logger.debug(
-                                "update {}: {} -> {}",
-                                key.label(),
-                                existing.value(),
-                                newScribble.get());
-                    }
-                    elem.put(PdfName.T, new PdfString(newScribble.get()));
-                    updated++;
-                }
-            } else if (existing != null) {
-                // Only a scribble the dump actually renders is clearable. A /T that is empty,
-                // control-char-only, or a plain title shows as nothing (DocValue.Scribble.of
-                // returns null), so treating it as clearable would make a no-op round-trip
-                // silently mutate.
+            if (newScribble.isPresent() && !newScribble.get().startsWith(Scribble.PREFIX)) {
+                warn.accept("scribble for " + key.label() + " must begin with " + Scribble.PREFIX);
+                unmatchedLines++;
+                continue;
+            }
+            Scribble existing = Tag.of(elem).scribble();
+            Scribble wanted = newScribble.map(Scribble::fromRaw).orElse(Scribble.EMPTY);
+            if (wanted.equals(existing)) {
+                // A /T that is empty, control-char-only, or a plain title reads as EMPTY, the
+                // same as a line without a scribble, so a no-op round-trip never mutates.
+                unchanged++;
+            } else if (wanted.isEmpty()) {
                 logger.debug("clear {}: {}", key.label(), existing.value());
-                elem.getPdfObject().remove(PdfName.T);
+                Tag.of(elem).scribble(wanted);
                 cleared++;
             } else {
-                unchanged++;
+                if (existing.isEmpty()) {
+                    logger.debug("set {}: {}", key.label(), wanted.rawValue());
+                } else {
+                    logger.debug(
+                            "update {}: {} -> {}",
+                            key.label(),
+                            existing.value(),
+                            wanted.rawValue());
+                }
+                Tag.of(elem).scribble(wanted);
+                updated++;
             }
         }
 

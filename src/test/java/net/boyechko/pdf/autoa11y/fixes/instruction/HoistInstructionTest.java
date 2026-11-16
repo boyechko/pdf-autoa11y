@@ -13,7 +13,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
 
 class HoistInstructionTest extends PdfTestBase {
@@ -54,7 +54,8 @@ class HoistInstructionTest extends PdfTestBase {
                     ((PdfStructElem) innerList.getParent()).getPdfObject(),
                     "Hoisted element's parent pointer should be rebound to Art");
             assertTrue(
-                    StructTree.getScribble(innerList)
+                    Tag.of(innerList)
+                            .scribble()
                             .body()
                             .contains(ScribbledInstruction.receipt("HOIST")));
         }

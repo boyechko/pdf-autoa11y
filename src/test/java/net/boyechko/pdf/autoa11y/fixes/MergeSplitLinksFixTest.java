@@ -3,7 +3,7 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -19,7 +19,7 @@ import com.itextpdf.layout.element.Paragraph;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.junit.jupiter.api.Test;
@@ -122,8 +122,8 @@ class MergeSplitLinksFixTest extends PdfTestBase {
                     .apply(new DocContext(pdfDoc));
 
             PdfStructElem merged = Tag.of(p).children().get(0).elem();
-            DocValue.Scribble scribble = StructTree.getScribble(merged);
-            assertNotNull(scribble, "Merged Link should carry a scribble");
+            Scribble scribble = Tag.of(merged).scribble();
+            assertFalse(scribble.isEmpty(), "Merged Link should carry a scribble");
             assertTrue(scribble.toolAuthored(), "Scribble should read as tool-authored");
             assertEquals(List.of("MERGE links"), scribble.segments());
         }
@@ -138,14 +138,14 @@ class MergeSplitLinksFixTest extends PdfTestBase {
 
             PdfStructElem p = paragraphOf(pdfDoc);
             List<PdfStructElem> links = Tag.of(p).children().stream().map(Tag::elem).toList();
-            StructTree.setScribble(links.get(0), "check me");
+            Tag.of(links.get(0)).scribble(Scribble.user("check me"));
 
             new MergeSplitLinksFix(links).apply(new DocContext(pdfDoc));
 
             PdfStructElem merged = Tag.of(p).children().get(0).elem();
             assertEquals(
                     List.of("check me", "MERGE links"),
-                    StructTree.getScribble(merged).segments(),
+                    Tag.of(merged).scribble().segments(),
                     "Should append to the user's scribble rather than replace it");
         }
     }
@@ -168,7 +168,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             assertEquals(2, Tag.of(merged).objRefs().size(), "Kept both OBJRs");
             assertEquals(
                     List.of("MERGE links"),
-                    StructTree.getScribble(merged).segments(),
+                    Tag.of(merged).scribble().segments(),
                     "Should not stamp the scribble twice");
         }
     }

@@ -16,6 +16,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.checks.MisartifactedTextCheck;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import org.junit.jupiter.api.Test;
 
@@ -151,7 +152,7 @@ class MisartifactedTextFixTest extends PdfTestBase {
 
     private static boolean isScribbledLbl(PdfStructElem elem) {
         if (!"Lbl".equals(elem.getRole().getValue())) return false;
-        var scribble = StructTree.getScribble(elem);
-        return scribble != null && scribble.value().startsWith("misartifacted ");
+        var scribble = Tag.of(elem).scribble();
+        return scribble.value().startsWith("misartifacted ");
     }
 }
