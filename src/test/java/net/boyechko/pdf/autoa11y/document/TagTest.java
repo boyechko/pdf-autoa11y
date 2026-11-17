@@ -203,8 +203,8 @@ class TagTest extends PdfTestBase {
             link.addKid(new PdfObjRef(annot, link, doc.getNextStructParentIndex()));
 
             Tag tag = Tag.of(link);
-            assertEquals(1, tag.mcrs().size());
-            assertEquals(0, tag.mcrs().get(0).getMcid());
+            assertEquals(1, tag.markedContent().size());
+            assertEquals(0, tag.markedContent().get(0).mcid());
             assertEquals(1, tag.objRefs().size());
         }
     }
@@ -710,9 +710,9 @@ class TagTest extends PdfTestBase {
 
             MarkedContent.of(mcr).insertBefore(Tag.of(link));
 
-            assertEquals(List.of(), Tag.of(link).mcrs());
+            assertEquals(List.of(), Tag.of(link).markedContent());
             assertEquals(2, Tag.of(link).precedingSiblings().size());
-            PdfMcr moved = Tag.of(p).mcrs().get(0);
+            PdfMcr moved = Tag.of(p).markedContent().get(0).mcr();
             assertEquals(mcr.getMcid(), moved.getMcid());
             assertEquals(1, StructTree.pageOf(moved));
             assertSame(moved.getPdfObject(), ((PdfMcr) p.getKids().get(1)).getPdfObject());
@@ -812,7 +812,7 @@ class TagTest extends PdfTestBase {
 
             assertInstanceOf(PdfMcrNumber.class, mcr);
             assertEquals(1, StructTree.pageOf(mcr));
-            assertEquals(1, Tag.of(p).mcrs().size());
+            assertEquals(1, Tag.of(p).markedContent().size());
         }
     }
 

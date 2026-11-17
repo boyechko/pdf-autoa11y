@@ -87,7 +87,8 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
             if (!(curr instanceof PdfStructElem linkElem)) {
                 continue;
             }
-            if (!linkElem.getRole().equals(PdfName.Link) || !Tag.of(linkElem).mcrs().isEmpty()) {
+            if (!linkElem.getRole().equals(PdfName.Link)
+                    || !Tag.of(linkElem).markedContent().isEmpty()) {
                 continue;
             }
             if (!(prev instanceof PdfMcr mcr) || mcr.getMcid() < 0) {

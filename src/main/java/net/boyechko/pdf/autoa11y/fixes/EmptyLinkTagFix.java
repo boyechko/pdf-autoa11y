@@ -51,7 +51,7 @@ public class EmptyLinkTagFix implements IssueFix {
             logger.debug("Link element not found for obj. #{}", linkObjNum);
             return;
         }
-        if (!Tag.of(linkElem).mcrs().isEmpty()) {
+        if (!Tag.of(linkElem).markedContent().isEmpty()) {
             return;
         }
 

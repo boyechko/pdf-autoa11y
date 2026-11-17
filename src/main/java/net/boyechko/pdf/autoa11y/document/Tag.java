@@ -229,8 +229,8 @@ public final class Tag implements StructNode {
     }
 
     /** Marked-content kids, excluding OBJRs (which extend PdfMcr but mark no content). */
-    public List<PdfMcr> mcrs() {
-        return kids(PdfMcr.class);
+    public List<MarkedContent> markedContent() {
+        return kids(PdfMcr.class).stream().map(MarkedContent::of).toList();
     }
 
     public List<PdfObjRef> objRefs() {
