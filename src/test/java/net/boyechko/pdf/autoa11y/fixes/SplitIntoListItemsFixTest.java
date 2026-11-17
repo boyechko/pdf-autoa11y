@@ -23,6 +23,7 @@ import java.util.Objects;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstructionFix;
@@ -64,7 +65,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertEquals(4, items.size(), "2 new LIs joined the original 2");
             assertEquals(
                     2,
-                    Tag.of(items.get(1)).descendantMcrs().size(),
+                    Tag.of(items.get(1)).descendantMarkedContent().size(),
                     "the straddling item owns one marked-content block per text object");
             assertProperlyNestedOperators(doc.getPage(2).getContentBytes());
         }
@@ -203,7 +204,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem lastItem = items.get(5);
             assertEquals(
                     2,
-                    Tag.of(lastItem).descendantMcrs().size(),
+                    Tag.of(lastItem).descendantMarkedContent().size(),
                     "last item holds one MCR fragment per side of the MCR boundary");
 
             Map<Integer, Content.McidContent> content =
@@ -250,8 +251,8 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
 
             List<Integer> itemPages =
                     items.stream()
-                            .map(li -> Tag.of(li).descendantMcrs().get(0))
-                            .map(StructTree::pageOf)
+                            .map(li -> Tag.of(li).descendantMarkedContent().get(0))
+                            .map(MarkedContent::page)
                             .toList();
             assertEquals(List.of(2, 2, 3, 3, 3), itemPages);
 
@@ -286,7 +287,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem twoLineItem = items.get(2);
             assertEquals(
                     1,
-                    Tag.of(twoLineItem).descendantMcrs().size(),
+                    Tag.of(twoLineItem).descendantMarkedContent().size(),
                     "consecutive same-item lines stay one unsplit MCR");
 
             Map<Integer, Content.McidContent> content =
@@ -311,7 +312,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             assertEquals(8, items.size(), "1x5 stands for five one-line items");
             assertEquals(
                     1,
-                    Tag.of(items.get(2)).descendantMcrs().size(),
+                    Tag.of(items.get(2)).descendantMarkedContent().size(),
                     "the 2 still groups two lines into one item");
         }
     }
@@ -399,9 +400,9 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
     /** Finds the struct element owning the MCR with the given MCID on the given page. */
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return Tag.of(document).descendantMcrs().stream()
-                .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
-                .map(mcr -> (PdfStructElem) mcr.getParent())
+        return Tag.of(document).descendantMarkedContent().stream()
+                .filter(marked -> marked.mcid() == mcid && marked.page() == pageNum)
+                .map(marked -> marked.parent().elem())
                 .findFirst()
                 .orElseThrow();
     }
@@ -426,8 +427,8 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
      * artificial-spacing heuristic (e.g. "B BUS 307 - Business Writing").
      */
     private static String itemText(PdfStructElem li, Map<Integer, Content.McidContent> content) {
-        return Tag.of(li).descendantMcrs().stream()
-                .map(mcr -> content.get(mcr.getMcid()))
+        return Tag.of(li).descendantMarkedContent().stream()
+                .map(marked -> content.get(marked.mcid()))
                 .filter(Objects::nonNull)
                 .flatMap(mc -> mc.spans().stream())
                 .map(Content.TextSpan::text)

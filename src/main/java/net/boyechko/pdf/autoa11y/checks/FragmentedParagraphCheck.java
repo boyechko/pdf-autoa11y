@@ -4,14 +4,13 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MergeSplitParagraphsFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -159,9 +158,9 @@ public class FragmentedParagraphCheck extends StructTreeCheck {
 
     /** True if the second P's content starts on a later page than the first P's ends. */
     private static boolean startsNewPage(PdfStructElem previous, PdfStructElem next) {
-        List<PdfMcr> before = Tag.of(previous).descendantMcrs();
-        List<PdfMcr> after = Tag.of(next).descendantMcrs();
-        return StructTree.pageOf(after.getFirst()) > StructTree.pageOf(before.getLast());
+        List<MarkedContent> before = Tag.of(previous).descendantMarkedContent();
+        List<MarkedContent> after = Tag.of(next).descendantMarkedContent();
+        return after.getFirst().page() > before.getLast().page();
     }
 
     private void emitIfFragmented(Visit visit, List<PdfStructElem> run) {

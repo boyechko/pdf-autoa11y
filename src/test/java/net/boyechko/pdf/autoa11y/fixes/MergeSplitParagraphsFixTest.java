@@ -44,7 +44,7 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
             assertEquals(1, paragraphsOf(pdfDoc).size(), "Fragments should be one P");
             PdfStructElem merged = paragraphsOf(pdfDoc).get(0);
             assertTrue(Tag.of(fragments.get(0)).equals(Tag.of(merged)), "First P survives");
-            assertEquals(3, Tag.of(merged).descendantMcrs().size(), "Kept all content");
+            assertEquals(3, Tag.of(merged).descendantMarkedContent().size(), "Kept all content");
         }
     }
 
@@ -81,7 +81,7 @@ class MergeSplitParagraphsFixTest extends PdfTestBase {
             assertEquals(1, paragraphsOf(pdfDoc).size(), "Fragments should be one P");
             assertEquals(
                     2,
-                    Tag.of(paragraphsOf(pdfDoc).get(0)).descendantMcrs().size(),
+                    Tag.of(paragraphsOf(pdfDoc).get(0)).descendantMarkedContent().size(),
                     "Content should be merged once");
         }
     }

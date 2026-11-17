@@ -51,11 +51,11 @@ public class PageContent {
     public Rectangle bounds(PdfStructElem node, int pageNum) {
         Map<Integer, Rectangle> mcidBounds = bounds(pageNum);
         Rectangle result = null;
-        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
-            if (StructTree.pageOf(mcr) != pageNum) {
+        for (MarkedContent content : Tag.of(node).descendantMarkedContent()) {
+            if (content.page() != pageNum) {
                 continue;
             }
-            Rectangle bounds = mcidBounds.get(mcr.getMcid());
+            Rectangle bounds = mcidBounds.get(content.mcid());
             if (bounds != null) {
                 result = Geometry.union(result, bounds);
             }
@@ -94,10 +94,10 @@ public class PageContent {
     public List<Rectangle> lineBounds(PdfStructElem node, int pageNum) {
         Map<Integer, List<Rectangle>> mcidLines = lineBounds(pageNum);
         List<Rectangle> lines = new ArrayList<>();
-        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
-            if (StructTree.pageOf(mcr) == pageNum) {
+        for (MarkedContent content : Tag.of(node).descendantMarkedContent()) {
+            if (content.page() == pageNum) {
                 mcidLines
-                        .getOrDefault(mcr.getMcid(), List.<Rectangle>of())
+                        .getOrDefault(content.mcid(), List.<Rectangle>of())
                         .forEach(fragment -> mergeIntoLines(lines, fragment));
             }
         }
@@ -138,7 +138,8 @@ public class PageContent {
     public List<Content.TextLine> textLines(PdfStructElem node) {
         List<Content.TextLine> lines = new ArrayList<>();
         PdfMcr previous = null;
-        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
+        for (MarkedContent content : Tag.of(node).descendantMarkedContent()) {
+            PdfMcr mcr = content.mcr();
             List<Content.TextLine> mcrLines = textLines(mcr);
             int first = 0;
             if (!lines.isEmpty() && !mcrLines.isEmpty() && continuesLineOf(previous, mcr)) {
@@ -179,14 +180,14 @@ public class PageContent {
         if (elem == null) {
             return results;
         }
-        for (PdfMcr mcr : Tag.of(elem).descendantMcrs()) {
-            int pageNum = StructTree.pageOf(mcr);
+        for (MarkedContent marked : Tag.of(elem).descendantMarkedContent()) {
+            int pageNum = marked.page();
             if (pageNum <= 0) {
                 continue;
             }
-            Content.McidContent mc = content(pageNum).get(mcr.getMcid());
+            Content.McidContent mc = content(pageNum).get(marked.mcid());
             if (mc != null && !mc.kinds().isEmpty()) {
-                results.put(new Content.PageMcid(pageNum, mcr.getMcid()), mc);
+                results.put(new Content.PageMcid(pageNum, marked.mcid()), mc);
             }
         }
         return results;
@@ -244,10 +245,10 @@ public class PageContent {
      */
     private String joinedText(PdfStructElem node, IntPredicate onPage) {
         StringJoiner joined = new StringJoiner(" ");
-        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
-            int pageNum = StructTree.pageOf(mcr);
+        for (MarkedContent content : Tag.of(node).descendantMarkedContent()) {
+            int pageNum = content.page();
             if (pageNum > 0 && onPage.test(pageNum)) {
-                String text = text(pageNum, mcr.getMcid());
+                String text = text(pageNum, content.mcid());
                 if (!text.isEmpty()) {
                     joined.add(text);
                 }

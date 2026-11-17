@@ -4,7 +4,6 @@ package net.boyechko.pdf.autoa11y.document;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -76,7 +75,7 @@ public class ReadingOrder {
         }
 
         Position position =
-                Tag.of(elem).descendantMcrs().stream()
+                Tag.of(elem).descendantMarkedContent().stream()
                         .map(this::positionOf)
                         .filter(Objects::nonNull)
                         .min(Comparator.naturalOrder())
@@ -89,8 +88,8 @@ public class ReadingOrder {
     }
 
     /** Returns where an MCR's content is painted, or null when it paints nothing locatable. */
-    private Position positionOf(PdfMcr mcr) {
-        int page = StructTree.pageOf(mcr);
+    private Position positionOf(MarkedContent content) {
+        int page = content.page();
         if (page < 1 || page > doc.getNumberOfPages()) {
             return null;
         }
@@ -100,10 +99,10 @@ public class ReadingOrder {
             // Nothing is painted on this page, so MCID order is the only evidence available. The
             // page is compared before the band, so no element ever compares its band against one
             // derived this way on another page.
-            return new Position(page, mcr.getMcid(), 0f);
+            return new Position(page, content.mcid(), 0f);
         }
 
-        Rectangle rect = bounds.get(mcr.getMcid());
+        Rectangle rect = bounds.get(content.mcid());
         if (rect == null) {
             return null;
         }

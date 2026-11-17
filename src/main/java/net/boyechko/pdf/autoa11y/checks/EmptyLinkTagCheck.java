@@ -133,7 +133,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
         if (fixedBySiblingMcr.contains(visit.objNum()) || visit.page() <= 0) {
             return;
         }
-        boolean hasText = !Tag.of(link).descendantMcrs().isEmpty();
+        boolean hasText = !Tag.of(link).descendantMarkedContent().isEmpty();
         boolean hasAnnotation = !Tag.of(link).descendantObjRefs().isEmpty();
         if (hasAnnotation && !hasText && annotationOf(link) != null) {
             annotationOnlyLinks.computeIfAbsent(visit.page(), k -> new ArrayList<>()).add(link);

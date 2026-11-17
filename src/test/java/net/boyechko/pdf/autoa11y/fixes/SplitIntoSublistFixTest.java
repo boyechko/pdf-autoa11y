@@ -138,9 +138,9 @@ class SplitIntoSublistFixTest extends PdfTestBase {
 
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return Tag.of(document).descendantMcrs().stream()
-                .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
-                .map(mcr -> (PdfStructElem) mcr.getParent())
+        return Tag.of(document).descendantMarkedContent().stream()
+                .filter(marked -> marked.mcid() == mcid && marked.page() == pageNum)
+                .map(marked -> marked.parent().elem())
                 .findFirst()
                 .orElseThrow();
     }

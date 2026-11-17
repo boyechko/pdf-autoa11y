@@ -15,7 +15,6 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
@@ -24,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.StructTreeOrderFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -598,8 +597,8 @@ class StructTreeOrderCheckTest extends PdfTestBase {
         List<String> texts = new ArrayList<>();
         for (Tag child : Tag.of(parent).children()) {
             StringBuilder text = new StringBuilder();
-            for (PdfMcr mcr : child.descendantMcrs()) {
-                text.append(ctx.pages().text(StructTree.pageOf(mcr), mcr.getMcid()));
+            for (MarkedContent marked : child.descendantMarkedContent()) {
+                text.append(ctx.pages().text(marked.page(), marked.mcid()));
             }
             // Normalized, since how the extractor separates an element's lines is beside the point
             texts.add(text.toString().replaceAll("\\s+", " ").trim());

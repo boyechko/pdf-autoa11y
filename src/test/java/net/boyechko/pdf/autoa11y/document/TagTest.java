@@ -278,7 +278,9 @@ class TagTest extends PdfTestBase {
             p.addKid(new PdfMcrNumber(new PdfNumber(1), p));
 
             List<Integer> mcids =
-                    Tag.of(div).descendantMcrs().stream().map(mcr -> mcr.getMcid()).toList();
+                    Tag.of(div).descendantMarkedContent().stream()
+                            .map(MarkedContent::mcid)
+                            .toList();
             assertEquals(List.of(0, 1), mcids);
         }
     }

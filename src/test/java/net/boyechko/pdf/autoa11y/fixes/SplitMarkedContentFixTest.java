@@ -128,9 +128,9 @@ class SplitMarkedContentFixTest extends PdfTestBase {
     /** Finds the struct element owning the MCR with the given MCID on the given page. */
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return Tag.of(document).descendantMcrs().stream()
-                .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
-                .map(mcr -> (PdfStructElem) mcr.getParent())
+        return Tag.of(document).descendantMarkedContent().stream()
+                .filter(marked -> marked.mcid() == mcid && marked.page() == pageNum)
+                .map(marked -> marked.parent().elem())
                 .findFirst()
                 .orElseThrow();
     }
@@ -157,8 +157,8 @@ class SplitMarkedContentFixTest extends PdfTestBase {
 
     /** Joins the raw text of all MCRs under an element. */
     private static String text(PdfStructElem elem, Map<Integer, Content.McidContent> content) {
-        return Tag.of(elem).descendantMcrs().stream()
-                .map(mcr -> content.get(mcr.getMcid()))
+        return Tag.of(elem).descendantMarkedContent().stream()
+                .map(marked -> content.get(marked.mcid()))
                 .filter(Objects::nonNull)
                 .flatMap(mc -> mc.spans().stream())
                 .map(Content.TextSpan::text)

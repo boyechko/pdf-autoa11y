@@ -10,7 +10,6 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
@@ -24,6 +23,7 @@ import net.boyechko.pdf.autoa11y.checks.MistaggedListCheck.MisshapenLists;
 import net.boyechko.pdf.autoa11y.checks.MistaggedListCheck.MisshapenLists.OwnedLine;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
@@ -647,10 +647,10 @@ class MistaggedListCheckTest extends PdfTestBase {
     /** Concatenates the raw text of every MCR under an element, in reading order. */
     private static String itemText(PdfDocument doc, PdfStructElem elem) {
         StringBuilder text = new StringBuilder();
-        for (PdfMcr mcr : Tag.of(elem).descendantMcrs()) {
-            int pageNum = StructTree.pageOf(mcr);
+        for (MarkedContent marked : Tag.of(elem).descendantMarkedContent()) {
+            int pageNum = marked.page();
             Content.McidContent content =
-                    Content.extractContentForPage(doc.getPage(pageNum)).get(mcr.getMcid());
+                    Content.extractContentForPage(doc.getPage(pageNum)).get(marked.mcid());
             if (content != null) {
                 content.spans().forEach(span -> text.append(span.text()));
             }

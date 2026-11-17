@@ -36,7 +36,7 @@ public final class ReuniteLinkFix implements IssueFix {
     public void apply(DocContext ctx) throws Exception {
         List<PdfObjRef> objRefs = Tag.of(annotLink).objRefs();
         if (objRefs.isEmpty()
-                || !Tag.of(annotLink).descendantMcrs().isEmpty()
+                || !Tag.of(annotLink).descendantMarkedContent().isEmpty()
                 || !Tag.of(textLink).descendantObjRefs().isEmpty()) {
             return;
         }

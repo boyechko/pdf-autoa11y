@@ -247,8 +247,8 @@ public final class Tag implements StructNode {
     }
 
     /** Marked-content references anywhere below, excluding OBJRs. */
-    public List<PdfMcr> descendantMcrs() {
-        return descendants(PdfMcr.class);
+    public List<MarkedContent> descendantMarkedContent() {
+        return descendants(PdfMcr.class).stream().map(MarkedContent::of).toList();
     }
 
     public List<PdfObjRef> descendantObjRefs() {

@@ -217,7 +217,10 @@ final class LineSplitter {
             PdfStructElem elem, PdfPage page, int lineSpan, boolean continuesLine, PdfMcr lastMcr)
             implements KidPlan {
         static ElemPlan of(DocContext ctx, PdfStructElem elem, PdfMcr previous) throws IOException {
-            List<PdfMcr> mcrs = Tag.of(elem).descendantMcrs();
+            List<PdfMcr> mcrs =
+                    Tag.of(elem).descendantMarkedContent().stream()
+                            .map(MarkedContent::mcr)
+                            .toList();
             if (mcrs.isEmpty()) {
                 throw new IllegalStateException(
                         "Splitting cannot place " + Format.elem(elem) + ", which marks no content");

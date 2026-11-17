@@ -3,7 +3,6 @@
 package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayDeque;
 import java.util.Comparator;
@@ -15,6 +14,7 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.*;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MistaggedHeadingFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -323,8 +323,8 @@ public class MistaggedHeadingCheck extends StructTreeCheck {
     /** Accumulates a font-size -> character-count histogram over an element's subtree. */
     private Map<Float, Long> charCountsForElement(PdfStructElem node, DocContext ctx) {
         Map<Float, Long> charCountBySize = new HashMap<>();
-        for (PdfMcr mcr : Tag.of(node).descendantMcrs()) {
-            Content.McidContent mc = ctx.pages().content(mcr);
+        for (MarkedContent content : Tag.of(node).descendantMarkedContent()) {
+            Content.McidContent mc = ctx.pages().content(content.mcr());
             if (mc != null) {
                 accumulate(charCountBySize, mc);
             }

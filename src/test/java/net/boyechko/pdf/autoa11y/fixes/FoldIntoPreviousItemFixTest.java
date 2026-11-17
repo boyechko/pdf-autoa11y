@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
@@ -61,10 +61,10 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
 
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
-            List<PdfMcr> mcrs = Tag.of(target).descendantMcrs();
-            assertEquals(2, mcrs.size(), "the item reads as one paragraph over two pages");
-            assertEquals(1, StructTree.pageOf(mcrs.get(0)));
-            assertEquals(2, StructTree.pageOf(mcrs.get(1)), "the folded line keeps its own page");
+            List<MarkedContent> marked = Tag.of(target).descendantMarkedContent();
+            assertEquals(2, marked.size(), "the item reads as one paragraph over two pages");
+            assertEquals(1, marked.get(0).page());
+            assertEquals(2, marked.get(1).page(), "the folded line keeps its own page");
         }
     }
 
@@ -162,9 +162,9 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
 
     private static PdfStructElem elementOwningMcid(PdfDocument doc, int pageNum, int mcid) {
         PdfStructElem document = StructTree.findDocument(doc.getStructTreeRoot());
-        return Tag.of(document).descendantMcrs().stream()
-                .filter(mcr -> mcr.getMcid() == mcid && StructTree.pageOf(mcr) == pageNum)
-                .map(mcr -> (PdfStructElem) mcr.getParent())
+        return Tag.of(document).descendantMarkedContent().stream()
+                .filter(marked -> marked.mcid() == mcid && marked.page() == pageNum)
+                .map(marked -> marked.parent().elem())
                 .findFirst()
                 .orElseThrow();
     }

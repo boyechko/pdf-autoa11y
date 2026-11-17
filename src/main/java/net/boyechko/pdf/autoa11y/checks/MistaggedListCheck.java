@@ -25,7 +25,6 @@ import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.PageContent;
 import net.boyechko.pdf.autoa11y.document.StructNode;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
@@ -936,8 +935,8 @@ public class MistaggedListCheck extends StructTreeCheck {
 
     /** Returns the pages an element's marked content touches, in reading order. */
     private static List<Integer> pagesTouchedBy(Tag element) {
-        return element.descendantMcrs().stream()
-                .map(StructTree::pageOf)
+        return element.descendantMarkedContent().stream()
+                .map(MarkedContent::page)
                 .filter(pageNum -> pageNum > 0)
                 .distinct()
                 .sorted()

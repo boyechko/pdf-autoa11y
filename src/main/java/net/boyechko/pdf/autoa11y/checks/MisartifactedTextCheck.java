@@ -7,7 +7,6 @@ import com.itextpdf.io.source.RandomAccessFileOrArray;
 import com.itextpdf.io.source.RandomAccessSourceFactory;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.canvas.parser.util.PdfCanvasParser;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.MisartifactedTextFix;
 import net.boyechko.pdf.autoa11y.issue.*;
@@ -224,14 +223,10 @@ public class MisartifactedTextCheck extends DocumentCheck {
     }
 
     private static void collectMcrOwners(PdfStructElem elem, Map<PageMcid, PdfStructElem> map) {
-        List<PdfMcr> mcrs = Tag.of(elem).descendantMcrs();
-        for (PdfMcr mcr : mcrs) {
-            int mcid = mcr.getMcid();
-            int pageNum = StructTree.pageOf(mcr);
+        for (MarkedContent content : Tag.of(elem).descendantMarkedContent()) {
+            int pageNum = content.page();
             if (pageNum <= 0) continue;
-            if (mcr.getParent() instanceof PdfStructElem parent) {
-                map.put(new PageMcid(pageNum, mcid), parent);
-            }
+            map.put(new PageMcid(pageNum, content.mcid()), content.parent().elem());
         }
     }
 
