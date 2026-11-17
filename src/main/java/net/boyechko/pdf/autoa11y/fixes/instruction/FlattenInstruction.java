@@ -29,20 +29,15 @@ record FlattenInstruction() implements ScribbledInstruction {
         }
 
         int hoisted = 0;
-        int insertAt = 0;
         for (StructNode kid : Tag.of(element).kids()) {
             if (!(kid instanceof Tag tag) || isLeaf(tag.elem())) {
-                insertAt++;
                 continue;
             }
-            PdfStructElem intermediate = tag.elem();
             // Insert ahead of the intermediate, so hoistees land where their subtree was, then
             // drop the emptied subtree. Its leaves' ancestry stays intact until each is detached,
             // which is what lets the inherited page be written down.
-            for (PdfStructElem leaf : leavesOf(intermediate)) {
-                Tag.of(leaf).materializeInheritedPage();
-                Tag.of(leaf).remove();
-                element.addKid(insertAt++, leaf);
+            for (PdfStructElem leaf : leavesOf(tag.elem())) {
+                Tag.of(leaf).insertBefore(tag);
                 hoisted++;
             }
             tag.remove();

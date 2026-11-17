@@ -59,11 +59,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
             return;
         }
 
-        for (IStructureNode item : items) {
-            PdfStructElem li = (PdfStructElem) item;
-            Tag.of(li).remove();
-            firstList.addKid(li);
-        }
+        Tag.of(secondList).moveKidsTo(Tag.of(firstList));
         Tag.of(secondList).remove();
         ListItemScribble.update(firstList, "MERGE lists");
 

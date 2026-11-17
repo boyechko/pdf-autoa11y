@@ -82,8 +82,7 @@ final class ListAssembler {
     /** Moves an element into an LBody, pinning /Pg first so the move cannot orphan its MCRs. */
     void adoptIntoBody(PdfStructElem lBody, PdfStructElem elem, PdfPage page) {
         pinPage(elem, page);
-        Tag.of(elem).remove();
-        lBody.addKid(elem);
+        Tag.of(elem).moveTo(Tag.of(lBody));
     }
 
     /** Pins /Pg so an element's bare-number MCRs keep resolving their page after a move. */

@@ -19,7 +19,8 @@ class AddParentInstructionTest extends PdfTestBase {
     @Test
     void addParentCreatesWrapper() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
@@ -38,7 +39,8 @@ class AddParentInstructionTest extends PdfTestBase {
     @Test
     void addParentPreservesPosition() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
@@ -63,7 +65,8 @@ class AddParentInstructionTest extends PdfTestBase {
     @Test
     void addParentsBuildsNestedWrapperChain() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
@@ -86,7 +89,8 @@ class AddParentInstructionTest extends PdfTestBase {
     @Test
     void addParentRejectsBranchingChain() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
 
@@ -105,7 +109,8 @@ class AddParentInstructionTest extends PdfTestBase {
     @Test
     void addParentReceiptNamesTheChain() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);
+            pdfDoc.setTagged();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
             PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
             root.addKid(document);
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);

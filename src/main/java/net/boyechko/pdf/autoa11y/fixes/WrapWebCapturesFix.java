@@ -176,8 +176,7 @@ public class WrapWebCapturesFix implements IssueFix {
         document.addKid(article);
         Tag.of(article).scribble(Scribble.user(scribble));
         for (PdfStructElem kid : toWrap) {
-            Tag.of(kid).remove();
-            article.addKid(kid);
+            Tag.of(kid).moveTo(Tag.of(article));
         }
     }
 
