@@ -693,7 +693,7 @@ class TagTest extends PdfTestBase {
     }
 
     @Test
-    void precedeWithMovesMarkedContentToSitRightBeforeTheTag() throws Exception {
+    void markedContentInsertedBeforeATagSitsRightBeforeIt() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();
             PdfPage page = doc.addNewPage();
@@ -706,7 +706,7 @@ class TagTest extends PdfTestBase {
             PdfMcrNumber mcr = new PdfMcrNumber(page, link);
             link.addKid(mcr);
 
-            Tag.of(link).precedeWith(mcr);
+            MarkedContent.of(mcr).insertBefore(Tag.of(link));
 
             assertEquals(List.of(), Tag.of(link).mcrs());
             assertEquals(2, Tag.of(link).precedingSiblings().size());
@@ -714,24 +714,6 @@ class TagTest extends PdfTestBase {
             assertEquals(mcr.getMcid(), moved.getMcid());
             assertEquals(1, StructTree.pageOf(moved));
             assertSame(moved.getPdfObject(), ((PdfMcr) p.getKids().get(1)).getPdfObject());
-        }
-    }
-
-    @Test
-    void precedeWithMovesAnElementKidLikeInsertBefore() throws Exception {
-        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
-            doc.setTagged();
-            doc.addNewPage();
-            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
-            doc.getStructTreeRoot().addKid(div);
-            PdfStructElem wrapper = new PdfStructElem(doc, PdfName.Sect);
-            div.addKid(wrapper);
-            PdfStructElem inner = new PdfStructElem(doc, PdfName.P);
-            wrapper.addKid(inner);
-
-            Tag.of(wrapper).precedeWith(inner);
-
-            assertEquals(List.of(Tag.of(inner), Tag.of(wrapper)), Tag.of(div).children());
         }
     }
 

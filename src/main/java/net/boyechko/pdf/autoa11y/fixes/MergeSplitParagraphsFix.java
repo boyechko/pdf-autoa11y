@@ -49,7 +49,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
 
         PdfStructElem target = paragraphs.get(0);
         for (PdfStructElem later : paragraphs.subList(1, paragraphs.size())) {
-            StructTree.moveKids(later, target);
+            Tag.of(later).moveKidsTo(Tag.of(target));
             parent.removeKid(later);
             mergedCount++;
         }

@@ -3,14 +3,13 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfPage;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -197,18 +196,18 @@ public final class RebuildListFix implements IssueFix {
 
     /** Gathers the content elements under a wrapper, descending through nested wrappers. */
     private static void collectContent(PdfStructElem wrapper, List<PdfStructElem> content) {
-        for (IStructureNode kid : StructTree.kidsOf(wrapper)) {
-            if (!(kid instanceof PdfStructElem elem) || "Lbl".equals(Tag.of(elem).role())) {
+        for (StructNode kid : Tag.of(wrapper).kids()) {
+            if (!(kid instanceof Tag tag) || "Lbl".equals(tag.role())) {
                 throw new IllegalStateException(
                         Tag.of(wrapper).role()
                                 + " #"
                                 + Tag.of(wrapper).objNum()
                                 + " holds marked content or a label of its own");
             }
-            if (WRAPPER_ROLES.contains(Tag.of(elem).role())) {
-                collectContent(elem, content);
+            if (WRAPPER_ROLES.contains(tag.role())) {
+                collectContent(tag.elem(), content);
             } else {
-                content.add(elem);
+                content.add(tag.elem());
             }
         }
     }

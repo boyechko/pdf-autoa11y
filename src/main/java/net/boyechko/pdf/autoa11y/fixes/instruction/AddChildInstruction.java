@@ -7,13 +7,14 @@ import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.r
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !ADD_CHILD <template>}: parses the tag expression and redistributes the element's kids
@@ -27,9 +28,8 @@ record AddChildInstruction(String tagExpr) implements ScribbledInstruction {
     public String apply(DocContext ctx, PdfStructElem element) {
         List<ChildSpec> specs = parseTemplate(tagExpr);
 
-        // Snapshot original kids as IStructureNode wrappers (so removeKid/addKid calls can
-        // update the document's ParentTree alongside the K array).
-        List<IStructureNode> origKids = new ArrayList<>(StructTree.kidsOf(element));
+        // Snapshot the original kids before the new wrappers join them.
+        List<StructNode> origKids = Tag.of(element).kids();
         validateCoverage(specs, origKids.size());
 
         PdfObject effectivePg = StructTree.effectivePageDict(element);
@@ -46,7 +46,7 @@ record AddChildInstruction(String tagExpr) implements ScribbledInstruction {
             PdfStructElem element,
             PdfStructElem wrapper,
             ChildSpec spec,
-            List<IStructureNode> origKids,
+            List<StructNode> origKids,
             PdfObject effectivePg) {
         if (spec instanceof NewStructure ns) {
             for (ChildSpec child : ns.children()) {
@@ -62,7 +62,7 @@ record AddChildInstruction(String tagExpr) implements ScribbledInstruction {
             int from = wr.from() - 1;
             int to = Math.min(wr.to(), origKids.size());
             for (int i = from; i < to; i++) {
-                StructTree.moveKid(origKids.get(i), element, wrapper);
+                origKids.get(i).moveTo(Tag.of(wrapper));
             }
         }
     }

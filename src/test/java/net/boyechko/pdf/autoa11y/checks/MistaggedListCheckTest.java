@@ -127,11 +127,11 @@ class MistaggedListCheckTest extends PdfTestBase {
                 new PdfDocument(
                         new PdfReader(LUMPED_PDF.toString()), new PdfWriter(testOutputStream()))) {
             PdfStructElem paragraph = elementByObjNum(pdfDoc, 43);
-            var kids = List.copyOf(StructTree.kidsOf(paragraph));
+            var kids = Tag.of(paragraph).kids();
             PdfStructElem note = new PdfStructElem(pdfDoc, PdfName.Note);
             paragraph.addKid(note);
             for (var kid : kids) {
-                StructTree.moveKid(kid, paragraph, note);
+                kid.moveTo(Tag.of(note));
             }
 
             walkWith(pdfDoc, check);

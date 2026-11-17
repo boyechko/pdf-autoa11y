@@ -6,12 +6,11 @@ import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.r
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
 
@@ -43,7 +42,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
         }
         List<PdfStructElem> content = itemContentOf(element);
 
-        List<IStructureNode> trailing = item.followingSiblings();
+        List<StructNode> trailing = item.followingSiblings();
         boolean leadingItems = !item.precedingSiblings().isEmpty();
         PdfStructElem tail = null;
         if (leadingItems && !trailing.isEmpty()) {
@@ -53,8 +52,8 @@ record BreakOutInstruction() implements ScribbledInstruction {
                 tail.put(PdfName.A, attributes.clone());
             }
             Tag.of(tail).insertAfter(listTag);
-            for (IStructureNode kid : trailing) {
-                StructTree.moveKid(kid, list, tail);
+            for (StructNode kid : trailing) {
+                kid.moveTo(Tag.of(tail));
             }
         }
 
@@ -71,7 +70,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
         }
         list.removeKid(element);
 
-        if (StructTree.kidsOf(list).isEmpty()) {
+        if (listTag.kids().isEmpty()) {
             container.removeKid(list);
         } else {
             ListItemScribble.refreshCount(list);
@@ -99,17 +98,17 @@ record BreakOutInstruction() implements ScribbledInstruction {
      */
     private static List<PdfStructElem> itemContentOf(PdfStructElem item) {
         List<PdfStructElem> content = new ArrayList<>();
-        for (IStructureNode kid : StructTree.kidsOf(item)) {
-            if (!(kid instanceof PdfStructElem body) || !"LBody".equals(Tag.of(body).role())) {
+        for (StructNode kid : Tag.of(item).kids()) {
+            if (!(kid instanceof Tag body) || !"LBody".equals(body.role())) {
                 throw new IllegalArgumentException(
                         "!BREAK_OUT refuses: item holds something other than LBody");
             }
-            for (IStructureNode bodyKid : StructTree.kidsOf(body)) {
-                if (!(bodyKid instanceof PdfStructElem se)) {
+            for (StructNode bodyKid : body.kids()) {
+                if (!(bodyKid instanceof Tag se)) {
                     throw new IllegalArgumentException(
                             "!BREAK_OUT refuses: LBody holds marked content directly");
                 }
-                content.add(se);
+                content.add(se.elem());
             }
         }
         return content;

@@ -281,7 +281,7 @@ public final class IrregularTocFix implements IssueFix {
             toci.addKid(para);
 
             for (Item item : entry.items) {
-                StructTree.moveKid(item.elem(), item.origin(), para);
+                Tag.of(item.elem()).moveTo(Tag.of(para));
             }
             if (entry.isOneLink() && entry.links().size() > 1) {
                 new MergeSplitLinksFix(entry.links()).apply(ctx);

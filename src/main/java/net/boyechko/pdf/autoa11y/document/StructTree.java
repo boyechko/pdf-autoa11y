@@ -119,13 +119,6 @@ public final class StructTree {
         return null;
     }
 
-    /** Moves every kid of {@code from} into {@code to}, preserving their order. */
-    public static void moveKids(PdfStructElem from, PdfStructElem to) {
-        for (IStructureNode kid : kidsOf(from)) {
-            moveKid(kid, from, to);
-        }
-    }
-
     /**
      * Moves a kid (struct elem, MCR, or OBJR) from one parent to another, keeping it on the page it
      * renders on. Delegates to iText's {@link TagTreePointer#relocateKid}, which rebinds the kid to
@@ -134,8 +127,7 @@ public final class StructTree {
      *
      * @throws IllegalArgumentException if {@code kid} is not currently a kid of {@code fromParent}
      */
-    public static void moveKid(
-            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
+    static void moveKid(IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
         moveKid(kid, fromParent, toParent, -1);
     }
 

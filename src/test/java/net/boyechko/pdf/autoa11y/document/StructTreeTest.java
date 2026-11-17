@@ -251,7 +251,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             IStructureNode moved = survivor.getKids().get(0);
             assertInstanceOf(PdfMcr.class, moved);
@@ -278,7 +278,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(7), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             IStructureNode moved = survivor.getKids().get(0);
             assertInstanceOf(PdfMcr.class, moved);
@@ -307,7 +307,7 @@ class StructTreeTest extends PdfTestBase {
             mcrDict.put(PdfName.MCID, new PdfNumber(3));
             absorbed.addKid(new PdfMcrDictionary(mcrDict, absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             IStructureNode moved = survivor.getKids().get(0);
             assertInstanceOf(PdfMcr.class, moved);
@@ -334,7 +334,7 @@ class StructTreeTest extends PdfTestBase {
             section.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             IStructureNode moved = survivor.getKids().get(0);
             assertInstanceOf(PdfMcr.class, moved);
@@ -358,7 +358,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             // The destination adopts the page rather than every kid carrying its own /Pg.
             assertTrue(
@@ -391,7 +391,7 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(absorbed);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(0), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             // Without pinning the survivor to its inherited page first, iText would stamp the
             // incoming kid's page 2 onto it and drag the resident MCID 5 along.
@@ -419,7 +419,7 @@ class StructTreeTest extends PdfTestBase {
             absorbed.addKid(span);
             absorbed.addKid(new PdfMcrNumber(new PdfNumber(2), absorbed));
 
-            StructTree.moveKids(absorbed, survivor);
+            Tag.of(absorbed).moveKidsTo(Tag.of(survivor));
 
             List<IStructureNode> kids = survivor.getKids();
             assertEquals(3, kids.size());

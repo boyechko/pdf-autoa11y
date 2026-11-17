@@ -20,7 +20,7 @@ import java.util.List;
  * elements on every read and invalidates wrappers on some mutations. Two tags are equal when they
  * stand for the same PDF object, whichever wrappers they were made from.
  */
-public final class Tag {
+public final class Tag implements StructNode {
     private final PdfStructElem elem;
 
     private Tag(PdfStructElem elem) {
@@ -91,6 +91,7 @@ public final class Tag {
      * The element's page via its own /Pg, else the first page among its kids in reading order: an
      * MCR or OBJR naming its own page, or an element kid resolved the same way. Zero if none.
      */
+    @Override
     public int page() {
         // A page dictionary is always indirect, so it reaches the document even
         // when the element itself is a direct object.
@@ -99,19 +100,15 @@ public final class Tag {
             int pageNum = pg.getIndirectReference().getDocument().getPageNumber(pg);
             if (pageNum > 0) return pageNum;
         }
-        for (IStructureNode kid : StructTree.kidsOf(elem)) {
-            int pageNum =
-                    switch (kid) {
-                        case PdfMcr mcr -> StructTree.pageOf(mcr);
-                        case PdfStructElem child -> Tag.of(child).page();
-                        default -> 0;
-                    };
+        for (StructNode kid : kids()) {
+            int pageNum = kid.page();
             if (pageNum > 0) return pageNum;
         }
         return 0;
     }
 
     /** The enclosing element, or null when the element sits directly under the tree root. */
+    @Override
     public Tag parent() {
         return elem.getParent() instanceof PdfStructElem parent ? Tag.of(parent) : null;
     }
@@ -145,6 +142,11 @@ public final class Tag {
         return null;
     }
 
+    /** Everything the tag holds, of every kind, in document order. */
+    public List<StructNode> kids() {
+        return StructTree.kidsOf(elem).stream().map(StructNode::of).toList();
+    }
+
     public List<Tag> children() {
         return kids(PdfStructElem.class).stream().map(Tag::of).toList();
     }
@@ -163,8 +165,8 @@ public final class Tag {
      * disqualifies it, since an OBJR marks no content.
      */
     public boolean holdsOnlyMarkedContent() {
-        int kids = StructTree.kidsOf(elem).size();
-        return kids > 0 && mcrs().size() == kids;
+        List<StructNode> kids = kids();
+        return !kids.isEmpty() && kids.stream().allMatch(kid -> kid instanceof MarkedContent);
     }
 
     /** Marked-content references anywhere below, excluding OBJRs. */
@@ -183,34 +185,33 @@ public final class Tag {
 
     /** The kid right before this one in its parent, or null if none or not an element. */
     public Tag previousSibling() {
-        List<IStructureNode> preceding = precedingSiblings();
-        return !preceding.isEmpty() && preceding.getLast() instanceof PdfStructElem previous
-                ? Tag.of(previous)
+        List<StructNode> preceding = precedingSiblings();
+        return !preceding.isEmpty() && preceding.getLast() instanceof Tag previous
+                ? previous
                 : null;
     }
 
     /** The kid right after this one in its parent, or null if none or not an element. */
     public Tag nextSibling() {
-        List<IStructureNode> following = followingSiblings();
-        return !following.isEmpty() && following.getFirst() instanceof PdfStructElem next
-                ? Tag.of(next)
-                : null;
+        List<StructNode> following = followingSiblings();
+        return !following.isEmpty() && following.getFirst() instanceof Tag next ? next : null;
     }
 
     /** Its parent's kids of every kind that come before this tag, in order. */
-    public List<IStructureNode> precedingSiblings() {
+    public List<StructNode> precedingSiblings() {
         int index = indexInParent();
-        return index < 0 ? List.of() : List.copyOf(siblings().subList(0, index));
+        return index < 0 ? List.of() : siblings().subList(0, index);
     }
 
     /** Its parent's kids of every kind that come after this tag, in order. */
-    public List<IStructureNode> followingSiblings() {
+    public List<StructNode> followingSiblings() {
         int index = indexInParent();
-        List<IStructureNode> siblings = siblings();
-        return index < 0 ? List.of() : List.copyOf(siblings.subList(index + 1, siblings.size()));
+        List<StructNode> siblings = siblings();
+        return index < 0 ? List.of() : siblings.subList(index + 1, siblings.size());
     }
 
     /** Places this tag right before the sibling, taking it out of wherever it sits now. */
+    @Override
     public void insertBefore(Tag sibling) {
         insertBeside(sibling, 0);
     }
@@ -221,19 +222,31 @@ public final class Tag {
     }
 
     /**
-     * Moves a kid of any kind out of its parent to sit right before this tag: an element, or marked
-     * content or an OBJR, which keeps resolving the page it renders on.
+     * Moves marked content or an object reference out of its parent to sit right before this tag.
      */
-    public void precedeWith(IStructureNode kid) {
-        if (kid instanceof PdfStructElem kidElem) {
-            Tag.of(kidElem).insertBefore(this);
-            return;
-        }
+    void precedeWithContent(PdfMcr content) {
         requireAttached();
         if (!(elem.getParent() instanceof PdfStructElem container)) {
             throw new IllegalStateException("Marked content cannot sit beside top-level " + this);
         }
-        StructTree.moveKid(kid, (PdfStructElem) kid.getParent(), container, indexInParent());
+        StructTree.moveKid(
+                content, (PdfStructElem) content.getParent(), container, indexInParent());
+    }
+
+    @Override
+    public Tag moveTo(Tag newParent) {
+        if (!(elem.getParent() instanceof PdfStructElem former)) {
+            throw new IllegalStateException("Cannot move top-level " + this);
+        }
+        StructTree.moveKid(elem, former, newParent.elem);
+        return this;
+    }
+
+    /** Moves everything this tag holds to the end of another tag's kids, in order. */
+    public void moveKidsTo(Tag newParent) {
+        for (StructNode kid : kids()) {
+            kid.moveTo(newParent);
+        }
     }
 
     /** Puts the replacements where this tag sits, in order, and takes this tag out of the tree. */
@@ -293,8 +306,8 @@ public final class Tag {
     }
 
     /** Its parent's kids of every kind, this tag included. */
-    private List<IStructureNode> siblings() {
-        return StructTree.kidsOf(elem.getParent());
+    private List<StructNode> siblings() {
+        return StructTree.kidsOf(elem.getParent()).stream().map(StructNode::of).toList();
     }
 
     /** Direct kids of the given type. */

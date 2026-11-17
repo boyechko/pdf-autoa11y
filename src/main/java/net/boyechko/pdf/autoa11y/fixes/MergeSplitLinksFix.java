@@ -7,7 +7,6 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,9 +60,7 @@ public final class MergeSplitLinksFix implements IssueFix {
 
         PdfStructElem target = links.get(0);
         for (PdfStructElem later : links.subList(1, links.size())) {
-            for (IStructureNode kid : new ArrayList<>(later.getKids())) {
-                StructTree.moveKid(kid, later, target);
-            }
+            Tag.of(later).moveKidsTo(Tag.of(target));
             parent.removeKid(later);
             mergedCount++;
         }

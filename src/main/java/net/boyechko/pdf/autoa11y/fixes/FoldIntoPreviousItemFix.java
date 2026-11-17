@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -69,7 +69,7 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
         requireSameRole(opener);
 
         new SplitIntoListItemsFix(element, leadingLines + "," + itemSpec).apply(ctx);
-        StructTree.moveKids(element, opener);
+        Tag.of(element).moveKidsTo(Tag.of(opener));
         int pruned = StructTree.pruneEmpty(element);
         // The list was reshaped by the split; the fold only moved content between its items.
         ListItemScribble.refreshCount(list);
@@ -116,8 +116,8 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
         if (body == null) {
             return null;
         }
-        List<IStructureNode> kids = StructTree.kidsOf(body.elem());
-        return kids.size() == 1 && kids.get(0) instanceof PdfStructElem only ? only : null;
+        List<StructNode> kids = body.kids();
+        return kids.size() == 1 && kids.get(0) instanceof Tag only ? only.elem() : null;
     }
 
     private static List<Tag> itemsOf(Tag list) {

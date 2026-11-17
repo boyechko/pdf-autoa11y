@@ -8,7 +8,8 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Content.TextLine;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
 import net.boyechko.pdf.autoa11y.document.TagType;
@@ -97,11 +98,14 @@ public class FusedParagraphCheck extends StructTreeCheck {
 
     /** True if every kid is marked content or an inline element, whose lines are the P's own. */
     private static boolean holdsOnlyTextAndInlines(Visit visit) {
-        PdfStructElem node = visit.node();
-        int mcrCount = Tag.of(node).mcrs().size();
-        return mcrCount + visit.children().size() == StructTree.kidsOf(node).size()
-                && visit.childRoles().stream()
-                        .allMatch(role -> schema.hasType(role, TagType.INLINE));
+        return Tag.of(visit.node()).kids().stream()
+                .allMatch(
+                        kid ->
+                                switch (kid) {
+                                    case MarkedContent content -> true;
+                                    case Tag tag -> schema.hasType(tag.role(), TagType.INLINE);
+                                    case ObjectRef ref -> false;
+                                });
     }
 
     private static boolean hasTextEquivalent(PdfStructElem elem) {

@@ -18,6 +18,7 @@ import net.boyechko.pdf.autoa11y.document.ContentStream.Edit;
 import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
@@ -241,7 +242,7 @@ final class LineSplitter {
 
         @Override
         public ElemPlan movedTo(PdfStructElem newParent) {
-            StructTree.moveKid(elem, (PdfStructElem) elem.getParent(), newParent);
+            Tag.of(elem).moveTo(Tag.of(newParent));
             return this;
         }
     }
@@ -319,8 +320,7 @@ final class LineSplitter {
 
     /** Moves an MCR from its current parent to the end of a new one, returning the rebound MCR. */
     private static PdfMcr moveMcr(PdfMcr mcr, PdfStructElem newParent) {
-        StructTree.moveKid(mcr, (PdfStructElem) mcr.getParent(), newParent);
-        return (PdfMcr) StructTree.kidsOf(newParent).getLast();
+        return MarkedContent.of(mcr).moveTo(Tag.of(newParent)).mcr();
     }
 
     /**

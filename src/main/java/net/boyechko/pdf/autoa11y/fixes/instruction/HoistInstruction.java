@@ -7,7 +7,6 @@ import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.r
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -23,14 +22,14 @@ record HoistInstruction() implements ScribbledInstruction {
     public String apply(DocContext ctx, PdfStructElem element) {
         if (!(element.getParent() instanceof PdfStructElem top)
                 || !(top.getParent() instanceof PdfStructElem)
-                || StructTree.kidsOf(top).size() != 1) {
+                || Tag.of(top).kids().size() != 1) {
             throw new IllegalArgumentException(
                     "!HOIST refuses: parent holds other kids or is a top-level element");
         }
         int depth = 1;
         while (top.getParent() instanceof PdfStructElem up
                 && up.getParent() instanceof PdfStructElem
-                && StructTree.kidsOf(up).size() == 1) {
+                && Tag.of(up).kids().size() == 1) {
             top = up;
             depth++;
         }

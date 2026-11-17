@@ -5,15 +5,15 @@ package net.boyechko.pdf.autoa11y.fixes.instruction;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.Annotation;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
@@ -45,12 +45,12 @@ record UnlinkInstruction() implements ScribbledInstruction {
             return null;
         }
 
-        List<IStructureNode> origKids = new ArrayList<>(StructTree.kidsOf(element));
+        List<StructNode> origKids = link.kids();
 
         PdfDictionary annotDict = null;
-        for (IStructureNode kid : origKids) {
-            if (kid instanceof PdfObjRef objRef) {
-                PdfObject refObj = objRef.getReferencedObject();
+        for (StructNode kid : origKids) {
+            if (kid instanceof ObjectRef ref) {
+                PdfObject refObj = ref.objRef().getReferencedObject();
                 if (refObj instanceof PdfDictionary dict) {
                     annotDict = dict;
                     break;
@@ -60,19 +60,20 @@ record UnlinkInstruction() implements ScribbledInstruction {
 
         PdfObject linkEffectivePg = StructTree.effectivePageDict(element);
 
-        for (IStructureNode kid : origKids) {
-            if (kid instanceof PdfObjRef) {
+        for (StructNode kid : origKids) {
+            if (kid instanceof ObjectRef) {
                 continue;
             }
             // Bare-int MCRs resolve their page via ancestor /Pg. If the parent lacks an
             // explicit /Pg, set it now so the promoted MCR can still find its page.
-            if (kid instanceof PdfMcrNumber
+            if (kid instanceof MarkedContent content
+                    && content.mcr() instanceof PdfMcrNumber
                     && linkEffectivePg != null
                     && parent.getPdfObject().get(PdfName.Pg) == null) {
                 parent.getPdfObject().put(PdfName.Pg, linkEffectivePg);
                 parent.setModified();
             }
-            link.precedeWith(kid);
+            kid.insertBefore(link);
         }
 
         parent.removeKid(element);

@@ -6,9 +6,7 @@ import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.r
 
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
-import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -58,9 +56,7 @@ record MergeInstruction() implements ScribbledInstruction {
             target.setModified();
         }
 
-        for (IStructureNode kid : new ArrayList<>(StructTree.kidsOf(element))) {
-            StructTree.moveKid(kid, element, target);
-        }
+        Tag.of(element).moveKidsTo(previous);
         parent.removeKid(element);
         stampMergeReceipt(target);
         return null;
