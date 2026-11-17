@@ -91,7 +91,7 @@ public class MistaggedArtifactFix implements IssueFix {
                 }
             }
         }
-        StructTree.pruneEmpty(elem);
+        Tag.of(elem).pruneIfEmpty();
     }
 
     /** Removes MCR entries from the element's subtree for all rewritten MCIDs. */

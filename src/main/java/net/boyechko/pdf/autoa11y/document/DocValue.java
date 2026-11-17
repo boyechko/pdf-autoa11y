@@ -246,7 +246,7 @@ public sealed interface DocValue {
     record Scope(String value) implements DocValue {
         /** Reads the element's Table-owned /Scope, or null when it carries none. */
         public static Scope of(PdfStructElem elem) {
-            PdfObject value = StructTree.attributeValue(elem, PdfName.Table, PdfName.Scope);
+            PdfObject value = Tag.of(elem).attribute(PdfName.Table, PdfName.Scope);
             return value instanceof PdfName name ? new Scope(name.getValue()) : null;
         }
 

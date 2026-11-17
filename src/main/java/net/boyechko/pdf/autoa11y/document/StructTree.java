@@ -5,25 +5,18 @@ package net.boyechko.pdf.autoa11y.document;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
-import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
-import com.itextpdf.kernel.pdf.tagutils.TagStructureContext;
-import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Low-level operations on the PDF structure tree: mutation, marked-content bookkeeping, attributes,
- * and scribbles. Reading an element (its role, relatives, kids, or page) belongs to {@link Tag}.
- * When an operation here would read better as a message to a Tag, it moves there; it is never
- * duplicated in both.
+ * Operations on the PDF structure tree as a whole, plus the low-level /K-array and object-identity
+ * work that has no better owner yet. What one element holds, and moving nodes among elements,
+ * belongs to {@link Tag} and the other {@link StructNode} kinds; an operation that would read
+ * better as a message to one of them moves there and is never duplicated here.
  */
 public final class StructTree {
-    private static final Logger logger = LoggerFactory.getLogger(StructTree.class);
 
     private StructTree() {}
 
@@ -91,178 +84,6 @@ public final class StructTree {
             throw new IllegalStateException("Cannot resolve the page of MCID " + mcr.getMcid());
         }
         return mcr.getPageIndirectReference().getDocument().getPage(pageNum);
-    }
-
-    /**
-     * Adds a fresh-MCID marked-content reference on the page to the parent and returns it: a bare
-     * number when the parent is pinned to that page, else an MCR dictionary carrying its own /Pg.
-     */
-    public static PdfMcr addNewMcr(PdfStructElem parent, PdfPage page) {
-        PdfDictionary pg = parent.getPdfObject().getAsDictionary(PdfName.Pg);
-        PdfMcr mcr =
-                pg != null && isSamePage(pg, page)
-                        ? new PdfMcrNumber(page, parent)
-                        : new PdfMcrDictionary(page, parent);
-        return parent.addKid(mcr);
-    }
-
-    /** Walks up ancestors from {@code elem} and returns the first /Pg page reference found. */
-    public static PdfObject effectivePageDict(PdfStructElem elem) {
-        IStructureNode current = elem;
-        while (current instanceof PdfStructElem se) {
-            PdfObject pg = se.getPdfObject().get(PdfName.Pg);
-            if (pg != null) {
-                return pg;
-            }
-            current = se.getParent();
-        }
-        return null;
-    }
-
-    /**
-     * Moves a kid (struct elem, MCR, or OBJR) from one parent to another, keeping it on the page it
-     * renders on. Delegates to iText's {@link TagTreePointer#relocateKid}, which rebinds the kid to
-     * its new parent and, for an MCR or OBJR, upgrades a bare MCID number to a dictionary carrying
-     * its own /Pg whenever the destination sits on a different page.
-     *
-     * @throws IllegalArgumentException if {@code kid} is not currently a kid of {@code fromParent}
-     */
-    static void moveKid(IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent) {
-        moveKid(kid, fromParent, toParent, -1);
-    }
-
-    /** As {@link #moveKid}, landing at {@code toIndex} among the new parent's kids. */
-    static void moveKid(
-            IStructureNode kid, PdfStructElem fromParent, PdfStructElem toParent, int toIndex) {
-        int index = findKidIndex(fromParent, kid);
-        if (index < 0) {
-            throw new IllegalArgumentException(
-                    "Cannot move " + Format.node(kid) + " out of " + Format.elem(fromParent));
-        }
-        // iText resolves an MCR's page from its immediate parent only and
-        // dereferences the result unguarded, while a tagger may leave /Pg on a
-        // more distant ancestor. Writing the inherited value down is a no-op
-        // for readers.
-        materializeInheritedPage(fromParent);
-        materializeInheritedPage(toParent);
-        TagStructureContext context = pdfDocumentFor(fromParent).getTagStructureContext();
-        TagTreePointer destination = context.createPointerForStructElem(toParent);
-        if (toIndex >= 0) {
-            destination.setNextNewKidIndex(toIndex);
-        }
-        context.createPointerForStructElem(fromParent).relocateKid(index, destination);
-    }
-
-    /**
-     * Finds the index of a kid within a parent's kids list (via getKids). Matching is by underlying
-     * PDF object, so {@code target} must be a node obtained from the tree rather than a freshly
-     * constructed wrapper: a bare MCID number is a direct object, for which identity is the only
-     * available test.
-     */
-    public static int findKidIndex(IStructureNode parent, IStructureNode target) {
-        PdfObject targetObject = pdfObjectOf(target);
-        if (targetObject == null) {
-            logger.warn("Unexpected kid type {} in findKidIndex", target.getClass());
-            return -1;
-        }
-        List<IStructureNode> kids = kidsOf(parent);
-        for (int i = 0; i < kids.size(); i++) {
-            if (isSame(pdfObjectOf(kids.get(i)), targetObject)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /** True if the elements are consecutive kids of {@code parent}, in the given order. */
-    public static boolean areConsecutiveKids(PdfStructElem parent, List<PdfStructElem> elems) {
-        if (elems.isEmpty()) {
-            return false;
-        }
-        int first = findKidIndex(parent, elems.get(0));
-        List<IStructureNode> kids = kidsOf(parent);
-        if (first < 0 || first + elems.size() > kids.size()) {
-            return false;
-        }
-        for (int i = 1; i < elems.size(); i++) {
-            if (!(kids.get(first + i) instanceof PdfStructElem sibling)
-                    || !Tag.of(sibling).equals(Tag.of(elems.get(i)))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Returns the underlying PDF object of a structure node, or null if it is neither kind. */
-    private static PdfObject pdfObjectOf(IStructureNode node) {
-        if (node instanceof PdfStructElem elem) return elem.getPdfObject();
-        if (node instanceof PdfMcr mcr) return mcr.getPdfObject();
-        return null;
-    }
-
-    /** Copies an ancestor's /Pg onto the element itself, so iText can resolve its kids' pages. */
-    public static void materializeInheritedPage(PdfStructElem elem) {
-        if (elem.getPdfObject().get(PdfName.Pg) != null) return;
-        PdfObject pg = effectivePageDict(elem);
-        if (pg == null) return;
-        PdfIndirectReference ref = pg.getIndirectReference();
-        elem.put(PdfName.Pg, ref != null ? ref : pg);
-    }
-
-    /** Returns a parent's kids, or an empty list where getKids reports none. */
-    static List<IStructureNode> kidsOf(IStructureNode parent) {
-        List<IStructureNode> kids = parent.getKids();
-        return kids == null ? List.of() : kids;
-    }
-
-    /** Adds a kid at a specific index (works with both PdfStructElem and PdfStructTreeRoot). */
-    public static void addKidToParent(IStructureNode parent, int index, PdfStructElem kid) {
-        if (parent instanceof PdfStructElem parentElem) {
-            parentElem.addKid(index, kid);
-        } else if (parent instanceof PdfStructTreeRoot root) {
-            root.addKid(index, kid);
-        }
-    }
-
-    /** Removes an element from its parent (works with both PdfStructElem and PdfStructTreeRoot). */
-    public static void removeFromParent(PdfStructElem elem, IStructureNode parent) {
-        if (parent instanceof PdfStructElem parentElem) {
-            parentElem.removeKid(elem);
-        } else if (parent instanceof PdfStructTreeRoot root) {
-            PdfObject kObj = root.getPdfObject().get(PdfName.K);
-            if (kObj instanceof PdfArray kArray) {
-                kArray.remove(elem.getPdfObject());
-                if (elem.getPdfObject().getIndirectReference() != null) {
-                    kArray.remove(elem.getPdfObject().getIndirectReference());
-                }
-            }
-        }
-    }
-
-    /**
-     * Removes the element if it has no kids, then cascades upward: if the parent becomes empty, it
-     * is removed too. Stops at the Document element (direct child of StructTreeRoot). Returns the
-     * number of elements removed.
-     */
-    public static int pruneEmpty(PdfStructElem elem) {
-        int removed = 0;
-        PdfStructElem current = elem;
-        while (current != null) {
-            List<IStructureNode> kids = current.getKids();
-            if (kids != null && !kids.isEmpty()) {
-                break;
-            }
-            IStructureNode parent = current.getParent();
-            if (parent == null || parent instanceof PdfStructTreeRoot) {
-                break;
-            }
-            String role = current.getRole() != null ? current.getRole().getValue() : "unknown";
-            logger.debug("Pruning empty {} (obj. #{})", role, Tag.of(current).objNum());
-            removeFromParent(current, parent);
-            removed++;
-            current = (parent instanceof PdfStructElem parentElem) ? parentElem : null;
-        }
-        return removed;
     }
 
     /* The PDF spec allows /K to be either a single object or an array. iText
@@ -352,73 +173,6 @@ public final class StructTree {
             }
         }
         return null;
-    }
-
-    // === Structure attributes ==============================================
-
-    /**
-     * Reads one attribute value from an element's {@code /A}, taking the first attribute dictionary
-     * whose owner ({@code /O}) matches. {@code /A} may hold a single dictionary or an array;
-     * revision numbers interleaved in the array are skipped. Class-map attributes ({@code /C}) are
-     * not consulted.
-     */
-    public static PdfObject attributeValue(PdfStructElem elem, PdfName owner, PdfName key) {
-        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
-        if (attrs instanceof PdfDictionary dict) {
-            return ownedValue(dict, owner, key);
-        }
-        if (attrs instanceof PdfArray array) {
-            for (int i = 0; i < array.size(); i++) {
-                if (array.get(i) instanceof PdfDictionary dict) {
-                    PdfObject value = ownedValue(dict, owner, key);
-                    if (value != null) return value;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Writes one attribute value into the element's first {@code /A} dictionary owned by {@code
-     * owner}, adding such a dictionary (and promoting {@code /A} to an array) when none exists.
-     */
-    public static void setAttributeValue(
-            PdfStructElem elem, PdfName owner, PdfName key, PdfObject value) {
-        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
-        PdfDictionary owned = ownedDictionary(attrs, owner);
-        if (owned != null) {
-            owned.put(key, value);
-            return;
-        }
-        PdfDictionary added = new PdfDictionary();
-        added.put(PdfName.O, owner);
-        added.put(key, value);
-        if (attrs instanceof PdfArray array) {
-            array.add(added);
-        } else if (attrs instanceof PdfDictionary dict) {
-            elem.getPdfObject().put(PdfName.A, new PdfArray(List.of(dict, added)));
-        } else {
-            elem.getPdfObject().put(PdfName.A, added);
-        }
-    }
-
-    private static PdfDictionary ownedDictionary(PdfObject attrs, PdfName owner) {
-        if (attrs instanceof PdfDictionary dict) {
-            return owner.equals(dict.getAsName(PdfName.O)) ? dict : null;
-        }
-        if (attrs instanceof PdfArray array) {
-            for (int i = 0; i < array.size(); i++) {
-                if (array.get(i) instanceof PdfDictionary dict
-                        && owner.equals(dict.getAsName(PdfName.O))) {
-                    return dict;
-                }
-            }
-        }
-        return null;
-    }
-
-    private static PdfObject ownedValue(PdfDictionary attrs, PdfName owner, PdfName key) {
-        return owner.equals(attrs.getAsName(PdfName.O)) ? attrs.get(key) : null;
     }
 
     // === Miscellaneous utilities ===========================================

@@ -326,7 +326,7 @@ final class LineSplitter {
      * up owning a reference to the block in each.
      */
     private static int mintMcid(PdfStructElem itemBody, PdfPage page, List<Integer> newMcids) {
-        PdfMcr mcr = StructTree.addNewMcr(itemBody, page);
+        PdfMcr mcr = Tag.of(itemBody).addMarkedContent(page).mcr();
         newMcids.add(mcr.getMcid());
         return mcr.getMcid();
     }

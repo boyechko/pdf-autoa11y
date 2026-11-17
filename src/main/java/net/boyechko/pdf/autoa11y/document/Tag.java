@@ -2,17 +2,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.document;
 
+import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfIndirectReference;
 import com.itextpdf.kernel.pdf.PdfName;
+import com.itextpdf.kernel.pdf.PdfObject;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
+import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
+import com.itextpdf.kernel.pdf.tagutils.TagStructureContext;
+import com.itextpdf.kernel.pdf.tagutils.TagTreePointer;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A structure element as the rest of the tool speaks of it: an adapter over iText's {@link
@@ -21,6 +31,7 @@ import java.util.List;
  * stand for the same PDF object, whichever wrappers they were made from.
  */
 public final class Tag implements StructNode {
+    private static final Logger logger = LoggerFactory.getLogger(Tag.class);
     private final PdfStructElem elem;
 
     private Tag(PdfStructElem elem) {
@@ -107,6 +118,72 @@ public final class Tag implements StructNode {
         return 0;
     }
 
+    /**
+     * The /Pg entry the tag resolves its page through: its own, else its nearest ancestor's; null
+     * when none of them names a page.
+     */
+    public PdfObject pageEntry() {
+        for (Tag tag = this; tag != null; tag = tag.parent()) {
+            PdfObject pg = tag.elem.getPdfObject().get(PdfName.Pg);
+            if (pg != null) return pg;
+        }
+        return null;
+    }
+
+    /** Copies an ancestor's /Pg onto the tag itself, so iText can resolve its kids' pages. */
+    public void materializeInheritedPage() {
+        if (elem.getPdfObject().get(PdfName.Pg) != null) return;
+        PdfObject pg = pageEntry();
+        if (pg == null) return;
+        PdfIndirectReference ref = pg.getIndirectReference();
+        elem.put(PdfName.Pg, ref != null ? ref : pg);
+    }
+
+    /**
+     * Reads one attribute value from the element's {@code /A}, taking the first attribute
+     * dictionary whose owner ({@code /O}) matches. {@code /A} may hold a single dictionary or an
+     * array; revision numbers interleaved in the array are skipped. Class-map attributes ({@code
+     * /C}) are not consulted.
+     */
+    public PdfObject attribute(PdfName owner, PdfName key) {
+        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
+        if (attrs instanceof PdfDictionary dict) {
+            return ownedValue(dict, owner, key);
+        }
+        if (attrs instanceof PdfArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                if (array.get(i) instanceof PdfDictionary dict) {
+                    PdfObject value = ownedValue(dict, owner, key);
+                    if (value != null) return value;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Writes one attribute value into the element's first {@code /A} dictionary owned by {@code
+     * owner}, adding such a dictionary (and promoting {@code /A} to an array) when none exists.
+     */
+    public void attribute(PdfName owner, PdfName key, PdfObject value) {
+        PdfObject attrs = elem.getPdfObject().get(PdfName.A);
+        PdfDictionary owned = ownedDictionary(attrs, owner);
+        if (owned != null) {
+            owned.put(key, value);
+            return;
+        }
+        PdfDictionary added = new PdfDictionary();
+        added.put(PdfName.O, owner);
+        added.put(key, value);
+        if (attrs instanceof PdfArray array) {
+            array.add(added);
+        } else if (attrs instanceof PdfDictionary dict) {
+            elem.getPdfObject().put(PdfName.A, new PdfArray(List.of(dict, added)));
+        } else {
+            elem.getPdfObject().put(PdfName.A, added);
+        }
+    }
+
     /** The enclosing element, or null when the element sits directly under the tree root. */
     @Override
     public Tag parent() {
@@ -144,7 +221,7 @@ public final class Tag implements StructNode {
 
     /** Everything the tag holds, of every kind, in document order. */
     public List<StructNode> kids() {
-        return StructTree.kidsOf(elem).stream().map(StructNode::of).toList();
+        return kidsOf(elem).stream().map(StructNode::of).toList();
     }
 
     public List<Tag> children() {
@@ -178,6 +255,19 @@ public final class Tag implements StructNode {
         return descendants(PdfObjRef.class);
     }
 
+    /**
+     * Adds marked content with a fresh MCID on the page as the tag's last kid: a bare number when
+     * the tag is pinned to that page, else a reference carrying its own page.
+     */
+    public MarkedContent addMarkedContent(PdfPage page) {
+        PdfDictionary pg = elem.getPdfObject().getAsDictionary(PdfName.Pg);
+        PdfMcr mcr =
+                pg != null && StructTree.isSamePage(pg, page)
+                        ? new PdfMcrNumber(page, elem)
+                        : new PdfMcrDictionary(page, elem);
+        return MarkedContent.of(elem.addKid(mcr));
+    }
+
     /** Whether the parent this tag names lists it among its kids; false for a removed tag. */
     public boolean isAttached() {
         return indexInParent() >= 0;
@@ -195,6 +285,18 @@ public final class Tag implements StructNode {
     public Tag nextSibling() {
         List<StructNode> following = followingSiblings();
         return !following.isEmpty() && following.getFirst() instanceof Tag next ? next : null;
+    }
+
+    /**
+     * Whether the tags sit side by side in one parent, in the given order, with nothing between.
+     */
+    public static boolean areConsecutiveSiblings(List<Tag> tags) {
+        if (tags.isEmpty() || !tags.get(0).isAttached()) {
+            return false;
+        }
+        List<StructNode> following = tags.get(0).followingSiblings();
+        List<Tag> rest = tags.subList(1, tags.size());
+        return following.size() >= rest.size() && following.subList(0, rest.size()).equals(rest);
     }
 
     /** Its parent's kids of every kind that come before this tag, in order. */
@@ -226,19 +328,19 @@ public final class Tag implements StructNode {
      */
     void precedeWithContent(PdfMcr content) {
         requireAttached();
-        if (!(elem.getParent() instanceof PdfStructElem container)) {
+        Tag container = parent();
+        if (container == null) {
             throw new IllegalStateException("Marked content cannot sit beside top-level " + this);
         }
-        StructTree.moveKid(
-                content, (PdfStructElem) content.getParent(), container, indexInParent());
+        container.adopt(content, indexInParent());
     }
 
     @Override
     public Tag moveTo(Tag newParent) {
-        if (!(elem.getParent() instanceof PdfStructElem former)) {
+        if (parent() == null) {
             throw new IllegalStateException("Cannot move top-level " + this);
         }
-        StructTree.moveKid(elem, former, newParent.elem);
+        newParent.adopt(elem, -1);
         return this;
     }
 
@@ -274,7 +376,27 @@ public final class Tag implements StructNode {
         for (Tag replacement : replacements) {
             replacement.insertBefore(this);
         }
-        StructTree.removeFromParent(elem, elem.getParent());
+        removeFromParent();
+    }
+
+    /**
+     * Removes this tag if it holds nothing, then each ancestor that leaves empty, stopping short of
+     * the top level. Returns how many tags were removed.
+     */
+    public int pruneIfEmpty() {
+        int removed = 0;
+        Tag current = this;
+        while (current.kids().isEmpty()) {
+            Tag parent = current.parent();
+            if (parent == null) {
+                break;
+            }
+            logger.debug("Pruning empty {}", current);
+            current.removeFromParent();
+            removed++;
+            current = parent;
+        }
+        return removed;
     }
 
     @Override
@@ -305,11 +427,62 @@ public final class Tag implements StructNode {
         IStructureNode container = sibling.elem.getParent();
         IStructureNode former = elem.getParent();
         if (former != null) {
-            StructTree.materializeInheritedPage(elem);
-            StructTree.removeFromParent(elem, former);
+            materializeInheritedPage();
+            removeFromParent();
         }
         // Looked up only now: leaving the same parent shifts the sibling's position.
-        StructTree.addKidToParent(container, sibling.indexInParent() + offset, elem);
+        int index = sibling.indexInParent() + offset;
+        switch (container) {
+            case PdfStructElem parent -> parent.addKid(index, elem);
+            case PdfStructTreeRoot root -> root.addKid(index, elem);
+            default -> throw new IllegalStateException("Unexpected container " + container);
+        }
+    }
+
+    /**
+     * Takes a node out of its parent to become this tag's kid at {@code index}, or its last kid
+     * when the index is negative, keeping the node on the page it renders on. Delegates to iText's
+     * {@link TagTreePointer#relocateKid}, which rebinds the node to its new parent and, for marked
+     * content or an object reference, upgrades a bare MCID number to a dictionary carrying its own
+     * /Pg whenever this tag sits on a different page.
+     *
+     * @throws IllegalArgumentException if the node's parent does not list it among its kids
+     */
+    void adopt(IStructureNode kid, int index) {
+        Tag former = Tag.of((PdfStructElem) kid.getParent());
+        int from = indexOf(former.elem, kid);
+        if (from < 0) {
+            throw new IllegalArgumentException(
+                    "Cannot move " + Format.node(kid) + " out of " + former);
+        }
+        // iText resolves an MCR's page from its immediate parent only and
+        // dereferences the result unguarded, while a tagger may leave /Pg on a
+        // more distant ancestor. Writing the inherited value down is a no-op
+        // for readers.
+        former.materializeInheritedPage();
+        materializeInheritedPage();
+        TagStructureContext context = former.document().getTagStructureContext();
+        TagTreePointer destination = context.createPointerForStructElem(elem);
+        if (index >= 0) {
+            destination.setNextNewKidIndex(index);
+        }
+        context.createPointerForStructElem(former.elem).relocateKid(from, destination);
+    }
+
+    /** Takes this tag out of its parent's kids, whether the parent is an element or the root. */
+    private void removeFromParent() {
+        IStructureNode parent = elem.getParent();
+        if (parent instanceof PdfStructElem parentElem) {
+            parentElem.removeKid(elem);
+        } else if (parent instanceof PdfStructTreeRoot root) {
+            PdfObject kObj = root.getPdfObject().get(PdfName.K);
+            if (kObj instanceof PdfArray kArray) {
+                kArray.remove(elem.getPdfObject());
+                if (elem.getPdfObject().getIndirectReference() != null) {
+                    kArray.remove(elem.getPdfObject().getIndirectReference());
+                }
+            }
+        }
     }
 
     private static IStructureNode iTextNodeOf(StructNode node) {
@@ -329,19 +502,19 @@ public final class Tag implements StructNode {
     /** This tag's position among its parent's kids of every kind, or -1 if it is not there. */
     private int indexInParent() {
         IStructureNode container = elem.getParent();
-        return container == null ? -1 : StructTree.findKidIndex(container, elem);
+        return container == null ? -1 : indexOf(container, elem);
     }
 
     /** Its parent's kids of every kind, this tag included. */
     private List<StructNode> siblings() {
-        return StructTree.kidsOf(elem.getParent()).stream().map(StructNode::of).toList();
+        return kidsOf(elem.getParent()).stream().map(StructNode::of).toList();
     }
 
     /** Direct kids of the given type. */
     @SuppressWarnings("unchecked")
     <T extends IStructureNode> List<T> kids(Class<T> type) {
         List<T> out = new ArrayList<>();
-        for (IStructureNode kid : StructTree.kidsOf(elem)) {
+        for (IStructureNode kid : kidsOf(elem)) {
             if (type.isInstance(kid) && !isObjRefAmongMcrs(kid, type)) {
                 out.add((T) kid);
             }
@@ -359,7 +532,7 @@ public final class Tag implements StructNode {
     @SuppressWarnings("unchecked")
     private static <T extends IStructureNode> void collectDescendants(
             PdfStructElem elem, Class<T> type, List<T> out) {
-        for (IStructureNode kid : StructTree.kidsOf(elem)) {
+        for (IStructureNode kid : kidsOf(elem)) {
             if (type.isInstance(kid) && !isObjRefAmongMcrs(kid, type)) {
                 out.add((T) kid);
             } else if (kid instanceof PdfStructElem child) {
@@ -371,6 +544,55 @@ public final class Tag implements StructNode {
     /** True for an OBJR when collecting PdfMcr, since OBJRs have no MCID (getMcid() &lt; 0). */
     private static boolean isObjRefAmongMcrs(IStructureNode kid, Class<?> type) {
         return type == PdfMcr.class && kid instanceof PdfMcr mcr && mcr.getMcid() < 0;
+    }
+
+    /** A parent's kids, or an empty list where getKids reports none. */
+    private static List<IStructureNode> kidsOf(IStructureNode parent) {
+        List<IStructureNode> kids = parent.getKids();
+        return kids == null ? List.of() : kids;
+    }
+
+    /**
+     * The position of a kid among a parent's kids, or -1. Matching is by underlying PDF object, so
+     * the kid must come from the tree rather than be a freshly constructed wrapper: a bare MCID
+     * number is a direct object, for which identity is the only available test.
+     */
+    private static int indexOf(IStructureNode parent, IStructureNode kid) {
+        PdfObject target = pdfObjectOf(kid);
+        List<IStructureNode> kids = kidsOf(parent);
+        for (int i = 0; i < kids.size(); i++) {
+            if (StructTree.isSame(pdfObjectOf(kids.get(i)), target)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static PdfObject pdfObjectOf(IStructureNode node) {
+        return switch (node) {
+            case PdfStructElem elem -> elem.getPdfObject();
+            case PdfMcr mcr -> mcr.getPdfObject();
+            default -> throw new IllegalArgumentException("Not a kid: " + node.getClass());
+        };
+    }
+
+    private static PdfDictionary ownedDictionary(PdfObject attrs, PdfName owner) {
+        if (attrs instanceof PdfDictionary dict) {
+            return owner.equals(dict.getAsName(PdfName.O)) ? dict : null;
+        }
+        if (attrs instanceof PdfArray array) {
+            for (int i = 0; i < array.size(); i++) {
+                if (array.get(i) instanceof PdfDictionary dict
+                        && owner.equals(dict.getAsName(PdfName.O))) {
+                    return dict;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static PdfObject ownedValue(PdfDictionary attrs, PdfName owner, PdfName key) {
+        return owner.equals(attrs.getAsName(PdfName.O)) ? attrs.get(key) : null;
     }
 
     private PdfDocument document() {

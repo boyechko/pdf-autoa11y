@@ -16,6 +16,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 import org.slf4j.Logger;
@@ -132,7 +133,7 @@ public class UnexpectedWidgetFix implements IssueFix {
                 if (refObj instanceof PdfDictionary refDict && matchesAnnotation(refDict)) {
                     removeObjRefFromElement(elem, objRef);
                     logger.debug("Removed OBJR for {} from {}", widgetRef(), Format.elem(elem));
-                    StructTree.pruneEmpty(elem);
+                    Tag.of(elem).pruneIfEmpty();
                     return true;
                 }
             } else if (kid instanceof PdfStructElem childElem) {

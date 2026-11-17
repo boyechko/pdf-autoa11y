@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructNode;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -41,7 +40,7 @@ record FlattenInstruction() implements ScribbledInstruction {
             // drop the emptied subtree. Its leaves' ancestry stays intact until each is detached,
             // which is what lets the inherited page be written down.
             for (PdfStructElem leaf : leavesOf(intermediate)) {
-                StructTree.materializeInheritedPage(leaf);
+                Tag.of(leaf).materializeInheritedPage();
                 ((PdfStructElem) leaf.getParent()).removeKid(leaf);
                 element.addKid(insertAt++, leaf);
                 hoisted++;

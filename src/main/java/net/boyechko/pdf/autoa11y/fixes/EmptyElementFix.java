@@ -6,7 +6,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
@@ -27,7 +27,7 @@ public class EmptyElementFix implements IssueFix {
     public void apply(DocContext ctx) {
         removedCount = 0;
         for (PdfStructElem elem : elements) {
-            removedCount += StructTree.pruneEmpty(elem);
+            removedCount += Tag.of(elem).pruneIfEmpty();
         }
     }
 

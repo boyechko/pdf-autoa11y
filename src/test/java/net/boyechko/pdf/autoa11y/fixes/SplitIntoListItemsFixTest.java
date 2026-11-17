@@ -146,7 +146,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem p = elementOwningMcid(doc, 1, 9);
             PdfStructElem container = (PdfStructElem) p.getParent();
-            int origIndex = StructTree.findKidIndex(container, p);
+            int origIndex = Tag.of(container).kids().indexOf(Tag.of(p));
 
             new SplitIntoListItemsFix(p, 6).apply(ctx);
 
@@ -192,7 +192,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem p = elementOwningMcid(doc, 1, 3);
             PdfStructElem container = (PdfStructElem) p.getParent();
-            int origIndex = StructTree.findKidIndex(container, p);
+            int origIndex = Tag.of(container).kids().indexOf(Tag.of(p));
 
             new SplitIntoListItemsFix(p, "1,1,1,1,1,2").apply(ctx);
 
@@ -323,7 +323,7 @@ class SplitIntoListItemsFixTest extends PdfTestBase {
             PdfStructElem p = elementOwningMcid(doc, 2, 16);
             PdfStructElem lBody = (PdfStructElem) p.getParent();
             PdfStructElem outerList = grandListOf(p);
-            int origIndex = StructTree.findKidIndex(lBody, p);
+            int origIndex = Tag.of(lBody).kids().indexOf(Tag.of(p));
 
             new ScribbledInstructionFix(p, "!SPLIT_LINES 9").apply(ctx);
 

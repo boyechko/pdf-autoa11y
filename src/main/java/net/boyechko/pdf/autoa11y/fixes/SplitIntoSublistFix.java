@@ -93,7 +93,7 @@ public final class SplitIntoSublistFix implements IssueFix {
         moveAfterPredecessor(page);
         PdfStructElem tail = buildSublistTail(ctx, itemBody, page);
 
-        PdfMcr tailMcr = StructTree.addNewMcr(tail, page);
+        PdfMcr tailMcr = Tag.of(tail).addMarkedContent(page).mcr();
         List<Edit> edits =
                 ContentStream.blockEditsFor(
                         plan,

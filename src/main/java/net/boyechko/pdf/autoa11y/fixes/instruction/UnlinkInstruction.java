@@ -14,7 +14,6 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.StructNode;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +57,7 @@ record UnlinkInstruction() implements ScribbledInstruction {
             }
         }
 
-        PdfObject linkEffectivePg = StructTree.effectivePageDict(element);
+        PdfObject linkEffectivePg = link.pageEntry();
 
         for (StructNode kid : origKids) {
             if (kid instanceof ObjectRef) {

@@ -51,7 +51,8 @@ public final class MergeSplitLinksFix implements IssueFix {
         if (links.size() < 2 || !(links.get(0).getParent() instanceof PdfStructElem parent)) {
             return;
         }
-        if (!StructTree.areConsecutiveKids(parent, links) || !Link.allShareOneDestination(links)) {
+        if (!Tag.areConsecutiveSiblings(links.stream().map(Tag::of).toList())
+                || !Link.allShareOneDestination(links)) {
             logger.debug(
                     "Links #{} and following are no longer one split link; skipping merge",
                     Tag.of(links.get(0)).objNum());

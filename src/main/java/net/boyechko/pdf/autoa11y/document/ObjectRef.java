@@ -38,7 +38,7 @@ public final class ObjectRef implements StructNode {
 
     @Override
     public ObjectRef moveTo(Tag newParent) {
-        StructTree.moveKid(objRef, (PdfStructElem) objRef.getParent(), newParent.elem());
+        newParent.adopt(objRef, -1);
         return (ObjectRef) newParent.kids().getLast();
     }
 

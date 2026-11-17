@@ -5,6 +5,7 @@ package net.boyechko.pdf.autoa11y.document;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfArray;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfName;
@@ -13,6 +14,7 @@ import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfString;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
@@ -791,6 +793,129 @@ class TagTest extends PdfTestBase {
             assertEquals(
                     Scribble.user("reviewed by hand" + Scribble.SEPARATOR + "ITEMS 3"),
                     Tag.of(list).scribble());
+        }
+    }
+
+    // == Pages, removal and attributes ======================================
+
+    @Test
+    void addedMarkedContentUnderATagPinnedToItsPageIsABareNumber() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+
+            PdfMcr mcr = Tag.of(p).addMarkedContent(page).mcr();
+
+            assertInstanceOf(PdfMcrNumber.class, mcr);
+            assertEquals(1, StructTree.pageOf(mcr));
+            assertEquals(1, Tag.of(p).mcrs().size());
+        }
+    }
+
+    @Test
+    void addedMarkedContentUnderATagPinnedElsewhereCarriesItsOwnPage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page1 = doc.addNewPage();
+            PdfPage page2 = doc.addNewPage();
+
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            p.getPdfObject().put(PdfName.Pg, page1.getPdfObject());
+            doc.getStructTreeRoot().addKid(p);
+
+            PdfMcr mcr = Tag.of(p).addMarkedContent(page2).mcr();
+
+            assertInstanceOf(PdfMcrDictionary.class, mcr);
+            assertEquals(2, StructTree.pageOf(mcr));
+        }
+    }
+
+    @Test
+    void replacingWithNothingRemovesATagFromItsParentElement() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(doc, PdfName.Document);
+            root.addKid(document);
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            document.addKid(p);
+
+            Tag.of(p).replaceWith(List.of());
+
+            List<IStructureNode> kids = document.getKids();
+            assertTrue(kids == null || kids.isEmpty());
+        }
+    }
+
+    @Test
+    void replacingWithNothingRemovesATopLevelTagFromTheRoot() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+
+            PdfStructTreeRoot root = doc.getStructTreeRoot();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            root.addKid(div);
+
+            Tag.of(div).replaceWith(List.of());
+
+            List<IStructureNode> kids = root.getKids();
+            assertTrue(kids == null || kids.isEmpty());
+        }
+    }
+
+    @Test
+    void settingAnAttributeCreatesAnOwnedDictionaryWhenNoneExists() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+
+            Tag.of(th).attribute(PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(PdfName.Column, Tag.of(th).attribute(PdfName.Table, PdfName.Scope));
+        }
+    }
+
+    @Test
+    void settingAnAttributeKeepsTheDictionaryOfAnotherOwner() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+            PdfDictionary layout = new PdfDictionary();
+            layout.put(PdfName.O, PdfName.Layout);
+            layout.put(PdfName.Width, new PdfNumber(72));
+            th.getPdfObject().put(PdfName.A, layout);
+
+            Tag.of(th).attribute(PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(PdfName.Column, Tag.of(th).attribute(PdfName.Table, PdfName.Scope));
+            assertEquals(new PdfNumber(72), Tag.of(th).attribute(PdfName.Layout, PdfName.Width));
+        }
+    }
+
+    @Test
+    void settingAnAttributeUpdatesTheOwnedDictionaryInPlace() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfStructElem th = new PdfStructElem(doc, PdfName.TH);
+            PdfDictionary table = new PdfDictionary();
+            table.put(PdfName.O, PdfName.Table);
+            table.put(PdfName.Scope, PdfName.Row);
+            PdfArray attrs = new PdfArray();
+            attrs.add(table);
+            attrs.add(new PdfNumber(0));
+            th.getPdfObject().put(PdfName.A, attrs);
+
+            Tag.of(th).attribute(PdfName.Table, PdfName.Scope, PdfName.Column);
+
+            assertEquals(2, th.getPdfObject().getAsArray(PdfName.A).size());
+            assertEquals(PdfName.Column, table.get(PdfName.Scope));
         }
     }
 }

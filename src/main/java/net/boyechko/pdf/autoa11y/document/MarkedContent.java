@@ -42,7 +42,7 @@ public final class MarkedContent implements StructNode {
 
     @Override
     public MarkedContent moveTo(Tag newParent) {
-        StructTree.moveKid(mcr, (PdfStructElem) mcr.getParent(), newParent.elem());
+        newParent.adopt(mcr, -1);
         return (MarkedContent) newParent.kids().getLast();
     }
 

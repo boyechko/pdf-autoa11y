@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import org.slf4j.Logger;
@@ -289,7 +288,7 @@ public final class IrregularTocFix implements IssueFix {
         }
 
         for (PdfStructElem old : vacated) {
-            StructTree.pruneEmpty(old);
+            Tag.of(old).pruneIfEmpty();
         }
     }
 

@@ -13,7 +13,6 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.RoleMap;
 import net.boyechko.pdf.autoa11y.document.StructNode;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -32,7 +31,7 @@ record AddChildInstruction(String tagExpr) implements ScribbledInstruction {
         List<StructNode> origKids = Tag.of(element).kids();
         validateCoverage(specs, origKids.size());
 
-        PdfObject effectivePg = StructTree.effectivePageDict(element);
+        PdfObject effectivePg = Tag.of(element).pageEntry();
         for (ChildSpec spec : specs) {
             PdfStructElem wrapper = new PdfStructElem(ctx.doc(), RoleMap.toPdfName(spec.tag()));
             element.addKid(wrapper);

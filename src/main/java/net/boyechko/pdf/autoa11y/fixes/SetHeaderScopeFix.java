@@ -7,7 +7,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 
 /** Gives a TH element a Table-owned {@code /Scope}. */
@@ -22,7 +22,7 @@ public class SetHeaderScopeFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) {
-        StructTree.setAttributeValue(header, PdfName.Table, PdfName.Scope, scope);
+        Tag.of(header).attribute(PdfName.Table, PdfName.Scope, scope);
     }
 
     @Override

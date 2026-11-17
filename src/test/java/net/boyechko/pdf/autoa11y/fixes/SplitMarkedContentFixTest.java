@@ -146,7 +146,7 @@ class SplitMarkedContentFixTest extends PdfTestBase {
     private static List<PdfStructElem> sameRoleSiblingsAfter(
             PdfStructElem parent, PdfStructElem elem, int count) {
         String role = Tag.of(elem).role();
-        int start = StructTree.findKidIndex(parent, elem);
+        int start = Tag.of(parent).kids().indexOf(Tag.of(elem));
         return Tag.of(parent).children().stream()
                 .skip(start)
                 .filter(kid -> role.equals(kid.role()))

@@ -67,7 +67,7 @@ public final class SplitMarkedContentFix implements IssueFix {
             sibling.getPdfObject().put(PdfName.Pg, page.getPdfObject());
             Tag.of(sibling).insertAfter(previous);
             previous = Tag.of(sibling);
-            PdfMcr newMcr = StructTree.addNewMcr(sibling, page);
+            PdfMcr newMcr = Tag.of(sibling).addMarkedContent(page).mcr();
             newMcids.add(newMcr.getMcid());
             Tag.of(sibling).stamp(SPLIT_SCRIBBLE);
         }

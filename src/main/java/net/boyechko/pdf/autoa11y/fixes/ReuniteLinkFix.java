@@ -8,7 +8,6 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.ObjectRef;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -44,7 +43,7 @@ public final class ReuniteLinkFix implements IssueFix {
         for (PdfObjRef objRef : objRefs) {
             ObjectRef.of(objRef).moveTo(Tag.of(textLink));
         }
-        StructTree.pruneEmpty(annotLink);
+        Tag.of(annotLink).pruneIfEmpty();
     }
 
     @Override

@@ -7,7 +7,6 @@ import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructNode;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -70,7 +69,7 @@ public final class FoldIntoPreviousItemFix implements IssueFix {
 
         new SplitIntoListItemsFix(element, leadingLines + "," + itemSpec).apply(ctx);
         Tag.of(element).moveKidsTo(Tag.of(opener));
-        int pruned = StructTree.pruneEmpty(element);
+        int pruned = Tag.of(element).pruneIfEmpty();
         // The list was reshaped by the split; the fold only moved content between its items.
         ListItemScribble.refreshCount(list);
 

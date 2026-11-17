@@ -10,7 +10,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -50,8 +49,8 @@ record MergeInstruction() implements ScribbledInstruction {
 
         // Pin the page the absorbed element resolved through, so bare-int MCRs moving into a
         // page-less survivor still find one. Cross-page kids are handled by moveKid.
-        PdfObject effectivePg = StructTree.effectivePageDict(element);
-        if (effectivePg != null && StructTree.effectivePageDict(target) == null) {
+        PdfObject effectivePg = Tag.of(element).pageEntry();
+        if (effectivePg != null && previous.pageEntry() == null) {
             target.getPdfObject().put(PdfName.Pg, effectivePg);
             target.setModified();
         }

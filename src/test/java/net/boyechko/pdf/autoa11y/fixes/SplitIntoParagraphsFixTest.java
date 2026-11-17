@@ -41,7 +41,7 @@ class SplitIntoParagraphsFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem p = StructTree.findByObjNumber(doc.getStructTreeRoot(), FUSED_P);
             PdfStructElem parent = (PdfStructElem) p.getParent();
-            int index = StructTree.findKidIndex(parent, p);
+            int index = Tag.of(parent).kids().indexOf(Tag.of(p));
 
             new SplitIntoParagraphsFix(p, List.of(2, 2, 2)).apply(ctx);
 
@@ -68,7 +68,7 @@ class SplitIntoParagraphsFixTest extends PdfTestBase {
             DocContext ctx = new DocContext(doc);
             PdfStructElem p = StructTree.findByObjNumber(doc.getStructTreeRoot(), LINKED_P);
             PdfStructElem parent = (PdfStructElem) p.getParent();
-            int index = StructTree.findKidIndex(parent, p);
+            int index = Tag.of(parent).kids().indexOf(Tag.of(p));
 
             new SplitIntoParagraphsFix(p, List.of(2, 2)).apply(ctx);
 

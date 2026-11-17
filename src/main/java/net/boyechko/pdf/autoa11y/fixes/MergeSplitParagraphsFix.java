@@ -6,7 +6,6 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -40,7 +39,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
                 || !(paragraphs.get(0).getParent() instanceof PdfStructElem parent)) {
             return;
         }
-        if (!StructTree.areConsecutiveKids(parent, paragraphs)) {
+        if (!Tag.areConsecutiveSiblings(paragraphs.stream().map(Tag::of).toList())) {
             logger.debug(
                     "P #{} and following are no longer adjacent; skipping merge",
                     Tag.of(paragraphs.get(0)).objNum());

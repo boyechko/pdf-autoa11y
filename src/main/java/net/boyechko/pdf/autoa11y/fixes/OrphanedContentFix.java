@@ -10,6 +10,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
 
@@ -51,7 +52,7 @@ public class OrphanedContentFix implements IssueFix {
         if (idx < 0) return;
 
         parent.removeKid(idx, true);
-        prunedCount = 1 + StructTree.pruneEmpty(parent);
+        prunedCount = 1 + Tag.of(parent).pruneIfEmpty();
     }
 
     @Override

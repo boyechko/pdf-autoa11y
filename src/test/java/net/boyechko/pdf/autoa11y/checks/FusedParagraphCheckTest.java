@@ -20,7 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
 import net.boyechko.pdf.autoa11y.issue.IssueType;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ class FusedParagraphCheckTest extends PdfTestBase {
             }
             PdfStructElem p = new PdfStructElem(pdfDoc, PdfName.P);
             parent.addKid(p);
-            PdfMcr mcr = StructTree.addNewMcr(p, page);
+            PdfMcr mcr = Tag.of(p).addMarkedContent(page).mcr();
 
             PdfDictionary props = new PdfDictionary();
             props.put(PdfName.MCID, new PdfNumber(mcr.getMcid()));
