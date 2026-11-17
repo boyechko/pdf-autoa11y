@@ -100,7 +100,7 @@ public final class WrapBulletedRunInList implements IssueFix {
 
         List<PdfObject> carved = detachCarvedKids();
         for (PdfStructElem item : wholeItems) {
-            parent.removeKid(item);
+            Tag.of(item).remove();
         }
 
         ListAssembler assembler = new ListAssembler(ctx.doc());
@@ -232,7 +232,7 @@ public final class WrapBulletedRunInList implements IssueFix {
         }
         PdfArray kArray = StructTree.kArrayAsArray(carveFrom);
         if (kArray != null && kArray.isEmpty()) {
-            parent.removeKid(carveFrom);
+            Tag.of(carveFrom).remove();
         }
     }
 

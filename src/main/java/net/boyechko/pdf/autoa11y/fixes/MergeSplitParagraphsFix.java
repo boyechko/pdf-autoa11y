@@ -35,8 +35,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        if (paragraphs.size() < 2
-                || !(paragraphs.get(0).getParent() instanceof PdfStructElem parent)) {
+        if (paragraphs.size() < 2 || !(paragraphs.get(0).getParent() instanceof PdfStructElem)) {
             return;
         }
         if (!Tag.areConsecutiveSiblings(paragraphs.stream().map(Tag::of).toList())) {
@@ -49,7 +48,7 @@ public final class MergeSplitParagraphsFix implements IssueFix {
         PdfStructElem target = paragraphs.get(0);
         for (PdfStructElem later : paragraphs.subList(1, paragraphs.size())) {
             Tag.of(later).moveKidsTo(Tag.of(target));
-            parent.removeKid(later);
+            Tag.of(later).remove();
             mergedCount++;
         }
         Tag.of(target).stamp(MERGED_SCRIBBLE);

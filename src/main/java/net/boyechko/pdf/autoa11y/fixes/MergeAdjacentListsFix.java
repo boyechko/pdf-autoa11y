@@ -38,7 +38,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        if (!(firstList.getParent() instanceof PdfStructElem container)) {
+        if (!(firstList.getParent() instanceof PdfStructElem)) {
             return;
         }
 
@@ -61,10 +61,10 @@ public final class MergeAdjacentListsFix implements IssueFix {
 
         for (IStructureNode item : items) {
             PdfStructElem li = (PdfStructElem) item;
-            secondList.removeKid(li);
+            Tag.of(li).remove();
             firstList.addKid(li);
         }
-        container.removeKid(secondList);
+        Tag.of(secondList).remove();
         ListItemScribble.update(firstList, "MERGE lists");
 
         logger.debug(

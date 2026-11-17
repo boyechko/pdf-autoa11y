@@ -41,11 +41,11 @@ record FlattenInstruction() implements ScribbledInstruction {
             // which is what lets the inherited page be written down.
             for (PdfStructElem leaf : leavesOf(intermediate)) {
                 Tag.of(leaf).materializeInheritedPage();
-                ((PdfStructElem) leaf.getParent()).removeKid(leaf);
+                Tag.of(leaf).remove();
                 element.addKid(insertAt++, leaf);
                 hoisted++;
             }
-            element.removeKid(intermediate);
+            tag.remove();
         }
         return receipt("FLATTEN hoisted " + hoisted);
     }

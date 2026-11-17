@@ -75,7 +75,7 @@ record UnlinkInstruction() implements ScribbledInstruction {
             kid.insertBefore(link);
         }
 
-        parent.removeKid(element);
+        Tag.of(element).remove();
 
         if (annotDict != null && !Annotation.removeFromAnyPage(ctx.doc(), annotDict)) {
             int objNum =

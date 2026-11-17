@@ -48,7 +48,7 @@ public final class MergeSplitLinksFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        if (links.size() < 2 || !(links.get(0).getParent() instanceof PdfStructElem parent)) {
+        if (links.size() < 2 || !(links.get(0).getParent() instanceof PdfStructElem)) {
             return;
         }
         if (!Tag.areConsecutiveSiblings(links.stream().map(Tag::of).toList())
@@ -62,7 +62,7 @@ public final class MergeSplitLinksFix implements IssueFix {
         PdfStructElem target = links.get(0);
         for (PdfStructElem later : links.subList(1, links.size())) {
             Tag.of(later).moveKidsTo(Tag.of(target));
-            parent.removeKid(later);
+            Tag.of(later).remove();
             mergedCount++;
         }
         groupObjRefsFirst(target);

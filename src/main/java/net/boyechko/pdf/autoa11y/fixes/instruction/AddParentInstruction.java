@@ -54,7 +54,7 @@ record AddParentInstruction(String tagExpr) implements ScribbledInstruction {
             innermost = wrapper;
         }
 
-        parent.removeKid(element);
+        Tag.of(element).remove();
         innermost.addKid(element);
         return receipt("ADD_PARENT " + tagExpr);
     }

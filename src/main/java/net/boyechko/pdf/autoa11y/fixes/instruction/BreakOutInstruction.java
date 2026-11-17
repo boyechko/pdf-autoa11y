@@ -31,7 +31,7 @@ record BreakOutInstruction() implements ScribbledInstruction {
             throw new IllegalArgumentException("!BREAK_OUT requires an LI element");
         }
         if (!(element.getParent() instanceof PdfStructElem list)
-                || !(list.getParent() instanceof PdfStructElem container)) {
+                || !(list.getParent() instanceof PdfStructElem)) {
             throw new IllegalArgumentException("!BREAK_OUT requires an LI inside a list element");
         }
         Tag item = Tag.of(element);
@@ -68,10 +68,10 @@ record BreakOutInstruction() implements ScribbledInstruction {
                 hoisted.insertBefore(listTag);
             }
         }
-        list.removeKid(element);
+        Tag.of(element).remove();
 
         if (listTag.kids().isEmpty()) {
-            container.removeKid(list);
+            listTag.remove();
         } else {
             ListItemScribble.refreshCount(list);
         }

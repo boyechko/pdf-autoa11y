@@ -27,7 +27,7 @@ record MergeInstruction() implements ScribbledInstruction {
 
     @Override
     public String apply(DocContext ctx, PdfStructElem element) {
-        if (!(element.getParent() instanceof PdfStructElem parent)) {
+        if (!(element.getParent() instanceof PdfStructElem)) {
             throw new IllegalArgumentException("!MERGE requires an element with a parent element");
         }
         if (!Tag.of(element).isAttached()) {
@@ -56,7 +56,7 @@ record MergeInstruction() implements ScribbledInstruction {
         }
 
         Tag.of(element).moveKidsTo(previous);
-        parent.removeKid(element);
+        Tag.of(element).remove();
         stampMergeReceipt(target);
         return null;
     }
