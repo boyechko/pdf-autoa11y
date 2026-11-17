@@ -242,6 +242,25 @@ public final class Tag implements StructNode {
         return this;
     }
 
+    /** Rearranges the tag's kids into the given order, which must name each of them once. */
+    public void reorderKids(List<StructNode> order) {
+        List<StructNode> current = kids();
+        if (order.size() != current.size() || !order.containsAll(current)) {
+            throw new IllegalArgumentException("Not a reordering of the kids of " + this);
+        }
+        // Detach all, then append in the new order; iText keeps the parent tree in step.
+        for (StructNode kid : order) {
+            elem.removeKid(iTextNodeOf(kid));
+        }
+        for (StructNode kid : order) {
+            switch (kid) {
+                case Tag tag -> elem.addKid(tag.elem);
+                case MarkedContent content -> elem.addKid(content.mcr());
+                case ObjectRef ref -> elem.addKid(ref.objRef());
+            }
+        }
+    }
+
     /** Moves everything this tag holds to the end of another tag's kids, in order. */
     public void moveKidsTo(Tag newParent) {
         for (StructNode kid : kids()) {
@@ -291,6 +310,14 @@ public final class Tag implements StructNode {
         }
         // Looked up only now: leaving the same parent shifts the sibling's position.
         StructTree.addKidToParent(container, sibling.indexInParent() + offset, elem);
+    }
+
+    private static IStructureNode iTextNodeOf(StructNode node) {
+        return switch (node) {
+            case Tag tag -> tag.elem;
+            case MarkedContent content -> content.mcr();
+            case ObjectRef ref -> ref.objRef();
+        };
     }
 
     private void requireAttached() {

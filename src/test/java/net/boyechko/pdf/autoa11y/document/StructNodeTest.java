@@ -200,4 +200,46 @@ class StructNodeTest extends PdfTestBase {
             assertEquals(Tag.of(span), kids.get(2));
         }
     }
+
+    @Test
+    void reorderedKidsTakeTheGivenOrderOnTheSamePage() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P, page);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrNumber(page, p));
+            PdfStructElem span = new PdfStructElem(doc, PdfName.Span);
+            p.addKid(span);
+            p.addKid(new PdfMcrNumber(page, p));
+            List<StructNode> kids = Tag.of(p).kids();
+            int firstMcid = ((MarkedContent) kids.get(0)).mcid();
+
+            Tag.of(p).reorderKids(List.of(kids.get(1), kids.get(2), kids.get(0)));
+
+            List<StructNode> reordered = Tag.of(p).kids();
+            assertEquals(Tag.of(span), reordered.get(0));
+            MarkedContent last = assertInstanceOf(MarkedContent.class, reordered.get(2));
+            assertEquals(firstMcid, last.mcid());
+            assertEquals(1, last.page());
+        }
+    }
+
+    @Test
+    void reorderingRefusesAListThatLeavesAKidOut() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            div.addKid(new PdfStructElem(doc, PdfName.P));
+            div.addKid(new PdfStructElem(doc, PdfName.P));
+            List<StructNode> kids = Tag.of(div).kids();
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> Tag.of(div).reorderKids(List.of(kids.get(0), kids.get(0))));
+            assertEquals(kids, Tag.of(div).kids());
+        }
+    }
 }

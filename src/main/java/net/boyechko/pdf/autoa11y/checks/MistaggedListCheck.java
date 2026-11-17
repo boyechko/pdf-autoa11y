@@ -4,8 +4,6 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfObject;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -23,6 +21,10 @@ import java.util.stream.Collectors;
 import net.boyechko.pdf.autoa11y.document.Content;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
+import net.boyechko.pdf.autoa11y.document.MarkedContent;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
+import net.boyechko.pdf.autoa11y.document.PageContent;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.document.TagSchema;
@@ -432,13 +434,13 @@ public class MistaggedListCheck extends StructTreeCheck {
     /** Returns the element's kids whose own content sits on the given line. */
     private List<PdfObject> kidsOnLine(Visit visit, PdfStructElem element, Rectangle line) {
         List<PdfObject> onLine = new ArrayList<>();
-        for (IStructureNode kid : StructTree.kidsOf(element)) {
+        for (StructNode kid : Tag.of(element).kids()) {
             Rectangle bounds = boundsOfKid(visit, kid);
             if (bounds != null && Content.onSameLine(bounds, line)) {
                 onLine.add(pdfObjectOf(kid));
             }
         }
-        return onLine.contains(null) ? List.of() : onLine;
+        return onLine;
     }
 
     /**
@@ -914,26 +916,22 @@ public class MistaggedListCheck extends StructTreeCheck {
     }
 
     /** Returns a kid's own bounds on its own page, or null when it has none (e.g. an OBJR). */
-    private static Rectangle boundsOfKid(Visit visit, IStructureNode kid) {
-        if (kid instanceof PdfMcr mcr) {
-            return visit.docCtx().pages().bounds(mcr);
-        }
-        if (kid instanceof PdfStructElem elem) {
-            int pageNum = Tag.of(elem).page();
-            return pageNum > 0 ? visit.docCtx().pages().bounds(elem, pageNum) : null;
-        }
-        return null;
+    private static Rectangle boundsOfKid(Visit visit, StructNode kid) {
+        PageContent pages = visit.docCtx().pages();
+        return switch (kid) {
+            case MarkedContent content -> pages.bounds(content.mcr());
+            case Tag tag -> tag.page() > 0 ? pages.bounds(tag.elem(), tag.page()) : null;
+            case ObjectRef ref -> null;
+        };
     }
 
-    /** Returns the underlying PdfObject for a kid, or null when it has none to move. */
-    private static PdfObject pdfObjectOf(IStructureNode kid) {
-        if (kid instanceof PdfStructElem elem) {
-            return elem.getPdfObject();
-        }
-        if (kid instanceof PdfMcr mcr) {
-            return mcr.getPdfObject();
-        }
-        return null;
+    /** Returns the PDF object that stands for a kid in its parent's /K. */
+    private static PdfObject pdfObjectOf(StructNode kid) {
+        return switch (kid) {
+            case Tag tag -> tag.elem().getPdfObject();
+            case MarkedContent content -> content.mcr().getPdfObject();
+            case ObjectRef ref -> ref.objRef().getPdfObject();
+        };
     }
 
     /** Returns the pages an element's marked content touches, in reading order. */

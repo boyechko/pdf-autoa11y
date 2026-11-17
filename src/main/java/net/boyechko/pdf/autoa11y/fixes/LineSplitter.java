@@ -4,9 +4,7 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfStream;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +17,8 @@ import net.boyechko.pdf.autoa11y.document.ContentStream.SplitPlan;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.MarkedContent;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
@@ -82,24 +82,21 @@ final class LineSplitter {
      * last; refuses an element without kids or with an OBJR among them, which marks no content.
      */
     private List<KidPlan> planKids(DocContext ctx) throws IOException {
-        List<IStructureNode> kids = StructTree.kidsOf(element);
+        List<StructNode> kids = Tag.of(element).kids();
         if (kids.isEmpty()) {
             throw new IllegalStateException("Splitting requires an element with content");
         }
         List<KidPlan> plans = new ArrayList<>();
         PdfMcr previous = null;
-        for (IStructureNode kid : kids) {
+        for (StructNode kid : kids) {
             KidPlan plan =
                     switch (kid) {
-                        case PdfObjRef objRef ->
+                        case ObjectRef ref ->
                                 throw new IllegalStateException(
                                         "Splitting cannot place an OBJR kid of "
                                                 + Format.elem(element));
-                        case PdfMcr mcr -> McrPlan.of(ctx, mcr, previous);
-                        case PdfStructElem elem -> ElemPlan.of(ctx, elem, previous);
-                        default ->
-                                throw new IllegalStateException(
-                                        "Splitting cannot place kid " + Format.node(kid));
+                        case MarkedContent content -> McrPlan.of(ctx, content.mcr(), previous);
+                        case Tag tag -> ElemPlan.of(ctx, tag.elem(), previous);
                     };
             plans.add(plan);
             previous = plan.lastMcr();

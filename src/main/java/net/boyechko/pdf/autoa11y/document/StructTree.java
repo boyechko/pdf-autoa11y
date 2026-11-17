@@ -210,7 +210,7 @@ public final class StructTree {
     }
 
     /** Returns a parent's kids, or an empty list where getKids reports none. */
-    public static List<IStructureNode> kidsOf(IStructureNode parent) {
+    static List<IStructureNode> kidsOf(IStructureNode parent) {
         List<IStructureNode> kids = parent.getKids();
         return kids == null ? List.of() : kids;
     }

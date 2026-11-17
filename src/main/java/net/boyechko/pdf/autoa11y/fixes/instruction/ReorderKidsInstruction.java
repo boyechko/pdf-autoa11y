@@ -4,8 +4,6 @@ package net.boyechko.pdf.autoa11y.fixes.instruction;
 
 import static net.boyechko.pdf.autoa11y.fixes.instruction.ScribbledInstruction.receipt;
 
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,7 +11,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.DocContext;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
@@ -35,66 +33,52 @@ record ReorderKidsInstruction() implements ScribbledInstruction {
 
     @Override
     public String apply(DocContext ctx, PdfStructElem element) {
-        List<IStructureNode> all = new ArrayList<>(StructTree.kidsOf(element));
+        Tag parent = Tag.of(element);
+        List<StructNode> all = parent.kids();
         if (all.isEmpty()) {
-            Tag.of(element).unstamp("!REORDER_KIDS");
+            parent.unstamp("!REORDER_KIDS");
             return null;
         }
 
         List<AnnotatedKid> annotated = new ArrayList<>();
-        List<IStructureNode> unannotated = new ArrayList<>();
+        List<StructNode> unannotated = new ArrayList<>();
         for (int i = 0; i < all.size(); i++) {
-            IStructureNode kid = all.get(i);
-            Integer pos = reorderPositionOf(kid);
-            if (pos != null) annotated.add(new AnnotatedKid(kid, pos, i + 1));
+            StructNode kid = all.get(i);
+            Integer pos = kid instanceof Tag tag ? reorderPositionOf(tag) : null;
+            if (pos != null) annotated.add(new AnnotatedKid((Tag) kid, pos, i + 1));
             else unannotated.add(kid);
         }
         annotated.sort(Comparator.comparingInt(AnnotatedKid::position));
 
-        // Detach all, then re-attach in the new order. Sequential addKid appends, so the final
-        // K-array ends up: annotated kids in sorted order, then unannotated in their original
-        // order.
-        for (IStructureNode kid : all) element.removeKid(kid);
-        for (AnnotatedKid a : annotated) addToParent(element, a.kid());
-        for (IStructureNode kid : unannotated) addToParent(element, kid);
+        // Annotated kids in sorted order, then the rest in their original order.
+        List<StructNode> order = new ArrayList<>();
+        annotated.forEach(a -> order.add(a.kid()));
+        order.addAll(unannotated);
+        parent.reorderKids(order);
 
         // Clear the consumed instruction and leave a receipt naming the move. Receipts left by an
         // earlier run are swept tree-wide by ScribbledInstructionCheck before this one starts.
         for (int newIdx = 0; newIdx < annotated.size(); newIdx++) {
             AnnotatedKid a = annotated.get(newIdx);
-            if (a.kid() instanceof PdfStructElem se) {
-                Tag.of(se).unstamp(POSITION_MARKER);
-                int oldPos = a.originalIndex();
-                int newPos = newIdx + 1;
-                if (oldPos != newPos) {
-                    Tag.of(se).stamp(receipt("REORDER " + oldPos + " -> " + newPos));
-                }
+            a.kid().unstamp(POSITION_MARKER);
+            int oldPos = a.originalIndex();
+            int newPos = newIdx + 1;
+            if (oldPos != newPos) {
+                a.kid().stamp(receipt("REORDER " + oldPos + " -> " + newPos));
             }
         }
-        Tag.of(element).unstamp("!REORDER_KIDS");
+        parent.unstamp("!REORDER_KIDS");
         return null;
     }
 
-    private record AnnotatedKid(IStructureNode kid, int position, int originalIndex) {}
+    private record AnnotatedKid(Tag kid, int position, int originalIndex) {}
 
     /** Extracts the {@code NNN} from a kid's {@code REORDER NNN} scribble segment, or null. */
-    private static Integer reorderPositionOf(IStructureNode kid) {
-        if (!(kid instanceof PdfStructElem se)) return null;
-        for (String segment : Tag.of(se).scribble().segments()) {
+    private static Integer reorderPositionOf(Tag kid) {
+        for (String segment : kid.scribble().segments()) {
             Matcher m = REORDER_POSITION_PATTERN.matcher(segment);
             if (m.matches()) return Integer.parseInt(m.group(1));
         }
         return null;
-    }
-
-    /** Type-switch dispatcher for addKid (which is typed on PdfStructElem vs. PdfMcr). */
-    private static void addToParent(PdfStructElem parent, IStructureNode kid) {
-        switch (kid) {
-            case PdfStructElem se -> parent.addKid(se);
-            case PdfMcr mcr -> parent.addKid(mcr);
-            default ->
-                    throw new IllegalArgumentException(
-                            "Unsupported kid type: " + kid.getClass().getSimpleName());
-        }
     }
 }
