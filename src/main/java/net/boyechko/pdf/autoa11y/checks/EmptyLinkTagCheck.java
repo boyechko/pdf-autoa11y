@@ -7,7 +7,6 @@ import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -18,6 +17,7 @@ import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.EmptyLinkTagFix;
 import net.boyechko.pdf.autoa11y.fixes.ReuniteLinkFix;
@@ -134,7 +134,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
             return;
         }
         boolean hasText = !Tag.of(link).descendantMarkedContent().isEmpty();
-        boolean hasAnnotation = !Tag.of(link).descendantObjRefs().isEmpty();
+        boolean hasAnnotation = !Tag.of(link).descendantObjectRefs().isEmpty();
         if (hasAnnotation && !hasText && annotationOf(link) != null) {
             annotationOnlyLinks.computeIfAbsent(visit.page(), k -> new ArrayList<>()).add(link);
         } else if (hasText && !hasAnnotation) {
@@ -177,7 +177,7 @@ public class EmptyLinkTagCheck extends StructTreeCheck {
 
     /** Returns the annotation dictionary of the Link's first OBJR, or null if there is none. */
     private static PdfDictionary annotationOf(PdfStructElem link) {
-        List<PdfObjRef> objRefs = Tag.of(link).objRefs();
-        return objRefs.isEmpty() ? null : objRefs.getFirst().getReferencedObject();
+        List<ObjectRef> objRefs = Tag.of(link).objectRefs();
+        return objRefs.isEmpty() ? null : objRefs.getFirst().referencedObject();
     }
 }

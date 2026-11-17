@@ -6,7 +6,6 @@ import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
@@ -15,6 +14,7 @@ import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -55,12 +55,11 @@ public class EmptyLinkTagFix implements IssueFix {
             return;
         }
 
-        List<PdfObjRef> objRefs = Tag.of(linkElem).objRefs();
-        PdfObjRef objRef = objRefs.isEmpty() ? null : objRefs.getFirst();
-        if (objRef == null) {
+        List<ObjectRef> objRefs = Tag.of(linkElem).objectRefs();
+        if (objRefs.isEmpty()) {
             return;
         }
-        PdfDictionary annotDict = objRef.getReferencedObject();
+        PdfDictionary annotDict = objRefs.getFirst().referencedObject();
         if (annotDict == null) {
             return;
         }

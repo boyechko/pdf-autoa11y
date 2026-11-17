@@ -4,12 +4,12 @@ package net.boyechko.pdf.autoa11y.checks;
 
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfName;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import com.itextpdf.kernel.pdf.tagging.PdfStructTreeRoot;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Link;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -59,11 +59,11 @@ public class InvalidLinkUriCheck extends StructTreeCheck {
             return true;
         }
 
-        List<PdfObjRef> objRefs = Tag.of(node).objRefs();
+        List<ObjectRef> objRefs = Tag.of(node).objectRefs();
         if (objRefs.isEmpty()) {
             return true;
         }
-        PdfDictionary annotDict = objRefs.getFirst().getReferencedObject();
+        PdfDictionary annotDict = objRefs.getFirst().referencedObject();
         if (annotDict == null) {
             return true;
         }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.document;
 
+import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 
@@ -24,6 +25,11 @@ public final class ObjectRef implements StructNode {
     /** The underlying iText reference, for operations ObjectRef does not yet offer. */
     public PdfObjRef objRef() {
         return objRef;
+    }
+
+    /** The dictionary the reference points at, such as an annotation; null when unresolvable. */
+    public PdfDictionary referencedObject() {
+        return objRef.getReferencedObject();
     }
 
     @Override

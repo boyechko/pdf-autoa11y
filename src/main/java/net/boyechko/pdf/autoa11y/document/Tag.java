@@ -233,8 +233,8 @@ public final class Tag implements StructNode {
         return kids(PdfMcr.class).stream().map(MarkedContent::of).toList();
     }
 
-    public List<PdfObjRef> objRefs() {
-        return kids(PdfObjRef.class);
+    public List<ObjectRef> objectRefs() {
+        return kids(PdfObjRef.class).stream().map(ObjectRef::of).toList();
     }
 
     /**
@@ -251,8 +251,8 @@ public final class Tag implements StructNode {
         return descendants(PdfMcr.class).stream().map(MarkedContent::of).toList();
     }
 
-    public List<PdfObjRef> descendantObjRefs() {
-        return descendants(PdfObjRef.class);
+    public List<ObjectRef> descendantObjectRefs() {
+        return descendants(PdfObjRef.class).stream().map(ObjectRef::of).toList();
     }
 
     /**

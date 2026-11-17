@@ -14,8 +14,6 @@ import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfStream;
 import com.itextpdf.kernel.pdf.annot.PdfAnnotation;
 import com.itextpdf.kernel.pdf.canvas.parser.util.PdfCanvasParser;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +30,7 @@ import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Geometry;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.MarkedContent;
+import net.boyechko.pdf.autoa11y.document.ObjectRef;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
@@ -234,21 +233,15 @@ public class MistaggedArtifactFix implements IssueFix {
      * annotations, and hands each one off to {@link #findAndRemoveAnnotation}.
      */
     private void removeAnnotationsForElement(PdfStructElem elem, DocContext ctx) {
-        List<PdfObjRef> objRefs = Tag.of(elem).descendantObjRefs();
+        List<ObjectRef> objRefs = Tag.of(elem).descendantObjectRefs();
 
         logger.trace("Found {} object ref(s) in {}", objRefs.size(), Format.elem(elem));
 
-        for (PdfObjRef objRef : objRefs) {
-            PdfObject refObj = objRef.getReferencedObject();
-            if (refObj instanceof PdfDictionary annotDict) {
-                PdfName subtype = annotDict.getAsName(PdfName.Subtype);
-                if (subtype != null && PdfName.Link.equals(subtype)) {
-                    findAndRemoveAnnotation(annotDict, ctx);
-                    IStructureNode parent = objRef.getParent();
-                    if (parent instanceof PdfStructElem parentElem) {
-                        parentElem.removeKid(objRef);
-                    }
-                }
+        for (ObjectRef objRef : objRefs) {
+            PdfDictionary annotDict = objRef.referencedObject();
+            if (annotDict != null && PdfName.Link.equals(annotDict.getAsName(PdfName.Subtype))) {
+                findAndRemoveAnnotation(annotDict, ctx);
+                objRef.parent().elem().removeKid(objRef.objRef());
             }
         }
     }

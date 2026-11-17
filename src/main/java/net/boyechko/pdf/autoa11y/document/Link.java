@@ -39,11 +39,11 @@ public final class Link {
         for (PdfStructElem elem : elems) {
             if (!PdfName.Link.equals(elem.getRole())) return false;
 
-            List<PdfObjRef> objRefs = Tag.of(elem).objRefs();
+            List<ObjectRef> objRefs = Tag.of(elem).objectRefs();
             if (objRefs.isEmpty()) return false;
 
-            for (PdfObjRef objRef : objRefs) {
-                DocValue.Destination dest = effectiveDestinationOf(objRef);
+            for (ObjectRef objRef : objRefs) {
+                DocValue.Destination dest = effectiveDestinationOf(objRef.objRef());
                 if (dest == null) return false;
                 if (shared == null) {
                     shared = dest;

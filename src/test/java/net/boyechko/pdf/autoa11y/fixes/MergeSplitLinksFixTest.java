@@ -57,7 +57,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
 
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Links should be merged");
             PdfStructElem merged = Tag.of(p).children().get(0).elem();
-            assertEquals(2, Tag.of(merged).objRefs().size(), "Kept both OBJRs");
+            assertEquals(2, Tag.of(merged).objectRefs().size(), "Kept both OBJRs");
             assertEquals(2, Tag.of(merged).markedContent().size(), "Kept both MCRs");
         }
     }
@@ -105,7 +105,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Should not have merged");
             assertEquals(
                     1,
-                    Tag.of(p).children().get(0).objRefs().size(),
+                    Tag.of(p).children().get(0).objectRefs().size(),
                     "The surviving Link should keep only its own OBJR");
         }
     }
@@ -165,7 +165,7 @@ class MergeSplitLinksFixTest extends PdfTestBase {
 
             assertEquals("P[Link[]]", StructTree.toRoleTreeString(p), "Should stay merged");
             PdfStructElem merged = Tag.of(p).children().get(0).elem();
-            assertEquals(2, Tag.of(merged).objRefs().size(), "Kept both OBJRs");
+            assertEquals(2, Tag.of(merged).objectRefs().size(), "Kept both OBJRs");
             assertEquals(
                     List.of("MERGE links"),
                     Tag.of(merged).scribble().segments(),

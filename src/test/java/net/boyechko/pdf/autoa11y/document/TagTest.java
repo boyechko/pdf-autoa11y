@@ -205,7 +205,7 @@ class TagTest extends PdfTestBase {
             Tag tag = Tag.of(link);
             assertEquals(1, tag.markedContent().size());
             assertEquals(0, tag.markedContent().get(0).mcid());
-            assertEquals(1, tag.objRefs().size());
+            assertEquals(1, tag.objectRefs().size());
         }
     }
 

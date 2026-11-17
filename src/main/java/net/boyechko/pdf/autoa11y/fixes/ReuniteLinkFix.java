@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.document.DocContext;
@@ -34,14 +33,14 @@ public final class ReuniteLinkFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) throws Exception {
-        List<PdfObjRef> objRefs = Tag.of(annotLink).objRefs();
+        List<ObjectRef> objRefs = Tag.of(annotLink).objectRefs();
         if (objRefs.isEmpty()
                 || !Tag.of(annotLink).descendantMarkedContent().isEmpty()
-                || !Tag.of(textLink).descendantObjRefs().isEmpty()) {
+                || !Tag.of(textLink).descendantObjectRefs().isEmpty()) {
             return;
         }
-        for (PdfObjRef objRef : objRefs) {
-            ObjectRef.of(objRef).moveTo(Tag.of(textLink));
+        for (ObjectRef objRef : objRefs) {
+            objRef.moveTo(Tag.of(textLink));
         }
         Tag.of(annotLink).pruneIfEmpty();
     }
