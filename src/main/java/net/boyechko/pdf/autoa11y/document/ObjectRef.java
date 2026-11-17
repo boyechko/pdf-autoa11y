@@ -54,6 +54,11 @@ public final class ObjectRef implements StructNode {
     }
 
     @Override
+    public void remove() {
+        parent().removeContent(objRef);
+    }
+
+    @Override
     public boolean equals(Object other) {
         return other instanceof ObjectRef that
                 && StructTree.isSame(objRef.getPdfObject(), that.objRef.getPdfObject());

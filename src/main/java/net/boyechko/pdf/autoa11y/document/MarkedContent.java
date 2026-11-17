@@ -52,6 +52,11 @@ public final class MarkedContent implements StructNode {
     }
 
     @Override
+    public void remove() {
+        parent().removeContent(mcr);
+    }
+
+    @Override
     public boolean equals(Object other) {
         return other instanceof MarkedContent that
                 && StructTree.isSame(mcr.getPdfObject(), that.mcr.getPdfObject());

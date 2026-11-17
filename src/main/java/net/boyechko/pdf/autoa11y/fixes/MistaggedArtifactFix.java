@@ -241,7 +241,11 @@ public class MistaggedArtifactFix implements IssueFix {
             PdfDictionary annotDict = objRef.referencedObject();
             if (annotDict != null && PdfName.Link.equals(annotDict.getAsName(PdfName.Subtype))) {
                 findAndRemoveAnnotation(annotDict, ctx);
-                objRef.parent().elem().removeKid(objRef.objRef());
+                // Removing the annotation from its page takes the OBJR with it; one left
+                // behind belongs to an annotation no page lists.
+                if (objRef.parent().objectRefs().contains(objRef)) {
+                    objRef.remove();
+                }
             }
         }
     }

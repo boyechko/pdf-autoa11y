@@ -43,4 +43,7 @@ public sealed interface StructNode permits Tag, MarkedContent, ObjectRef {
      * Moves the node out of its parent to sit right before the sibling, on the page it renders on.
      */
     void insertBefore(Tag sibling);
+
+    /** Takes the node out of its parent, along with anything it holds. */
+    void remove();
 }

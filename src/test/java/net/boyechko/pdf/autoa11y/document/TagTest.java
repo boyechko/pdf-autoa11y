@@ -873,6 +873,72 @@ class TagTest extends PdfTestBase {
     }
 
     @Test
+    void removingATagTakesItOutOfItsParent() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem div = new PdfStructElem(doc, PdfName.Div);
+            doc.getStructTreeRoot().addKid(div);
+            PdfStructElem first = new PdfStructElem(doc, PdfName.P);
+            div.addKid(first);
+            PdfStructElem second = new PdfStructElem(doc, PdfName.P);
+            div.addKid(second);
+
+            Tag.of(first).remove();
+
+            assertEquals(List.of(Tag.of(second)), Tag.of(div).kids());
+        }
+    }
+
+    @Test
+    void removingMarkedContentTakesItOutOfTheParentTree() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P, page);
+            doc.getStructTreeRoot().addKid(p);
+            MarkedContent content = Tag.of(p).addMarkedContent(page);
+
+            content.remove();
+
+            assertEquals(List.of(), Tag.of(p).kids());
+            assertNull(doc.getStructTreeRoot().findMcrByMcid(page.getPdfObject(), content.mcid()));
+        }
+    }
+
+    @Test
+    void removingMarkedContentThatResolvesNoPageSucceeds() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            doc.addNewPage();
+            PdfStructElem p = new PdfStructElem(doc, PdfName.P);
+            doc.getStructTreeRoot().addKid(p);
+            p.addKid(new PdfMcrNumber(new PdfNumber(0), p));
+
+            Tag.of(p).markedContent().get(0).remove();
+
+            assertEquals(List.of(), Tag.of(p).kids());
+        }
+    }
+
+    @Test
+    void removingAnObjectRefTakesItOutOfItsTag() throws Exception {
+        try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            doc.setTagged();
+            PdfPage page = doc.addNewPage();
+            PdfLinkAnnotation annot = new PdfLinkAnnotation(new Rectangle(0, 0, 10, 10));
+            page.addAnnotation(annot);
+            PdfStructElem link = new PdfStructElem(doc, PdfName.Link, page);
+            doc.getStructTreeRoot().addKid(link);
+            link.addKid(new PdfObjRef(annot, link, doc.getNextStructParentIndex()));
+
+            Tag.of(link).objectRefs().get(0).remove();
+
+            assertEquals(List.of(), Tag.of(link).kids());
+        }
+    }
+
+    @Test
     void settingAnAttributeCreatesAnOwnedDictionaryWhenNoneExists() throws Exception {
         try (PdfDocument doc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             doc.setTagged();

@@ -370,13 +370,33 @@ public final class Tag implements StructNode {
         }
     }
 
+    /**
+     * Takes this tag, with everything it holds, out of its parent's kids, whether the parent is an
+     * element or the root.
+     */
+    @Override
+    public void remove() {
+        IStructureNode parent = elem.getParent();
+        if (parent instanceof PdfStructElem parentElem) {
+            parentElem.removeKid(elem);
+        } else if (parent instanceof PdfStructTreeRoot root) {
+            PdfObject kObj = root.getPdfObject().get(PdfName.K);
+            if (kObj instanceof PdfArray kArray) {
+                kArray.remove(elem.getPdfObject());
+                if (elem.getPdfObject().getIndirectReference() != null) {
+                    kArray.remove(elem.getPdfObject().getIndirectReference());
+                }
+            }
+        }
+    }
+
     /** Puts the replacements where this tag sits, in order, and takes this tag out of the tree. */
     public void replaceWith(List<Tag> replacements) {
         requireAttached();
         for (Tag replacement : replacements) {
             replacement.insertBefore(this);
         }
-        removeFromParent();
+        remove();
     }
 
     /**
@@ -392,7 +412,7 @@ public final class Tag implements StructNode {
                 break;
             }
             logger.debug("Pruning empty {}", current);
-            current.removeFromParent();
+            current.remove();
             removed++;
             current = parent;
         }
@@ -428,7 +448,7 @@ public final class Tag implements StructNode {
         IStructureNode former = elem.getParent();
         if (former != null) {
             materializeInheritedPage();
-            removeFromParent();
+            remove();
         }
         // Looked up only now: leaving the same parent shifts the sibling's position.
         int index = sibling.indexInParent() + offset;
@@ -469,20 +489,20 @@ public final class Tag implements StructNode {
         context.createPointerForStructElem(former.elem).relocateKid(from, destination);
     }
 
-    /** Takes this tag out of its parent's kids, whether the parent is an element or the root. */
-    private void removeFromParent() {
-        IStructureNode parent = elem.getParent();
-        if (parent instanceof PdfStructElem parentElem) {
-            parentElem.removeKid(elem);
-        } else if (parent instanceof PdfStructTreeRoot root) {
-            PdfObject kObj = root.getPdfObject().get(PdfName.K);
-            if (kObj instanceof PdfArray kArray) {
-                kArray.remove(elem.getPdfObject());
-                if (elem.getPdfObject().getIndirectReference() != null) {
-                    kArray.remove(elem.getPdfObject().getIndirectReference());
-                }
-            }
+    /**
+     * Takes marked content or an object reference out of this tag's kids and out of the parent
+     * tree. iText unregisters it by dereferencing its page unguarded, so an inherited /Pg is first
+     * written down; one that still resolves no page was never registered, and is only cut out.
+     *
+     * @throws IllegalArgumentException if this tag does not hold the content
+     */
+    void removeContent(PdfMcr content) {
+        int index = indexOf(elem, content);
+        if (index < 0) {
+            throw new IllegalArgumentException(Format.node(content) + " is not held by " + this);
         }
+        materializeInheritedPage();
+        elem.removeKid(index, content.getPageIndirectReference() == null);
     }
 
     private static IStructureNode iTextNodeOf(StructNode node) {

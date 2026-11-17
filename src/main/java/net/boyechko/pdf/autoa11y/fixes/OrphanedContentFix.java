@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package net.boyechko.pdf.autoa11y.fixes;
 
-import com.itextpdf.kernel.pdf.PdfArray;
-import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfObjRef;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
-import net.boyechko.pdf.autoa11y.document.StructTree;
+import net.boyechko.pdf.autoa11y.document.StructNode;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.issue.IssueFix;
 import net.boyechko.pdf.autoa11y.issue.IssueMsg;
@@ -31,27 +29,10 @@ public class OrphanedContentFix implements IssueFix {
 
     @Override
     public void apply(DocContext ctx) {
-        // Locate the orphan in parent's /K so we can remove it by index. We
-        // avoid parent.removeKid(IStructureNode), which routes through
-        // ParentTreeHandler.unregisterMcr -> PdfMcr.getPageObject(), and
-        // getPageObject() NPEs when getPageIndirectReference() is null.
-        // removeKid(index, prepareForReAdding=true) skips the unregister step,
-        // which is safe for orphans since they were never registered in the
-        // ParentTree to begin with.
-        PdfArray kArray = StructTree.kArrayAsArray(parent);
-        if (kArray == null) return;
+        StructNode content = StructNode.of(orphan);
+        if (!Tag.of(parent).kids().contains(content)) return;
 
-        PdfObject orphanObj = orphan.getPdfObject();
-        int idx = -1;
-        for (int i = 0; i < kArray.size(); i++) {
-            if (StructTree.isSame(kArray.get(i), orphanObj)) {
-                idx = i;
-                break;
-            }
-        }
-        if (idx < 0) return;
-
-        parent.removeKid(idx, true);
+        content.remove();
         prunedCount = 1 + Tag.of(parent).pruneIfEmpty();
     }
 
