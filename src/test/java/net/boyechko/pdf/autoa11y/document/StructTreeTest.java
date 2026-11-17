@@ -13,7 +13,6 @@ import com.itextpdf.kernel.pdf.PdfNumber;
 import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import com.itextpdf.kernel.pdf.tagging.PdfMcr;
 import com.itextpdf.kernel.pdf.tagging.PdfMcrNumber;
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
@@ -264,7 +263,6 @@ class StructTreeTest extends PdfTestBase {
             root.addKid(document);
 
             assertEquals(doc, StructTree.pdfDocumentFor(document));
-            assertEquals(doc, StructTree.pdfDocumentFor((IStructureNode) document));
         }
     }
 

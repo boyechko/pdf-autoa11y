@@ -25,16 +25,6 @@ public final class StructTree {
         return n.getPdfObject().getIndirectReference().getDocument();
     }
 
-    /** Returns the PDF document for the given structure element. */
-    public static PdfDocument pdfDocumentFor(IStructureNode n) {
-        IStructureNode current = n;
-        while (current.getParent() != null) {
-            current = current.getParent();
-        }
-        PdfStructTreeRoot root = (PdfStructTreeRoot) current;
-        return root.getDocument();
-    }
-
     /** Finds the first child element with the given role. */
     public static PdfStructElem findFirstChild(IStructureNode parent, PdfName role) {
         List<IStructureNode> kids = parent.getKids();
