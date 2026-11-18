@@ -63,6 +63,7 @@ public final class ProcessingDefaults {
                 MissingPagePartsCheck::new,
                 NeedlessNestingCheck::new,
                 ReorderWebCapturesCheck::new,
+                UnmarkedListItemCheck::new,
                 WrapWebCapturesCheck::new);
     }
 

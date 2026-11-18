@@ -18,7 +18,10 @@ import net.boyechko.pdf.autoa11y.document.Tag;
 public final class ListItemScribble {
 
     /** Segment tag naming the item count, so it can be replaced without matching its text. */
-    private static final String COUNT_TAG = "ITEMS";
+    private static final String ITEMS_TAG = "ITEMS";
+
+    /** Tag naming the marker count, which rides in the item-count segment rather than its own. */
+    private static final String MARKERS_TAG = "MARKERS";
 
     private ListItemScribble() {}
 
@@ -39,13 +42,31 @@ public final class ListItemScribble {
      * as having been done to the list itself.
      */
     public static void refreshCount(PdfStructElem list) {
-        long count =
-                Tag.of(list).children().stream().filter(kid -> "LI".equals(kid.role())).count();
-        Tag.of(list).unstamp(COUNT_TAG);
-        Tag.of(list).stamp(countSegment(count));
+        replaceCount(list, countSegment(itemCountOf(list)));
+    }
+
+    /**
+     * Refreshes the list's item count alongside the markers (bullets, numbers) counted for it, so a
+     * list whose items outnumber its markers shows as much in its scribble.
+     */
+    public static void refreshCount(PdfStructElem list, long markers) {
+        replaceCount(list, countSegment(itemCountOf(list)) + ", " + markerSegment(markers));
+    }
+
+    private static void replaceCount(PdfStructElem list, String segment) {
+        Tag.of(list).unstamp(ITEMS_TAG);
+        Tag.of(list).stamp(segment);
+    }
+
+    private static long itemCountOf(PdfStructElem list) {
+        return Tag.of(list).children().stream().filter(kid -> "LI".equals(kid.role())).count();
     }
 
     public static String countSegment(long count) {
-        return COUNT_TAG + " " + count;
+        return ITEMS_TAG + " " + count;
+    }
+
+    private static String markerSegment(long markers) {
+        return MARKERS_TAG + " " + markers;
     }
 }
