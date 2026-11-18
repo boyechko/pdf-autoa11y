@@ -9,7 +9,7 @@ Versioning](https://semver.org/).
 
 ### Added
 - New optional `UnmarkedListItemCheck`: stamps every list with its item and
-  marker counts (e.g. `__:ITEMS 4, MARKERS 1`), counting bullets and numbers
+  marker counts (e.g. `__:items 4, markers 1`), counting bullets and numbers
   and each sublist on its own, as a first step toward finding content
   mistagged as list items.
 - New `UnscopedTableHeaderCheck`: reports `TH` cells without a `Scope`

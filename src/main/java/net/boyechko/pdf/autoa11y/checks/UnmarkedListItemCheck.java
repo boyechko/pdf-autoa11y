@@ -21,7 +21,7 @@ import net.boyechko.pdf.autoa11y.validation.Visit;
  * numbered, such as headings or paragraphs tagged as items long ago.
  *
  * <p>For now the check only reports what it reads, stamping every list with its item and marker
- * counts, e.g. {@code ITEMS 4, MARKERS 1}. A marker is either a vector bullet glyph drawn on one of
+ * counts, e.g. {@code items 4, markers 1}. A marker is either a vector bullet glyph drawn on one of
  * the list's lines or a bullet character or enumerator set as text in an item's Lbl. Each list
  * counts only its own items and markers: lists are left children-first, so a sublist claims its
  * glyphs before its parent list counts the rest, and only the list's own items are read for labels.
