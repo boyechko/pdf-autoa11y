@@ -158,6 +158,14 @@ class ScribbleTest {
     }
 
     @Test
+    void withoutMatchesHeadsIgnoringCase() {
+        Scribble scribble =
+                Scribble.tool("SPLIT sublist" + Scribble.SEPARATOR + "ITEMS 2").without("items");
+
+        assertEquals(List.of("SPLIT sublist"), scribble.segments());
+    }
+
+    @Test
     void withoutDoesNotMatchAHeadPrefix() {
         Scribble scribble = Scribble.tool("ITEMSET 2").without("ITEMS");
 

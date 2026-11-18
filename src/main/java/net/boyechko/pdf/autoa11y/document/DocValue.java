@@ -211,12 +211,13 @@ public sealed interface DocValue {
         }
 
         /**
-         * This scribble less every segment whose head is {@code head}; {@link #EMPTY} if none
-         * remain.
+         * This scribble less every segment whose head is {@code head}, ignoring case, so a head
+         * renamed from {@code ITEMS} to {@code items} still replaces the old segment; {@link
+         * #EMPTY} if none remain.
          */
         public Scribble without(String head) {
             List<String> kept =
-                    segments().stream().filter(seg -> !headOf(seg).equals(head)).toList();
+                    segments().stream().filter(seg -> !headOf(seg).equalsIgnoreCase(head)).toList();
             if (kept.size() == segments().size()) return this;
             return rebuilt(String.join(SEPARATOR, kept));
         }
