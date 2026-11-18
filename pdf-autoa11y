@@ -11,6 +11,10 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd -P)"
 CLASSES_DIR="$SCRIPT_DIR/target/classes"
+# Last known good build. Only replaced (by atomic rename) after a successful
+# compile, so broken work-in-progress never affects runs; running JVMs keep
+# their open copy of the old jar.
+RUN_JAR="$SCRIPT_DIR/target/run.jar"
 CLASSPATH_FILE="$SCRIPT_DIR/target/classpath.txt"
 COMPILE_STAMP="$SCRIPT_DIR/target/.compile-stamp"
 SRC_DIR="$SCRIPT_DIR/src/main"
@@ -20,11 +24,14 @@ compile() {
         cd "$SCRIPT_DIR" || exit 1
         mvn -q -DskipTests compile dependency:build-classpath \
             -Dmdep.outputFile=target/classpath.txt
-    ) && touch "$COMPILE_STAMP"
+    ) &&
+        jar cf "$RUN_JAR.tmp" -C "$CLASSES_DIR" . &&
+        mv -f "$RUN_JAR.tmp" "$RUN_JAR" &&
+        touch "$COMPILE_STAMP"
 }
 
 # Bootstrap from scratch if build artifacts are missing.
-if [ ! -d "$CLASSES_DIR" ] || [ ! -f "$CLASSPATH_FILE" ]; then
+if [ ! -f "$RUN_JAR" ] || [ ! -f "$CLASSPATH_FILE" ]; then
     echo "Bootstrapping compiled classes and dependency classpath..." >&2
     if ! compile; then
         echo "Failed to bootstrap. Cannot run." >&2
@@ -40,5 +47,5 @@ elif [ -d "$SRC_DIR" ] && \
     fi
 fi
 
-java -cp "$CLASSES_DIR:$(cat "$CLASSPATH_FILE")" \
+java -cp "$RUN_JAR:$(cat "$CLASSPATH_FILE")" \
     net.boyechko.pdf.autoa11y.ui.Cli "$@"
