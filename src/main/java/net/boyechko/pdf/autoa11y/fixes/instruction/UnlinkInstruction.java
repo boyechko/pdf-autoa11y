@@ -49,9 +49,8 @@ record UnlinkInstruction() implements ScribbledInstruction {
         PdfDictionary annotDict = null;
         for (StructNode kid : origKids) {
             if (kid instanceof ObjectRef ref) {
-                PdfObject refObj = ref.objRef().getReferencedObject();
-                if (refObj instanceof PdfDictionary dict) {
-                    annotDict = dict;
+                annotDict = ref.referencedObject();
+                if (annotDict != null) {
                     break;
                 }
             }
