@@ -16,7 +16,7 @@ import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.Tag;
-import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
+import net.boyechko.pdf.autoa11y.fixes.ListItemScribble.Count;
 import net.boyechko.pdf.autoa11y.validation.StructTreeWalker;
 import org.junit.jupiter.api.Test;
 
@@ -73,9 +73,9 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
                         new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
-            assertTrue(segmentsOf(pdfDoc, 30).contains(ListItemScribble.countSegment(2, 2)));
-            assertTrue(segmentsOf(pdfDoc, 34).contains(ListItemScribble.countSegment(3, 3)));
-            assertTrue(segmentsOf(pdfDoc, 47).contains(ListItemScribble.countSegment(1, 1)));
+            assertTrue(segmentsOf(pdfDoc, 30).contains(Count.of(30, 2, 2).segment()));
+            assertTrue(segmentsOf(pdfDoc, 34).contains(Count.of(34, 3, 3).segment()));
+            assertTrue(segmentsOf(pdfDoc, 47).contains(Count.of(47, 1, 1).segment()));
         }
     }
 
@@ -86,7 +86,7 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
                         new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
-            assertTrue(segmentsOf(pdfDoc, 52).contains(ListItemScribble.countSegment(2, 0)));
+            assertTrue(segmentsOf(pdfDoc, 52).contains(Count.of(52, 2, 0).segment()));
         }
     }
 
@@ -98,7 +98,7 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
                         new PdfWriter(testOutputStream()))) {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
-            assertTrue(segmentsOf(pdfDoc, 42).contains(ListItemScribble.countSegment(3, 3)));
+            assertTrue(segmentsOf(pdfDoc, 42).contains(Count.of(42, 3, 3).segment()));
         }
     }
 
@@ -110,7 +110,7 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
                         new PdfWriter(testOutputStream()))) {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
-            assertTrue(segmentsOf(pdfDoc, 49).contains(ListItemScribble.countSegment(3, 3)));
+            assertTrue(segmentsOf(pdfDoc, 49).contains(Count.of(49, 3, 3).segment()));
         }
     }
 
@@ -122,7 +122,7 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
             assertEquals(
-                    List.of("REBUILD outline", ListItemScribble.countSegment(2, 2)),
+                    List.of("REBUILD outline", Count.of(30, 2, 2).segment()),
                     segmentsOf(pdfDoc, 30));
         }
     }
@@ -135,7 +135,7 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
             walkWith(pdfDoc, new UnmarkedListItemCheck());
             walkWith(pdfDoc, new UnmarkedListItemCheck());
 
-            assertEquals(List.of(ListItemScribble.countSegment(3, 3)), segmentsOf(pdfDoc, 34));
+            assertEquals(List.of(Count.of(34, 3, 3).segment()), segmentsOf(pdfDoc, 34));
         }
     }
 

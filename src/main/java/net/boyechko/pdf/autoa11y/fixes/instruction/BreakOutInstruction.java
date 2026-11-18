@@ -73,10 +73,10 @@ record BreakOutInstruction() implements ScribbledInstruction {
         if (listTag.kids().isEmpty()) {
             listTag.remove();
         } else {
-            ListItemScribble.refreshCount(list);
+            ListItemScribble.of(list).refresh();
         }
         if (tail != null) {
-            ListItemScribble.refreshCount(tail);
+            ListItemScribble.of(tail).refresh();
         }
         stampReceipts(content);
         return null;

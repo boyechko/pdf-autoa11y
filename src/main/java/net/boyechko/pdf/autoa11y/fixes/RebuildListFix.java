@@ -98,7 +98,7 @@ public final class RebuildListFix implements IssueFix {
             assembler.adoptIntoBody(lBody, placement.element(), page);
             openBodies.add(lBody);
         }
-        ListItemScribble.update(list, "REBUILD outline");
+        ListItemScribble.of(list).record("REBUILD outline");
 
         logger.debug(
                 "Rebuilt list of {} elements from its outline under #{}",

@@ -79,7 +79,7 @@ public class UnmarkedListItemCheck extends StructTreeCheck {
                 reportUnmarked(visit, item);
             }
         }
-        ListItemScribble.refreshCount(visit.node(), markers);
+        ListItemScribble.of(visit.node()).refresh(markers);
         markDocChanged();
     }
 

@@ -176,8 +176,18 @@ class BreakOutInstructionTest extends PdfTestBase {
             new ScribbledInstructionFix(items[1], "!BREAK_OUT").apply(ctx);
 
             PdfStructElem tail = (PdfStructElem) div.getKids().get(2);
-            assertTrue(Tag.of(list).scribble().body().contains(ListItemScribble.countSegment(1)));
-            assertTrue(Tag.of(tail).scribble().body().contains(ListItemScribble.countSegment(2)));
+            assertTrue(
+                    Tag.of(list)
+                            .scribble()
+                            .body()
+                            .contains(
+                                    ListItemScribble.Count.of(Tag.of(list).objNum(), 1).segment()));
+            assertTrue(
+                    Tag.of(tail)
+                            .scribble()
+                            .body()
+                            .contains(
+                                    ListItemScribble.Count.of(Tag.of(tail).objNum(), 2).segment()));
         }
     }
 

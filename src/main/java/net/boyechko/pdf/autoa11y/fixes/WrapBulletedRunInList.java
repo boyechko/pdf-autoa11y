@@ -116,7 +116,7 @@ public final class WrapBulletedRunInList implements IssueFix {
             assembler.newItemBody(list).addKid(item);
         }
         pruneIfEmptied(parent);
-        ListItemScribble.update(list, "BULLETS " + itemCount());
+        ListItemScribble.of(list).record("BULLETS " + itemCount());
 
         logger.debug(
                 "Wrapped {} bulleted items in L > LI > LBody under obj. #{}{}",

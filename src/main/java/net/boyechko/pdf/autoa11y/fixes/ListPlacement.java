@@ -62,7 +62,7 @@ enum ListPlacement implements ItemPlacement {
 
     @Override
     public void finish(PdfStructElem firstBody) {
-        ListItemScribble.refreshCount((PdfStructElem) listItemOf(firstBody).getParent());
+        ListItemScribble.of((PdfStructElem) listItemOf(firstBody).getParent()).refresh();
     }
 
     /** Returns the LI holding an item's content element, by way of its LBody. */

@@ -61,7 +61,7 @@ public final class MergeAdjacentListsFix implements IssueFix {
 
         Tag.of(secondList).moveKidsTo(Tag.of(firstList));
         Tag.of(secondList).remove();
-        ListItemScribble.update(firstList, "MERGE lists");
+        ListItemScribble.of(firstList).record("MERGE lists");
 
         logger.debug(
                 "Merged {} items of list #{} into list #{}",

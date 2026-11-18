@@ -96,7 +96,11 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
             assertTrue(
-                    Tag.of(list).scribble().value().contains(ListItemScribble.countSegment(3)),
+                    Tag.of(list)
+                            .scribble()
+                            .value()
+                            .contains(
+                                    ListItemScribble.Count.of(Tag.of(list).objNum(), 3).segment()),
                     "the count reflects the list after the fold, not mid-split");
         }
     }
@@ -113,7 +117,7 @@ class FoldIntoPreviousItemFixTest extends PdfTestBase {
             new FoldIntoPreviousItemFix(element, 1, TWO_THREE_LINE_ITEMS).apply(ctx);
 
             assertEquals(
-                    List.of(ListItemScribble.countSegment(3)),
+                    List.of(ListItemScribble.Count.of(Tag.of(list).objNum(), 3).segment()),
                     Tag.of(list).scribble().segments(),
                     "only the item count");
         }

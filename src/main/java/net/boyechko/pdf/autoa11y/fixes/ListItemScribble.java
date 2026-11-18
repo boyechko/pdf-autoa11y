@@ -3,6 +3,8 @@
 package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
+import java.util.OptionalLong;
+import net.boyechko.pdf.autoa11y.document.DocValue.ObjNum;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
@@ -10,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Maintains the scribble on a list element with a history of events that modified the list along
- * with the final count of items. Each list-producing fix calls {@link #update} as its last step,
+ * with the final count of items. Each list-producing fix calls {@link #record} as its last step,
  * specifying the event that occurred.
  *
  * <p>The two kinds of segments behave differently on purpose. The event segment is history: every
@@ -21,23 +23,25 @@ import org.slf4j.LoggerFactory;
 public final class ListItemScribble {
     private static final Logger logger = LoggerFactory.getLogger(ListItemScribble.class);
 
-    /** Segment tag naming the item count, so it can be replaced without matching its text. */
-    private static final String ITEMS_TAG = "items";
+    private final Tag list;
 
-    /** Tag naming the marker count, which rides in the item-count segment rather than its own. */
-    private static final String MARKERS_TAG = "markers";
+    private ListItemScribble(Tag list) {
+        this.list = list;
+    }
 
-    private ListItemScribble() {}
+    /** The scribble of the given list element. */
+    public static ListItemScribble of(PdfStructElem list) {
+        return new ListItemScribble(Tag.of(list));
+    }
 
     /**
      * Records {@code event} on the list and refreshes its item count.
      *
-     * @param list the list element whose scribble is being stamped
      * @param event a tagged event segment naming the calling fix
      */
-    public static void update(PdfStructElem list, String event) {
-        Tag.of(list).stamp(event);
-        refreshCount(list);
+    public void record(String event) {
+        list.stamp(event);
+        refresh();
     }
 
     /**
@@ -45,36 +49,69 @@ public final class ListItemScribble {
      * rather than on the list: the count still has to follow, but an event stamped here would read
      * as having been done to the list itself.
      */
-    public static void refreshCount(PdfStructElem list) {
-        replaceCount(list, countSegment(itemCountOf(list)));
+    public void refresh() {
+        replace(count());
     }
 
     /**
      * Refreshes the list's item count alongside the markers (bullets, numbers) counted for it, so a
      * list whose items outnumber its markers shows as much in its scribble.
      */
-    public static void refreshCount(PdfStructElem list, long markers) {
-        replaceCount(list, countSegment(itemCountOf(list), markers));
+    public void refresh(long markers) {
+        replace(count().withMarkers(markers));
     }
 
-    private static void replaceCount(PdfStructElem list, String segment) {
-        Tag.of(list).unstamp(ITEMS_TAG);
-        Tag.of(list).stamp(segment);
+    /** The list's count as it stands, with no markers counted. */
+    private Count count() {
+        long items = list.children().stream().filter(kid -> "LI".equals(kid.role())).count();
+        return Count.of(list.objNum(), items);
+    }
+
+    private void replace(Count count) {
+        list.unstamp(Count.HEAD);
+        list.stamp(count.segment());
         logger.debug(
                 "Replacing count segment for {} with '{}'",
-                Format.elem(list, Tag.of(list).page()),
-                segment);
+                Format.elem(list.elem(), list.page()),
+                count.segment());
     }
 
-    private static long itemCountOf(PdfStructElem list) {
-        return Tag.of(list).children().stream().filter(kid -> "LI".equals(kid.role())).count();
-    }
+    /**
+     * The count segment as a value: the list it describes, its items, and the markers counted for
+     * them when anyone has, rendered as {@code items 4, markers 1 #65848}. The list's number lets a
+     * list found in Acrobat's Tags pane, which shows the scribble but not the number, be looked up
+     * in a dumped tree.
+     *
+     * @param list the list's object number, or null for a list without one
+     */
+    public record Count(ObjNum list, long items, OptionalLong markers) {
 
-    public static String countSegment(long count) {
-        return ITEMS_TAG + " " + count;
-    }
+        /** Heads the segment, so it can be replaced without matching the rest of its text. */
+        public static final String HEAD = "items";
 
-    public static String countSegment(long count, long markers) {
-        return countSegment(count) + ", " + MARKERS_TAG + " " + markers;
+        private static final String MARKERS = "markers";
+
+        /** A count of items alone; a negative object number means the list has none. */
+        public static Count of(int objNum, long items) {
+            return new Count(objNum >= 0 ? new ObjNum(objNum) : null, items, OptionalLong.empty());
+        }
+
+        public static Count of(int objNum, long items, long markers) {
+            return of(objNum, items).withMarkers(markers);
+        }
+
+        public Count withMarkers(long markers) {
+            return new Count(list, items, OptionalLong.of(markers));
+        }
+
+        public String segment() {
+            StringBuilder segment = new StringBuilder(HEAD).append(' ').append(items);
+            markers.ifPresent(
+                    count -> segment.append(", ").append(MARKERS).append(' ').append(count));
+            if (list != null) {
+                segment.append(' ').append(list);
+            }
+            return segment.toString();
+        }
     }
 }
