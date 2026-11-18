@@ -4,7 +4,6 @@ package net.boyechko.pdf.autoa11y.fixes;
 
 import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.OptionalLong;
-import net.boyechko.pdf.autoa11y.document.DocValue.ObjNum;
 import net.boyechko.pdf.autoa11y.document.Format;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import org.slf4j.Logger;
@@ -63,13 +62,18 @@ public final class ListItemScribble {
 
     /** The list's count as it stands, with no markers counted. */
     private Count count() {
-        long items = list.children().stream().filter(kid -> "LI".equals(kid.role())).count();
-        return Count.of(list.objNum(), items);
+        return Count.of(list.children().stream().filter(kid -> "LI".equals(kid.role())).count());
     }
 
+    /**
+     * Replaces the count segment and leads the scribble with the list's number, so a list found in
+     * Acrobat's Tags pane, which shows the scribble but not the number, can be looked up in a
+     * dumped tree.
+     */
     private void replace(Count count) {
         list.unstamp(Count.HEAD);
         list.stamp(count.segment());
+        list.stampObjNum();
         logger.debug(
                 "Replacing count segment for {} with '{}'",
                 Format.elem(list.elem(), list.page()),
@@ -77,40 +81,32 @@ public final class ListItemScribble {
     }
 
     /**
-     * The count segment as a value: the list it describes, its items, and the markers counted for
-     * them when anyone has, rendered as {@code items 4, markers 1 #65848}. The list's number lets a
-     * list found in Acrobat's Tags pane, which shows the scribble but not the number, be looked up
-     * in a dumped tree.
-     *
-     * @param list the list's object number, or null for a list without one
+     * The count segment as a value: the list's items, and the markers counted for them when anyone
+     * has, rendered as {@code items 4, markers 1}.
      */
-    public record Count(ObjNum list, long items, OptionalLong markers) {
+    public record Count(long items, OptionalLong markers) {
 
         /** Heads the segment, so it can be replaced without matching the rest of its text. */
         public static final String HEAD = "items";
 
         private static final String MARKERS = "markers";
 
-        /** A count of items alone; a negative object number means the list has none. */
-        public static Count of(int objNum, long items) {
-            return new Count(objNum >= 0 ? new ObjNum(objNum) : null, items, OptionalLong.empty());
+        public static Count of(long items) {
+            return new Count(items, OptionalLong.empty());
         }
 
-        public static Count of(int objNum, long items, long markers) {
-            return of(objNum, items).withMarkers(markers);
+        public static Count of(long items, long markers) {
+            return of(items).withMarkers(markers);
         }
 
         public Count withMarkers(long markers) {
-            return new Count(list, items, OptionalLong.of(markers));
+            return new Count(items, OptionalLong.of(markers));
         }
 
         public String segment() {
             StringBuilder segment = new StringBuilder(HEAD).append(' ').append(items);
             markers.ifPresent(
                     count -> segment.append(", ").append(MARKERS).append(' ').append(count));
-            if (list != null) {
-                segment.append(' ').append(list);
-            }
             return segment.toString();
         }
     }

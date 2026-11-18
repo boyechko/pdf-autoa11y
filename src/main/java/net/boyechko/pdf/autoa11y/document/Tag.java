@@ -93,6 +93,14 @@ public final class Tag implements StructNode {
         scribble(scribble().with(segment));
     }
 
+    /**
+     * Leads the scribble with the element's object number; see {@link
+     * DocValue.Scribble#withObjNum}.
+     */
+    public void stampObjNum() {
+        scribble(scribble().withObjNum(objNum()));
+    }
+
     /** Drops the scribble segments headed {@code head}; see {@link DocValue.Scribble#without}. */
     public void unstamp(String head) {
         scribble(scribble().without(head));

@@ -12,9 +12,10 @@ Versioning](https://semver.org/).
   such as headings and paragraphs, by marking each item the page sets without
   a bullet or number `__!BREAK_OUT`; items with a `Lbl` are left alone. Every
   list is stamped with its item and marker counts (e.g. `__:items 4,
-  markers 1 #65848`).
-- List count scribbles end with the list's object number (e.g. `items 3 #30`),
-  so a list spotted in Acrobat's Tags pane can be found in a dumped tree.
+  markers 1`).
+- List scribbles now lead with the list's object number (e.g. `__:65848 //
+  items 4, markers 1`), so a list spotted in Acrobat's Tags pane can be found
+  in a dumped tree. A stale leading number is replaced.
 - New `UnscopedTableHeaderCheck`: reports `TH` cells without a `Scope`
   attribute, and scopes them by position when the layout is unambiguous: a
   header row as `Column`, a header column below it as `Row`.

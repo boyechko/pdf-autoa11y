@@ -30,32 +30,27 @@ class ListItemScribbleTest extends PdfTestBase {
         return list;
     }
 
-    /** The count segment expected on {@code list} when it holds {@code items} items. */
-    private static String countOf(PdfStructElem list, long items) {
-        return Count.of(Tag.of(list).objNum(), items).segment();
+    /** The segment that leads {@code list}'s scribble: its object number. */
+    private static String numberOf(PdfStructElem list) {
+        return String.valueOf(Tag.of(list).objNum());
     }
 
     // == The count segment =================================================
 
     @Test
-    void countSegmentNamesItemsThenTheListItDescribes() {
-        assertEquals("items 4 #65848", Count.of(65848, 4).segment());
+    void countSegmentNamesItems() {
+        assertEquals("items 4", Count.of(4).segment());
     }
 
     @Test
-    void countSegmentCarriesMarkersBetweenItemsAndTheList() {
-        assertEquals("items 4, markers 1 #65848", Count.of(65848, 4, 1).segment());
-    }
-
-    @Test
-    void countSegmentOmitsTheNumberOfAListWithoutOne() {
-        assertEquals("items 2", Count.of(-1, 2).segment());
+    void countSegmentCarriesMarkersAfterItems() {
+        assertEquals("items 4, markers 1", Count.of(4, 1).segment());
     }
 
     @Test
     void countSegmentIsHeadedByItemsSoUnstampingReplacesIt() {
         Scribble scribble =
-                Scribble.tool("MERGE lists" + Scribble.SEPARATOR + Count.of(7, 2, 1).segment());
+                Scribble.tool("MERGE lists" + Scribble.SEPARATOR + Count.of(2, 1).segment());
 
         assertEquals(List.of("MERGE lists"), scribble.without(Count.HEAD).segments());
     }
@@ -63,7 +58,7 @@ class ListItemScribbleTest extends PdfTestBase {
     // == Stamping a list ===================================================
 
     @Test
-    void refreshWithMarkersStampsBothCountsAndTheListNumber() throws Exception {
+    void refreshLeadsWithTheListNumberAheadOfTheCounts() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             pdfDoc.setTagged();
             pdfDoc.addNewPage();
@@ -72,7 +67,7 @@ class ListItemScribbleTest extends PdfTestBase {
             ListItemScribble.of(list).refresh(1);
 
             assertEquals(
-                    List.of(Count.of(Tag.of(list).objNum(), 4, 1).segment()),
+                    List.of(numberOf(list), Count.of(4, 1).segment()),
                     Tag.of(list).scribble().segments());
         }
     }
@@ -88,7 +83,8 @@ class ListItemScribbleTest extends PdfTestBase {
 
             Scribble scribble = Tag.of(list).scribble();
             assertTrue(scribble.toolAuthored());
-            assertEquals(List.of("event1", countOf(list, 2)), scribble.segments());
+            assertEquals(
+                    List.of(numberOf(list), "event1", Count.of(2).segment()), scribble.segments());
         }
     }
 
@@ -119,7 +115,9 @@ class ListItemScribbleTest extends PdfTestBase {
             ListItemScribble.of(list).record("event2");
 
             Scribble scribble = Tag.of(list).scribble();
-            assertEquals(List.of("event1", "event2", countOf(list, 3)), scribble.segments());
+            assertEquals(
+                    List.of(numberOf(list), "event1", "event2", Count.of(3).segment()),
+                    scribble.segments());
         }
     }
 
@@ -137,7 +135,12 @@ class ListItemScribbleTest extends PdfTestBase {
             Scribble scribble = Tag.of(list).scribble();
             assertFalse(scribble.toolAuthored());
             assertEquals(
-                    List.of("reviewed by hand", "event1", "event2", countOf(list, 3)),
+                    List.of(
+                            numberOf(list),
+                            "reviewed by hand",
+                            "event1",
+                            "event2",
+                            Count.of(3).segment()),
                     scribble.segments());
         }
     }

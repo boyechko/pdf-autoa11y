@@ -14,6 +14,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Typed domain values extracted from a PDF document.
@@ -105,11 +106,13 @@ public sealed interface DocValue {
      *   <li>a segment opening with {@link #INSTRUCTION_MARK} asks the tool to act, one opening with
      *       {@link #FINDING_MARK} reports something it saw;
      *   <li>a user-authored segment that is exactly {@link #VERIFIED_TOKEN} marks the subtree as
-     *       reviewed.
+     *       reviewed;
+     *   <li>a leading segment of digits alone is the element's object number, which Acrobat's Tags
+     *       pane shows nowhere else.
      * </ul>
      *
-     * <p>Immutable: {@link #with} and {@link #without} return a new scribble. An element with no
-     * scribble has {@link #EMPTY}, never null.
+     * <p>Immutable: {@link #with}, {@link #without} and {@link #withObjNum} return a new scribble.
+     * An element with no scribble has {@link #EMPTY}, never null.
      */
     record Scribble(String value) implements DocValue {
         /** Leads every /T that is a scribble rather than a plain title. */
@@ -131,6 +134,9 @@ public sealed interface DocValue {
          * {@code __OK} or {@code __OK // check figure later}.
          */
         public static final String VERIFIED_TOKEN = "OK";
+
+        /** A segment of digits alone: in the lead, the object number of the element it is on. */
+        private static final Pattern OBJ_NUM = Pattern.compile("\\d+");
 
         /** The scribble of an element that has none. */
         public static final Scribble EMPTY = new Scribble("");
@@ -208,6 +214,25 @@ public sealed interface DocValue {
             if (isEmpty()) return tool(segment);
             if (segments().contains(segment)) return this;
             return rebuilt(body() + SEPARATOR + segment);
+        }
+
+        /**
+         * This scribble led by {@code objNum} as a segment of its own, replacing any number that
+         * led it before (a copy of the element into another document renumbers it). Authorship is
+         * kept, as with {@link #with}; a negative number, for an element that has none, changes
+         * nothing.
+         */
+        public Scribble withObjNum(int objNum) {
+            if (objNum < 0) return this;
+            String number = Integer.toString(objNum);
+            if (isEmpty()) return tool(number);
+            List<String> rest = segments();
+            if (OBJ_NUM.matcher(rest.get(0)).matches()) {
+                rest = rest.subList(1, rest.size());
+            }
+            List<String> led = new ArrayList<>(List.of(number));
+            led.addAll(rest);
+            return rebuilt(String.join(SEPARATOR, led));
         }
 
         /**

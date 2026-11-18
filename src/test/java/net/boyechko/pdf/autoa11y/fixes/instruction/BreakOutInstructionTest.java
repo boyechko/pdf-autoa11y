@@ -180,14 +180,12 @@ class BreakOutInstructionTest extends PdfTestBase {
                     Tag.of(list)
                             .scribble()
                             .body()
-                            .contains(
-                                    ListItemScribble.Count.of(Tag.of(list).objNum(), 1).segment()));
+                            .contains(ListItemScribble.Count.of(1).segment()));
             assertTrue(
                     Tag.of(tail)
                             .scribble()
                             .body()
-                            .contains(
-                                    ListItemScribble.Count.of(Tag.of(tail).objNum(), 2).segment()));
+                            .contains(ListItemScribble.Count.of(2).segment()));
         }
     }
 

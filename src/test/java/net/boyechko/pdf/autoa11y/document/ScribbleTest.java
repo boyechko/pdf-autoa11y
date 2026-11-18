@@ -184,6 +184,60 @@ class ScribbleTest {
         assertEquals(original, original.without("ITEMS"));
     }
 
+    // == Object number =====================================================
+
+    @Test
+    void objNumOnEmptyScribbleIsToolAuthoredAndAlone() {
+        Scribble scribble = Scribble.EMPTY.withObjNum(65848);
+
+        assertTrue(scribble.toolAuthored());
+        assertEquals(List.of("65848"), scribble.segments());
+    }
+
+    @Test
+    void objNumLeadsTheSegmentsAlreadyThere() {
+        Scribble scribble = Scribble.tool("MERGE lists" + Scribble.SEPARATOR + "items 2");
+
+        assertEquals(
+                List.of("65848", "MERGE lists", "items 2"), scribble.withObjNum(65848).segments());
+    }
+
+    @Test
+    void objNumReplacesAStaleLeadingNumber() {
+        Scribble scribble = Scribble.tool("31" + Scribble.SEPARATOR + "items 2");
+
+        assertEquals(List.of("65848", "items 2"), scribble.withObjNum(65848).segments());
+    }
+
+    @Test
+    void objNumIsAddedOnceWhenAppliedTwice() {
+        Scribble once = Scribble.tool("items 2").withObjNum(65848);
+
+        assertEquals(once, once.withObjNum(65848));
+    }
+
+    @Test
+    void objNumKeepsAUserScribbleUserAuthored() {
+        Scribble scribble = Scribble.user("STOPPED").withObjNum(52);
+
+        assertFalse(scribble.toolAuthored());
+        assertEquals(List.of("52", "STOPPED"), scribble.segments());
+    }
+
+    @Test
+    void numberLaterInTheScribbleIsNotTakenForTheObjNum() {
+        Scribble scribble = Scribble.user("STOPPED" + Scribble.SEPARATOR + "31");
+
+        assertEquals(List.of("52", "STOPPED", "31"), scribble.withObjNum(52).segments());
+    }
+
+    @Test
+    void missingObjNumLeavesTheScribbleAsItIs() {
+        Scribble scribble = Scribble.tool("items 2");
+
+        assertEquals(scribble, scribble.withObjNum(-1));
+    }
+
     // == Rendering =========================================================
 
     @Test
