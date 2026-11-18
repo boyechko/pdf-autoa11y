@@ -6,8 +6,10 @@ package net.boyechko.pdf.autoa11y.checks;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Path;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
@@ -37,6 +39,25 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
         StructTreeWalker walker = new StructTreeWalker();
         walker.addVisitor(check);
         walker.walk(pdfDoc.getStructTreeRoot(), new DocContext(pdfDoc));
+    }
+
+    /** Walks the document and applies every fix the check proposes, as a run would. */
+    private static UnmarkedListItemCheck runWithFixes(PdfDocument pdfDoc) throws Exception {
+        UnmarkedListItemCheck check = new UnmarkedListItemCheck();
+        DocContext ctx = new DocContext(pdfDoc);
+        StructTreeWalker walker = new StructTreeWalker();
+        walker.addVisitor(check);
+        walker.walk(pdfDoc.getStructTreeRoot(), ctx);
+        for (var issue : check.getIssues()) {
+            issue.fix().apply(ctx);
+        }
+        return check;
+    }
+
+    private static String instructionOf(PdfDocument pdfDoc, int objNum) {
+        return Tag.of(StructTree.findByObjNumber(pdfDoc.getStructTreeRoot(), objNum))
+                .scribble()
+                .instruction();
     }
 
     private static List<String> segmentsOf(PdfDocument pdfDoc, int objNum) {
@@ -127,6 +148,63 @@ class UnmarkedListItemCheckTest extends PdfTestBase {
             walkWith(pdfDoc, check);
 
             assertTrue(check.hasChangedDoc());
+        }
+    }
+
+    // == Breaking out unmarked items =======================================
+
+    @Test
+    void marksItemsWithoutAMarkerForBreakingOut() throws Exception {
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            UnmarkedListItemCheck check = runWithFixes(pdfDoc);
+
+            assertEquals("!BREAK_OUT", instructionOf(pdfDoc, 53));
+            assertEquals("!BREAK_OUT", instructionOf(pdfDoc, 57));
+            assertEquals(
+                    List.of(53, 57),
+                    check.getIssues().stream().map(issue -> issue.where().objNum()).toList());
+        }
+    }
+
+    @Test
+    void leavesItemsWithADrawnBulletInTheirList() throws Exception {
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            runWithFixes(pdfDoc);
+
+            // LI #31 and #44 carry the outer bullets; #35 is an item of sublist L #34.
+            assertNull(instructionOf(pdfDoc, 31));
+            assertNull(instructionOf(pdfDoc, 44));
+            assertNull(instructionOf(pdfDoc, 35));
+        }
+    }
+
+    @Test
+    void leavesItemsWithALabelInTheirListWhateverItSays() throws Exception {
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            PdfStructElem item = StructTree.findByObjNumber(pdfDoc.getStructTreeRoot(), 57);
+            item.addKid(0, new PdfStructElem(pdfDoc, PdfName.Lbl));
+
+            runWithFixes(pdfDoc);
+
+            assertNull(instructionOf(pdfDoc, 57));
+        }
+    }
+
+    @Test
+    void marksAnItemForBreakingOutOnceWhenRunTwice() throws Exception {
+        try (PdfDocument pdfDoc =
+                new PdfDocument(
+                        new PdfReader(NESTED_PDF.toString()), new PdfWriter(testOutputStream()))) {
+            runWithFixes(pdfDoc);
+            runWithFixes(pdfDoc);
+
+            assertEquals(List.of("!BREAK_OUT"), segmentsOf(pdfDoc, 57));
         }
     }
 }

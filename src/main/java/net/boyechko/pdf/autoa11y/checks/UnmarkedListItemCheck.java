@@ -8,11 +8,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.boyechko.pdf.autoa11y.document.Content;
+import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.document.MarkedContent;
 import net.boyechko.pdf.autoa11y.document.PageContent;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.ListItemScribble;
+import net.boyechko.pdf.autoa11y.fixes.UnmarkedListItemFix;
+import net.boyechko.pdf.autoa11y.issue.Issue;
 import net.boyechko.pdf.autoa11y.issue.IssueList;
+import net.boyechko.pdf.autoa11y.issue.IssueSev;
+import net.boyechko.pdf.autoa11y.issue.IssueType;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.Visit;
 
@@ -20,11 +25,15 @@ import net.boyechko.pdf.autoa11y.validation.Visit;
  * Detects list items set without a marker: content tagged as a list that the page never bulleted or
  * numbered, such as headings or paragraphs tagged as items long ago.
  *
- * <p>For now the check only reports what it reads, stamping every list with its item and marker
- * counts, e.g. {@code items 4, markers 1}. A marker is either a vector bullet glyph drawn on one of
- * the list's lines or a bullet character or enumerator set as text in an item's Lbl. Each list
- * counts only its own items and markers: lists are left children-first, so a sublist claims its
- * glyphs before its parent list counts the rest, and only the list's own items are read for labels.
+ * <p>An item with no marker of its own is reported and marked {@code !BREAK_OUT}, for {@link
+ * ScribbledInstructionCheck} to take out of its list on the next run. An item holding a Lbl of any
+ * kind is never reported. Every list is also stamped with its item and marker counts, e.g. {@code
+ * items 4, markers 1}.
+ *
+ * <p>A marker is either a vector bullet glyph drawn on one of the item's lines or a bullet
+ * character or enumerator set as text in its Lbl. Lists are left children-first, so a sublist's
+ * items claim their glyphs before the item holding the sublist reads its own; within a list, a
+ * glyph belongs to the first item that sits on it.
  */
 public class UnmarkedListItemCheck extends StructTreeCheck {
 
@@ -58,10 +67,19 @@ public class UnmarkedListItemCheck extends StructTreeCheck {
     @Override
     public void leaveElement(Visit visit) {
         if (!visit.hasRole("L")) return;
-        Set<PageBullet> drawn = bulletsOn(visit);
-        drawn.removeAll(claimed);
-        claimed.addAll(drawn);
-        ListItemScribble.refreshCount(visit.node(), drawn.size() + labelMarkersOf(visit));
+        PageContent pages = visit.docCtx().pages();
+        long markers = 0;
+        for (Tag item : visit.tag().children()) {
+            if (!"LI".equals(item.role())) continue;
+            Set<PageBullet> drawn = bulletsOn(pages, item);
+            drawn.removeAll(claimed);
+            claimed.addAll(drawn);
+            markers += drawn.size() + (hasMarkerLabel(item, pages) ? 1 : 0);
+            if (drawn.isEmpty() && !hasLabel(item)) {
+                reportUnmarked(visit, item);
+            }
+        }
+        ListItemScribble.refreshCount(visit.node(), markers);
         markDocChanged();
     }
 
@@ -70,13 +88,22 @@ public class UnmarkedListItemCheck extends StructTreeCheck {
         return issues;
     }
 
+    private void reportUnmarked(Visit visit, Tag item) {
+        issues.add(
+                new Issue(
+                        IssueType.LIST_ITEM_UNMARKED,
+                        IssueSev.WARNING,
+                        Locus.atElem(visit.docCtx(), item),
+                        "List item set without a bullet or number",
+                        new UnmarkedListItemFix(item.elem())));
+    }
+
     /** Returns the bullets sitting on any of the element's text lines, on every page it touches. */
-    private static Set<PageBullet> bulletsOn(Visit visit) {
-        PageContent pages = visit.docCtx().pages();
+    private static Set<PageBullet> bulletsOn(PageContent pages, Tag element) {
         Set<PageBullet> found = new HashSet<>();
-        for (int pageNum : pagesTouchedBy(visit)) {
+        for (int pageNum : pagesTouchedBy(element)) {
             List<Content.BulletPosition> bullets = pages.bullets(pageNum);
-            for (Rectangle line : pages.lineBounds(visit.node(), pageNum)) {
+            for (Rectangle line : pages.lineBounds(element.elem(), pageNum)) {
                 bullets.stream()
                         .filter(bullet -> sitsOn(bullet, line))
                         .forEach(bullet -> found.add(new PageBullet(pageNum, bullet)));
@@ -85,13 +112,12 @@ public class UnmarkedListItemCheck extends StructTreeCheck {
         return found;
     }
 
-    /** Counts the list's own items whose Lbl is a bullet character or enumerator set as text. */
-    private static long labelMarkersOf(Visit visit) {
-        PageContent pages = visit.docCtx().pages();
-        return visit.tag().children().stream()
-                .filter(item -> "LI".equals(item.role()))
-                .filter(item -> hasMarkerLabel(item, pages))
-                .count();
+    /**
+     * Whether the item has a Lbl of any kind. An author who labelled an item meant it as one, and
+     * {@code !BREAK_OUT} refuses such items anyway, so they are never reported.
+     */
+    private static boolean hasLabel(Tag item) {
+        return item.children().stream().anyMatch(kid -> "Lbl".equals(kid.role()));
     }
 
     private static boolean hasMarkerLabel(Tag item, PageContent pages) {
@@ -109,8 +135,8 @@ public class UnmarkedListItemCheck extends StructTreeCheck {
                 && bullet.y() <= line.getTop() + SAME_LINE_TOLERANCE;
     }
 
-    private static List<Integer> pagesTouchedBy(Visit visit) {
-        return visit.tag().descendantMarkedContent().stream()
+    private static List<Integer> pagesTouchedBy(Tag element) {
+        return element.descendantMarkedContent().stream()
                 .map(MarkedContent::page)
                 .filter(pageNum -> pageNum > 0)
                 .distinct()

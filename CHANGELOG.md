@@ -8,10 +8,11 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
-- New optional `UnmarkedListItemCheck`: stamps every list with its item and
-  marker counts (e.g. `__:items 4, markers 1`), counting bullets and numbers
-  and each sublist on its own, as a first step toward finding content
-  mistagged as list items.
+- New optional `UnmarkedListItemCheck`: finds content mistagged as list items,
+  such as headings and paragraphs, by marking each item the page sets without
+  a bullet or number `__!BREAK_OUT`; items with a `Lbl` are left alone. Every
+  list is stamped with its item and marker counts (e.g. `__:items 4,
+  markers 1`).
 - New `UnscopedTableHeaderCheck`: reports `TH` cells without a `Scope`
   attribute, and scopes them by position when the layout is unambiguous: a
   header row as `Column`, a header column below it as `Row`.
