@@ -2,13 +2,7 @@
 // marked-content block into its own Lbl, for when Acrobat can't cut the text
 // run finely enough.
 //
-// Standalone (Java 11+ single-file source launcher; needs only iText):
-//
-//   java -cp "$(cat target/tools-classpath.txt)" \
-//       tools/SplitOffLbl.java <in.pdf> <out.pdf> <page> <mcid>
-//
-// (target/tools-classpath.txt is written by tools/extract-pages.sh, or by
-// `mvn -q dependency:build-classpath -Dmdep.outputFile=target/tools-classpath.txt`.)
+//   tools/run SplitOffLbl <in.pdf> <out.pdf> <page> <mcid>
 //
 // The cut is made inside the Tj/TJ string, so no glyph moves. The new Lbl is
 // inserted beside the block's MCR in the same parent; move it into its

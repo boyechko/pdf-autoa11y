@@ -157,7 +157,9 @@ changed.
 ## Key Resources
 
 - Tag schema: `src/main/resources/tagschema-PDF-UA1.yaml`
-- Development scripts that are not part of the build: `tools/` directory
+- Development scripts that are not part of the build: `tools/` directory.
+  Run its Java tools with `tools/run NAME [ARGS...]`; they must import only
+  iText and other dependencies, never `net.boyechko.*`
 - iText 9.5.0 kernel sources: `.itext-sources/` (gitignored, read with
   the `Read` tool — no Bash needed)
 

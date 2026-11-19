@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `tools/run` launcher for the Java tools in `tools/`, e.g.
+  `tools/run SplitOffLbl in.pdf out.pdf 235 27`. It needs no prior build and
+  keeps the project's own classes off the classpath, so tools stay standalone.
 - New `tools/SplitOffLbl.java`: splits a leading or trailing `*` footnote
   marker off a marked-content block into its own `Lbl`, cutting inside the
   text run where Acrobat can't. Chain runs to split several blocks.

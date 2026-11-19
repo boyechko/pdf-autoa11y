@@ -1,12 +1,6 @@
 // Audit a PDF's ParentTree against the structure tree and the page content.
 //
-// Standalone (Java 11+ single-file source launcher; needs only iText):
-//
-//   java -cp "$(cat target/tools-classpath.txt)" \
-//       tools/AuditParentTree.java <in.pdf>
-//
-// (target/tools-classpath.txt is written by tools/extract-pages.sh, or by
-// `mvn -q dependency:build-classpath -Dmdep.outputFile=target/tools-classpath.txt`.)
+//   tools/run AuditParentTree <in.pdf>
 //
 // Prints one line per inconsistency, keyed by ParentTree number as in Acrobat
 // preflight's "Inconsistent ParentTree mapping (ParentTree element N)":
@@ -23,7 +17,7 @@
 //
 // Tally by kind of finding before and after a change, so no category is missed:
 //
-//   java -cp ... tools/AuditParentTree.java in.pdf \
+//   tools/run AuditParentTree in.pdf \
 //       | sed -E 's/^key [0-9]+ \(page [0-9]+\):? (MCID [0-9]+ )?//; s/#[0-9]+//g' \
 //       | sort | uniq -c | sort -rn
 import com.itextpdf.kernel.pdf.PdfArray;

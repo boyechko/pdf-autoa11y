@@ -1,10 +1,9 @@
 // Strip embedded font programs from a PDF, keeping every object number.
 //
-// Run on every extract by tools/extract-pages.sh. Standalone (Java 11+
-// single-file source launcher), e.g. to slim a fixture cut before that:
+// Run on every extract by tools/extract-pages.sh, or on its own, e.g. to slim
+// a fixture cut before that:
 //
-//   java -cp "$(cat target/tools-classpath.txt)" \
-//       tools/StripFontPrograms.java <in.pdf> <out.pdf>
+//   tools/run StripFontPrograms <in.pdf> <out.pdf>
 //
 // A page extract carries the source document's font subsets whole, so a
 // one-page fixture is mostly font programs. Text extraction reads only the

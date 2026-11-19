@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Extract a page range from a PDF into a new tagged PDF.
 #
-# A thin wrapper over tools/ExtractPages.java: it resolves the iText classpath,
-# parses the page range and picks a default output name. No fixture bookkeeping
+# A thin wrapper over tools/ExtractPages.java: it parses the page range and
+# picks a default output name. No fixture bookkeeping
 # and no remediation — for that, see tools/extract-fixture.sh, which builds on
 # this script.
 #
@@ -56,27 +56,15 @@ else
 fi
 OUTPUT="${3:-$(basename "$SOURCE" .pdf)_${LABEL}.pdf}"
 
-REPO=$(cd "$(dirname "$0")/.." && pwd)
-
-# ExtractPages runs straight from source (Java 11+ single-file launcher) and
-# needs only iText on the classpath, not the project's own classes — so this
-# works without a prior `mvn package`. The classpath is cached under target/
-# and refreshed only when pom.xml is newer.
-CLASSPATH_CACHE="$REPO/target/tools-classpath.txt"
-if [ ! -f "$CLASSPATH_CACHE" ] || [ "$REPO/pom.xml" -nt "$CLASSPATH_CACHE" ]; then
-    [ "$QUIET" -eq 1 ] || echo "==> refreshing classpath cache" >&2
-    (cd "$REPO" && mvn -q dependency:build-classpath -Dmdep.outputFile="$CLASSPATH_CACHE")
-fi
+TOOLS=$(dirname "$0")
 
 FULL=$(mktemp)
 trap 'rm -f "$FULL"' EXIT
 
 [ "$QUIET" -eq 1 ] || echo "==> extracting pages $FIRST-$LAST from $SOURCE" >&2
-java -cp "$(cat "$CLASSPATH_CACHE")" "$REPO/tools/ExtractPages.java" \
-    "$SOURCE" "$FULL" "$FIRST" "$LAST" >/dev/null
+"$TOOLS/run" ExtractPages "$SOURCE" "$FULL" "$FIRST" "$LAST" >/dev/null
 
 [ "$QUIET" -eq 1 ] || echo "==> stripping embedded font programs" >&2
-java -cp "$(cat "$CLASSPATH_CACHE")" "$REPO/tools/StripFontPrograms.java" \
-    "$FULL" "$OUTPUT" >/dev/null
+"$TOOLS/run" StripFontPrograms "$FULL" "$OUTPUT" >/dev/null
 
 echo "$OUTPUT"

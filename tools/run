@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Run a single-file Java tool from tools/ with the project's dependencies on
+# the classpath.
+#
+# Usage: tools/run TOOL [ARGS...]
+#
+#   TOOL  a tools/*.java name, with or without .java
+#
+# Tools run straight from source (Java 11+ single-file launcher), so no prior
+# `mvn package` is needed. The project's own classes are deliberately left off
+# the classpath: a tool that imports net.boyechko.* fails here at once, rather
+# than working until the next refactor of src/ breaks it. Arguments pass
+# through untouched, so relative paths resolve from the current directory.
+#
+# The classpath is cached in target/tools-classpath.txt and refreshed only
+# when pom.xml is newer.
+#
+# Examples:
+#   tools/run SplitOffLbl catalog.pdf out.pdf 235 27
+#   tools/run AuditParentTree in.pdf
+set -euo pipefail
+
+REPO=$(cd "$(dirname "$0")/.." && pwd)
+
+CLASSPATH_CACHE="$REPO/target/tools-classpath.txt"
+if [ ! -f "$CLASSPATH_CACHE" ] || [ "$REPO/pom.xml" -nt "$CLASSPATH_CACHE" ]; then
+    echo "==> refreshing classpath cache" >&2
+    (cd "$REPO" && mvn -q dependency:build-classpath -Dmdep.outputFile="$CLASSPATH_CACHE")
+fi
+
+TOOL="${1:?usage: tools/run TOOL [ARGS...]}"
+shift
+exec java -cp "$(cat "$CLASSPATH_CACHE")" "$REPO/tools/${TOOL%.java}.java" "$@"
