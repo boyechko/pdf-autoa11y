@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `tools/SplitOffLbl.java`: splits a leading or trailing `*` footnote
+  marker off a marked-content block into its own `Lbl`, cutting inside the
+  text run where Acrobat can't. Chain runs to split several blocks.
 - New optional `UnmarkedListItemCheck`: finds content mistagged as list items,
   such as headings and paragraphs, by marking each item the page sets without
   a bullet or number `__!BREAK_OUT`; items with a `Lbl` are left alone. Every
