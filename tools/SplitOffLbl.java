@@ -152,12 +152,14 @@ public class SplitOffLbl {
         List<Integer> shows = new ArrayList<>();
         for (int i = 0; i < block.size(); i++) {
             String name = block.get(i).name();
-            if (name.equals("Tj") || name.equals("TJ")) {
+            // Spaces-only show ops at either edge are left out, so the marker is found past them
+            // and they go into the Lbl alongside it.
+            if ((name.equals("Tj") || name.equals("TJ")) && !showsOnlySpaces(block.get(i))) {
                 shows.add(i);
             }
         }
         if (shows.isEmpty()) {
-            throw new IllegalStateException("MCID " + mcid + " shows no text with Tj/TJ");
+            throw new IllegalStateException("MCID " + mcid + " shows no visible text with Tj/TJ");
         }
         int first = shows.get(0);
         int last = shows.get(shows.size() - 1);
@@ -294,6 +296,16 @@ public class SplitOffLbl {
 
     private static String text(PdfFont font, byte[] code) {
         return font.decode(new PdfString(code));
+    }
+
+    private static boolean showsOnlySpaces(Op show) {
+        if (show.font() == null) {
+            return false;
+        }
+        PdfObject arg = show.operands().get(0);
+        List<PdfObject> elems =
+                arg instanceof PdfArray array ? array.subList(0, array.size()) : List.of(arg);
+        return decode(show.font(), elems).isBlank();
     }
 
     private static String decode(PdfFont font, List<PdfObject> elems) {
