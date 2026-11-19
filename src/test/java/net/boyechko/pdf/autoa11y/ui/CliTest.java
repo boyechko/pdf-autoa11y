@@ -207,6 +207,85 @@ class CliTest {
     }
 
     @Test
+    void scopedDumpOfAPdfPrintsOnlyTheScopedSubtreeWithItsContent() {
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(
+                    new String[] {
+                        "--dump-tree=plain", "--scope=61", "src/test/resources/tagged_baseline.pdf"
+                    });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        assertTrue(result.contains("L #61"));
+        assertTrue(result.contains("LBody #65"));
+        assertTrue(result.contains("WHALE"));
+        assertFalse(result.contains("Document #55"));
+        assertFalse(result.contains("Table #69"));
+    }
+
+    @Test
+    void scopedDumpOfAnXmlExportPrintsOnlyTheScopedSubtree() throws IOException {
+        Path xml = tempDir.resolve("input.tree.xml");
+        Files.writeString(
+                xml,
+                """
+                <StructureTree version="1" root="element">
+                  <Document role="Document" id="1" page="1">
+                    <Art role="Art" id="4291" page="1">
+                      <P role="P" id="10" page="1">
+                        <Content page="1" mcid="0" kinds="text">Inside the scope</Content>
+                      </P>
+                    </Art>
+                    <P role="P" id="30" page="2">
+                      <Content page="2" mcid="0" kinds="text">Outside the scope</Content>
+                    </P>
+                  </Document>
+                </StructureTree>
+                """);
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(new String[] {"--dump-tree=plain", "--scope=4291", xml.toString()});
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        assertTrue(result.contains("Art #4291"));
+        assertTrue(result.contains("Inside the scope"));
+        assertFalse(result.contains("Document #1"));
+        assertFalse(result.contains("Outside the scope"));
+    }
+
+    @Test
+    void scopedQueryMatchesOnlyWithinTheScopedSubtree() {
+        var output = new ByteArrayOutputStream();
+        var originalOut = System.out;
+        try (var capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Cli.main(
+                    new String[] {
+                        "--dump-tree=plain",
+                        "--scope=69",
+                        "--query-tree=//P",
+                        "src/test/resources/tagged_baseline.pdf"
+                    });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+        String result = output.toString(StandardCharsets.UTF_8);
+        assertTrue(result.contains("P #73"));
+        assertFalse(result.contains("P #59"));
+    }
+
+    @Test
     void xmlTreeExportIsReadOnly() throws Cli.CLIException {
         CLIConfig config = Cli.parseArguments(new String[] {"--dump-tree=xml", input});
 

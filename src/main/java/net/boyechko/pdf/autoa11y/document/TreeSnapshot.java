@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,14 +66,19 @@ public final class TreeSnapshot {
 
     /** Captures a document's structure tree, extracting content once per page. */
     public static TreeNode<Value> capture(PdfDocument doc) {
-        var start = startOf(doc);
+        return capture(doc, startOf(doc));
+    }
+
+    /** Captures the subtree at {@code start}, extracting content only from the pages it reaches. */
+    public static TreeNode<Value> capture(PdfDocument doc, IStructureNode start) {
+        Set<Integer> pages = new TreeSet<>();
+        collectPages(start, pages);
         Map<Content.PageMcid, Content.McidContent> contents = new HashMap<>();
-        for (int page = 1; page <= doc.getNumberOfPages(); page++) {
-            int pageNumber = page;
+        for (int page : pages) {
             Content.extractContentForPage(doc.getPage(page))
                     .forEach(
                             (mcid, content) ->
-                                    contents.put(new Content.PageMcid(pageNumber, mcid), content));
+                                    contents.put(new Content.PageMcid(page, mcid), content));
         }
         return capture(start, contents);
     }
@@ -139,8 +145,21 @@ public final class TreeSnapshot {
         return new TreeNode<>(value, children);
     }
 
+    /** Adds the page of every MCR and OBJR below {@code node}, skipping orphaned ones. */
+    private static void collectPages(IStructureNode node, Set<Integer> pages) {
+        if (node instanceof PdfMcr mcr) {
+            int page = StructTree.pageOf(mcr);
+            if (page > 0) pages.add(page);
+            return;
+        }
+        if (node.getKids() == null) return;
+        for (var kid : node.getKids()) {
+            if (kid != null) collectPages(kid, pages);
+        }
+    }
+
     /** Returns the Document element, or the structure root when there is none. */
-    private static IStructureNode startOf(PdfDocument doc) {
+    public static IStructureNode startOf(PdfDocument doc) {
         var root = doc.getStructTreeRoot();
         if (root == null) throw new IllegalStateException("PDF has no structure tree");
         var document = StructTree.findDocument(root);

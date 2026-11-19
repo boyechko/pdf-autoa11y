@@ -5,6 +5,7 @@ package net.boyechko.pdf.autoa11y.ui;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.tagging.IStructureNode;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import net.boyechko.pdf.autoa11y.core.ProcessingDefaults;
 import net.boyechko.pdf.autoa11y.core.ProcessingListener;
 import net.boyechko.pdf.autoa11y.core.ProcessingResult;
 import net.boyechko.pdf.autoa11y.core.ProcessingService;
+import net.boyechko.pdf.autoa11y.document.StructTree;
 import net.boyechko.pdf.autoa11y.document.TreeNode;
 import net.boyechko.pdf.autoa11y.document.TreeSnapshot;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
@@ -408,17 +410,31 @@ public class Cli {
      * Reads an exported .xml tree or a PDF, skipping content extraction a roles dump never uses.
      */
     private static TreeNode<TreeSnapshot.Value> readSnapshot(CLIConfig config) throws IOException {
+        int scope = config.scopeObjNum();
         if (config.inputPath().getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".xml")) {
-            return TreeXml.parse(Files.readString(config.inputPath()));
+            var snapshot = TreeXml.parse(Files.readString(config.inputPath()));
+            if (scope == 0) return snapshot;
+            return TreeQuery.select(snapshot, "//*[@id='" + scope + "']").stream()
+                    .findFirst()
+                    .orElseThrow(() -> noScopeElement(scope));
         }
         PdfCustodian custodian = new PdfCustodian(config.inputPath(), config.password());
         try (PdfDocument pdfDoc = custodian.openForReading()) {
+            IStructureNode start = TreeSnapshot.startOf(pdfDoc);
+            if (scope > 0) {
+                start = StructTree.findByObjNumber(pdfDoc.getStructTreeRoot(), scope);
+                if (start == null) throw noScopeElement(scope);
+            }
             boolean needsContent =
                     config.treeFormat() != TreeFormat.ROLES || config.treeQuery() != null;
             return needsContent
-                    ? TreeSnapshot.capture(pdfDoc)
-                    : TreeSnapshot.captureStructure(pdfDoc);
+                    ? TreeSnapshot.capture(pdfDoc, start)
+                    : TreeSnapshot.capture(start, Map.of());
         }
+    }
+
+    private static IllegalArgumentException noScopeElement(int scope) {
+        return new IllegalArgumentException("No structure element #" + scope + " for --scope");
     }
 
     /** Renders each tree, separating consecutive trees with a blank line. */
@@ -890,6 +906,8 @@ public class Cli {
                 + "  --scope <objnum>  Confine structure-tree checks to the subtree rooted at\n"
                 + "                    this element (e.g. --scope=4287, as shown by --dump-tree).\n"
                 + "                    Document-level checks still see the whole file.\n"
+                + "                    With --dump-tree or --query-tree, prints only that\n"
+                + "                    subtree, reading content from just the pages it spans.\n"
                 + "\n"
                 + "Sidecar config: place a <basename>.autoa11y.yaml file next to the input PDF\n"
                 + "to set persistent per-file check configuration. You can generate a template\n"

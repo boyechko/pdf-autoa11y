@@ -25,6 +25,17 @@ The same command accepts `catalog/catalog.pdf` directly. Exporting XML first
 avoids extracting PDF content again for every query. XML input filenames
 must end in `.xml`.
 
+To refresh just one section of a PDF, add `--scope`. Only that subtree is
+dumped or queried, and content is read from just the pages it spans:
+
+```bash
+./pdf-autoa11y --dump-tree --scope=4291 catalog/catalog.pdf
+./pdf-autoa11y --scope=4291 --query-tree="//L[LI/LBody/H3]" catalog/catalog.pdf
+```
+
+A query cannot provide this speedup by itself, since its predicates may test
+`Content` text or kinds on any page.
+
 Each matching element prints as a complete subtree, including text, object
 numbers, annotations, and page separators. Several matching headings in one
 list select that list only once. Results follow document order. A match

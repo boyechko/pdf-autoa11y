@@ -63,6 +63,9 @@ mvn exec:java -Dexec.args="--dump-tree input.pdf"  # print structure tree with M
 # checks still see the whole file. Useful for verifying a new check's behavior on
 # one section of a long document instead of the whole thing at once.
 ./pdf-autoa11y --only-checks=MistaggedListCheck --scope=4287 input.pdf output.pdf
+# With --dump-tree/--query-tree, --scope prints only that subtree and reads
+# content from just its pages -- a quick refresh of one section's diagram.
+./pdf-autoa11y --dump-tree --scope=4287 input.pdf
 
 # Edit the PDF outline (bookmarks): dump to text, edit, then apply back
 ./pdf-autoa11y --dump-outline input.pdf > outline.txt

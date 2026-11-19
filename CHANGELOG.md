@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- `--scope` now applies to `--dump-tree` and `--query-tree`: they print only
+  that subtree and read content from just its pages, so refreshing one
+  section of a long document is quick. Works on `.xml` exports too.
 - New `tools/run` launcher for the Java tools in `tools/`, e.g.
   `tools/run SplitOffLbl in.pdf out.pdf 235 27`. It needs no prior build and
   keeps the project's own classes off the classpath, so tools stay standalone.
