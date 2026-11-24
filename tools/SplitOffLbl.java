@@ -5,8 +5,9 @@
 //   tools/run SplitOffLbl <in.pdf> <out.pdf> <page> <mcid>
 //
 // The cut is made inside the Tj/TJ string, so no glyph moves. The new Lbl is
-// inserted beside the block's MCR in the same parent; move it into its
-// Reference or Note in Acrobat. Run again on the output to split another block.
+// inserted beside the block's MCR in the same parent, wrapped in a P to retag
+// as a Reference or Note (e.g. via --annotate-tree). Run again on the output
+// to split another block.
 // Refuses a block with a "*" at neither end or both, or one where a BT/ET or
 // nested marked content sits between the marker and the block's edge.
 import com.itextpdf.io.source.PdfTokenizer;
@@ -211,16 +212,18 @@ public class SplitOffLbl {
         out.write(bytes, show.end(), bytes.length - show.end());
         stream.setData(out.toByteArray());
 
-        PdfStructElem parent = (PdfStructElem) lbl.getParent();
+        PdfStructElem wrapper = (PdfStructElem) lbl.getParent();
+        PdfStructElem parent = (PdfStructElem) wrapper.getParent();
         System.out.printf(
-                "Split '%s' off MCID %d into Lbl #%d (MCID %d), %s it in %s #%d%n",
-                decode(show.font(), cut.label()),
-                mcid,
-                lbl.getPdfObject().getIndirectReference().getObjNumber(),
-                newMcid,
-                cut.leading() ? "before" : "after",
+                "%s #%d: split '%s' off the %s of MCID %d into P #%d > Lbl #%d (MCID %d)%n",
                 parent.getRole().getValue(),
-                parent.getPdfObject().getIndirectReference().getObjNumber());
+                parent.getPdfObject().getIndirectReference().getObjNumber(),
+                decode(show.font(), cut.label()),
+                cut.leading() ? "start" : "end",
+                mcid,
+                wrapper.getPdfObject().getIndirectReference().getObjNumber(),
+                lbl.getPdfObject().getIndirectReference().getObjNumber(),
+                newMcid);
     }
 
     /**
@@ -365,7 +368,10 @@ public class SplitOffLbl {
         return next;
     }
 
-    /** Inserts a new Lbl holding {@code newMcid} before or after the MCID's MCR. */
+    /**
+     * Inserts a new P > Lbl holding {@code newMcid} before or after the MCID's MCR; the P is a
+     * placeholder to be retagged as a Reference or Note.
+     */
     private static PdfStructElem insertLbl(
             PdfDocument doc, PdfPage page, int mcid, boolean before, int newMcid) {
         PdfMcr mcr = doc.getStructTreeRoot().findMcrByMcid(page.getPdfObject(), mcid);
@@ -387,8 +393,10 @@ public class SplitOffLbl {
         if (idx < 0) {
             throw new IllegalStateException("MCID " + mcid + " not among its owner's kids");
         }
+        PdfStructElem wrapper = new PdfStructElem(doc, PdfName.P, page);
+        parent.addKid(before ? idx : idx + 1, wrapper);
         PdfStructElem lbl = new PdfStructElem(doc, PdfName.Lbl, page);
-        parent.addKid(before ? idx : idx + 1, lbl);
+        wrapper.addKid(lbl);
         lbl.addKid(new PdfMcrNumber(new PdfNumber(newMcid), lbl));
         return lbl;
     }
