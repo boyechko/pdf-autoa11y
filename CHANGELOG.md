@@ -8,6 +8,9 @@ Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+- New `!SET_ACTUAL_TEXT <text>` scribbled instruction sets an element's
+  `/ActualText`, with `\uXXXX` escapes for non-ASCII characters, e.g.
+  `\u2212` so a grade like `C-` reads as "C minus".
 - `--scope` now applies to `--dump-tree` and `--query-tree`: they print only
   that subtree and read content from just its pages, so refreshing one
   section of a long document is quick. Works on `.xml` exports too.

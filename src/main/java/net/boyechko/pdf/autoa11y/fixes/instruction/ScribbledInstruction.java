@@ -18,6 +18,7 @@ sealed interface ScribbledInstruction
                 HoistInstruction,
                 MergeInstruction,
                 ReorderKidsInstruction,
+                SetActualTextInstruction,
                 SetRoleInstruction,
                 SplitLinesInstruction,
                 UnlinkInstruction {

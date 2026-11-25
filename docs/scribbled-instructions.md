@@ -20,6 +20,7 @@ the tool on the next run.
 | `!HOIST` | Lifts the element out of the single-kid wrappers above it |
 | `!MERGE` | Merges the element into its preceding sibling |
 | `!REORDER_KIDS` | Reorders kids by their `REORDER N` scribbles |
+| `!SET_ACTUAL_TEXT <text>` | Sets the element's `/ActualText` |
 | `!SET_ROLE <role>` | Changes the element's role |
 | `!SPLIT_LINES [<N>]` | Splits lumped one-line items into a list item per line |
 | `!UNLINK` | Unwraps a `Link`, removing its annotation |
@@ -245,6 +246,21 @@ Position    := "REORDER" N                (* on each kid to place *)
 | Scribble | Before | After |
 |---|---|---|
 | `!REORDER_KIDS` on Sect; `REORDER 1` on P₃ | `Sect[P₁, P₂, P₃]` | `Sect[P₃, P₁, P₂]` |
+
+## !SET_ACTUAL_TEXT \<text\>
+
+Sets the scribbled element's `/ActualText` to the rest of the
+segment, spaces included. Since scribbles must stay ASCII-safe, write
+other characters as `\uXXXX` escapes; they are decoded into the
+attribute, while the receipt keeps the escaped form.
+
+```text
+Instruction := "!SET_ACTUAL_TEXT" Text
+```
+
+A grade like `C-` whose `-` sits in its own `Span` reads as "C dash";
+`__!SET_ACTUAL_TEXT \u2212` on that `Span` makes it a minus sign,
+which screen readers announce as "minus".
 
 ## !SET_ROLE \<role\>
 
