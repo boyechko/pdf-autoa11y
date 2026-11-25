@@ -200,6 +200,129 @@ class UnscopedTableHeaderCheckTest extends PdfTestBase {
         }
     }
 
+    @Test
+    void unfixedTableScribblesEachRowShape() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem first = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            PdfStructElem second = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(first).scribble().segments().contains("cells TH,TD"));
+            assertTrue(Tag.of(second).scribble().segments().contains("cells TH,TD"));
+        }
+    }
+
+    @Test
+    void rowShapeCollapsesRunsOfSameRole() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem row =
+                    addRow(pdfDoc, table, PdfName.TH, PdfName.TD, PdfName.TD, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(row).scribble().segments().contains("cells TH,TDx3"));
+        }
+    }
+
+    @Test
+    void fixableTableLeavesRowsUnscribbled() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem header = addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            PdfStructElem body = addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(header).scribble().isEmpty());
+            assertTrue(Tag.of(body).scribble().isEmpty());
+        }
+    }
+
+    @Test
+    void tableWithoutHeadersLeavesRowsUnscribbled() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem row = addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(row).scribble().isEmpty());
+        }
+    }
+
+    @Test
+    void rowShapeIsDroppedOnceTableBecomesFixable() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem header = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            PdfStructElem body = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            runCheck(pdfDoc);
+
+            Tag.of(header).children().get(1).elem().setRole(PdfName.TH);
+            Tag.of(body).children().get(0).elem().setRole(PdfName.TD);
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(header).scribble().isEmpty());
+            assertTrue(Tag.of(body).scribble().isEmpty());
+        }
+    }
+
+    @Test
+    void unfixedTableIsStampedWithFindingLedByItsNumber() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            Tag tag = Tag.of(table);
+            List<String> segments = tag.scribble().segments();
+            assertEquals(Integer.toString(tag.objNum()), segments.getFirst());
+            assertTrue(segments.stream().anyMatch(seg -> seg.startsWith("?unscoped")));
+        }
+    }
+
+    @Test
+    void fixableTableIsNotStamped() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            addRow(pdfDoc, table, PdfName.TH, PdfName.TH);
+            addRow(pdfDoc, table, PdfName.TD, PdfName.TD);
+
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(table).scribble().isEmpty());
+        }
+    }
+
+    @Test
+    void tableStampIsDroppedOnceTableBecomesFixable() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfStructElem table = addTable(pdfDoc);
+            PdfStructElem header = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            PdfStructElem body = addRow(pdfDoc, table, PdfName.TH, PdfName.TD);
+            runCheck(pdfDoc);
+
+            Tag.of(header).children().get(1).elem().setRole(PdfName.TH);
+            Tag.of(body).children().get(0).elem().setRole(PdfName.TD);
+            runCheck(pdfDoc);
+
+            assertTrue(Tag.of(table).scribble().isEmpty());
+        }
+    }
+
     private static PdfStructElem addTableRow(PdfDocument pdfDoc) {
         return addRow(pdfDoc, addTable(pdfDoc));
     }

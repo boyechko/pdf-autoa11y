@@ -28,7 +28,10 @@ Versioning](https://semver.org/).
   in a dumped tree. A stale leading number is replaced.
 - New `UnscopedTableHeaderCheck`: reports `TH` cells without a `Scope`
   attribute, and scopes them by position when the layout is unambiguous: a
-  header row as `Column`, a header column below it as `Row`.
+  header row as `Column`, a header column below it as `Row`. A table it can't
+  scope is stamped with its object number and a finding (e.g. `__:17928 //
+  ?unscoped headers`), and each of its rows with their cell roles (e.g.
+  `__:cells TH,TDx3`), so both show in Acrobat's Tags pane.
 - `--annotate-tree` can retag elements: change an element's role in the
   tree file (e.g. `TH #18211` to `TD #18211`) and it scribbles
   `__!SET_ROLE TD` for `ScribbledInstructionCheck` to carry out, instead of

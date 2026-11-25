@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.boyechko.pdf.autoa11y.document.DocValue;
+import net.boyechko.pdf.autoa11y.document.DocValue.Scribble;
 import net.boyechko.pdf.autoa11y.document.Tag;
 import net.boyechko.pdf.autoa11y.fixes.SetHeaderScopeFix;
 import net.boyechko.pdf.autoa11y.issue.Issue;
@@ -21,11 +22,23 @@ import net.boyechko.pdf.autoa11y.validation.Visit;
  * Reports TH elements lacking a Table-owned {@code /Scope}, which PDF/UA-1 (7.5) expects of every
  * header cell. Fixes only tables whose headers are unambiguous by position: a first row of THs
  * (scoped Column) above rows of TDs, each row optionally led by a TH (scoped Row).
+ *
+ * <p>A table it leaves unfixed is stamped with a finding led by its object number, as in {@code
+ * 17928 // ?unscoped headers}, and each of its rows with its cell roles, as in {@code cells
+ * TH,TDx3}, so the table and the layout that defeated the fix show in Acrobat's Tags pane.
  */
 public class UnscopedTableHeaderCheck extends StructTreeCheck {
     private static final Set<String> VALID_SCOPES = Set.of("Row", "Column", "Both");
 
     private static final Set<String> ROW_GROUPS = Set.of("THead", "TBody", "TFoot");
+
+    /** Heads the row-shape segment, so it can be replaced without matching the rest of its text. */
+    private static final String SHAPE_HEAD = "cells";
+
+    /** Heads the finding stamped on a table left unfixed. */
+    private static final String FINDING_HEAD = Scribble.FINDING_MARK + "unscoped";
+
+    private static final String FINDING = FINDING_HEAD + " headers";
 
     private final IssueList issues = new IssueList();
     private final List<HeaderScope> plannedScopes = new ArrayList<>();
@@ -43,7 +56,12 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
     @Override
     public boolean enterElement(Visit visit) {
         if (visit.hasRole("Table")) {
-            plannedScopes.addAll(headerScopesOf(visit.tag()));
+            List<Tag> rows = rowsOf(visit.tag());
+            List<HeaderScope> scopes = headerScopesOf(rows);
+            plannedScopes.addAll(scopes);
+            boolean unfixed = scopes.isEmpty() && hasUnscopedHeader(rows);
+            refreshFinding(visit.tag(), unfixed);
+            refreshRowShapes(rows, unfixed);
         } else if (visit.hasRole("TH") && !isScoped(visit.node())) {
             issues.add(
                     new Issue(
@@ -59,6 +77,66 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
     @Override
     public IssueList getIssues() {
         return issues;
+    }
+
+    /**
+     * Stamps the finding on a table left unfixed, led by its object number, and drops both once the
+     * table is fixable.
+     */
+    private void refreshFinding(Tag table, boolean unfixed) {
+        String before = table.scribble().rawValue();
+        table.unstamp(FINDING_HEAD);
+        if (unfixed) {
+            table.stamp(FINDING);
+            table.stampObjNum();
+        } else if (table.scribble().segments().equals(List.of(Integer.toString(table.objNum())))) {
+            table.scribble(Scribble.EMPTY);
+        }
+        if (!table.scribble().rawValue().equals(before)) {
+            markDocChanged();
+        }
+    }
+
+    /** Stamps each row's shape on it while the table is left unfixed, and drops it otherwise. */
+    private void refreshRowShapes(List<Tag> rows, boolean unfixed) {
+        for (Tag row : rows) {
+            String before = row.scribble().rawValue();
+            row.unstamp(SHAPE_HEAD);
+            if (unfixed && !row.children().isEmpty()) {
+                row.stamp(SHAPE_HEAD + " " + shapeOf(row));
+            }
+            if (!row.scribble().rawValue().equals(before)) {
+                markDocChanged();
+            }
+        }
+    }
+
+    /** The row's cell roles in order, a run of one role collapsed as in {@code TH,TDx3}. */
+    private static String shapeOf(Tag row) {
+        List<String> runs = new ArrayList<>();
+        String role = null;
+        int count = 0;
+        for (Tag cell : row.children()) {
+            if (cell.role().equals(role)) {
+                count++;
+                continue;
+            }
+            if (role != null) runs.add(run(role, count));
+            role = cell.role();
+            count = 1;
+        }
+        runs.add(run(role, count));
+        return String.join(",", runs);
+    }
+
+    private static String run(String role, int count) {
+        return count == 1 ? role : role + "x" + count;
+    }
+
+    private static boolean hasUnscopedHeader(List<Tag> rows) {
+        return rows.stream()
+                .flatMap(row -> row.children().stream())
+                .anyMatch(cell -> hasRole(cell, "TH") && !isScoped(cell.elem()));
     }
 
     private static boolean isScoped(PdfStructElem th) {
@@ -78,8 +156,8 @@ public class UnscopedTableHeaderCheck extends StructTreeCheck {
      * Column scopes for a first row of THs over rows of TDs, plus Row scopes when every later row
      * is led by a TH; empty for any other layout.
      */
-    private static List<HeaderScope> headerScopesOf(Tag table) {
-        List<List<Tag>> rows = rowsOf(table).stream().map(Tag::children).toList();
+    private static List<HeaderScope> headerScopesOf(List<Tag> tableRows) {
+        List<List<Tag>> rows = tableRows.stream().map(Tag::children).toList();
         if (rows.size() < 2 || rows.getFirst().isEmpty() || !allHaveRole(rows.getFirst(), "TH")) {
             return List.of();
         }
