@@ -23,13 +23,16 @@ import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import net.boyechko.pdf.autoa11y.PdfTestBase;
 import net.boyechko.pdf.autoa11y.document.DocContext;
 import net.boyechko.pdf.autoa11y.document.Locus;
 import net.boyechko.pdf.autoa11y.file.PdfCustodian;
 import net.boyechko.pdf.autoa11y.issue.*;
+import net.boyechko.pdf.autoa11y.validation.Check;
 import net.boyechko.pdf.autoa11y.validation.StructTreeCheck;
 import net.boyechko.pdf.autoa11y.validation.Visit;
 import org.junit.jupiter.api.Test;
@@ -489,6 +492,28 @@ public class ProcessingServiceTest extends PdfTestBase {
                 .onlyChecks(java.util.Set.of("MistaggedListCheck"))
                 .includeChecks(java.util.Set.of("NeedlessNestingCheck"))
                 .build();
+    }
+
+    @Test
+    void onlyChecksRunInTheGivenOrder() throws Exception {
+        // Listed in the reverse of their ProcessingDefaults order
+        List<String> requested = List.of("ScribbledInstructionCheck", "UnscopedTableHeaderCheck");
+        List<String> started = new ArrayList<>();
+
+        new ProcessingService.ProcessingServiceBuilder()
+                .withPdfCustodian(new PdfCustodian(TAGGED_BASELINE_PDF, null))
+                .withListener(
+                        new NoOpProcessingListener() {
+                            @Override
+                            public void onCheckStart(Check check) {
+                                started.add(check.getClass().getSimpleName());
+                            }
+                        })
+                .onlyChecks(new LinkedHashSet<>(requested))
+                .build()
+                .analyze();
+
+        assertEquals(requested, started);
     }
 
     @Test

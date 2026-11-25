@@ -65,6 +65,9 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `--only-checks` now runs the named checks in the order given, rather than
+  in the default pipeline order, so e.g. `ScribbledInstruction` can be run
+  ahead of a check that should see its result.
 - `--annotate-tree` warns and skips a quoted value that does not begin with
   `__`, instead of writing it to `/T` as a plain title.
 - `--dump-roles` is replaced by `--dump-tree=roles`, so every tree format,

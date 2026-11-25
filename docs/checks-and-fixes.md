@@ -8,7 +8,7 @@ selectively enabled or disabled via CLI options:
 # Skip specific checks
 ./pdf-autoa11y --skip-checks=NeedlessNestingCheck,MissingPagePartsCheck input.pdf
 
-# Run only specific checks
+# Run only specific checks, in the order given
 ./pdf-autoa11y --only-checks=StructTreeOrderCheck,SchemaValidationCheck input.pdf
 ```
 

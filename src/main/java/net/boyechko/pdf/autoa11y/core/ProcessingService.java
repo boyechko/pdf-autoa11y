@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +44,7 @@ public class ProcessingService {
         private PdfCustodian custodian;
         private ProcessingListener listener;
         private final Set<String> skipChecks = new HashSet<>();
-        private final Set<String> onlyChecks = new HashSet<>();
+        private final Set<String> onlyChecks = new LinkedHashSet<>();
         private final Set<String> includeChecks = new HashSet<>();
         private List<String> orderedCheckNames;
         private final List<Supplier<Check>> injectedChecks = new ArrayList<>();
@@ -150,7 +151,7 @@ public class ProcessingService {
      * Selects which checks to run from the full pool of known checks, applying any replaceChecks.
      *
      * <ul>
-     *   <li>{@code only}: keep exactly these
+     *   <li>{@code only}: keep exactly these, in the order given
      *   <li>{@code include}: add these to the defaults
      *   <li>{@code skip}: remove these from the active set
      *   <li>{@code replaceChecks}: substitute suppliers in-place by class name
@@ -170,17 +171,17 @@ public class ProcessingService {
         rejectUnknownNames(knownNames, only);
         rejectUnknownNames(knownNames, include);
 
-        java.util.function.Predicate<String> predicate;
         if (!only.isEmpty()) {
-            predicate = name -> only.contains(name) && !skip.contains(name);
-        } else {
-            Set<String> defaultNames = collectNames(defaultChecks);
-            predicate =
-                    name ->
-                            (defaultNames.contains(name) || include.contains(name))
-                                    && !skip.contains(name);
+            List<String> kept = only.stream().filter(name -> !skip.contains(name)).toList();
+            return resolveOrdered(allChecks, kept, replaceChecks);
         }
-        return filterByName(allChecks, predicate, replaceChecks);
+        Set<String> defaultNames = collectNames(defaultChecks);
+        return filterByName(
+                allChecks,
+                name ->
+                        (defaultNames.contains(name) || include.contains(name))
+                                && !skip.contains(name),
+                replaceChecks);
     }
 
     /**

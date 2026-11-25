@@ -103,7 +103,7 @@ Common options:
 - `--dump-tree` print the structure tree with MCRs/annotations and exit
 - `--dump-tree=roles` print only the structure tree roles and exit
 - `--skip-checks <a,b,c>` skip specific checks
-- `--only-checks <a,b,c>` run only specific checks
+- `--only-checks <a,b,c>` run only specific checks, in the order given
 - `--scope <objnum>` confine tree checks to one element's subtree
 - `--sidecar <file>` use a specific sidecar config file
 - `--create-sidecar` create a template sidecar config file and exit

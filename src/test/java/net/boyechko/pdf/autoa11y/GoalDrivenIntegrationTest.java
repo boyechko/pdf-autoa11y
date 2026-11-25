@@ -15,7 +15,7 @@ import com.itextpdf.kernel.pdf.tagging.PdfStructElem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -123,7 +123,7 @@ public class GoalDrivenIntegrationTest extends PdfTestBase {
                         .withPdfCustodian(new PdfCustodian(inputPath))
                         .withListener(new NoOpProcessingListener());
         if (!goalCase.checks().isEmpty()) {
-            builder.onlyChecks(new HashSet<>(goalCase.checks()));
+            builder.onlyChecks(new LinkedHashSet<>(goalCase.checks()));
         }
         ProcessingService service = builder.build();
 
