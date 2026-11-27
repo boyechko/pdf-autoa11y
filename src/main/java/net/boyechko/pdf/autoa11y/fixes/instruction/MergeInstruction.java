@@ -14,10 +14,13 @@ import net.boyechko.pdf.autoa11y.document.Tag;
 
 /**
  * {@code !MERGE}: folds the element's kids into its preceding sibling and removes the emptied
- * element, so a run of siblings a tagger split apart reads as one. Marked as {@code !MERGE} on each
- * element to be absorbed, a whole run collapses leftward: every fix resolves its preceding sibling
- * against the current tree, so by the time the third element merges, the second is already gone.
- * The element is destroyed, so the receipt goes on the survivor instead.
+ * element, so a run of siblings a tagger split apart reads as one. When that sibling has a
+ * different role, the survivor is instead the last same-role element nested inside it -- a
+ * paragraph's tail stranded after an {@code L} rejoins the {@code P} in its last {@code LBody}.
+ * Marked as {@code !MERGE} on each element to be absorbed, a whole run collapses leftward: every
+ * fix resolves its preceding sibling against the current tree, so by the time the third element
+ * merges, the second is already gone. The element is destroyed, so the receipt goes on the survivor
+ * instead.
  */
 record MergeInstruction() implements ScribbledInstruction {
 
@@ -41,23 +44,37 @@ record MergeInstruction() implements ScribbledInstruction {
             throw new IllegalArgumentException(
                     "!MERGE refuses: there is no preceding sibling element to merge into");
         }
-        PdfStructElem target = previous.elem();
-        if (!Tag.of(element).role().equals(previous.role())) {
+        Tag survivor = closestOfRole(previous, Tag.of(element).role());
+        if (survivor == null) {
             throw new IllegalArgumentException(
-                    "!MERGE refuses: preceding sibling has a different mapped role");
+                    "!MERGE refuses: preceding sibling holds no element of the same mapped role");
         }
+        PdfStructElem target = survivor.elem();
 
         // Pin the page the absorbed element resolved through, so bare-int MCRs moving into a
         // page-less survivor still find one. Cross-page kids are handled by moveKid.
         PdfObject effectivePg = Tag.of(element).pageEntry();
-        if (effectivePg != null && previous.pageEntry() == null) {
+        if (effectivePg != null && survivor.pageEntry() == null) {
             target.getPdfObject().put(PdfName.Pg, effectivePg);
             target.setModified();
         }
 
-        Tag.of(element).moveKidsTo(previous);
+        Tag.of(element).moveKidsTo(survivor);
         Tag.of(element).remove();
         stampMergeReceipt(target);
+        return null;
+    }
+
+    /**
+     * The tag itself if it has the role, else the last element of that role within it in reading
+     * order, so the one nearest whatever follows the tag; null if there is none.
+     */
+    private static Tag closestOfRole(Tag tag, String role) {
+        if (tag.role().equals(role)) return tag;
+        for (Tag child : tag.children().reversed()) {
+            Tag found = closestOfRole(child, role);
+            if (found != null) return found;
+        }
         return null;
     }
 

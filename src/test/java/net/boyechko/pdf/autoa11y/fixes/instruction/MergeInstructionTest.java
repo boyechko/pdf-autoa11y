@@ -76,6 +76,42 @@ class MergeInstructionTest extends PdfTestBase {
     }
 
     @Test
+    void mergeReachesIntoPrecedingSiblingForClosestSameRoleElement() throws Exception {
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
+            pdfDoc.setTagged();
+            PdfPage page = pdfDoc.addNewPage();
+            PdfStructTreeRoot root = pdfDoc.getStructTreeRoot();
+            PdfStructElem document = new PdfStructElem(pdfDoc, PdfName.Document);
+            root.addKid(document);
+
+            PdfStructElem list = new PdfStructElem(pdfDoc, PdfName.L);
+            document.addKid(list);
+            PdfStructElem[] itemParagraphs = new PdfStructElem[2];
+            for (int i = 0; i < itemParagraphs.length; i++) {
+                PdfStructElem item = new PdfStructElem(pdfDoc, PdfName.LI);
+                list.addKid(item);
+                PdfStructElem body = new PdfStructElem(pdfDoc, PdfName.LBody);
+                item.addKid(body);
+                itemParagraphs[i] = new PdfStructElem(pdfDoc, PdfName.P, page);
+                body.addKid(itemParagraphs[i]);
+                itemParagraphs[i].addKid(new PdfMcrNumber(page, itemParagraphs[i]));
+            }
+            PdfStructElem straggler = new PdfStructElem(pdfDoc, PdfName.P, page);
+            document.addKid(straggler);
+            straggler.addKid(new PdfMcrNumber(page, straggler));
+
+            new ScribbledInstructionFix(straggler, "!MERGE").apply(new DocContext(pdfDoc));
+
+            assertEquals(1, document.getKids().size(), "Straggler should be gone");
+            assertEquals(1, itemParagraphs[0].getKids().size(), "Earlier item is untouched");
+            assertEquals(
+                    2,
+                    itemParagraphs[1].getKids().size(),
+                    "Straggler's MCR should join the last list item's paragraph");
+        }
+    }
+
+    @Test
     void mergeRefusesRoleMismatchLeavingTreeUntouched() throws Exception {
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(testOutputStream()))) {
             PdfStructTreeRoot root = new PdfStructTreeRoot(pdfDoc);

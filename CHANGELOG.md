@@ -68,6 +68,9 @@ Versioning](https://semver.org/).
   any headings or prose mistagged into them in reading order.
 
 ### Changed
+- `!MERGE` now reaches into a preceding sibling of a different role for the
+  closest element of the same role, so a paragraph's tail stranded after a
+  list rejoins the `P` in the list's last item instead of being refused.
 - `--only-checks` now runs the named checks in the order given, rather than
   in the default pipeline order, so e.g. `ScribbledInstruction` can be run
   ahead of a check that should see its result.

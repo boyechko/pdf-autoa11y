@@ -204,10 +204,13 @@ move to that sibling and the emptied element is removed. To merge a run,
 mark every element after the first; each one then merges leftward into
 the surviving first element.
 
-The preceding sibling must be an element with the same mapped role.
-Merging into a different role or loose marked content is refused without
-changing the tree. The content stream is not changed, and moved content
-keeps its page when the siblings span pages.
+The preceding sibling must be an element. If its mapped role differs, the
+children go instead to the last element of the same role nested inside it,
+the one closest in reading order; a paragraph's tail stranded after a list
+rejoins the `P` in the list's last `LBody`. If there is no such element,
+or the preceding sibling is loose marked content, the merge is refused
+without changing the tree. The content stream is not changed, and moved
+content keeps its page when the elements span pages.
 
 The survivor receives `INST MERGE absorbed N`, where `N` is the number of
 elements absorbed. The count is state rather than history: it is replaced
@@ -224,7 +227,8 @@ Instruction := "!MERGE"
 |---|---|---|
 | `!MERGE` on P₂ | `Sect[P₁[MCR₁], P₂[MCR₂]]` | `Sect[P₁[MCR₁, MCR₂]]` |
 | `!MERGE` on P₂ and P₃ | `Sect[P₁[MCR₁], P₂[MCR₂], P₃[MCR₃]]` | `Sect[P₁[MCR₁, MCR₂, MCR₃]]` |
-| `!MERGE` on H1₂ | `Sect[P₁, H1₂]` | *(refused: preceding sibling is P, not H1)* |
+| `!MERGE` on P₂ | `Sect[L[LI[LBody[P₁[MCR₁]]]], P₂[MCR₂]]` | `Sect[L[LI[LBody[P₁[MCR₁, MCR₂]]]]]` |
+| `!MERGE` on H1₂ | `Sect[P₁, H1₂]` | *(refused: preceding sibling holds no H1)* |
 
 ## !REORDER_KIDS
 
