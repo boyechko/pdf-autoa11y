@@ -1,6 +1,6 @@
-// Split a footnote marker ("*" plus adjacent spaces) off the start or end of a
-// marked-content block into its own Lbl, for when Acrobat can't cut the text
-// run finely enough.
+// Split a footnote marker (a run of "*" or "^", e.g. "**" or "^^", plus adjacent
+// spaces) off the start or end of a marked-content block into its own Lbl, for
+// when Acrobat can't cut the text run finely enough.
 //
 //   tools/run SplitOffLbl <in.pdf> <out.pdf> <page> <mcid>
 //
@@ -8,7 +8,7 @@
 // inserted beside the block's MCR in the same parent, wrapped in a P to retag
 // as a Reference or Note (e.g. via --annotate-tree). Run again on the output
 // to split another block.
-// Refuses a block with a "*" at neither end or both, or one where a BT/ET or
+// Refuses a block with a marker at neither end or both, or one where a BT/ET or
 // nested marked content sits between the marker and the block's edge.
 import com.itextpdf.io.source.PdfTokenizer;
 import com.itextpdf.io.source.RandomAccessFileOrArray;
@@ -164,7 +164,7 @@ public class SplitOffLbl {
             throw new IllegalStateException(
                     "MCID "
                             + mcid
-                            + ": need a '*' at exactly one end; found "
+                            + ": need a marker at exactly one end; found "
                             + (lead == null ? "neither" : "both"));
         }
         Cut cut = lead != null ? lead : trail;
@@ -227,8 +227,8 @@ public class SplitOffLbl {
     }
 
     /**
-     * Cuts "*" plus adjacent spaces off the start (or end) of the show op's first (or last) string,
-     * or returns null when that end isn't a label.
+     * Cuts a marker run plus adjacent spaces off the start (or end) of the show op's first (or
+     * last) string, or returns null when that end isn't a label.
      */
     private static Cut cut(Op show, boolean leading) {
         List<PdfObject> elems = new ArrayList<>();
@@ -254,10 +254,13 @@ public class SplitOffLbl {
         int n = codes.size();
         int k; // number of codes in the label
         if (leading) {
-            if (n == 0 || !text(show.font(), codes.get(0)).equals("*")) {
+            k = 0;
+            while (k < n && isMarker(text(show.font(), codes.get(k)))) {
+                k++;
+            }
+            if (k == 0) {
                 return null;
             }
-            k = 1;
             while (k < n && text(show.font(), codes.get(k)).isBlank()) {
                 k++;
             }
@@ -266,10 +269,13 @@ public class SplitOffLbl {
             while (k < n && text(show.font(), codes.get(n - 1 - k)).isBlank()) {
                 k++;
             }
-            if (k == n || !text(show.font(), codes.get(n - 1 - k)).equals("*")) {
+            int spaces = k;
+            while (k < n && isMarker(text(show.font(), codes.get(n - 1 - k)))) {
+                k++;
+            }
+            if (k == spaces) {
                 return null;
             }
-            k++;
         }
         int at = leading ? k : n - k;
         List<PdfObject> head = new ArrayList<>(elems.subList(0, e));
@@ -278,6 +284,10 @@ public class SplitOffLbl {
         addIfNonEmpty(tail, join(codes.subList(at, n)));
         tail.addAll(elems.subList(e + 1, elems.size()));
         return leading ? new Cut(true, head, tail) : new Cut(false, tail, head);
+    }
+
+    private static boolean isMarker(String text) {
+        return text.equals("*") || text.equals("^");
     }
 
     /** Splits a string into character codes: two bytes each for a Type0 font, else one. */
