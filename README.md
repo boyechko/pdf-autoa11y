@@ -198,6 +198,7 @@ and inspecting each processing step.
 - `CONTRIBUTING.md` for development workflow
 - `docs/sidecar.md` for per-PDF sidecar config reference
 - `docs/checks-and-fixes.md` for the full list of checks and fixes
+- `docs/scribbles.md` for scribbles: notes, instructions, and the `OK` mark
 - `docs/remediation-log.md` for the per-document record of what each fix changed
 - `docs/architecture-decisions.md` for architecture decision records
 

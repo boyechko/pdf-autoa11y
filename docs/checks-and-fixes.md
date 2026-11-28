@@ -12,105 +12,109 @@ selectively enabled or disabled via CLI options:
 ./pdf-autoa11y --only-checks=StructTreeOrderCheck,SchemaValidationCheck input.pdf
 ```
 
-Without either `--skip-checks` or `--only-checks`, PDF-Auto-A11y will
-run all checks.
+Without either `--skip-checks` or `--only-checks`, PDF-Auto-A11y runs
+the default checks.
 
 ## Available Checks
 
-All checks run as individual pipeline steps, each reading the output of the
-previous step in the execution order listed below.
+Checks are grouped below by what they deal with. The *Name* column gives
+the exact, case-sensitive name to pass to the CLI options and the sidecar.
+Checks marked *optional* do not run by default; add them with
+`--include-checks` or the sidecar's `checks:` key (see `docs/sidecar.md`).
+Each check runs as its own pipeline step, in the order defined by
+`ProcessingDefaults`.
 
-| Check | Description | Fix |
-|---|---|---|
-| ImageOnlyDocumentCheck | Detects scanned/image-only PDFs that need OCR | None (fatal) |
-| StructureTreeExistsCheck | Verifies the PDF has a structure tree | None (fatal) |
-| MissingDocumentCheck | Verifies a Document element exists under the structure tree root | Creates Document element |
-| StructTreeOrderCheck | Detects structure tree siblings out of reading order | Reorders siblings by where their content sits on the page |
-| UnmarkedLinkCheck | Detects Link annotations not tagged as structure elements | Creates Link tags |
-| UnexpectedWidgetCheck | Detects non-functional Widget annotation remnants | Removes Widget annotations |
-| BadlyMappedLigatureCheck | Detects fonts with broken ligature-to-Unicode mappings | Remaps ligatures |
-| LanguageSetCheck | Verifies the document language is set | Sets language |
-| TabOrderCheck | Verifies tab order follows structure tree order | Sets tab order |
-| TaggedPdfCheck | Verifies the PDF is marked as tagged | Marks as tagged |
-| PdfUaConformanceCheck | Detects false PDF/UA conformance claims in XMP metadata | Strips false claims |
-| NeedlessNestingCheck | Detects unnecessary Part/Sect/Art/Div grouping wrappers | Flattens wrappers, promoting children
-| MissingPagePartsCheck | Detects content not grouped into page-level Part elements | Creates Part-per-page grouping |
-| MistaggedArtifactCheck | Detects decorative or noisy content that should be artifacts | Converts to artifacts |
-| FigureWithTextCheck | Detects Figure elements containing text content | Changes Figure role |
-| MissingAltTextCheck | Detects content images missing alt text | None (manual) |
-| UnscopedTableHeaderCheck | Detects `TH` cells without a `/Scope` attribute | Scopes a header row as Column and a leading header column as Row; other tables manual |
-| EmptyLinkTagCheck | Detects Link elements without link description | Moves adjacent text into Link, or moves the annotation into a text-only Link under it |
-| InvalidLinkUriCheck | Detects Link elements whose `/A /URI` is not a plausible http(s) web address | Writes `LINK_URI` scribble for manual review |
-| MistaggedListCheck | Detects bulleted, indented, or link-only content that should be lists | Wraps in (sub)list structure, merging split lists |
-| IrregularTocCheck | Detects TOC contents not nested into a TOCI hierarchy | Rebuilds entries as `TOCI`, nesting by indentation |
-| EmptyElementCheck | Detects empty structure elements | Removes empty elements |
-| AdjacentListsCheck | Detects adjacent sibling lists | Merges each run into its first list |
-| SchemaValidationCheck | Validates elements against the PDF/UA-1 tag schema | Restructures children to match schema |
+### Preconditions
 
-## Verified elements: the `OK` scribble
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Image Only Document | Detects scanned/image-only PDFs that need OCR | None (fatal) | `ImageOnlyDocumentCheck` |
+| Structure Tree Exists | Verifies the PDF has a structure tree | None (fatal) | `StructureTreeExistsCheck` |
+| Missing Document | Verifies a Document element exists under the structure tree root | Creates Document element | `MissingDocumentCheck` |
 
-An element whose scribble has a user-authored segment that is exactly
-`OK` (e.g. `__OK`, or `__OK // check figure later` to carry a note in a
-separate segment) is treated as reviewed to be correct. The
-structure-tree walker skips the element and
-its entire subtree, so no check sees it and no fix touches it — including
-`StaleScribbleCheck`, so the mark itself persists across runs. Remove the
-scribble to bring the subtree back under remediation.
+### Document settings
 
-Only a user-authored mark counts: a tool-authored scribble (leading `:`)
-never verifies an element.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Language Set | Verifies the document language is set | Sets language | `LanguageSetCheck` |
+| Tagged Pdf | Verifies the PDF is marked as tagged | Marks as tagged | `TaggedPdfCheck` |
+| PDF/UA Conformance | Detects false PDF/UA conformance claims in XMP metadata | Strips false claims | `PdfUaConformanceCheck` |
+| Tab Order | Verifies tab order follows structure tree order | Sets tab order | `TabOrderCheck` |
 
-## Scribbles and plain titles
+### Content and fonts
 
-A `/T` value counts as a scribble only when it carries the `__` prefix.
-A plain title left by the authoring tool is not a scribble: no check
-touches it, and `--dump-tree` shows it as `title "..."` to keep the two
-apart.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Badly Mapped Ligature | Detects fonts with broken ligature-to-Unicode mappings | Remaps ligatures | `BadlyMappedLigatureCheck` |
+| Badly Marked Content | Detects one marked-content block lumping lines of different font sizes | Splits into one same-role element per size run | `BadlyMarkedContentCheck` |
+| Orphaned Content | Detects content references whose page no longer exists | Removes the references | `OrphanedContentCheck` |
+| Mistagged Artifact | Detects decorative or noisy content that should be artifacts | Converts to artifacts | `MistaggedArtifactCheck` |
+| Misartifacted Text (*optional*) | Detects digit-only text artifacted by an earlier run | Restores as `Reference`/`Lbl` | `MisartifactedTextCheck` |
+| Inconsistent Parent Tree (*optional*) | Detects a ParentTree that disagrees with the structure tree | Rebuilds the ParentTree | `InconsistentParentTreeCheck` |
 
-## Scribble segments and tags
+### Links and annotations
 
-A scribble holds one or more segments separated by ` // `. Every
-tool-authored segment opens with an upper-case tag naming what wrote it,
-so a segment can be found and replaced without matching its prose. The
-tag is what `clearScribbleSegments` keys on.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Unmarked Link | Detects Link annotations not tagged as structure elements | Creates Link tags | `UnmarkedLinkCheck` |
+| Unexpected Widget | Detects non-functional Widget annotation remnants | Removes Widget annotations | `UnexpectedWidgetCheck` |
+| Empty Link Tag | Detects Link elements without link description | Moves adjacent text into Link, or moves the annotation into a text-only Link under it | `EmptyLinkTagCheck` |
+| Invalid Link URI | Detects Link elements whose `/A /URI` is not a plausible http(s) web address | Writes `LINK_URI` scribble for manual review | `InvalidLinkUriCheck` |
+| Badly Split Link | Detects one link split across adjacent Link tags | Merges them into one Link | `BadlySplitLinkCheck` |
+| Inline Destinations (*optional*) | Detects named destinations, as left by Web Capture | Replaces them with explicit page destinations | `InlineDestinationsCheck` |
 
-Segments come in two kinds:
+### Reading order
 
-- **State** describes the element as it now stands, and is replaced each
-  time it is written.
-- **Event** records something a fix or check did, and accumulates. A list
-  touched by two fixes carries both, so the scribble reads as a short
-  history ending in the current state, e.g.
-  `__:WRAP paragraph run // MERGE lists // LIST 7 items`.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Structure Tree Order | Detects structure tree siblings out of reading order (see [below](#structtreeordercheck)) | Reorders siblings by where their content sits on the page | `StructTreeOrderCheck` |
 
-| Tag | Kind | Written by |
-|---|---|---|
-| `LIST` | state | every list-producing fix, as its last step |
-| `WRAP` | event | fixes that wrap content into a list |
-| `SPLIT` | event | fixes that split one element into several |
-| `MERGE` | event | fixes that fold one element into another |
-| `INST` | event | `ScribbledInstructionFix`, as an instruction receipt |
-| `SCHEMA` | event | `SchemaValidationCheck` findings |
-| `LINK_URI` | event | `InvalidLinkUriCheck` findings |
+### Text structure
 
-Appending a segment that is already present is a no-op, so a fix that runs twice
-does not stamp itself twice. A tool segment appended to a hand-written scribble
-leaves that scribble user-authored, so the `SCRIBBLE_VERIFIED_TOKEN` mark and
-`StaleScribbleCheck` with `scope: TOOL_AUTHORED` keep working.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Fragmented Paragraph | Detects one paragraph split across adjacent P tags | Merges them into one P | `FragmentedParagraphCheck` |
+| Fused Paragraph | Detects several paragraphs fused into one P | Splits at paragraph ends | `FusedParagraphCheck` |
+| Mistagged Heading | Detects paragraphs and mis-leveled headings by font size | Retags as the matching heading level | `MistaggedHeadingCheck` |
+| Mistagged List | Detects bulleted content that should be lists | Wraps in (sub)list structure, merging split lists | `MistaggedListCheck` |
+| Adjacent Lists | Detects adjacent sibling lists | Merges each run into its first list | `AdjacentListsCheck` |
+| Unmarked List Item (*optional*) | Detects list items without a bullet or number | Marks them `!BREAK_OUT` for the next run | `UnmarkedListItemCheck` |
+| Irregular TOC | Detects TOC contents not nested into a TOCI hierarchy | Rebuilds entries as `TOCI`, nesting by indentation | `IrregularTocCheck` |
 
-## StaleScribbleCheck
+### Figures and tables
 
-`StaleScribbleCheck` flags elements that still carry a scribble and
-clears the `/T` key. By default it treats every scribble as stale. Set
-`scope: TOOL_AUTHORED` in the sidecar (see `docs/sidecar.md`) to limit
-it to the tool's own scribbles, so hand-written notes survive the run.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Figure With Text | Detects Figure elements containing text content | Changes Figure role | `FigureWithTextCheck` |
+| Missing Alt Text | Detects content images missing alt text | None (manual) | `MissingAltTextCheck` |
+| Unscoped Table Header | Detects `TH` cells without a `/Scope` attribute | Scopes a header row as Column and a leading header column as Row; other tables manual | `UnscopedTableHeaderCheck` |
 
-## ScribbledInstructionCheck
+### Tree hygiene
 
-`ScribbledInstructionCheck` carries out structural instructions
-scribbled into `/T` with a leading `!` (e.g. `!SET_ROLE H2`), leaving an
-`INST` receipt in their place. See `docs/scribbled-instructions.md` for
-the supported instructions and their syntax.
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Empty Element | Detects empty structure elements | Removes empty elements | `EmptyElementCheck` |
+| Schema Validation | Validates elements against the PDF/UA-1 tag schema | Restructures children to match schema | `SchemaValidationCheck` |
+| Needless Nesting (*optional*) | Detects unnecessary Part/Sect/Art/Div grouping wrappers | Flattens wrappers, promoting children | `NeedlessNestingCheck` |
+| Missing Page Parts (*optional*) | Detects content not grouped into page-level Part elements | Creates Part-per-page grouping | `MissingPagePartsCheck` |
+| Clear Role Map (*optional*) | Detects presence of `/RoleMap` (see [below](#rolemap-checks)) | Removes `/RoleMap` | `ClearRoleMapCheck` |
+| Replace Role Map (*optional*) | Compares `/RoleMap` to sidecar-supplied mappings | Replaces `/RoleMap` with supplied mappings | `ReplaceRoleMapCheck` |
+
+### Web captures
+
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Reorder Web Captures (*optional*) | Reorders pages to a URL order given in the sidecar | Moves pages | `ReorderWebCapturesCheck` |
+| Wrap Web Captures (*optional*) | Detects Adobe Web Capture PDFs | Wraps each captured URL's pages in an `Art` | `WrapWebCapturesCheck` |
+
+### Scribbles
+
+| Check | Description | Fix | Name |
+|---|---|---|---|
+| Scribbled Instruction | Detects `!` instructions scribbled into `/T` | Carries them out (see `docs/scribbled-instructions.md`) | `ScribbledInstructionCheck` |
+| Stale Scribble | Detects leftover scribbles | Clears `/T` | `StaleScribbleCheck` |
+
+See `docs/scribbles.md` for how scribbles are written and read.
 
 ## RoleMap Checks
 
@@ -131,11 +135,6 @@ role-map:
   CustomHeading: H1
   CustomFigure: Figure
 ```
-
-| Check | Description | Fix |
-|---|---|---|
-| ClearRoleMapCheck | Detects presence of `/RoleMap` in the structure tree root | Removes `/RoleMap` |
-| ReplaceRoleMapCheck | Compares `/RoleMap` to sidecar-supplied mappings | Replaces `/RoleMap` with supplied mappings |
 
 ## StructTreeOrderCheck
 
